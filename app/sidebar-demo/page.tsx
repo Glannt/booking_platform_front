@@ -158,7 +158,7 @@ export default function SidebarDemoPage() {
   // Define User Profiles
   const adminUser: UserProfile = {
     name: "Alex Sterling",
-    email: "alex.admin@travelgo.com",
+    email: "alex.admin@minhkhoatravel.com",
     avatarUrl: "https://i.pravatar.cc/150?img=33",
     role: t.demo.admin,
   };
@@ -176,7 +176,7 @@ export default function SidebarDemoPage() {
       <Sidebar
         groups={isAdminMode ? adminGroups : customerGroups}
         user={isAdminMode ? adminUser : customerUser}
-        brandName={isAdminMode ? "TG Admin" : "TravelGo"}
+        brandName={isAdminMode ? "MKT Admin" : "Minh Khoa Travel"}
         logo={
           isAdminMode ? (
             <ShieldAlert className="text-primary" size={24} />

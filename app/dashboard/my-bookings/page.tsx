@@ -8,7 +8,7 @@ import {
   ChevronDown,
   AlertCircle,
 } from "lucide-react";
-import { Button, Dropdown, Label } from "@heroui/react";
+import { Button, Dropdown, Input, Label, Table, Skeleton } from "@heroui/react";
 import clsx from "clsx";
 
 const myBookingsTranslations = {
@@ -81,7 +81,16 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 5;
+
+  useEffect(() => {
+    if (bookings.length > 0) {
+      setLoading(false);
+    }
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, [bookings]);
 
   // Reset page when search or filter changes
   useEffect(() => {
@@ -184,14 +193,12 @@ export default function MyBookingsPage() {
       {/* Controls bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Search Bar */}
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
-          <input
-            type="text"
+        <div className="w-full sm:w-80">
+          <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={myBookingsTranslations[language as Language]?.searchPlaceholder || "Search..."}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-divider bg-background text-foreground placeholder-slate-400 dark:placeholder-slate-500 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0b66e4] focus:border-transparent transition-all"
+            className="w-full rounded-xl border border-divider bg-background shadow-sm text-sm font-medium"
           />
         </div>
 
@@ -268,6 +275,27 @@ export default function MyBookingsPage() {
       </div>
 
       {/* Bookings Table container */}
+      {loading ? (
+        <div className="rounded-3xl p-6 shadow-sm border border-divider bg-card space-y-4">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="p-5 rounded-2xl border border-divider bg-background/50 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-20 rounded-lg" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-48 rounded-lg" />
+              <div className="flex flex-col gap-1.5">
+                <Skeleton className="h-3 w-36 rounded-lg" />
+                <Skeleton className="h-3 w-28 rounded-lg" />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Skeleton className="h-7 w-20 rounded-lg" />
+                <Skeleton className="h-7 w-16 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="rounded-3xl p-6 shadow-sm border border-divider bg-card space-y-6">
         {/* Mobile Cards View */}
         <div className="block md:hidden space-y-4">
@@ -327,32 +355,38 @@ export default function MyBookingsPage() {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 self-end mt-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setSelectedBooking(booking);
                       setIsModalOpen(true);
                     }}
-                    className="text-xs font-extrabold text-[#0b66e4] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 px-3 py-1.5 rounded-lg border border-divider transition-all cursor-pointer bg-transparent"
+                    className="text-xs font-extrabold text-accent hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-divider"
                   >
                     {myBookingsTranslations[language as Language]?.viewDetails || "Details"}
-                  </button>
+                  </Button>
 
                   {booking.status !== "cancelled" && booking.status !== "cancellation_requested" && booking.status !== "completed" && (
                     <>
                       {canCancelDirectly(booking) ? (
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleCancelBooking(booking.ref)}
-                          className="text-xs font-extrabold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 px-3 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/50 transition-all cursor-pointer bg-transparent"
+                          className="text-xs font-extrabold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-rose-100 dark:border-rose-900/50"
                         >
                           {myBookingsTranslations[language as Language]?.cancelDirect || "Cancel"}
-                        </button>
+                        </Button>
                       ) : booking.status === "confirmed" ? (
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleRequestCancelBooking(booking.ref)}
-                          className="text-xs font-extrabold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 px-3 py-1.5 rounded-lg border border-purple-100 dark:border-purple-900/50 transition-all cursor-pointer bg-transparent"
+                          className="text-xs font-extrabold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50"
                         >
                           {myBookingsTranslations[language as Language]?.requestCancel || "Request Cancel"}
-                        </button>
+                        </Button>
                       ) : null}
                     </>
                   )}
@@ -364,96 +398,100 @@ export default function MyBookingsPage() {
 
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-divider text-slate-400 dark:text-slate-500 text-xs font-extrabold uppercase tracking-wider">
-                <th className="pb-4 font-bold text-left">{t.dashboard.ref}</th>
-                <th className="pb-4 font-bold text-left">{myBookingsTranslations[language as Language]?.bookingType || "Type"}</th>
-                <th className="pb-4 font-bold text-left">{t.dashboard.route}</th>
-                <th className="pb-4 font-bold text-left">{myBookingsTranslations[language as Language]?.pickupTime || "Pickup"}</th>
-                <th className="pb-4 font-bold text-left">{t.dashboard.status}</th>
-                <th className="pb-4 text-right font-bold">{t.dashboard.action}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {paginatedBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-sm font-medium text-slate-400 dark:text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <AlertCircle size={24} className="opacity-60" />
-                      <span>
-                        {language === "vi"
-                          ? "Không tìm thấy đơn đặt nào phù hợp."
-                          : "No bookings found matching search."}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedBookings.map((booking) => (
-                  <tr key={booking.ref} className="group hover:bg-default-50/50 dark:hover:bg-default-100/10 transition-colors">
-                    <td className="py-4 text-sm font-bold text-slate-500 dark:text-slate-400 align-middle">
-                      {booking.ref}
-                    </td>
-                    <td className="py-4 text-sm font-bold text-foreground align-middle">
-                      {getLocalizedBookingType(booking.type)}
-                    </td>
-                    <td className="py-4 text-sm font-extrabold text-foreground align-middle">
-                      {getRouteLabel(booking.route)}
-                    </td>
-                    <td className="py-4 text-sm font-semibold text-slate-500 dark:text-slate-400 align-middle">
-                      {booking.pickupTime}
-                    </td>
-                    <td className="py-4 align-middle">
-                      <span className={clsx(
-                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
-                        booking.status === "confirmed" && "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50",
-                        booking.status === "completed" && "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50",
-                        booking.status === "pending" && "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50",
-                        booking.status === "cancelled" && "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50",
-                        booking.status === "cancellation_requested" && "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/50"
-                      )}>
-                        <span className="text-[8px] animate-pulse">●</span>
-                        {getLocalizedStatus(booking.status)}
-                      </span>
-                    </td>
-                    <td className="py-4 text-right align-middle">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedBooking(booking);
-                            setIsModalOpen(true);
-                          }}
-                          className="text-xs font-extrabold text-[#0b66e4] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 px-3 py-1.5 rounded-lg border border-divider transition-all cursor-pointer bg-transparent"
-                        >
-                          {myBookingsTranslations[language as Language]?.viewDetails || "Details"}
-                        </button>
-                        {booking.status !== "cancelled" && booking.status !== "cancellation_requested" && booking.status !== "completed" && (
-                          <>
-                            {canCancelDirectly(booking) ? (
-                              <button
-                                onClick={() => handleCancelBooking(booking.ref)}
-                                className="text-xs font-extrabold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 px-3 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/50 transition-all cursor-pointer bg-transparent"
-                              >
-                                {myBookingsTranslations[language as Language]?.cancelDirect || "Cancel"}
-                              </button>
-                            ) : booking.status === "confirmed" ? (
-                              <button
-                                onClick={() => handleRequestCancelBooking(booking.ref)}
-                                className="text-xs font-extrabold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 px-3 py-1.5 rounded-lg border border-purple-100 dark:border-purple-900/50 transition-all cursor-pointer bg-transparent"
-                              >
-                                {myBookingsTranslations[language as Language]?.requestCancel || "Request Cancel"}
-                              </button>
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          {paginatedBookings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center border border-divider rounded-2xl bg-card">
+              <AlertCircle size={24} className="opacity-60 text-slate-400" />
+              <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
+                {language === "vi"
+                  ? "Không tìm thấy đơn đặt nào phù hợp."
+                  : "No bookings found matching search."}
+              </span>
+            </div>
+          ) : (
+            <Table aria-label="Bảng chuyến đi của tôi" className="w-full text-left">
+              <Table.ScrollContainer>
+                <Table.Content>
+                  <Table.Header className="border-b border-divider text-slate-400 dark:text-slate-500 text-xs font-extrabold uppercase tracking-wider">
+                    <Table.Column isRowHeader className="pb-4 font-bold text-left">{t.dashboard.ref}</Table.Column>
+                    <Table.Column className="pb-4 font-bold text-left">{myBookingsTranslations[language as Language]?.bookingType || "Type"}</Table.Column>
+                    <Table.Column className="pb-4 font-bold text-left">{t.dashboard.route}</Table.Column>
+                    <Table.Column className="pb-4 font-bold text-left">{myBookingsTranslations[language as Language]?.pickupTime || "Pickup"}</Table.Column>
+                    <Table.Column className="pb-4 font-bold text-left">{t.dashboard.status}</Table.Column>
+                    <Table.Column className="pb-4 text-right font-bold">{t.dashboard.action}</Table.Column>
+                  </Table.Header>
+                  <Table.Body>
+                    {paginatedBookings.map((booking) => (
+                      <Table.Row key={booking.ref} className="group hover:bg-default-50/50 dark:hover:bg-default-100/10 transition-colors">
+                        <Table.Cell className="py-4 text-sm font-bold text-slate-500 dark:text-slate-400 align-middle">
+                          {booking.ref}
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-sm font-bold text-foreground align-middle">
+                          {getLocalizedBookingType(booking.type)}
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-sm font-extrabold text-foreground align-middle">
+                          {getRouteLabel(booking.route)}
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-sm font-semibold text-slate-500 dark:text-slate-400 align-middle">
+                          {booking.pickupTime}
+                        </Table.Cell>
+                        <Table.Cell className="py-4 align-middle">
+                          <span className={clsx(
+                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
+                            booking.status === "confirmed" && "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50",
+                            booking.status === "completed" && "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50",
+                            booking.status === "pending" && "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50",
+                            booking.status === "cancelled" && "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50",
+                            booking.status === "cancellation_requested" && "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/50"
+                          )}>
+                            <span className="text-[8px] animate-pulse">●</span>
+                            {getLocalizedStatus(booking.status)}
+                          </span>
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-right align-middle">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setIsModalOpen(true);
+                              }}
+                              className="text-xs font-extrabold text-accent hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-divider"
+                            >
+                              {myBookingsTranslations[language as Language]?.viewDetails || "Details"}
+                            </Button>
+                            {booking.status !== "cancelled" && booking.status !== "cancellation_requested" && booking.status !== "completed" && (
+                              <>
+                                {canCancelDirectly(booking) ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleCancelBooking(booking.ref)}
+                                    className="text-xs font-extrabold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-rose-100 dark:border-rose-900/50"
+                                  >
+                                    {myBookingsTranslations[language as Language]?.cancelDirect || "Cancel"}
+                                  </Button>
+                                ) : booking.status === "confirmed" ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleRequestCancelBooking(booking.ref)}
+                                    className="text-xs font-extrabold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 border border-purple-100 dark:border-purple-900/50"
+                                  >
+                                    {myBookingsTranslations[language as Language]?.requestCancel || "Request Cancel"}
+                                  </Button>
+                                ) : null}
+                              </>
+                            )}
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
+            </Table>
+          )}
         </div>
 
         {/* Pagination Controls */}
@@ -485,6 +523,7 @@ export default function MyBookingsPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

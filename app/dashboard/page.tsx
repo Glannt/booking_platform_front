@@ -12,7 +12,7 @@ import {
   Clock,
   ExternalLink,
 } from "lucide-react";
-import { Button } from "@heroui/react";
+import { Button, Table } from "@heroui/react";
 import clsx from "clsx";
 
 export default function OverviewPage() {
@@ -175,7 +175,7 @@ export default function OverviewPage() {
         {/* Confirmed Trips Indicator */}
         <div className="rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 bg-card flex items-center justify-between transition-colors">
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-[#0b66e4] dark:text-blue-400 shadow-inner">
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-accent shadow-inner">
               <CheckCircle2 size={28} />
             </div>
             <div>
@@ -210,7 +210,7 @@ export default function OverviewPage() {
                 alt="Premium SUV"
                 className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500 z-0"
               />
-              <div className="absolute top-3.5 left-3.5 bg-[#0b66e4] text-white text-[10px] font-extrabold uppercase px-3 py-1.5 rounded-full shadow-md z-10 tracking-wider">
+              <div className="absolute top-3.5 left-3.5 bg-accent text-white text-[10px] font-extrabold uppercase px-3 py-1.5 rounded-full shadow-md z-10 tracking-wider">
                 {getCarClassLabel()}
               </div>
             </div>
@@ -255,7 +255,7 @@ export default function OverviewPage() {
 
           {/* Status indicator info box */}
           <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-2xl p-4 border border-blue-100/50 dark:border-blue-900/50 flex items-start gap-3 mt-4">
-            <div className="text-[#0b66e4] dark:text-blue-400 mt-0.5">
+            <div className="text-accent mt-0.5">
               <Clock size={16} />
             </div>
             <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 leading-relaxed">
@@ -285,7 +285,7 @@ export default function OverviewPage() {
               onClick={() => setActiveFilter("all")}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${
                 activeFilter === "all"
-                  ? "bg-background text-[#0b66e4] dark:text-blue-400 shadow-sm"
+                  ? "bg-background text-accent shadow-sm"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent"
               }`}
             >
@@ -295,7 +295,7 @@ export default function OverviewPage() {
               onClick={() => setActiveFilter("confirmed")}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${
                 activeFilter === "confirmed"
-                  ? "bg-background text-[#0b66e4] dark:text-blue-400 shadow-sm"
+                  ? "bg-background text-accent shadow-sm"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent"
               }`}
             >
@@ -305,7 +305,7 @@ export default function OverviewPage() {
               onClick={() => setActiveFilter("pending")}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border-none cursor-pointer ${
                 activeFilter === "pending"
-                  ? "bg-background text-[#0b66e4] dark:text-blue-400 shadow-sm"
+                  ? "bg-background text-accent shadow-sm"
                   : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent"
               }`}
             >
@@ -316,71 +316,72 @@ export default function OverviewPage() {
 
         {/* Table wrapper */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-divider text-slate-400 dark:text-slate-500 text-xs font-extrabold uppercase tracking-wider">
-                <th className="pb-4 font-bold">{t.dashboard.ref}</th>
-                <th className="pb-4 font-bold">{t.dashboard.route}</th>
-                <th className="pb-4 font-bold">{t.dashboard.date}</th>
-                <th className="pb-4 font-bold">{t.dashboard.status}</th>
-                <th className="pb-4 text-right font-bold">{t.dashboard.action}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider">
-              {filteredBookings.map((booking) => (
-                <tr key={booking.ref} className="group hover:bg-default-50/50 dark:hover:bg-default-100/10 transition-colors">
-                  <td className="py-4 text-sm font-bold text-slate-500 dark:text-slate-400">
-                    {booking.ref}
-                  </td>
-                  <td className="py-4 text-sm font-extrabold text-foreground">
-                    {getRouteLabel(booking.route)}
-                  </td>
-                  <td className="py-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                    {getDateLabel(booking.date)}
-                  </td>
-                  <td className="py-4">
-                    <span className={clsx(
-                      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border",
-                      booking.status === "confirmed" && "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50",
-                      booking.status === "completed" && "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50",
-                      booking.status === "pending" && "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50",
-                      booking.status === "cancelled" && "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50",
-                      booking.status === "cancellation_requested" && "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/50"
-                    )}>
-                      <span className="text-[8px] animate-pulse">●</span>
-                      {getLocalizedStatus(booking.status)}
-                    </span>
-                  </td>
-                  <td className="py-4 text-right">
-                    <button
-                      onClick={() => {
-                        setSelectedBooking(booking);
-                        setIsModalOpen(true);
-                      }}
-                      className="text-sm font-bold text-[#0b66e4] dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center gap-1 ml-auto transition-all bg-transparent border-none cursor-pointer"
-                    >
-                      <span>{t.dashboard.details}</span>
-                      <ExternalLink size={12} className="opacity-75" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredBookings.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-sm font-medium text-slate-400 dark:text-slate-500">
-                    {language === "vi"
-                      ? "Không có đơn đặt chuyến đi nào phù hợp bộ lọc."
-                      : language === "en"
-                        ? "No bookings match this filter."
-                        : language === "ko"
-                          ? "필터와 일치하는 예약이 없습니다."
-                          : "Net bronirovaniy, sootvetstvuyushchih etomu fil'tru."
-                    }
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {filteredBookings.length === 0 ? (
+            <div className="py-8 text-center text-sm font-medium text-slate-400 dark:text-slate-500">
+              {language === "vi"
+                ? "Không có đơn đặt chuyến đi nào phù hợp bộ lọc."
+                : language === "en"
+                  ? "No bookings match this filter."
+                  : language === "ko"
+                    ? "필터와 일치하는 예약이 없습니다."
+                    : "Net bronirovaniy, sootvetstvuyushchih etomu fil'tru."
+              }
+            </div>
+          ) : (
+            <Table aria-label="Bảng chuyến đi gần đây" className="w-full text-left">
+              <Table.ScrollContainer>
+                <Table.Content>
+                  <Table.Header className="border-b border-divider text-slate-400 dark:text-slate-500 text-xs font-extrabold uppercase tracking-wider">
+                    <Table.Column isRowHeader className="pb-4 font-bold">{t.dashboard.ref}</Table.Column>
+                    <Table.Column className="pb-4 font-bold">{t.dashboard.route}</Table.Column>
+                    <Table.Column className="pb-4 font-bold">{t.dashboard.date}</Table.Column>
+                    <Table.Column className="pb-4 font-bold">{t.dashboard.status}</Table.Column>
+                    <Table.Column className="pb-4 text-right font-bold">{t.dashboard.action}</Table.Column>
+                  </Table.Header>
+                  <Table.Body>
+                    {filteredBookings.map((booking) => (
+                      <Table.Row key={booking.ref} className="group hover:bg-default-50/50 dark:hover:bg-default-100/10 transition-colors">
+                        <Table.Cell className="py-4 text-sm font-bold text-slate-500 dark:text-slate-400">
+                          {booking.ref}
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-sm font-extrabold text-foreground">
+                          {getRouteLabel(booking.route)}
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                          {getDateLabel(booking.date)}
+                        </Table.Cell>
+                        <Table.Cell className="py-4">
+                          <span className={clsx(
+                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border",
+                            booking.status === "confirmed" && "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50",
+                            booking.status === "completed" && "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50",
+                            booking.status === "pending" && "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50",
+                            booking.status === "cancelled" && "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50",
+                            booking.status === "cancellation_requested" && "bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/50"
+                          )}>
+                            <span className="text-[8px] animate-pulse">●</span>
+                            {getLocalizedStatus(booking.status)}
+                          </span>
+                        </Table.Cell>
+                        <Table.Cell className="py-4 text-right">
+                          <button
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setIsModalOpen(true);
+                            }}
+                            className="text-sm font-bold text-accent hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center gap-1 ml-auto transition-all bg-transparent border-none cursor-pointer"
+                          >
+                            <span>{t.dashboard.details}</span>
+                            <ExternalLink size={12} className="opacity-75" />
+                          </button>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
+            </Table>
+          )}
         </div>
       </div>
     </div>

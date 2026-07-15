@@ -37,6 +37,8 @@ interface DashboardContextProps {
   handleRequestCancelBooking: (ref: string) => void;
   toastMessage: string | null;
   setToastMessage: (msg: string | null) => void;
+  activeRole: "customer" | "admin";
+  setActiveRole: (role: "customer" | "admin") => void;
 }
 
 const DashboardContext = createContext<DashboardContextProps | undefined>(undefined);
@@ -215,6 +217,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const [activeRole, setActiveRole] = useState<"customer" | "admin">("customer");
+
   return (
     <DashboardContext.Provider
       value={{
@@ -230,6 +234,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         handleRequestCancelBooking,
         toastMessage,
         setToastMessage,
+        activeRole,
+        setActiveRole,
       }}
     >
       {children}

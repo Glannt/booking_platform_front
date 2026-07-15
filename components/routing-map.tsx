@@ -2,10 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { searchLocations } from "@/lib/api/locations";
+import { getSelectedLanguage } from "@/lib/api/client";
 
 interface RoutingMapProps {
   nhaTrangAddress: string;
-  direction: "to-nhatrang" | "to-camranh";
+  direction: "to-nhatrang" | "to-airport";
   onRouteCalculated?: (durationMin: number, distanceKm: number) => void;
 }
 
@@ -36,15 +38,11 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const query = `${nhaTrangAddress}, Nha Trang, Khanh Hoa, Vietnam`;
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`
-        );
-        const data = await res.json();
-        if (data && data.length > 0) {
-          const lat = parseFloat(data[0].lat);
-          const lon = parseFloat(data[0].lon);
-          setTargetCoords([lat, lon]);
+        const locale = getSelectedLanguage();
+        const res = await searchLocations(nhaTrangAddress, locale, 1);
+        const results = res?.data || [];
+        if (results.length > 0) {
+          setTargetCoords([results[0].latitude, results[0].longitude]);
         } else {
           // Fallback to Nha Trang center
           setTargetCoords(NHA_TRANG_CENTER);
@@ -81,6 +79,20 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
 
     return () => {
       if (mapRef.current) {
+        // Clean up markers and layers safely if they exist
+        if (routeLayerRef.current) {
+          try { mapRef.current.removeLayer(routeLayerRef.current); } catch (e) {}
+        }
+        if (airportMarkerRef.current) {
+          try { mapRef.current.removeLayer(airportMarkerRef.current); } catch (e) {}
+        }
+        if (targetMarkerRef.current) {
+          try { mapRef.current.removeLayer(targetMarkerRef.current); } catch (e) {}
+        }
+        routeLayerRef.current = null;
+        airportMarkerRef.current = null;
+        targetMarkerRef.current = null;
+
         mapRef.current.remove();
         mapRef.current = null;
       }
@@ -89,6 +101,7 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
 
   // Calculate route and update map markers
   useEffect(() => {
+    let isMounted = true;
     const map = mapRef.current;
     if (!map) return;
 
@@ -103,11 +116,12 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
         const res = await fetch(url);
         const data = await res.json();
 
-        if (data.routes && data.routes.length > 0) {
-          // Check if map is still mounted
-          if (!mapRef.current) return;
-          const activeMap = mapRef.current;
+        // Safety checks before updating the DOM or Leaflet internals
+        if (!isMounted || !mapRef.current || mapRef.current !== map) return;
+        const activeMap = mapRef.current;
+        if (!(activeMap as any)._loaded || !(activeMap as any)._container) return;
 
+        if (data.routes && data.routes.length > 0) {
           const route = data.routes[0];
           const geometry = route.geometry;
           const durationSec = route.duration; // seconds
@@ -127,7 +141,11 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
 
           // Clean up old layer
           if (routeLayerRef.current) {
-            activeMap.removeLayer(routeLayerRef.current);
+            try {
+              activeMap.removeLayer(routeLayerRef.current);
+            } catch (e) {
+              console.warn("Could not remove routeLayer:", e);
+            }
           }
 
           // Draw polyline
@@ -158,8 +176,16 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
           });
 
           // Clean up old markers
-          if (airportMarkerRef.current) activeMap.removeLayer(airportMarkerRef.current);
-          if (targetMarkerRef.current) activeMap.removeLayer(targetMarkerRef.current);
+          if (airportMarkerRef.current) {
+            try {
+              activeMap.removeLayer(airportMarkerRef.current);
+            } catch (e) {}
+          }
+          if (targetMarkerRef.current) {
+            try {
+              activeMap.removeLayer(targetMarkerRef.current);
+            } catch (e) {}
+          }
 
           // Add markers with correct start/end labels depending on direction
           const airportLabel = "Sân bay Cam Ranh (CXR)";
@@ -189,10 +215,14 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
     };
 
     fetchRoute();
+
+    return () => {
+      isMounted = false;
+    };
   }, [targetCoords, direction, onRouteCalculated, nhaTrangAddress]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+    <div className="bg-white dark:bg-black rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping inline-block" />
@@ -210,7 +240,7 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
       <div className="relative rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 h-72 z-10">
         <div ref={mapContainerRef} className="w-full h-full" />
         {isLoading && (
-          <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 flex items-center justify-center z-20">
+          <div className="absolute inset-0 bg-white/70 dark:bg-black/70 flex items-center justify-center z-20">
             <div className="flex flex-col items-center gap-2">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <span className="text-xs font-bold text-slate-500">Đang tìm địa điểm...</span>

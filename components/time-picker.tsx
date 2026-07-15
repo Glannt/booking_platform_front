@@ -50,7 +50,7 @@ function ScrollColumn({ items, selected, onSelect, label }: ScrollColumnProps) {
         {/* Top fade */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-10 z-10 bg-gradient-to-b from-white dark:from-slate-900 to-transparent" />
         {/* Selection highlight */}
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-[44px] z-10 bg-[#0b66e4]/10 dark:bg-[#0b66e4]/20 border-y border-[#0b66e4]/30 rounded-xl mx-1" />
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-[44px] z-10 bg-accent/10 dark:bg-accent/20 border-y border-accent/30 rounded-xl mx-1" />
         {/* Bottom fade */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 z-10 bg-gradient-to-t from-white dark:from-slate-900 to-transparent" />
 
@@ -74,7 +74,7 @@ function ScrollColumn({ items, selected, onSelect, label }: ScrollColumnProps) {
               style={{ height: ITEM_H, scrollSnapAlign: "center" }}
               className={`flex items-center justify-center cursor-pointer select-none text-sm font-bold transition-all duration-150 ${
                 selected === i
-                  ? "text-[#0b66e4] dark:text-blue-400 scale-110"
+                  ? "text-accent scale-110"
                   : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               }`}
             >
@@ -109,6 +109,7 @@ interface TimePickerProps {
   /** Title shown inside the popover header */
   popoverTitle?: string;
   language?: string;
+  triggerClassName?: string;
 }
 
 const HOURS   = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));   // 01–12
@@ -122,6 +123,7 @@ export function TimePicker({
   labelClassName = "text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-slate-400 mb-1.5 pl-1",
   popoverTitle,
   language = "vi",
+  triggerClassName,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -155,7 +157,7 @@ export function TimePicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 h-10 w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-slate-900 text-left cursor-pointer hover:border-[#0b66e4]/50 transition-colors"
+        className={triggerClassName ?? "flex items-center gap-2 h-10 w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black text-left cursor-pointer hover:border-accent/50 transition-colors"}
       >
         <Clock size={16} className="text-slate-400 dark:text-slate-500 shrink-0" />
         <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex-1">
@@ -169,7 +171,7 @@ export function TimePicker({
 
       {/* Popover */}
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+        <div className="absolute top-full left-0 mt-2 z-50 w-72 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
           {/* Header */}
           <div className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800">
             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
@@ -215,7 +217,7 @@ export function TimePicker({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="w-full h-10 rounded-xl bg-[#0b66e4] hover:bg-blue-700 text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full h-10 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Check size={14} />
               {language === "vi" ? `Xác nhận · ${display}` : `Confirm · ${display}`}

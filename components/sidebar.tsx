@@ -63,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   groups,
   user,
   logo,
-  brandName = "TravelGo",
+  brandName = "Minh Khoa Travel",
   onLogout,
   onSettingsClick,
   className,
@@ -206,7 +206,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       isCollapsed ? (
                         <Tooltip>
                           <Tooltip.Trigger>
-                            <NextLink href={item.path} className="block w-full">{itemContent}</NextLink>
+                            <div>
+                              <NextLink href={item.path} className="block w-full">{itemContent}</NextLink>
+                            </div>
                           </Tooltip.Trigger>
                           <Tooltip.Content placement="right">
                             {item.label}
@@ -256,7 +258,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Dropdown.Trigger>
               <div
                 className={clsx(
-                  "flex items-center gap-3 cursor-pointer p-1.5 rounded-xl hover:bg-default-100 transition-all duration-200 w-full",
+                  "flex items-center gap-3 cursor-pointer p-1.5 rounded-xl hover:bg-default-100 transition-all duration-200 w-full bg-transparent border-none text-left outline-none",
                   isCollapsed ? "justify-center" : ""
                 )}
               >
@@ -265,7 +267,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Avatar.Fallback>{user.name.slice(0, 2).toUpperCase()}</Avatar.Fallback>
                 </Avatar>
                 {!isCollapsed && (
-                  <div className="flex flex-col min-w-0 text-left">
+                  <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
                     <span className="text-sm font-semibold text-foreground truncate">
                       {user.name}
                     </span>

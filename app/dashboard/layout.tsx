@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, SidebarGroup, UserProfile } from "@/components/sidebar";
 import { useI18n } from "@/context/LanguageContext";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -23,6 +23,8 @@ import {
   Plane,
   Calendar,
   CheckCircle2,
+  Layers,
+  MenuSquare,
 } from "lucide-react";
 import {
   Button,
@@ -32,6 +34,8 @@ import {
   Separator,
   useOverlayState,
 } from "@heroui/react";
+import { useAuthStore } from "@/lib/store/authStore";
+import AuthGuard from "@/components/auth-guard";
 import clsx from "clsx";
 
 const myBookingsTranslations = {
@@ -123,8 +127,9 @@ const myBookingsTranslations = {
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isMyBookings = pathname?.replace(/\/$/, "") === "/dashboard/my-bookings";
-  const { language, setLanguage, t } = useI18n();
+  const { language, setLanguage, t, supportedLanguages } = useI18n();
   const [userLocation, setUserLocation] = useState<string>("");
 
   const {
@@ -134,6 +139,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     isModalClosing,
     closeModal,
     toastMessage,
+    activeRole,
+    setActiveRole,
   } = useDashboard();
 
   // Mobile drawer state
@@ -175,59 +182,62 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       );
     }
   }, [language]);
+ 
+   const sidebarGroups: SidebarGroup[] = [
+     {
+       title: language === "vi" ? "Khám phá" : language === "en" ? "Explore" : language === "ko" ? "탐색" : "Исследовать",
+       items: [
+         {
+           key: "dashboard",
+           label: language === "vi" ? "Tổng quan" : language === "en" ? "Dashboard" : language === "ko" ? "대시보드" : "Панель управления",
+           path: "/dashboard",
+           icon: <LayoutDashboard size={20} />,
+         },
+       ],
+     },
+     {
+       title: language === "vi" ? "Cá nhân" : language === "en" ? "Personal" : language === "ko" ? "개인 설정" : "Личное",
+       items: [
+         {
+           key: "my-bookings",
+           label: language === "vi" ? "Đơn đặt của tôi" : language === "en" ? "My Bookings" : language === "ko" ? "내 예약" : "Мои бронирования",
+           path: "/dashboard/my-bookings",
+           icon: <Briefcase size={20} />,
+           badge: bookings.filter(b => b.status === "confirmed" || b.status === "pending").length,
+           badgeColor: "warning" as const,
+         },
+       ],
+     },
+     {
+       title: language === "vi" ? "Hệ thống" : language === "en" ? "System" : language === "ko" ? "시스템" : "Система",
+       items: [
+         {
+           key: "settings",
+           label: language === "vi" ? "Cài đặt tài khoản" : language === "en" ? "Account Settings" : language === "ko" ? "계정 설정" : "Настройки acc",
+           path: "/dashboard/settings",
+           icon: <Settings size={20} />,
+         },
+       ],
+     },
+   ];
+ 
+   const authUser = useAuthStore((s) => s.user);
 
-  // Custom sidebar groups translated
-  const sidebarGroups: SidebarGroup[] = [
-    {
-      title: language === "vi" ? "Khám phá" : language === "en" ? "Explore" : language === "ko" ? "탐색" : "Исследовать",
-      items: [
-        {
-          key: "dashboard",
-          label: language === "vi" ? "Tổng quan" : language === "en" ? "Dashboard" : language === "ko" ? "대시보드" : "Панель управления",
-          path: "/dashboard",
-          icon: <LayoutDashboard size={20} />,
-        },
-      ],
-    },
-    {
-      title: language === "vi" ? "Cá nhân" : language === "en" ? "Personal" : language === "ko" ? "개인 설정" : "Личное",
-      items: [
-        {
-          key: "my-bookings",
-          label: language === "vi" ? "Đơn đặt của tôi" : language === "en" ? "My Bookings" : language === "ko" ? "내 예약" : "Мои бронирования",
-          path: "/dashboard/my-bookings",
-          icon: <Briefcase size={20} />,
-          badge: bookings.filter(b => b.status === "confirmed" || b.status === "pending").length,
-          badgeColor: "warning",
-        },
-      ],
-    },
-    {
-      title: language === "vi" ? "Hệ thống" : language === "en" ? "System" : language === "ko" ? "시스템" : "Система",
-      items: [
-        {
-          key: "settings",
-          label: language === "vi" ? "Cài đặt tài khoản" : language === "en" ? "Account Settings" : language === "ko" ? "계정 설정" : "Настройки acc",
-          path: "/dashboard/settings",
-          icon: <Settings size={20} />,
-        },
-      ],
-    },
-  ];
-
-  const userProfile: UserProfile = {
-    name: "Minh Khoa",
-    email: "minhkhoa@gmail.com",
-    avatarUrl: "https://i.pravatar.cc/150?img=33",
-    role: t.dashboard.goldMember,
-  };
+   const userProfile: UserProfile = authUser
+     ? { name: authUser.fullname || authUser.email, email: authUser.email, role: t.dashboard.goldMember }
+     : { name: "Khách", email: "", role: t.dashboard.goldMember };
 
   const getLanguageLabel = (lang: Language) => {
+    const found = supportedLanguages.find(l => l.code === lang);
+    if (found) {
+      return `${found.flagIcon} ${found.code.toUpperCase()}`;
+    }
     switch (lang) {
       case "vi": return "🇻🇳 VI";
       case "en": return "🇬🇧 EN";
       case "ko": return "🇰🇷 KO";
       case "ru": return "🇷🇺 RU";
+      default: return String(lang).toUpperCase();
     }
   };
 
@@ -267,125 +277,109 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
-      {/* Sidebar — hidden on mobile, visible md+ */}
-      <div className="hidden md:flex">
-        <Sidebar
-          isShowCollapsedBadge={true}
-          className="text-foreground"
-          groups={sidebarGroups}
-          user={userProfile}
-          brandName="TravelGo"
-          logo={<LayoutDashboard className="text-primary" size={24} />}
-          onLogout={() => console.log("Logout clicked")}
-          onSettingsClick={() => console.log("Settings clicked")}
-        />
-      </div>
-
-      {/* Main Content Area */}
-      <main className="flex-grow p-4 md:p-8 overflow-y-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header Dashboard */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* Mobile hamburger */}
-              <Drawer state={mobileDrawerState} key="blur">
-                <button
-                  className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-sm"
-                  onClick={() => mobileDrawerState.open()}
-                  aria-label="Open menu"
-                >
-                  <Menu size={20} />
-                </button>
-                <Drawer.Backdrop variant="blur">
-                  <Drawer.Content placement="left" className="max-w-[270px] p-0">
-                    <Drawer.Dialog className="outline-none h-full">
-                      <Drawer.Body className="p-0 h-full">
-                        <Sidebar
-                          className="bg-[#f4f7fe] text-foreground"
-                          isShowCollapsedBadge={false}
-                          groups={sidebarGroups}
-                          user={userProfile}
-                          brandName="TravelGo"
-                          logo={<LayoutDashboard className="text-primary" size={24} />}
-                          onLogout={() => { mobileDrawerState.close(); console.log("Logout clicked"); }}
-                          onSettingsClick={() => { mobileDrawerState.close(); console.log("Settings clicked"); }}
-                        />
-                      </Drawer.Body>
-                    </Drawer.Dialog>
-                  </Drawer.Content>
-                </Drawer.Backdrop>
-              </Drawer>
-
-              <div>
-                {isMyBookings ? (
-                  <>
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                      {myBookingsTranslations[language as Language]?.title || myBookingsTranslations.en.title}
-                    </h1>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                      {myBookingsTranslations[language as Language]?.subtitle || myBookingsTranslations.en.subtitle}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                        {t.dashboard.welcome} Minh Khoa!
-                      </h1>
-                    </div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                      <MapPin size={14} className="text-slate-400" />
-                      {userLocation || t.dashboard.location}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Header Actions */}
-            <div className="flex items-center gap-3">
-              {/* Theme Switcher Component */}
-              <ThemeSwitch className="flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:border-slate-300 w-10 h-10 rounded-xl text-slate-700 dark:text-slate-200 shadow-sm min-w-0 p-0 flex-shrink-0" />
-              
-              {/* Language Selector Dropdown */}
-              <Dropdown>
-                <Dropdown.Trigger
-                  className="flex items-center gap-1.5 border border-slate-200 hover:border-slate-300 px-3 h-10 rounded-xl font-bold text-slate-700 shadow-sm cursor-pointer"
-                >
-                  <Globe size={16} className="text-foreground animate-pulse flex-shrink-0" />
-                  <span className="text-xs text-foreground">{getLanguageLabel(language)}</span>
-                  <ChevronDown size={12} className="opacity-60 flex-shrink-0" />
-                </Dropdown.Trigger>
-                <Dropdown.Popover className="min-w-[150px]">
-                  <Dropdown.Menu
-                    aria-label="Language options"
-                    onAction={(key) => setLanguage(key as Language)}
+     <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
+       {/* Sidebar — hidden on mobile, visible md+ */}
+       <div className="hidden md:flex">
+         <Sidebar
+           isShowCollapsedBadge={true}
+           className="text-foreground"
+           groups={sidebarGroups}
+           user={userProfile}
+           brandName="Minh Khoa Travel"
+           logo={<LayoutDashboard className="text-primary" size={24} />}
+           onLogout={() => console.log("Logout clicked")}
+           onSettingsClick={() => console.log("Settings clicked")}
+         />
+       </div>
+ 
+       {/* Main Content Area */}
+       <main className="flex-grow p-4 md:p-8 overflow-y-auto">
+         <div className="max-w-7xl mx-auto space-y-6">
+           {/* Header Dashboard */}
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+             <div className="flex items-center gap-3">
+               {/* Mobile hamburger */}
+               <Drawer state={mobileDrawerState} key="blur">
+                 <button
+                   className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-sm"
+                   onClick={() => mobileDrawerState.open()}
+                   aria-label="Open menu"
+                 >
+                   <Menu size={20} />
+                 </button>
+                 <Drawer.Backdrop variant="blur">
+                   <Drawer.Content placement="left" className="max-w-[270px] p-0">
+                     <Drawer.Dialog className="outline-none h-full">
+                       <Drawer.Body className="p-0 h-full">
+                         <Sidebar
+                           className="bg-[#f4f7fe] text-foreground"
+                           isShowCollapsedBadge={false}
+                           groups={sidebarGroups}
+                           user={userProfile}
+                           brandName="Minh Khoa Travel"
+                           logo={<LayoutDashboard className="text-primary" size={24} />}
+                           onLogout={() => { mobileDrawerState.close(); console.log("Logout clicked"); }}
+                           onSettingsClick={() => { mobileDrawerState.close(); console.log("Settings clicked"); }}
+                         />
+                       </Drawer.Body>
+                     </Drawer.Dialog>
+                   </Drawer.Content>
+                 </Drawer.Backdrop>
+               </Drawer>
+ 
+               <div>
+                 {isMyBookings ? (
+                   <>
+                     <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                       {myBookingsTranslations[language as Language]?.title || myBookingsTranslations.en.title}
+                     </h1>
+                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                       {myBookingsTranslations[language as Language]?.subtitle || myBookingsTranslations.en.subtitle}
+                     </p>
+                   </>
+                 ) : (
+                   <>
+                     <div className="flex flex-wrap items-center gap-2.5">
+                       <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                         {t.dashboard.welcome} {userProfile.name}!
+                       </h1>
+                     </div>
+                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                       <MapPin size={14} className="text-slate-400" />
+                       {userLocation || t.dashboard.location}
+                     </p>
+                   </>
+                 )}
+               </div>
+             </div>
+ 
+             {/* Header Actions */}
+             <div className="flex items-center gap-3">
+               {/* Theme Switcher Component */}
+               <ThemeSwitch className="flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:border-slate-300 w-10 h-10 rounded-xl text-slate-700 dark:text-slate-200 shadow-sm min-w-0 p-0 flex-shrink-0" />
+               
+               {/* Language Selector Dropdown */}
+                <Dropdown>
+                  <Dropdown.Trigger
+                    className="flex items-center gap-1.5 border border-slate-200 hover:border-slate-300 px-3 h-10 rounded-xl font-bold text-slate-700 shadow-sm cursor-pointer bg-transparent outline-none"
                   >
-                    <Dropdown.Item id="vi" textValue="Tiếng Việt">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🇻🇳</span>
-                        <Label className="text-sm">Tiếng Việt</Label>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item id="en" textValue="English">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🇬🇧</span>
-                        <Label className="text-sm">English</Label>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item id="ko" textValue="한국어">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🇰🇷</span>
-                        <Label className="text-sm">한국어</Label>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item id="ru" textValue="Русский">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🇷🇺</span>
-                        <Label className="text-sm">Русский</Label>
-                      </div>
-                    </Dropdown.Item>
+                    <Globe size={16} className="text-foreground animate-pulse flex-shrink-0" />
+                    <span className="text-xs text-foreground">{getLanguageLabel(language)}</span>
+                    <ChevronDown size={12} className="opacity-60 flex-shrink-0" />
+                  </Dropdown.Trigger>
+                  <Dropdown.Popover className="min-w-[150px]">
+                    <Dropdown.Menu
+                      aria-label="Language options"
+                      onAction={(key) => setLanguage(key as Language)}
+                    >
+                    {supportedLanguages.map((lang) => (
+                      <Dropdown.Item key={lang.code} id={lang.code} textValue={lang.name}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{lang.flagIcon}</span>
+                          <Label className="text-sm">{lang.name}</Label>
+                        </div>
+                      </Dropdown.Item>
+                    ))}
                   </Dropdown.Menu>
                 </Dropdown.Popover>
               </Dropdown>
@@ -398,7 +392,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               {/* Book New Trip Button */}
               <Button
-                className="bg-[#0b66e4] text-white hover:bg-blue-700 h-10 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-100 dark:shadow-none transition-all border-none"
+                className="bg-accent text-white hover:bg-accent-hover h-10 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-100 dark:shadow-none transition-all border-none"
               >
                 {t.dashboard.bookNewTrip}
               </Button>
@@ -420,7 +414,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           {isModalOpen && selectedBooking && (
             <div
               className={clsx(
-                "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/85 backdrop-blur-sm transition-opacity duration-200",
+                "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm transition-opacity duration-200",
                 isModalClosing ? "opacity-0" : "opacity-100"
               )}
             >
@@ -433,7 +427,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-divider bg-default-50/50 dark:bg-default-100/10">
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0b66e4] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-full">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-full">
                       {getLocalizedBookingType(selectedBooking.type)}
                     </span>
                     <h3 className="text-lg font-extrabold text-foreground mt-1.5 flex items-center gap-2">
@@ -502,7 +496,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="mt-3 bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 shadow-sm">
                       <div className="flex items-start gap-3">
                         <div className="flex flex-col items-center pt-1">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#0b66e4] flex-shrink-0" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-accent flex-shrink-0" />
                           <span className="w-px flex-grow bg-slate-200 dark:bg-slate-700 my-1" style={{ minHeight: "20px" }} />
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
                         </div>
@@ -533,21 +527,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
                           <span className="inline-flex items-center gap-1"><Plane size={11} />{myBookingsTranslations[language as Language]?.flightDetails || "Flight Details"}</span>
                         </p>
-                        <div className="bg-[#0b66e4]/5 dark:bg-[#0b66e4]/10 border border-blue-100 dark:border-blue-900/40 rounded-xl grid grid-cols-3 divide-x divide-blue-100 dark:divide-blue-900/40">
+                        <div className="bg-accent/5 dark:bg-accent/10 border border-blue-100 dark:border-blue-900/40 rounded-xl grid grid-cols-3 divide-x divide-blue-100 dark:divide-blue-900/40">
                           <div className="p-3 space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0b66e4]/60 dark:text-blue-400/60">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
                               {myBookingsTranslations[language as Language]?.flightNumber || "Flight No."}
                             </span>
-                            <p className="text-sm font-extrabold text-[#0b66e4] dark:text-blue-400">{selectedBooking.flightNumber}</p>
+                            <p className="text-sm font-extrabold text-accent">{selectedBooking.flightNumber}</p>
                           </div>
                           <div className="p-3 space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0b66e4]/60 dark:text-blue-400/60">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
                               {myBookingsTranslations[language as Language]?.estDeparture || "Departure"}
                             </span>
                             <p className="text-sm font-bold text-foreground">{selectedBooking.estDepartureTime}</p>
                           </div>
                           <div className="p-3 space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0b66e4]/60 dark:text-blue-400/60">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
                               {myBookingsTranslations[language as Language]?.estLanding || "Landing"}
                             </span>
                             <p className="text-sm font-bold text-foreground">{selectedBooking.landingTime}</p>
@@ -565,7 +559,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     </p>
                     <div className="overflow-hidden border border-divider rounded-2xl">
                       {/* Car image + name header */}
-                      <div className="relative h-48 bg-slate-100 dark:bg-slate-900/50 overflow-hidden">
+                      <div className="relative h-48 bg-slate-100 dark:bg-black/50 overflow-hidden">
                         <img
                           src={selectedBooking.carImage}
                           alt={selectedBooking.carName}
@@ -574,7 +568,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
                         <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
                           <div>
-                            <span className="text-[10px] font-extrabold tracking-widest text-blue-300 bg-[#0b66e4]/30 backdrop-blur-sm px-2 py-0.5 rounded-full uppercase">
+                            <span className="text-[10px] font-extrabold tracking-widest text-blue-300 bg-accent/30 backdrop-blur-sm px-2 py-0.5 rounded-full uppercase">
                               {getLocalizedCarClass(selectedBooking.carClass)}
                             </span>
                             <h4 className="text-base font-extrabold text-white mt-1">{selectedBooking.carName}</h4>
@@ -622,7 +616,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <DashboardProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      <AuthGuard allowedRoles={["ADMIN", "STAFF", "CUSTOMER"]}>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </AuthGuard>
     </DashboardProvider>
   );
 }
