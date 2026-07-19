@@ -1,4 +1,4 @@
-import { apiFetch, type ApiResponse } from "./client";
+import { apiFetch, serverApiFetch, type ApiResponse } from "./client";
 
 export interface SectionTranslationDto {
   id?: number;
@@ -53,6 +53,17 @@ export async function getActiveSections(
 ): Promise<SectionDto[]> {
   const res = await apiFetch<ApiResponse<SectionDto[]>>(
     `/api/v1/sections/active?pagePath=${encodeURIComponent(pagePath)}&locale=${locale}`
+  );
+  return res.data ?? [];
+}
+
+export async function getActiveSectionsServer(
+  pagePath: string,
+  locale: string
+): Promise<SectionDto[]> {
+  const res = await serverApiFetch<ApiResponse<SectionDto[]>>(
+    `/api/v1/sections/active?pagePath=${encodeURIComponent(pagePath)}&locale=${locale}`,
+    locale
   );
   return res.data ?? [];
 }

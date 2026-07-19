@@ -37,12 +37,11 @@ export default function BookingConfirmModal({
   totalAmount,
   submitting,
 }: BookingConfirmModalProps) {
-  const { language } = useI18n();
-  const isVi = language === "vi";
+  const { language, t } = useI18n();
 
   const getLocalizedName = (srv: TourDto) => {
     const translation = srv.translations?.find((tr) => tr.locale === language) || srv.translations?.[0];
-    return translation ? translation.name : "Nha Trang Tour";
+    return translation ? translation.name : t.tours.defaultTourName;
   };
 
   const getLocalizedVehicleName = (v: VehicleDto) => {
@@ -62,48 +61,46 @@ export default function BookingConfirmModal({
             <ModalHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
               <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber-500" />
-                {isVi ? "Xác Nhận Thông Tin Đặt Tour" : "Confirm Tour Booking Details"}
+                {t.tours.reviewBeforeBooking}
               </h2>
             </ModalHeader>
 
             <ModalBody className="p-0 py-2 space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-200">
               <p className="text-slate-500 font-normal leading-relaxed">
-                {isVi
-                  ? "Vui lòng kiểm tra kỹ các thông tin dưới đây trước khi hoàn tất yêu cầu đặt tour."
-                  : "Please review the information below before finalizing your tour booking request."}
+                {t.common.reviewBeforeConfirm}
               </p>
 
               <div className="bg-slate-50 dark:bg-black p-4 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-2.5">
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Tour du lịch:" : "Tour:"}</span>
+                  <span className="text-slate-400 font-normal">{t.tours.tourLabel}:</span>
                   <span className="text-slate-900 dark:text-white text-right max-w-[65%] line-clamp-2">
                     {selectedTour ? getLocalizedName(selectedTour) : ""}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Dòng xe phục vụ:" : "Vehicle class:"}</span>
+                  <span className="text-slate-400 font-normal">{t.tours.vehicleLabel}:</span>
                   <span className="text-slate-950 dark:text-white">
                     {selectedVehicle ? getLocalizedVehicleName(selectedVehicle) : ""}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Ngày khởi hành:" : "Date:"}</span>
+                  <span className="text-slate-400 font-normal">{t.tours.departureDate}:</span>
                   <span className="text-slate-900 dark:text-white">{date}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Số khách tham gia:" : "Guests:"}</span>
-                  <span className="text-slate-900 dark:text-white">{guestCount} {isVi ? "khách" : "guests"}</span>
+                  <span className="text-slate-400 font-normal">{t.tours.numberOfGuestsLabel}:</span>
+                  <span className="text-slate-900 dark:text-white">{guestCount} {t.common.guests}</span>
                 </div>
                 <div className="border-t border-slate-200 dark:border-slate-850 pt-2 flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Khách hàng:" : "Customer:"}</span>
+                  <span className="text-slate-400 font-normal">{t.common.name}:</span>
                   <span className="text-slate-950 dark:text-white">{fullName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Số điện thoại:" : "Phone:"}</span>
+                  <span className="text-slate-400 font-normal">{t.common.phone}:</span>
                   <span className="text-slate-950 dark:text-white">{phone}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{isVi ? "Địa chỉ Email:" : "Email:"}</span>
+                  <span className="text-slate-400 font-normal">{t.common.email}:</span>
                   <span className="text-slate-950 dark:text-white">{email}</span>
                 </div>
               </div>
@@ -111,10 +108,10 @@ export default function BookingConfirmModal({
               <div className="flex justify-between items-end bg-accent/5 dark:bg-black border border-accent/10 rounded-2xl p-4">
                 <div>
                   <span className="text-[10px] text-accent uppercase tracking-wider font-extrabold block">
-                    {isVi ? "Tổng chi phí trọn gói" : "Total Booking Price"}
+                    {t.tours.totalBookingPrice}
                   </span>
                   <span className="text-[10px] text-slate-400 font-normal mt-0.5 block">
-                    {isVi ? "Đã bao gồm lái xe & xăng dầu" : "Includes private driver & fuel"}
+                    {t.tours.includesDriverFuel}
                   </span>
                 </div>
                 <span className="text-lg font-black text-amber-500">
@@ -130,7 +127,7 @@ export default function BookingConfirmModal({
                 onClick={onClose}
                 isDisabled={submitting}
               >
-                {isVi ? "Hủy bỏ" : "Cancel"}
+                {t.common.cancel}
               </Button>
               <Button
                 type="button"
@@ -139,11 +136,11 @@ export default function BookingConfirmModal({
                 className="rounded-xl font-bold bg-accent hover:bg-accent/90 text-white shadow-md border-none px-5 py-2.5 flex items-center gap-1.5 cursor-pointer"
               >
                 {submitting ? (
-                  isVi ? "Đang đặt..." : "Booking..."
+                  t.common.bookingInProgress
                 ) : (
                   <>
                     <CheckCircle size={15} />
-                    {isVi ? "Xác nhận đặt" : "Confirm Book"}
+                    {t.common.confirmBooking}
                   </>
                 )}
               </Button>

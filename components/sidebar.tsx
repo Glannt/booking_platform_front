@@ -55,6 +55,7 @@ export interface SidebarProps {
   brandName?: string;
   onLogout?: () => void;
   onSettingsClick?: () => void;
+  onProfileClick?: () => void;
   className?: string;
   isShowCollapsedBadge?: boolean;
 }
@@ -66,6 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   brandName = "Minh Khoa Travel",
   onLogout,
   onSettingsClick,
+  onProfileClick,
   className,
   isShowCollapsedBadge = true,
 }) => {
@@ -284,19 +286,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onAction={(key) => {
                   if (key === "logout" && onLogout) onLogout();
                   if (key === "settings" && onSettingsClick) onSettingsClick();
+                  if (key === "profile" && onProfileClick) onProfileClick();
                 }}
               >
                 <Dropdown.Item id="profile" textValue="My Profile">
                   <div className="flex items-center gap-2">
                     <User size={16} />
-                    <Label>My Profile ({user.role || "User"})</Label>
+                    <Label>My Profile</Label>
                   </div>
                 </Dropdown.Item>
                 {onSettingsClick && (
                   <Dropdown.Item id="settings" textValue="Settings">
                     <div className="flex items-center gap-2">
                       <Settings size={16} />
-                      <Label>Settings</Label>
+                      <Label>Account Settings</Label>
                     </div>
                   </Dropdown.Item>
                 )}

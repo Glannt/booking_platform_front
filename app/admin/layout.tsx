@@ -12,13 +12,13 @@ import {
   ChevronDown,
   Menu,
   Compass,
-  MessageSquare,
   Calendar,
   Car,
   Briefcase,
   Plane,
   Shield,
   Layers,
+  Users,
 } from "lucide-react";
 import {
   Drawer,
@@ -111,12 +111,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           path: "/admin/airport-transfers",
           icon: <Plane size={20} />,
         },
-        {
-          key: "feedback-mgmt",
-          label: "Quản lý Feedback",
-          path: "/admin/services/faqs",
-          icon: <MessageSquare size={20} />,
-        },
       ],
     },
     {
@@ -128,12 +122,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           path: "/admin/sections",
           icon: <Layers size={20} />,
         },
-        {
-          key: "roles",
-          label: "Phân quyền",
-          path: "/admin/roles",
-          icon: <Shield size={20} />,
-        },
+        ...(authUser?.role === "ADMIN"
+          ? [
+              {
+                key: "roles",
+                label: "Phân quyền",
+                path: "/admin/roles",
+                icon: <Shield size={20} />,
+              },
+            ]
+          : []),
+        ...(authUser?.role === "ADMIN" || authUser?.role === "MODERATOR"
+          ? [
+              {
+                key: "users-mgmt",
+                label: "Quản lý Users",
+                path: "/admin/users",
+                icon: <Users size={20} />,
+              },
+            ]
+          : []),
         {
           key: "settings",
           label: "Cài đặt tài khoản",
@@ -241,7 +249,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <AuthGuard allowedRoles={["ADMIN"]}>
+    <AuthGuard allowedRoles={["ADMIN", "STAFF", "MODERATOR"]}>
       <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
         {/* Sidebar - desktop */}
         <div className="hidden md:flex">

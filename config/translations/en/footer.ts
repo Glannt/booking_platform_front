@@ -21,4 +21,8 @@ export const footer = {
   helpCenter: "Help Center",
   refundPolicy: "Refund Policy",
   operatingRegulations: "Operating Regulations",
+  companyLegalName: "MINH KHOA TRAVEL & TRANSPORTATION CO., LTD",
+  taxId: "Tax ID: 4202158934",
+  copyright: "© 2025 Minh Khoa Travel. All rights reserved.",
+  companyFooter: "Minh Khoa Travel — Your trusted transport partner in Nha Trang.",
 };

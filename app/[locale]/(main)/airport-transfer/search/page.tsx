@@ -24,8 +24,10 @@ import { getPublicServices, ServiceDto, ServiceOptionDto } from "@/lib/api/servi
 import { createBooking } from "@/lib/api/bookings";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPrice as _formatPrice } from "@/lib/format";
+import { AutofillButton } from "@/components/AutofillButton";
 import { getMediaDetails } from "@/lib/api/media";
 import { backendUrl } from "@/lib/api/client";
+import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 
 export default function AirportTransferSearchPage() {
   const router = useRouter();
@@ -67,6 +69,7 @@ export default function AirportTransferSearchPage() {
   const [flightNumber, setFlightNumber] = useState("");
   const [flightData, setFlightData] = useState<any>(null);
   const [checkingFlight, setCheckingFlight] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const checkoutFormRef = useRef<HTMLDivElement>(null);
 
@@ -204,6 +207,11 @@ export default function AirportTransferSearchPage() {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVehicle) return;
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!selectedVehicle) return;
 
     setSubmitting(true);
     const parentService = services.find(s => s.options.some(o => o.id === selectedVehicle.id)) || services[0];
@@ -271,6 +279,7 @@ export default function AirportTransferSearchPage() {
       setBookingSuccess(true);
     } finally {
       setSubmitting(false);
+      setShowConfirmModal(false);
     }
   };
 
@@ -629,6 +638,9 @@ export default function AirportTransferSearchPage() {
 
                 {/* Main Form */}
                 <form onSubmit={handleFormSubmit} className="space-y-4">
+                  <AutofillButton
+                    onFill={(d) => { setFullName(d.fullname); setPhone(d.phone); setEmail(d.email); }}
+                  />
                   {/* Full Name */}
                   <div className="flex flex-col gap-1.5 text-left">
                     <label className="text-xs font-extrabold text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -801,6 +813,29 @@ export default function AirportTransferSearchPage() {
         </div>
 
       </main>
+
+      <BookingConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmBooking}
+        serviceType={isVi ? "Trung chuyển sân bay" : "Airport Transfer"}
+        summaryItems={[
+          { label: isVi ? "Dòng xe" : "Vehicle", value: selectedVehicle ? getLocalizedOptionName(selectedVehicle) : "" },
+          { label: isVi ? "Đón tại" : "Pickup", value: pickup || "-" },
+          { label: isVi ? "Đến" : "Destination", value: destination || "-" },
+          { label: isVi ? "Ngày giờ" : "Date & time", value: `${date} ${time ? `lúc ${time}` : ""}` },
+          { label: isVi ? "Loại chuyến" : "Trip type", value: tripType === "return" ? (isVi ? "Khứ hồi" : "Round-trip") : (isVi ? "Một chiều" : "One-way") },
+          { label: isVi ? "Hành khách" : "Passengers", value: `${passengers} ${isVi ? "người" : "persons"}` },
+          { label: isVi ? "Họ tên" : "Name", value: fullName },
+          { label: isVi ? "Điện thoại" : "Phone", value: phone },
+          { label: isVi ? "Email" : "Email", value: email },
+          { label: isVi ? "Số chuyến bay" : "Flight", value: flightNumber || "-" },
+          { label: isVi ? "Ghi chú" : "Notes", value: notes || "-" },
+        ]}
+        totalAmount={selectedVehicle?.price || 0}
+        totalLabel={isVi ? "Tổng tiền" : "Total amount"}
+        submitting={submitting}
+      />
     </div>
   );
 }

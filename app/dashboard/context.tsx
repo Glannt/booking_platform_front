@@ -1,6 +1,7 @@
 "use client";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { useI18n } from "@/context/LanguageContext";
+import { getMyBookings, type BookingDto } from "@/lib/api/bookings";
 
 export interface Booking {
   ref: string;
@@ -39,154 +40,106 @@ interface DashboardContextProps {
   setToastMessage: (msg: string | null) => void;
   activeRole: "customer" | "admin";
   setActiveRole: (role: "customer" | "admin") => void;
+  loading: boolean;
 }
 
 const DashboardContext = createContext<DashboardContextProps | undefined>(undefined);
 
+function mapBookingDtoToBooking(dto: BookingDto): Booking {
+  const firstItem = dto.items?.[0];
+  const dynamicDetails = firstItem?.dynamicDetails ? parseDynamicDetails(firstItem.dynamicDetails) : {};
+
+  const serviceName = firstItem?.serviceName?.vi || firstItem?.serviceName?.en || "";
+  let bookingType = "Service";
+  if (serviceName.toLowerCase().includes("airport") || serviceName.toLowerCase().includes("sân bay")) {
+    bookingType = "Airport Transfer";
+  } else if (serviceName.toLowerCase().includes("intercity") || serviceName.toLowerCase().includes("đi tỉnh")) {
+    bookingType = "Inter-provincial Rent";
+  } else if (serviceName.toLowerCase().includes("self") || serviceName.toLowerCase().includes("tự lái")) {
+    bookingType = "Self-drive";
+  } else if (serviceName.toLowerCase().includes("tour")) {
+    bookingType = "Tour";
+  }
+
+  const pickupLocation = firstItem?.pickupLocation || dynamicDetails.outboundPickupAddress || "";
+  const dropoffLocation = firstItem?.dropoffLocation || dynamicDetails.outboundDropoffAddress || "";
+  const route = pickupLocation && dropoffLocation ? `${pickupLocation} ➔ ${dropoffLocation}` : serviceName || "Booking";
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const status = dto.bookingStatus as Booking["status"];
+
+  return {
+    ref: `#${dto.bookingCode}`,
+    route,
+    date: formatDate(dto.createdAt),
+    status,
+    type: bookingType,
+    customerName: dto.customerName,
+    guests: firstItem?.quantity || 1,
+    carName: dynamicDetails.vehicleCategoryName || "Standard Vehicle",
+    carImage: "/premium_suv_ford_everest.png",
+    carClass: dynamicDetails.vehicleCategoryName || "Standard",
+    carSeats: dynamicDetails.maxSeat || 7,
+    baggageWeight: dynamicDetails.baggageWeight || 40,
+    pickupLocation,
+    dropoffLocation,
+    pickupTime: firstItem?.startDate ? formatDateTime(firstItem.startDate) : "",
+    createdTime: dto.createdAt,
+    flightNumber: firstItem?.flightNumber || dynamicDetails.outboundFlightNumber,
+    estDepartureTime: dynamicDetails.outboundPickupTime ? formatDateTime(dynamicDetails.outboundPickupTime) : undefined,
+    landingTime: dynamicDetails.landingTime ? formatDateTime(dynamicDetails.landingTime) : undefined,
+  };
+}
+
+function parseDynamicDetails(json: string): Record<string, any> {
+  try {
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+}
+
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { language } = useI18n();
-  const [bookings, setBookings] = useState<Booking[]>([
-    {
-      ref: "#MK-82910",
-      route: "Cam Ranh ➔ Da Lat",
-      date: "Oct 24, 2024",
-      status: "confirmed",
-      type: "Airport Transfer",
-      customerName: "Minh Khoa",
-      guests: 4,
-      carName: "Ford Everest Premium",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "Premium SUV",
-      carSeats: 7,
-      baggageWeight: 60,
-      pickupLocation: "Sân bay Cam Ranh (CXR)",
-      dropoffLocation: "Nha Trang Center, 20 Trần Phú",
-      pickupTime: "2026-10-24 08:30",
-      createdTime: "2026-06-22T10:00:00",
-      flightNumber: "VJ-382",
-      estDepartureTime: "2026-10-24 06:15",
-      landingTime: "2026-10-24 08:00",
-    },
-    {
-      ref: "#MK-77219",
-      route: "Hanoi ➔ Sapa",
-      date: "Sep 15, 2024",
-      status: "completed",
-      type: "Inter-provincial Rent",
-      customerName: "Minh Khoa",
-      guests: 6,
-      carName: "Toyota Fortuner",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "SUV",
-      carSeats: 7,
-      baggageWeight: 45,
-      pickupLocation: "Hà Nội",
-      dropoffLocation: "Sa Pa, Lào Cai",
-      pickupTime: "2026-09-15 07:00",
-      createdTime: "2026-06-20T09:00:00",
-    },
-    {
-      ref: "#MK-90123",
-      route: "Da Nang ➔ Hoi An",
-      date: "Nov 02, 2024",
-      status: "pending",
-      type: "Inter-provincial Rent",
-      customerName: "Minh Khoa",
-      guests: 2,
-      carName: "Kia Carnival",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "Premium MPV",
-      carSeats: 7,
-      baggageWeight: 30,
-      pickupLocation: "Đà Nẵng Airport",
-      dropoffLocation: "Hội An Ancient Town",
-      pickupTime: "2026-11-02 14:00",
-      createdTime: new Date(new Date().getTime() - 30 * 60 * 1000).toISOString(),
-    },
-    {
-      ref: "#MK-11029",
-      route: "Cam Ranh ➔ Nha Trang",
-      date: "Jul 05, 2024",
-      status: "confirmed",
-      type: "Airport Transfer",
-      customerName: "Minh Khoa",
-      guests: 3,
-      carName: "Hyundai SantaFe",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "SUV",
-      carSeats: 7,
-      baggageWeight: 40,
-      pickupLocation: "Sân bay Cam Ranh (CXR)",
-      dropoffLocation: "Nha Trang Center",
-      pickupTime: "2026-07-05 10:30",
-      createdTime: "2026-06-22T15:00:00",
-      flightNumber: "VN-1560",
-      estDepartureTime: "2026-07-05 12:45",
-      landingTime: "2026-07-05 14:30",
-    },
-    {
-      ref: "#MK-55481",
-      route: "Nha Trang ➔ Da Lat",
-      date: "Aug 12, 2024",
-      status: "cancelled",
-      type: "Inter-provincial Rent",
-      customerName: "Minh Khoa",
-      guests: 5,
-      carName: "Ford Everest Premium",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "Premium SUV",
-      carSeats: 7,
-      baggageWeight: 50,
-      pickupLocation: "Nha Trang",
-      dropoffLocation: "Đà Lạt, Lâm Đồng",
-      pickupTime: "2026-08-12 08:00",
-      createdTime: "2026-06-10T11:00:00",
-    },
-    {
-      ref: "#MK-33290",
-      route: "Cam Ranh ➔ Nha Trang",
-      date: "Dec 25, 2024",
-      status: "pending",
-      type: "Airport Transfer",
-      customerName: "Minh Khoa",
-      guests: 2,
-      carName: "Toyota Vios",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "Sedan",
-      carSeats: 4,
-      baggageWeight: 20,
-      pickupLocation: "Sân bay Cam Ranh (CXR)",
-      dropoffLocation: "Vinpearl Nha Trang",
-      pickupTime: "2026-12-25 18:00",
-      createdTime: new Date(new Date().getTime() - 10 * 60 * 1000).toISOString(),
-      flightNumber: "QH-1412",
-      estDepartureTime: "2026-12-25 15:30",
-      landingTime: "2026-12-25 17:15",
-    },
-    {
-      ref: "#MK-12458",
-      route: "HCM ➔ Vung Tau",
-      date: "Sep 30, 2024",
-      status: "confirmed",
-      type: "Inter-provincial Rent",
-      customerName: "Minh Khoa",
-      guests: 7,
-      carName: "Mitsubishi Xpander",
-      carImage: "/premium_suv_ford_everest.png",
-      carClass: "MPV",
-      carSeats: 7,
-      baggageWeight: 55,
-      pickupLocation: "Hồ Chí Minh",
-      dropoffLocation: "Vũng Tàu",
-      pickupTime: "2026-09-30 06:00",
-      createdTime: "2026-06-15T08:00:00",
-    }
-  ]);
-
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalClosing, setIsModalClosing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchBookings() {
+      try {
+        const dtos = await getMyBookings();
+        if (!cancelled) {
+          setBookings(dtos.map(mapBookingDtoToBooking));
+        }
+      } catch {
+        // API not available — keep empty
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchBookings();
+    return () => { cancelled = true; };
+  }, []);
 
   const closeModal = () => {
     setIsModalClosing(true);
@@ -200,7 +153,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setBookings((prev) =>
       prev.map((b) => (b.ref === ref ? { ...b, status: "cancelled" as const } : b))
     );
-    // If the currently selected booking is cancelled, update its modal reference state as well
     setSelectedBooking((prev) => prev && prev.ref === ref ? { ...prev, status: "cancelled" as const } : prev);
     const msg = language === "vi" ? "Đã hủy trực tiếp đơn đặt!" : "Booking cancelled directly!";
     setToastMessage(msg);
@@ -236,6 +188,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setToastMessage,
         activeRole,
         setActiveRole,
+        loading,
       }}
     >
       {children}

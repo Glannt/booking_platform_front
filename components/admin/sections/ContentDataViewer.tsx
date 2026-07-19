@@ -185,7 +185,7 @@ export function ContentDataViewer({ contentData, sectionType }: ContentDataViewe
       if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
         return parsed as Record<string, unknown>;
       }
-    } catch {}
+    } catch { }
     return null;
   }, [contentData]);
 

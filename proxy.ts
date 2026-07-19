@@ -30,9 +30,49 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip admin, dashboard, staff paths — they don't use locale prefix
+  // Check and guard admin, dashboard, staff paths
   const firstSegment = pathname.split("/")[1];
   if (["admin", "dashboard", "staff"].includes(firstSegment)) {
+    const accessToken = request.cookies.get("accessToken")?.value;
+    const userRole = request.cookies.get("user_role")?.value;
+
+    if (firstSegment === "admin") {
+      if (pathname === "/admin/login") {
+        return NextResponse.next();
+      }
+      if (!accessToken || userRole !== "ADMIN") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/login";
+        return NextResponse.redirect(url);
+      }
+    } else if (firstSegment === "staff") {
+      if (!accessToken || (userRole !== "STAFF" && userRole !== "ADMIN")) {
+        const cookieLocale = request.cookies.get(COOKIE_NAME)?.value;
+        let locale = DEFAULT_LOCALE;
+        if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
+          locale = cookieLocale;
+        } else {
+          locale = getLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+        }
+        const url = request.nextUrl.clone();
+        url.pathname = `/${locale}/login`;
+        return NextResponse.redirect(url);
+      }
+    } else if (firstSegment === "dashboard") {
+      if (!accessToken) {
+        const cookieLocale = request.cookies.get(COOKIE_NAME)?.value;
+        let locale = DEFAULT_LOCALE;
+        if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
+          locale = cookieLocale;
+        } else {
+          locale = getLocaleFromAcceptLanguage(request.headers.get("accept-language"));
+        }
+        const url = request.nextUrl.clone();
+        url.pathname = `/${locale}/login`;
+        return NextResponse.redirect(url);
+      }
+    }
+
     return NextResponse.next();
   }
 

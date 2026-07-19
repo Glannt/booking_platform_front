@@ -11,6 +11,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@gravity-ui/icons": "^2.20.0",
 		"@heroui/react": "3.2.1",
 		"@heroui/styles": "3.2.1",
 		"@hookform/resolvers": "^5.4.0",

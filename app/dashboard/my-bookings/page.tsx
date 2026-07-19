@@ -74,6 +74,7 @@ export default function MyBookingsPage() {
     setIsModalOpen,
     handleCancelBooking,
     handleRequestCancelBooking,
+    loading,
   } = useDashboard();
 
   // Search, Filters & Pagination States
@@ -81,16 +82,7 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const itemsPerPage = 5;
-
-  useEffect(() => {
-    if (bookings.length > 0) {
-      setLoading(false);
-    }
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, [bookings]);
 
   // Reset page when search or filter changes
   useEffect(() => {

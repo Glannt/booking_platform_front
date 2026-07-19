@@ -447,7 +447,151 @@ import { Separator } from "@heroui/react";
 
 ---
 
-## 11. Skeleton (Loading placeholder)
+## 11. Accordion / FAQ
+
+> **QUAN TRỌNG:** Luôn dùng HeroUI `Accordion` component thay vì tự build accordion thủ công với `useState` + `onClick`.
+
+❌ **Không dùng (custom accordion):**
+```tsx
+const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
+{faqs.map((faq, index) => {
+  const isOpen = activeFaq === index;
+  return (
+    <div key={index}>
+      <button onClick={() => setActiveFaq(isOpen ? null : index)}>
+        {faq.title}
+        <span>{isOpen ? "−" : "+"}</span>
+      </button>
+      {isOpen && <p>{faq.content}</p>}
+    </div>
+  );
+})}
+```
+
+✅ **Dùng HeroUI Accordion:**
+```tsx
+import { Accordion } from "@heroui/react";
+import { ChevronDown } from "@gravity-ui/icons";
+
+<Accordion className="w-full" variant="surface" allowsMultipleExpanded>
+  {faqs.map((faq, index) => (
+    <Accordion.Item key={index}>
+      <Accordion.Heading>
+        <Accordion.Trigger>
+          {faq.title}
+          <Accordion.Indicator>
+            <ChevronDown />
+          </Accordion.Indicator>
+        </Accordion.Trigger>
+      </Accordion.Heading>
+      <Accordion.Panel>
+        <Accordion.Body>{faq.content}</Accordion.Body>
+      </Accordion.Panel>
+    </Accordion.Item>
+  ))}
+</Accordion>
+```
+
+### Sử dụng FaqAccordion component có sẵn
+
+Dùng component `FaqAccordion` hoặc `FaqSection` có sẵn trong `components/`:
+
+```tsx
+import { FaqSection } from "@/components/FaqSection";
+
+<FaqSection
+  title="Câu hỏi thường gặp"
+  description="Mọi thứ bạn cần biết."
+  categories={[
+    {
+      title: "General",
+      items: [
+        { title: "How do I place an order?", content: "Browse our products..." },
+      ],
+    },
+  ]}
+/>
+```
+
+### Accordion Props
+| Prop | Type | Default | Mô tả |
+|---|---|---|---|
+| `allowsMultipleExpanded` | `boolean` | `false` | Cho phép nhiều item mở cùng lúc |
+| `defaultExpandedKeys` | `Iterable<Key>` | - | Các key mặc định mở |
+| `expandedKeys` | `Iterable<Key>` | - | Controlled expanded keys |
+| `onExpandedChange` | `(keys: Set<Key>) => void` | - | Handler khi thay đổi |
+| `isDisabled` | `boolean` | `false` | Disable toàn bộ accordion |
+| `variant` | `"default" \| "surface"` | `"default"` | Variant hiển thị |
+| `hideSeparator` | `boolean` | `false` | Ẩn separator giữa các item |
+| `className` | `string` | - | Tailwind classes |
+
+### Accordion.Item Props
+| Prop | Type | Default | Mô tả |
+|---|---|---|---|
+| `id` | `Key` | - | Unique identifier |
+| `isDisabled` | `boolean` | `false` | Disable item |
+| `defaultExpanded` | `boolean` | `false` | Mở mặc định |
+| `isExpanded` | `boolean` | - | Controlled state |
+| `onExpandedChange` | `(isExpanded: boolean) => void` | - | Handler |
+
+### Accordion.Trigger Props
+| Prop | Type | Mô tả |
+|---|---|---|
+| `className` | `string` | Tailwind classes |
+| `children` | `ReactNode \| RenderFunction` | Trigger content |
+| `onPress` | `() => void` | Additional press handler |
+| `isDisabled` | `boolean` | Disable trigger |
+
+### Accordion.Panel Props
+| Prop | Type | Mô tả |
+|---|---|---|
+| `className` | `string` | Tailwind classes |
+| `children` | `ReactNode` | Panel content |
+
+### Accordion.Indicator Props
+| Prop | Type | Mô tả |
+|---|---|---|
+| `className` | `string` | Tailwind classes |
+| `children` | `ReactNode` | Custom indicator icon |
+
+### Custom CSS Classes (BEM)
+
+Accordion sử dụng BEM methodology. Có thể custom trong `globals.css`:
+
+```css
+@layer components {
+  .accordion {
+    @apply rounded-xl bg-gray-50;
+  }
+  .accordion__trigger {
+    @apply font-semibold text-lg;
+  }
+  .accordion--outline {
+    @apply shadow-lg border-2;
+  }
+}
+```
+
+### CSS Classes Reference
+- `.accordion` — Base accordion container
+- `.accordion__body` — Content body container
+- `.accordion__heading` — Heading wrapper
+- `.accordion__indicator` — Expand/collapse indicator icon
+- `.accordion__item` — Individual accordion item
+- `.accordion__panel` — Collapsible panel container
+- `.accordion__trigger` — Clickable trigger button
+- `.accordion--outline` — Outline variant with border and background
+
+### Interactive States
+- Hover: `:hover` or `[data-hovered="true"]` on trigger
+- Focus: `:focus-visible` or `[data-focus-visible="true"]` on trigger
+- Disabled: `:disabled` or `[aria-disabled="true"]` on trigger
+- Expanded: `[aria-expanded="true"]` on trigger
+
+---
+
+## 12. Skeleton (Loading placeholder)
 
 > Dùng `Skeleton` để hiển thị placeholder khi data đang load. **Luôn dùng** trên các route frontend (trừ admin).
 

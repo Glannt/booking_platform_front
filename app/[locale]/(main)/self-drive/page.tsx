@@ -15,7 +15,8 @@ import {
   FileText,
   UserCheck,
   DollarSign,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from "lucide-react";
 
 import { useI18n } from "@/context/LanguageContext";
@@ -59,6 +60,12 @@ export default function SelfDrivePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
   const [heroSection, setHeroSection] = useState<SectionDto | null>(null);
+
+  const [formVehicleId, setFormVehicleId] = useState<string>("");
+  const [formDate, setFormDate] = useState<string>("");
+  const [formDays, setFormDays] = useState<string>("1");
+  const [formName, setFormName] = useState<string>("");
+  const [formPhone, setFormPhone] = useState<string>("");
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
 
@@ -231,23 +238,6 @@ export default function SelfDrivePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 2s infinite ease-in-out;
-        }
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}} />
 
       {/* Hero Banner Section */}
       <section className="relative w-full min-h-[340px] flex items-center pt-28 pb-14 px-6 overflow-hidden">
@@ -296,13 +286,109 @@ export default function SelfDrivePage() {
             </div>
           </div>
 
-          <button
-            onClick={handleCall}
-            className="flex items-center gap-2.5 bg-accent hover:bg-accent-hover text-white px-6 py-3.5 rounded-full text-xs font-black transition-all shadow-lg hover:scale-105 active:scale-95 no-underline shrink-0 border-none cursor-pointer"
-          >
-            <Phone size={16} />
-            <span>{`${t.common.callNow} 0764.971.971`}</span>
-          </button>
+          {/* Quick Booking Form */}
+          <div className="w-full max-w-sm bg-white/30 dark:bg-black/20 dark:backdrop-blur-xl p-6 rounded-3xl border border-white/20 dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col gap-4">
+            <div className="space-y-1 pb-3 border-b border-white/20 dark:border-slate-700">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-accent">
+                ⚡ {vi ? "Đặt nhanh" : "Quick Book"}
+              </span>
+              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
+                {vi ? "Thuê xe tự lái" : "Self-Drive Rental"}
+              </h3>
+            </div>
+
+            {/* Vehicle Select */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{t.selfDrive.selectVehicle}</label>
+              <select
+                value={formVehicleId}
+                onChange={(e) => setFormVehicleId(e.target.value)}
+                className="w-full bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-white placeholder-white/50 outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
+              >
+                <option value="" className="text-slate-900">{t.selfDrive.selectVehicle}</option>
+                {vehicles.map((v) => (
+                  <option key={v.id} value={v.id} className="text-slate-900">
+                    {vi ? v.nameVi : v.nameEn} — {v.pricePerDay > 0 ? `${v.pricePerDay.toLocaleString("vi-VN")}đ/${t.selfDrive.perTrip}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{t.selfDrive.pickupDate}</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={formDate}
+                  onChange={(e) => setFormDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-white outline-none focus:border-accent transition-colors [color-scheme:dark] cursor-pointer"
+                />
+                <Calendar size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Days */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{t.selfDrive.rentalDays}</label>
+              <select
+                value={formDays}
+                onChange={(e) => setFormDays(e.target.value)}
+                className="w-full bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-white outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 14, 30].map((d) => (
+                  <option key={d} value={d} className="text-slate-900">{d} {vi ? "ngày" : "days"}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Name */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{t.selfDrive.customerName}</label>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder={t.selfDrive.customerName}
+                className="w-full bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-white placeholder-white/50 outline-none focus:border-accent transition-colors"
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{t.selfDrive.customerPhone}</label>
+              <input
+                type="tel"
+                value={formPhone}
+                onChange={(e) => setFormPhone(e.target.value)}
+                placeholder={t.selfDrive.customerPhone}
+                className="w-full bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold text-white placeholder-white/50 outline-none focus:border-accent transition-colors"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const vId = formVehicleId || vehicles[0]?.id;
+                if (!vId) return;
+                const params = new URLSearchParams({ vehicleId: vId });
+                if (formDate) params.set("pickupDate", formDate);
+                if (formDays) params.set("days", formDays);
+                if (formName.trim()) params.set("customerName", formName.trim());
+                if (formPhone.trim()) params.set("customerPhone", formPhone.trim());
+                router.push(`/${language}/self-drive/booking?${params.toString()}`);
+              }}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl text-xs font-black hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-95 border-none"
+            >
+              <CheckCircle size={15} />
+              <span>{vi ? "Đặt Xe Ngay" : "Book Now"}</span>
+            </button>
+
+            <p className="text-[10px] text-center text-white/50 font-medium">
+              🔒 {vi ? "Xe mới, sạch sẽ - Giao xe đúng hẹn" : "Modern clean car - Prompt delivery"}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -396,16 +482,28 @@ export default function SelfDrivePage() {
                           </span>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/${language}/self-drive/booking?vehicleId=${vehicle.id}`);
-                        }}
-                        className="w-full mt-2 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer border-none"
-                      >
-                        {vi ? "Đặt ngay" : "Book Now"}
-                      </button>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/${language}/self-drive/booking?vehicleId=${vehicle.id}`);
+                          }}
+                          className="flex-1 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer border-none"
+                        >
+                          {vi ? "Đặt ngay" : "Book Now"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/${language}/self-drive/${vehicle.vehicleCategoryId}`);
+                          }}
+                          className="py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer border-none"
+                        >
+                          {vi ? "Xem thêm" : "View more"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

@@ -1,7 +1,9 @@
 import { useAuthStore } from "../store/authStore";
 
 // Backend URL for client-side (browser) requests
-export const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
+export const backendUrl = typeof window !== "undefined"
+  ? ""
+  : (process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080");
 
 // Backend URL for server-side (SSR) requests — can use internal Docker network
 const serverBackendUrl = process.env.BACKEND_API || process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
@@ -34,6 +36,7 @@ function doRefreshToken(): Promise<boolean> {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
+        credentials: "same-origin",
       });
 
       if (!res.ok) {
@@ -154,7 +157,7 @@ export async function apiFetch<T>(path: string, options?: ApiOptions): Promise<T
     }
   }
 
-  let response = await fetch(url, { ...options, headers });
+  let response = await fetch(url, { credentials: "same-origin", ...options, headers });
 
   // --- Token refresh on 401 ---
   if (response.status === 401 && !path.includes("/auth/login") && !path.includes("/auth/refresh")) {
@@ -164,7 +167,7 @@ export async function apiFetch<T>(path: string, options?: ApiOptions): Promise<T
       // Retry with the new access token
       const newAccessToken = useAuthStore.getState().accessToken;
       headers.set("Authorization", `Bearer ${newAccessToken}`);
-      response = await fetch(url, { ...options, headers });
+      response = await fetch(url, { credentials: "same-origin", ...options, headers });
     }
     // If not refreshed → clearAuth already called inside doRefreshToken
     // → auth-guard will redirect to the correct login page

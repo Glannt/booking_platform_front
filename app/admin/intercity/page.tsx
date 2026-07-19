@@ -9,6 +9,7 @@ import {
   DollarSign,
   Calendar,
   Edit3,
+  Clock,
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
 import { Button, Chip, Input, Label, ListBox, NumberField, Pagination, SearchField, Select, Spinner, Table, Tabs, toast } from "@heroui/react";
@@ -33,6 +34,7 @@ import {
 } from "@/lib/api/rental";
 
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
+import { IntercityDepartureTimeModal } from "@/components/admin/vehicles/IntercityDepartureTimeModal";
 
 import { ColumnInterface } from "@/lib/interface/column.interface";
 
@@ -66,6 +68,11 @@ export default function IntercityManagementPage() {
   const [surchargeFormOpen, setSurchargeFormOpen] = useState(false);
   const [editingSurcharge, setEditingSurcharge] = useState<IntercitySeasonalSurchargeDto | null>(null);
   const [surchargeForm, setSurchargeForm] = useState({ seasonName: "", startDate: "", endDate: "", surchargePercent: "", routeId: "" });
+
+  // Departure time modal state
+  const [departureTimeModalOpen, setDepartureTimeModalOpen] = useState(false);
+  const [departureTimeRouteId, setDepartureTimeRouteId] = useState<number | null>(null);
+  const [departureTimeRouteName, setDepartureTimeRouteName] = useState("");
 
   // Prices tab route selector
   const [selectedPriceRouteId, setSelectedPriceRouteId] = useState<number | null>(null);
@@ -192,6 +199,13 @@ export default function IntercityManagementPage() {
     } catch {
       showToast("Xóa thất bại.", "error");
     }
+  };
+
+  const handleOpenDepartureTimes = (route: IntercityRouteDto) => {
+    setDepartureTimeRouteId(route.id);
+    const name = getRouteName(route);
+    setDepartureTimeRouteName(name);
+    setDepartureTimeModalOpen(true);
   };
 
   // ── Prices CRUD ──
@@ -811,6 +825,9 @@ export default function IntercityManagementPage() {
                           </Table.Cell>
                           <Table.Cell>
                             <div className="flex gap-2">
+                              <Button isIconOnly size="sm" variant="ghost" aria-label="Giờ khởi hành" onPress={() => handleOpenDepartureTimes(r)}>
+                                <Clock size={16} />
+                              </Button>
                               <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditRoute(r)}>
                                 <Edit3 size={16} />
                               </Button>
@@ -947,6 +964,19 @@ export default function IntercityManagementPage() {
           </>
         )}
       </div>
+
+      {/* Departure Time Modal */}
+      {departureTimeRouteId && (
+        <IntercityDepartureTimeModal
+          routeId={departureTimeRouteId}
+          routeName={departureTimeRouteName}
+          isOpen={departureTimeModalOpen}
+          onClose={() => {
+            setDepartureTimeModalOpen(false);
+            setDepartureTimeRouteId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

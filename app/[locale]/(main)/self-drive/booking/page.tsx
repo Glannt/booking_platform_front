@@ -28,8 +28,10 @@ import {
 import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { useAuthStore } from "@/lib/store/authStore";
+import { AutofillButton } from "@/components/AutofillButton";
 import { getActiveRentals, createBooking, getRentalPricesByRental, type RentalPriceDto } from "@/lib/api/rental";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
+import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 
 interface Vehicle {
   id: string;
@@ -67,6 +69,7 @@ export default function SelfDriveBookingPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
@@ -170,6 +173,11 @@ export default function SelfDriveBookingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isDateInvalid || !dateValue || isSubmitting || !customerName.trim() || !customerPhone.trim() || !selectedVehicle) return;
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (isDateInvalid || !dateValue || isSubmitting || !customerName.trim() || !customerPhone.trim() || !selectedVehicle) return;
 
     setIsSubmitting(true);
     try {
@@ -212,21 +220,13 @@ export default function SelfDriveBookingPage() {
       toast.danger(vi ? "Đặt xe thất bại. Vui lòng thử lại." : "Booking failed. Please try again.");
     } finally {
       setIsSubmitting(false);
+      setShowConfirmModal(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 font-sans">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 2s infinite ease-in-out;
-        }
-      `}} />
+
 
       {/* Hero */}
       <section className="relative w-full min-h-[340px] flex items-center pt-28 pb-14 px-6 overflow-hidden bg-slate-900">
@@ -411,9 +411,14 @@ export default function SelfDriveBookingPage() {
 
                 {/* Customer Info */}
                 <div className="space-y-3">
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white pl-1">
-                    {vi ? "Thông tin liên hệ" : "Contact Information"}
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white pl-1">
+                      {vi ? "Thông tin liên hệ" : "Contact Information"}
+                    </label>
+                    <AutofillButton
+                      onFill={(d) => { setCustomerName(d.fullname); setCustomerPhone(d.phone); setCustomerEmail(d.email); }}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <TextField isRequired className="w-full">
                       <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.common.name}</Label>
@@ -548,6 +553,27 @@ export default function SelfDriveBookingPage() {
 
         </div>
       </main>
+
+      <BookingConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmBooking}
+        serviceType={vi ? "Thuê xe tự lái" : "Self-Drive Rental"}
+        summaryItems={[
+          { label: vi ? "Dòng xe" : "Vehicle", value: selectedVehicle?.name || "" },
+          { label: vi ? "Ngày nhận xe" : "Pickup date", value: dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : "" },
+          { label: vi ? "Giờ nhận xe" : "Pickup time", value: `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}` },
+          { label: vi ? "Số ngày thuê" : "Rental days", value: `${rentalDays} ${vi ? "ngày" : "days"}` },
+          { label: vi ? "Điểm giao xe" : "Pickup location", value: pickupLocation || "-" },
+          { label: vi ? "Họ tên" : "Name", value: customerName },
+          { label: vi ? "Điện thoại" : "Phone", value: customerPhone },
+          { label: vi ? "Email" : "Email", value: customerEmail || "-" },
+          { label: vi ? "Ghi chú" : "Notes", value: notes || "-" },
+        ]}
+        totalAmount={price}
+        totalLabel={vi ? "Tổng tiền tạm tính" : "Estimated total"}
+        submitting={isSubmitting}
+      />
 
       {/* Floating contact */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">

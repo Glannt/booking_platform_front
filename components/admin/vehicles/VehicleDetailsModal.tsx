@@ -53,6 +53,7 @@ export default function VehicleDetailsModal({
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [fuelType, setFuelType] = useState<string>("petrol");
   const [active, setActive] = useState<boolean>(true);
+  const [canRent, setCanRent] = useState<boolean>(true);
   const [luggage, setLuggage] = useState<number>(2);
   const [luggageUnit, setLuggageUnit] = useState<string>("kg");
   const [typeId, setTypeId] = useState<number>(0);
@@ -67,6 +68,7 @@ export default function VehicleDetailsModal({
       setYear(vehicle.year);
       setFuelType(vehicle.fuelType);
       setActive(vehicle.active);
+      setCanRent(vehicle.canRent);
       setLuggage(vehicle.luggage);
       setLuggageUnit(vehicle.luggageUnit || "kg");
       setTypeId(vehicle.type?.id || categories[0]?.id || 0);
@@ -96,6 +98,7 @@ export default function VehicleDetailsModal({
       year,
       fuelType,
       active,
+      canRent,
       luggage,
       luggageUnit,
       imageIds: imageIds.length > 0 ? imageIds : undefined,
@@ -120,6 +123,7 @@ export default function VehicleDetailsModal({
         year: payload.year,
         fuelType: payload.fuelType,
         active: payload.active,
+        canRent: payload.canRent,
         luggage: payload.luggage,
         luggageUnit: payload.luggageUnit,
         type: selectedCat
@@ -431,6 +435,24 @@ export default function VehicleDetailsModal({
                       </Checkbox>
                       <Label htmlFor="vehicle-active" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
                         {language === "vi" ? "Kích hoạt hoạt động" : "Active / Available"}
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-3 py-2">
+                      <Checkbox
+                        id="vehicle-can-rent"
+                        isSelected={canRent}
+                        onChange={(val: boolean) => setCanRent(val)}
+                        render={(props) => <div {...props} data-custom="bar" />}
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
+                      <Label htmlFor="vehicle-can-rent" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                        {language === "vi" ? "Cho phép thuê xe" : "Available for Rent"}
                       </Label>
                     </div>
 

@@ -11,22 +11,22 @@ import Link from "next/link";
 import { useI18n } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api/client";
 
-const registerSchema = z.object({
-  email: z.string().email({ message: "Invalid email format" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  fullname: z.string().min(2, { message: "Full name must be at least 2 characters" }),
-  phone: z.string().min(10, { message: "Phone number must be at least 10 digits" }),
-  role: z.enum(["CUSTOMER", "STAFF", "ADMIN"]),
-  kakaoTalkId: z.string().optional(),
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
-
 export default function RegisterPage() {
   const router = useRouter();
   const { t, language } = useI18n();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const registerSchema = z.object({
+    email: z.string().email({ message: t.errors.invalidEmail }),
+    password: z.string().min(6, { message: t.errors.passwordTooShort }),
+    fullname: z.string().min(2, { message: t.errors.fullnameRequired }),
+    phone: z.string().min(10, { message: t.errors.phoneInvalid }),
+    role: z.enum(["CUSTOMER", "STAFF", "ADMIN"]),
+    kakaoTalkId: z.string().optional(),
+  });
+
+  type RegisterFormValues = z.infer<typeof registerSchema>;
 
   const {
     register,
@@ -57,7 +57,7 @@ export default function RegisterPage() {
       router.push(`/${language}/login`);
     } catch (error: any) {
       console.error("Registration failed:", error);
-      toast.danger(error.message || "Registration failed. Please try again.");
+      toast.danger(error.message || t.errors.registrationFailed);
     } finally {
       setIsLoading(false);
     }

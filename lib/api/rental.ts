@@ -18,6 +18,14 @@ export interface IntercityRoutePriceDto {
   active: boolean;
 }
 
+export interface IntercityDepartureTimeDto {
+  id?: number;
+  routeId?: number;
+  departureTime: string;
+  orderIndex: number;
+  active: boolean;
+}
+
 export interface IntercityRouteDto {
   id: number;
   originCity: string;
@@ -25,8 +33,10 @@ export interface IntercityRouteDto {
   distanceKm?: number;
   estimatedHours?: number;
   active: boolean;
+  hasDepartureTimes: boolean;
   translations: IntercityRouteTranslationDto[];
   prices: IntercityRoutePriceDto[];
+  departureTimes: IntercityDepartureTimeDto[];
 }
 
 export interface IntercitySeasonalSurchargeDto {
@@ -167,6 +177,39 @@ export async function updateIntercitySurcharge(id: number, dto: Partial<Intercit
 
 export async function deleteIntercitySurcharge(id: number): Promise<ApiResponse<void>> {
   return apiFetch(`/api/v1/intercity-surcharges/${id}`, {
+    method: "DELETE",
+    skipTranslationFilter: true,
+  });
+}
+
+// === Intercity Departure Times ===
+
+export async function getActiveDepartureTimes(routeId: number): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
+  return apiFetch(`/api/v1/intercity-departure-times/active/by-route/${routeId}`, { skipTranslationFilter: true });
+}
+
+export async function getDepartureTimesByRoute(routeId: number): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
+  return apiFetch(`/api/v1/intercity-departure-times/by-route/${routeId}`, { skipTranslationFilter: true });
+}
+
+export async function createDepartureTime(dto: Partial<IntercityDepartureTimeDto>): Promise<ApiResponse<IntercityDepartureTimeDto>> {
+  return apiFetch("/api/v1/intercity-departure-times", {
+    method: "POST",
+    body: JSON.stringify(dto),
+    skipTranslationFilter: true,
+  });
+}
+
+export async function updateDepartureTime(id: number, dto: Partial<IntercityDepartureTimeDto>): Promise<ApiResponse<IntercityDepartureTimeDto>> {
+  return apiFetch(`/api/v1/intercity-departure-times/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(dto),
+    skipTranslationFilter: true,
+  });
+}
+
+export async function deleteDepartureTime(id: number): Promise<ApiResponse<void>> {
+  return apiFetch(`/api/v1/intercity-departure-times/${id}`, {
     method: "DELETE",
     skipTranslationFilter: true,
   });

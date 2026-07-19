@@ -110,6 +110,9 @@ interface TimePickerProps {
   popoverTitle?: string;
   language?: string;
   triggerClassName?: string;
+  isRequired?: boolean;
+  isInvalid?: boolean;
+  errorMessage?: string;
 }
 
 const HOURS   = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));   // 01–12
@@ -124,6 +127,9 @@ export function TimePicker({
   popoverTitle,
   language = "vi",
   triggerClassName,
+  isRequired,
+  isInvalid,
+  errorMessage,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -150,6 +156,7 @@ export function TimePicker({
       {label && (
         <label className={labelClassName}>
           {label}
+          {isRequired && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
 
@@ -157,7 +164,7 @@ export function TimePicker({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={triggerClassName ?? "flex items-center gap-2 h-10 w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black text-left cursor-pointer hover:border-accent/50 transition-colors"}
+        className={triggerClassName ?? `flex items-center gap-2 h-10 w-full border rounded-xl px-3 bg-white dark:bg-black text-left cursor-pointer hover:border-accent/50 transition-colors ${isInvalid ? "border-red-500" : "border-slate-200 dark:border-slate-800"}`}
       >
         <Clock size={16} className="text-slate-400 dark:text-slate-500 shrink-0" />
         <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex-1">
@@ -168,6 +175,11 @@ export function TimePicker({
           className={`text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
+
+      {/* FieldError */}
+      {isInvalid && errorMessage && (
+        <span className="text-[9px] text-red-500 mt-1 pl-1">{errorMessage}</span>
+      )}
 
       {/* Popover */}
       {open && (

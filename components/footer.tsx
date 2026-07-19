@@ -35,7 +35,7 @@ export const Footer = () => {
           <ul className="space-y-1.5 text-xs list-none p-0 m-0">
             <li className="flex items-start gap-1.5">
               <span className="text-slate-400 dark:text-slate-500 mt-px">🏢</span>
-              Công Ty TNHH Minh Khoa Travel
+              {t.footer.companyLegalName}
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-slate-400 dark:text-slate-500 mt-px">📍</span>
@@ -43,7 +43,7 @@ export const Footer = () => {
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-slate-400 dark:text-slate-500 mt-px">🔖</span>
-              MST: 4201980860
+              {t.footer.taxId}
             </li>
             <li className="flex items-start gap-1.5">
               <span className="text-slate-400 dark:text-slate-500 mt-px">📞</span>
@@ -149,8 +149,8 @@ export const Footer = () => {
 
       {/* Bottom bar */}
       <div className="max-w-7xl mx-auto px-6 border-t border-slate-200 dark:border-slate-900 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-4 transition-colors">
-        <span>&copy; {new Date().getFullYear()} Minh Khoa Travel. All rights reserved.</span>
-        <span>Công Ty TNHH Minh Khoa Travel – MST: 4201980860</span>
+        <span>&copy; {new Date().getFullYear()} {t.footer.copyright}</span>
+        <span>{t.footer.companyFooter}</span>
       </div>
     </footer>
   );

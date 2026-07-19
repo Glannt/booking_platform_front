@@ -18,8 +18,10 @@ import {
   Checkbox,
   Select,
   ListBox,
+  TimeField,
 } from "@heroui/react";
 import { PlusCircle, Trash2, Save, RefreshCw } from "lucide-react";
+import { parseTimelineTime, formatTimelineTime } from "@/lib/format";
 import ImageUpload from "@/components/ImageUpload";
 import {
   ServiceDto,
@@ -97,31 +99,58 @@ const TimelineEditor = ({
 
   return (
     <div className="space-y-2 mt-1 bg-slate-50/50 dark:bg-black/20 p-3 rounded-2xl border border-slate-150 dark:border-slate-800/80">
-      {items.map((item, idx) => (
-        <div key={idx} className="flex gap-2 items-center">
-          <Input
-            type="text"
-            className="w-20 px-2 py-1 text-xs rounded-xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-bold"
-            placeholder="e.g. 08:00"
-            value={item.time}
-            onChange={(e) => handleItemChange(idx, "time", e.target.value)}
-          />
-          <Input
-            type="text"
-            className="flex-grow px-2 py-1 text-xs rounded-xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-            placeholder={language === "vi" ? "Nội dung hoạt động..." : "Activity content..."}
-            value={item.content}
-            onChange={(e) => handleItemChange(idx, "content", e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => handleRemoveItem(idx)}
-            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer border-none bg-transparent"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-      ))}
+      {items.map((item, idx) => {
+        const times = parseTimelineTime(item.time);
+        return (
+          <div key={idx} className="flex gap-2 items-center w-full">
+            <TimeField
+              aria-label="Start Time"
+              value={times.start}
+              onChange={(val) => {
+                const nextTime = formatTimelineTime(val, times.end);
+                handleItemChange(idx, "time", nextTime);
+              }}
+            >
+              <TimeField.Group className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-black rounded-lg px-2 flex items-center h-8 w-24 shrink-0">
+                <TimeField.Input className="text-[11px] bg-transparent border-none outline-none font-bold">
+                  {(segment) => <TimeField.Segment segment={segment} />}
+                </TimeField.Input>
+              </TimeField.Group>
+            </TimeField>
+            
+            <span className="text-slate-400 font-bold text-xs shrink-0">-</span>
+            
+            <TimeField
+              aria-label="End Time"
+              value={times.end}
+              onChange={(val) => {
+                const nextTime = formatTimelineTime(times.start, val);
+                handleItemChange(idx, "time", nextTime);
+              }}
+            >
+              <TimeField.Group className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-black rounded-lg px-2 flex items-center h-8 w-24 shrink-0">
+                <TimeField.Input className="text-[11px] bg-transparent border-none outline-none font-bold">
+                  {(segment) => <TimeField.Segment segment={segment} />}
+                </TimeField.Input>
+              </TimeField.Group>
+            </TimeField>
+            <Input
+              type="text"
+              className="flex-grow px-2 py-1 text-xs rounded-xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              placeholder={language === "vi" ? "Nội dung hoạt động..." : "Activity content..."}
+              value={item.content}
+              onChange={(e) => handleItemChange(idx, "content", e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => handleRemoveItem(idx)}
+              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer border-none bg-transparent"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        );
+      })}
       <Button
         type="button"
         variant="ghost"

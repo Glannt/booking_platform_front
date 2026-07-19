@@ -109,3 +109,8 @@ export async function getBookingByCode(code: string): Promise<ApiResponse<Bookin
 export async function trackFlight(flightNumber: string): Promise<ApiResponse<any>> {
   return apiFetch<ApiResponse<any>>(`/api/v1/flights/track/${flightNumber}`);
 }
+
+export async function getMyBookings(): Promise<BookingDto[]> {
+  const res = await apiFetch<ApiResponse<BookingDto[]>>("/api/v1/bookings/my-bookings");
+  return res.data ?? [];
+}

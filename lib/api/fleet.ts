@@ -30,6 +30,7 @@ export interface VehicleDto {
   year: number;
   fuelType: string;
   active: boolean;
+  canRent: boolean;
   luggage: number;
   luggageUnit: string;
   thumbnailId?: number;
@@ -52,10 +53,14 @@ export interface PaginatedResponse<T> {
 export async function getVehicleCategories(params?: {
   search?: string;
   active?: boolean;
+  page?: number;
+  size?: number;
 }): Promise<ApiResponse<PaginatedResponse<VehicleCategoryDto>>> {
   const query = new URLSearchParams();
   if (params?.search !== undefined) query.append("search", params.search);
   if (params?.active !== undefined) query.append("active", params.active.toString());
+  if (params?.page !== undefined) query.append("page", params.page.toString());
+  if (params?.size !== undefined) query.append("size", params.size.toString());
   const queryString = query.toString();
   return apiFetch<ApiResponse<PaginatedResponse<VehicleCategoryDto>>>(`/api/v1/vehicle-categories${queryString ? `?${queryString}` : ""}`);
 }
@@ -95,6 +100,7 @@ export async function createVehicle(payload: {
   year: number;
   fuelType: string;
   active: boolean;
+  canRent: boolean;
   luggage: number;
   luggageUnit: string;
   imageIds?: number[];
@@ -113,6 +119,7 @@ export async function updateVehicle(id: number, payload: {
   year: number;
   fuelType: string;
   active: boolean;
+  canRent: boolean;
   luggage: number;
   luggageUnit: string;
   imageIds?: number[];
@@ -129,6 +136,10 @@ export async function deleteVehicle(id: number): Promise<void> {
   return apiFetch<void>(`/api/v1/vehicles/${id}`, {
     method: "DELETE",
   });
+}
+
+export async function getRentableVehiclesByCategory(categoryId: number): Promise<ApiResponse<VehicleDto[]>> {
+  return apiFetch<ApiResponse<VehicleDto[]>>(`/api/v1/vehicles/by-category/${categoryId}/rentable`);
 }
 
 // Airports

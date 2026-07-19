@@ -21,4 +21,8 @@ export const footer = {
   helpCenter: "Центр помощи",
   refundPolicy: "Политика возврата",
   operatingRegulations: "Правила эксплуатации",
+  companyLegalName: "ООО «МИНЬ КХОА ТРЕВЭЛ ЭНД ТРАНСПОРТЭЙШН»",
+  taxId: "ИНН: 4202158934",
+  copyright: "© 2025 Minh Khoa Travel. Все права защищены.",
+  companyFooter: "Minh Khoa Travel — Надёжный транспортный партнёр в Нячанге.",
 };

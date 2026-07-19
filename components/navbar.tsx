@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Dropdown, Label, Button, Avatar, toast } from "@heroui/react";
-import { ChevronDown, Globe, Car, Info, Home as HomeIcon, Plane, Calendar, Compass, LogOut, User as UserIcon } from "lucide-react";
+import { ChevronDown, Globe, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import NextLink from "next/link";
 
@@ -82,19 +82,18 @@ export const Navbar = () => {
   };
 
   const navItems = [
-    { label: t.nav.home, href: prefixUrl("/"), icon: <HomeIcon size={16} /> },
+    { label: t.nav.home, href: prefixUrl("/") },
     {
-      label: t.nav.rentCar,
+      label: t.nav.rentCarMenu,
       isDropdown: true,
-      icon: <Car size={16} />,
       items: [
         { label: t.nav.rentCar, href: prefixUrl("/rent-car") },
         { label: t.nav.selfDrive, href: prefixUrl("/self-drive") },
       ],
     },
-    { label: t.nav.airportTransfer, href: prefixUrl("/airport-transfer"), icon: <Plane size={16} /> },
-    { label: t.nav.tour, href: prefixUrl("/tours"), icon: <Compass size={16} /> },
-    { label: t.nav.about, href: prefixUrl("/about"), icon: <Info size={16} /> },
+    { label: t.nav.airportTransfer, href: prefixUrl("/airport-transfer") },
+    { label: t.nav.tour, href: prefixUrl("/tours") },
+    { label: t.nav.about, href: prefixUrl("/about") },
   ];
 
   const languageSelector = (
@@ -158,7 +157,6 @@ export const Navbar = () => {
                           : "text-foreground-600 hover:text-accent"
                           }`}
                       >
-                        {item.icon}
                         {item.label}
                         <ChevronDown size={14} className="opacity-70" />
                       </Dropdown.Trigger>
@@ -239,7 +237,34 @@ export const Navbar = () => {
                         <Label>{user.role === "ADMIN" ? "Admin Dashboard" : "Staff Dashboard"}</Label>
                       </NextLink>
                     </Dropdown.Item>
-                  ) : null}
+                  ) : (
+                    <>
+                      <Dropdown.Item key="dashboard" textValue="Dashboard">
+                        <NextLink
+                          className="block w-full text-foreground text-sm no-underline font-medium"
+                          href="/dashboard"
+                        >
+                          <Label>{t.nav?.home || "Dashboard"}</Label>
+                        </NextLink>
+                      </Dropdown.Item>
+                      <Dropdown.Item key="my-bookings" textValue="My Bookings">
+                        <NextLink
+                          className="block w-full text-foreground text-sm no-underline font-medium"
+                          href="/dashboard/my-bookings"
+                        >
+                          <Label>{t.nav?.myBookings || "My Bookings"}</Label>
+                        </NextLink>
+                      </Dropdown.Item>
+                      <Dropdown.Item key="profile" textValue="My Profile">
+                        <NextLink
+                          className="block w-full text-foreground text-sm no-underline font-medium"
+                          href="/dashboard/profile"
+                        >
+                          <Label>{t.nav?.myProfile || "My Profile"}</Label>
+                        </NextLink>
+                      </Dropdown.Item>
+                    </>
+                  )}
                   <Dropdown.Item
                     key="logout"
                     className="text-danger cursor-pointer"
@@ -358,6 +383,37 @@ export const Navbar = () => {
                       {user.role === "ADMIN" ? "Admin Dashboard" : "Staff Dashboard"}
                     </NextLink>
                   </li>
+                )}
+                {user.role !== "ADMIN" && user.role !== "STAFF" && (
+                  <>
+                    <li>
+                      <NextLink
+                        className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
+                        href="/dashboard"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {t.nav?.home || "Dashboard"}
+                      </NextLink>
+                    </li>
+                    <li>
+                      <NextLink
+                        className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
+                        href="/dashboard/my-bookings"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {t.nav?.myBookings || "My Bookings"}
+                      </NextLink>
+                    </li>
+                    <li>
+                      <NextLink
+                        className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
+                        href="/dashboard/profile"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {t.nav?.myProfile || "My Profile"}
+                      </NextLink>
+                    </li>
+                  </>
                 )}
                 <li>
                   <button

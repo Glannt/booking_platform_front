@@ -17,7 +17,7 @@ import clsx from "clsx";
 
 export default function OverviewPage() {
   const { language, t } = useI18n();
-  const { bookings, setSelectedBooking, setIsModalOpen } = useDashboard();
+  const { bookings, setSelectedBooking, setIsModalOpen, loading } = useDashboard();
   const [activeFilter, setActiveFilter] = useState<"all" | "confirmed" | "pending">("all");
 
   const getRouteLabel = (route: string) => {
@@ -127,6 +127,21 @@ export default function OverviewPage() {
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-10 gap-6">
+      {/* Loading Skeleton */}
+      {loading && (
+        <div className="xl:col-span-10 space-y-6">
+          <div className="h-[300px] bg-default-100 rounded-[24px] animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 bg-default-100 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+          <div className="h-64 bg-default-100 rounded-2xl animate-pulse" />
+        </div>
+      )}
+
+      {!loading && (
+      <>
       {/* Left Column (70%) */}
       <div className="xl:col-span-7 space-y-6">
         {/* Active Booking Banner */}
@@ -384,6 +399,8 @@ export default function OverviewPage() {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { Card, Button, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalB
 import { useI18n } from "@/context/LanguageContext";
 import { createBooking } from "@/lib/api/bookings";
 import { ServiceDto, ServiceOptionDto } from "@/lib/api/services";
+import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 
 interface BookingDetailClientProps {
   id: number;
@@ -57,6 +58,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
   const [modalState, setModalState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [createdBookingCode, setCreatedBookingCode] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Update selected option when service loads
   useEffect(() => {
@@ -137,6 +139,11 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
       alert(isVi ? "Vui lòng nhập đầy đủ các thông tin bắt buộc!" : "Please enter all required information!");
       return;
     }
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!fullName || !phone || !email || !contactId) return;
 
     setModalState("submitting");
     setErrorMessage("");
@@ -182,55 +189,13 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
       setTimeout(() => {
         setModalState("success");
       }, 1800);
+    } finally {
+      setShowConfirmModal(false);
     }
   };
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Custom Styles for Keyframe Animations - NO progress bar, pure SVG morph transitions */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes modal-fade-in {
-          0% { opacity: 0; transform: scale(0.95); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes loader-spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes draw-checkmark {
-          0% { stroke-dashoffset: 48; }
-          100% { stroke-dashoffset: 0; }
-        }
-        @keyframes draw-circle {
-          0% { stroke-dashoffset: 166; }
-          100% { stroke-dashoffset: 0; }
-        }
-        .animate-modal-in {
-          animation: modal-fade-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        .svg-loading-ring {
-          stroke: #3b82f6;
-          stroke-dasharray: 120;
-          stroke-dashoffset: 120;
-          animation: draw-circle 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-          transform-origin: center;
-          animation-name: loader-spin;
-          animation-duration: 1.2s;
-          animation-iteration-count: infinite;
-          animation-timing-function: linear;
-        }
-        .svg-success-circle {
-          stroke-dasharray: 166;
-          stroke-dashoffset: 166;
-          animation: draw-circle 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-        }
-        .svg-success-check {
-          stroke-dasharray: 48;
-          stroke-dashoffset: 48;
-          animation: draw-checkmark 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
-        }
-      `}} />
 
       {/* Navigation & Header */}
       <div>
@@ -759,6 +724,40 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
           </ModalContainer>
         </ModalBackdrop>
       </Modal>
+
+      <BookingConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmBooking}
+        serviceType={getLocalizedName(service)}
+        summaryItems={[
+          { label: isVi ? "Tùy chọn" : "Option", value: activeOption ? getLocalizedOptionName(activeOption) : "" },
+          ...(catId === 1 ? [
+            { label: isVi ? "Ngày đi" : "Start date", value: startDate || "-" },
+            { label: isVi ? "Ngày về" : "End date", value: endDate || "-" },
+            { label: isVi ? "Đón tại" : "Pickup", value: pickup || "-" },
+            { label: isVi ? "Đưa đến" : "Dropoff", value: dropoff || "-" },
+            { label: isVi ? "Số chuyến bay" : "Flight", value: flightNo || "-" },
+          ] : []),
+          ...(catId === 2 ? [
+            { label: isVi ? "Ngày khởi hành" : "Date", value: startDate || "-" },
+            { label: isVi ? "Số khách" : "Guests", value: `${guestCount} ${isVi ? "khách" : "guests"}` },
+            { label: isVi ? "Điểm đón" : "Pickup", value: pickup || "-" },
+          ] : []),
+          ...(catId === 3 ? [
+            { label: isVi ? "Ngày nhận xe" : "Start date", value: startDate || "-" },
+            { label: isVi ? "Số ngày thuê" : "Rental days", value: `${rentalDays} ${isVi ? "ngày" : "days"}` },
+            { label: isVi ? "Điểm giao xe" : "Pickup", value: pickup || "-" },
+          ] : []),
+          { label: isVi ? "Họ tên" : "Name", value: fullName },
+          { label: isVi ? "Điện thoại" : "Phone", value: phone },
+          { label: isVi ? "Email" : "Email", value: email },
+          { label: isVi ? "Ghi chú" : "Notes", value: notes || "-" },
+        ]}
+        totalAmount={totalPrice}
+        totalLabel={isVi ? "Tổng tiền" : "Total amount"}
+        submitting={modalState === "submitting"}
+      />
     </div>
   );
 }

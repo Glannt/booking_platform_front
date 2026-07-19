@@ -18,6 +18,9 @@ import { rentCar as rentCarVi } from "./vi/rentCar";
 import { selfDrive as selfDriveVi } from "./vi/selfDrive";
 import { tours as toursVi } from "./vi/tours";
 import { pricing as pricingVi } from "./vi/pricing";
+import { status as statusVi } from "./vi/status";
+import { profile as profileVi } from "./vi/profile";
+import { errors as errorsVi } from "./vi/errors";
 
 import { nav as navEn } from "./en/nav";
 import { aboutPage as aboutPageEn } from "./en/about";
@@ -35,6 +38,9 @@ import { rentCar as rentCarEn } from "./en/rentCar";
 import { selfDrive as selfDriveEn } from "./en/selfDrive";
 import { tours as toursEn } from "./en/tours";
 import { pricing as pricingEn } from "./en/pricing";
+import { status as statusEn } from "./en/status";
+import { profile as profileEn } from "./en/profile";
+import { errors as errorsEn } from "./en/errors";
 
 import { nav as navKo } from "./ko/nav";
 import { aboutPage as aboutPageKo } from "./ko/about";
@@ -52,6 +58,9 @@ import { rentCar as rentCarKo } from "./ko/rentCar";
 import { selfDrive as selfDriveKo } from "./ko/selfDrive";
 import { tours as toursKo } from "./ko/tours";
 import { pricing as pricingKo } from "./ko/pricing";
+import { status as statusKo } from "./ko/status";
+import { profile as profileKo } from "./ko/profile";
+import { errors as errorsKo } from "./ko/errors";
 
 import { nav as navRu } from "./ru/nav";
 import { aboutPage as aboutPageRu } from "./ru/about";
@@ -69,6 +78,9 @@ import { rentCar as rentCarRu } from "./ru/rentCar";
 import { selfDrive as selfDriveRu } from "./ru/selfDrive";
 import { tours as toursRu } from "./ru/tours";
 import { pricing as pricingRu } from "./ru/pricing";
+import { status as statusRu } from "./ru/status";
+import { profile as profileRu } from "./ru/profile";
+import { errors as errorsRu } from "./ru/errors";
 
 const vi: TranslationDictionary = {
   nav: navVi,
@@ -77,8 +89,10 @@ const vi: TranslationDictionary = {
   home: homeVi,
   demo: demoVi,
   dashboard: dashboardVi,
+  profile: profileVi,
   booking: bookingVi,
   auth: authVi,
+  status: statusVi,
   common: commonVi,
   footer: footerVi,
   homePage: homePageVi,
@@ -87,6 +101,7 @@ const vi: TranslationDictionary = {
   selfDrive: selfDriveVi,
   tours: toursVi,
   pricing: pricingVi,
+  errors: errorsVi,
 };
 
 const en: TranslationDictionary = {
@@ -96,8 +111,10 @@ const en: TranslationDictionary = {
   home: homeEn,
   demo: demoEn,
   dashboard: dashboardEn,
+  profile: profileEn,
   booking: bookingEn,
   auth: authEn,
+  status: statusEn,
   common: commonEn,
   footer: footerEn,
   homePage: homePageEn,
@@ -106,6 +123,7 @@ const en: TranslationDictionary = {
   selfDrive: selfDriveEn,
   tours: toursEn,
   pricing: pricingEn,
+  errors: errorsEn,
 };
 
 const ko: TranslationDictionary = {
@@ -115,8 +133,10 @@ const ko: TranslationDictionary = {
   home: homeKo,
   demo: demoKo,
   dashboard: dashboardKo,
+  profile: profileKo,
   booking: bookingKo,
   auth: authKo,
+  status: statusKo,
   common: commonKo,
   footer: footerKo,
   homePage: homePageKo,
@@ -125,6 +145,7 @@ const ko: TranslationDictionary = {
   selfDrive: selfDriveKo,
   tours: toursKo,
   pricing: pricingKo,
+  errors: errorsKo,
 };
 
 const ru: TranslationDictionary = {
@@ -134,8 +155,10 @@ const ru: TranslationDictionary = {
   home: homeRu,
   demo: demoRu,
   dashboard: dashboardRu,
+  profile: profileRu,
   booking: bookingRu,
   auth: authRu,
+  status: statusRu,
   common: commonRu,
   footer: footerRu,
   homePage: homePageRu,
@@ -144,6 +167,7 @@ const ru: TranslationDictionary = {
   selfDrive: selfDriveRu,
   tours: toursRu,
   pricing: pricingRu,
+  errors: errorsRu,
 };
 
 export const translations: Record<Language, TranslationDictionary> = { vi, en, ko, ru };

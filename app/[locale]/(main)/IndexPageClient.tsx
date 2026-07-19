@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { DateValue } from "@internationalized/date";
 import { getLocalTimeZone, today } from "@internationalized/date";
@@ -16,13 +16,14 @@ import {
   MessageCircle,
   Plane,
   Compass,
-  MapPin
+  MapPin,
+  RefreshCw
 } from "lucide-react";
-import { Button, Separator, Select, Label, ListBox, SearchField, DatePicker, DateField, Calendar, FieldError } from "@heroui/react";
+import { Button, Separator, Select, Label, ListBox, SearchField, DatePicker, DateField, Calendar, FieldError, Autocomplete, EmptyState, useFilter } from "@heroui/react";
 import { useI18n } from "@/context/LanguageContext";
 import { getPublicServices, ServiceDto } from "@/lib/api/services";
-import { getVehicleCategories, VehicleCategoryDto, getActiveAirports, type AirportDto } from "@/lib/api/fleet";
-import { getTours } from "@/lib/api/tours";
+import { getVehicleCategories, VehicleCategoryDto, getActiveAirports, getActiveAirportRoutes, getAirportTransferPricesByRouteAndServiceType, type AirportDto } from "@/lib/api/fleet";
+import { getTours, type TourDto } from "@/lib/api/tours";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
@@ -30,6 +31,7 @@ import { SectionRenderer } from "@/components/sections/SectionRenderer";
 export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const { language, t } = useI18n();
   const vi = language === "vi";
+  const { contains } = useFilter({ sensitivity: "base" });
 
   const router = useRouter();
 
@@ -56,8 +58,14 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
   // Tours Form state
   const [tourKeyword, setTourKeyword] = useState("");
+  const [tourPickup, setTourPickup] = useState("");
+  const [tourSearchQuery, setTourSearchQuery] = useState("");
+  const [selectedTour, setSelectedTour] = useState<TourDto | null>(null);
   const [tourDate, setTourDate] = useState<DateValue | null>(null);
   const [tourGuests, setTourGuests] = useState(1);
+  const [tourKeywordSuggestions, setTourKeywordSuggestions] = useState<TourDto[]>([]);
+  const [showTourSug, setShowTourSug] = useState(false);
+  const tourSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Airport Transfer — direction + address autocomplete
   const [airports, setAirports] = useState<AirportDto[]>([]);
@@ -69,6 +77,14 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const [dropoffSuggestions, setDropoffSuggestions] = useState<LocationSearchResult[]>([]);
   const [showPickupSug, setShowPickupSug] = useState(false);
   const [showDropoffSug, setShowDropoffSug] = useState(false);
+
+  // Airport Transfer — vehicle loading
+  const [selectedRoute, setSelectedRoute] = useState<any>(null);
+  const [transferPrices, setTransferPrices] = useState<any[]>([]);
+  const [airportVehicleCategories, setAirportVehicleCategories] = useState<VehicleCategoryDto[]>([]);
+  const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
 
   // Sections from backend
   const [heroSections, setHeroSections] = useState<SectionDto[]>([]);
@@ -91,6 +107,13 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
       })
       .catch(err => console.error("Error fetching vehicle categories:", err));
 
+    getTours({ size: 10 })
+      .then(res => {
+        if (res?.data?.content) {
+          setTourKeywordSuggestions(res.data.content);
+        }
+      })
+      .catch(err => console.error("Error fetching initial tours:", err));
   }, []);
 
   // Load airports for direction selector
@@ -114,12 +137,69 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     }).catch(() => { });
   }, [language]);
 
+  // Load routes when airport changes
+  useEffect(() => {
+    if (!selectedAirport?.id) return;
+    getActiveAirportRoutes(selectedAirport.id)
+      .then(res => {
+        if (res?.data && res.data.length > 0) {
+          setSelectedRoute(res.data[0]);
+        }
+      })
+      .catch(() => {});
+  }, [selectedAirport?.id]);
+
+  // Load transfer prices when route + tripType changes
+  useEffect(() => {
+    if (!selectedRoute?.id) return;
+    const serviceType = tripType === "return" ? "ROUND_TRIP" : "ONE_WAY";
+    getAirportTransferPricesByRouteAndServiceType(selectedRoute.id, serviceType)
+      .then(res => {
+        if (res?.data) setTransferPrices(res.data);
+      })
+      .catch(() => {});
+  }, [selectedRoute?.id, tripType]);
+
+  // Auto-load vehicle categories when all fields are filled
+  const isAirportFormComplete = Boolean(
+    date && time && passengers > 0 &&
+    ((direction === "to-nhatrang" && dropoffAddr.length > 0) ||
+     (direction === "to-airport" && pickupAddr.length > 0))
+  );
+
+  useEffect(() => {
+    if (!isAirportFormComplete || vehiclesLoaded || vehiclesLoading) return;
+    setVehiclesLoading(true);
+    getVehicleCategories({ active: true })
+      .then(res => {
+        if (res?.data?.content) {
+          setAirportVehicleCategories(res.data.content);
+          setVehiclesLoaded(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setVehiclesLoading(false));
+  }, [isAirportFormComplete, vehiclesLoaded, vehiclesLoading]);
+
   const getAirportName = (airport: AirportDto) => {
     const tr = airport.translations?.find(t => t.locale === language) || airport.translations?.[0];
     return tr?.name || airport.name || airport.code;
   };
 
-  const airportNameShort = selectedAirport ? getAirportName(selectedAirport) : (vi ? "Sân bay Cam Ranh" : "Cam Ranh Airport");
+  const airportNameShort = selectedAirport ? getAirportName(selectedAirport) : t.homePage.airportName;
+
+  const fmtPrice = (amount: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(amount);
+
+  const airportVehicles = airportVehicleCategories.map(cat => {
+    const tr = cat.translations?.find(t => t.locale === language) || cat.translations?.[0];
+    const catName = tr?.name || cat.code;
+    const maxSeat = cat.maxSeat || 4;
+    const luggage = cat.maxLuggage || 2;
+    const priceEntry = transferPrices.find(p => p.vehicleCategoryId === cat.id);
+    const apiPrice = priceEntry ? Number(priceEntry.amount) : 0;
+    const price = tripType === "one-way" ? apiPrice : Math.round(apiPrice / 1.85);
+    return { id: cat.code, catId: cat.id, name: catName, seats: maxSeat, luggage, price };
+  });
 
   const handleAddressSearch = async (
     query: string,
@@ -131,6 +211,26 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
       setSuggestions(res?.data || []);
     } catch { setSuggestions([]); }
   };
+
+  const handleTourKeywordSearch = async (query: string) => {
+    if (tourSearchTimerRef.current) clearTimeout(tourSearchTimerRef.current);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getTours({ search: query || undefined, size: 6 });
+        setTourKeywordSuggestions(res?.data?.content || []);
+      } catch { setTourKeywordSuggestions([]); }
+    }, 400);
+    tourSearchTimerRef.current = timer;
+  };
+
+  const getTourName = (tour: TourDto) => {
+    const tr = tour.translations?.find(t => t.locale === language) || tour.translations?.[0];
+    return tr?.name || "Tour";
+  };
+
+  useEffect(() => {
+    handleTourKeywordSearch(tourSearchQuery);
+  }, [tourSearchQuery]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -156,7 +256,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     ? heroSections[0].imageUrls[0]
     : '';
 
-  const faqTitle = activeLang === "vi" ? "Câu hỏi thường gặp" : "Frequently Asked Questions";
+  const faqTitle = t.homePage.faqTitle;
 
   const handleAirportSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,43 +277,13 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
   const handleTourSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTour) return;
     const dateStr = tourDate ? tourDate.toString() : "";
-    router.push(`/${language}/tours?keyword=${encodeURIComponent(tourKeyword)}&date=${dateStr}&guests=${tourGuests}`);
+    router.push(`/${language}/tours/${selectedTour.id}/confirm?tourId=${selectedTour.id}&date=${dateStr}&guests=${tourGuests}&pickup=${encodeURIComponent(tourPickup)}`);
   };
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Self-contained CSS for scrollbar hide and styling */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 2s infinite ease-in-out;
-        }
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}} />
 
       {/* Hero Section */}
       <section className="relative w-full min-h-[680px] lg:h-[740px] flex items-center justify-center pt-20 pb-12">
@@ -539,8 +609,44 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       </div>
                     </div>
 
+                    {/* Vehicle Categories — auto-loaded when form is complete */}
+                    {isAirportFormComplete && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          Chọn dòng xe
+                        </span>
+                        {vehiclesLoading && !vehiclesLoaded && (
+                          <div className="flex items-center justify-center py-4">
+                            <RefreshCw className="animate-spin text-accent" size={20} />
+                            <span className="ml-2 text-xs font-bold text-slate-500">Đang tải xe...</span>
+                          </div>
+                        )}
+                        {vehiclesLoaded && airportVehicles.length > 0 && (
+                          <div className="grid grid-cols-1 gap-2">
+                            {airportVehicles.map(v => {
+                              const isSelected = selectedVehicleId === v.id;
+                              return (
+                                <div
+                                  key={v.id}
+                                  onClick={() => setSelectedVehicleId(v.id)}
+                                  className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex justify-between items-center ${isSelected ? "border-accent bg-accent/5" : "border-slate-200 dark:border-slate-800 hover:border-slate-300"}`}
+                                >
+                                  <div>
+                                    <span className="text-xs font-black text-slate-800 dark:text-white">{v.name}</span>
+                                    <p className="text-[10px] text-slate-400">{v.seats} khách · {v.luggage} hành lý</p>
+                                  </div>
+                                  <span className="text-sm font-black text-accent">{v.price > 0 ? fmtPrice(v.price) : "—"}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <Button
                       type="submit"
+                      isDisabled={!selectedVehicleId}
                       className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer mt-1"
                     >
                       {t.homePage.searchBtn}
@@ -595,7 +701,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                             type="text"
                             value={rentalPickup}
                             onChange={(e) => setRentalPickup(e.target.value)}
-                            placeholder={language === "vi" ? "VD: Nha Trang, Sân bay Cam Ranh..." : "E.g: Nha Trang City..."}
+                            placeholder={t.homePage.rentalPickupPlaceholder}
                             className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
                             required
                           />
@@ -681,7 +787,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       <Select
                         className="w-full"
                         fullWidth
-                        placeholder={language === "vi" ? "Chọn dòng xe" : "Select Vehicle Class"}
+                        placeholder={t.homePage.selectVehicleClass}
                         selectedKey={rentalSeats}
                         onSelectionChange={(key) => {
                           if (key) setRentalSeats(key as any);
@@ -712,16 +818,16 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                             ) : (
                               // Fallback to static options if categories API fails or is empty
                               <>
-                                <ListBox.Item id="4-seater" textValue={language === "vi" ? "Xe 4 chỗ (Sedan/Hatchback)" : "4 Seats Sedan/Hatchback"} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                                  <span>{language === "vi" ? "Xe 4 chỗ" : "4 Seats Sedan"}</span>
+                                <ListBox.Item id="4-seater" textValue={t.homePage.vehicle4SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                  <span>{t.homePage.vehicle4Seats}</span>
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="7-seater" textValue={language === "vi" ? "Xe 7 chỗ (SUV/MPV)" : "7 Seats SUV/MPV"} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                                  <span>{language === "vi" ? "Xe 7 chỗ" : "7 Seats SUV"}</span>
+                                <ListBox.Item id="7-seater" textValue={t.homePage.vehicle7SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                  <span>{t.homePage.vehicle7Seats}</span>
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="16-seater" textValue={language === "vi" ? "Xe 16 chỗ hợp đồng (Minibus)" : "16 Seats Minibus"} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                                  <span>{language === "vi" ? "Xe 16 chỗ" : "16 Seats Minibus"}</span>
+                                <ListBox.Item id="16-seater" textValue={t.homePage.vehicle16SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                  <span>{t.homePage.vehicle16Seats}</span>
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
                               </>
@@ -752,25 +858,90 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                   <form onSubmit={handleTourSearch} className="flex flex-col gap-4">
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-800 bg-slate-50/50 dark:bg-black/20 relative">
 
-                      {/* Search keyword input instead of dropdown */}
+                      {/* Tour pickup input */}
                       <div className="flex items-center gap-3 px-4 py-3 relative z-10">
-                        <Compass className="text-accent shrink-0" size={20} />
+                        <MapPin className="text-accent shrink-0" size={20} />
                         <div className="w-full text-left">
                           <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
-                            {language === "vi" ? "BẠN MUỐN ĐI ĐÂU?" : "WHERE TO GO?"}
+                            {t.homePage.pickupLocation}
                           </Label>
-                          <SearchField
-                            value={tourKeyword}
-                            onChange={setTourKeyword}
-                            className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none w-full p-0"
+                          <input
+                            type="text"
+                            value={tourPickup}
+                            onChange={(e) => setTourPickup(e.target.value)}
+                            placeholder={t.homePage.rentalPickupPlaceholder}
+                            className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Tour search autocomplete input */}
+                      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+                        <Compass className="text-accent shrink-0" size={20} />
+                        <div className="w-full text-left relative">
+                          <Autocomplete
+                            className="w-full border-none shadow-none"
+                            placeholder={t.homePage.tourPlaceholder}
+                            selectionMode="single"
+                            value={selectedTour?.id ? String(selectedTour.id) : ""}
+                            onChange={(key) => {
+                              const tour = tourKeywordSuggestions.find(t => String(t.id) === String(key));
+                              if (tour) {
+                                setSelectedTour(tour);
+                                setTourKeyword(getTourName(tour));
+                              } else {
+                                setSelectedTour(null);
+                                setTourKeyword("");
+                              }
+                            }}
                           >
-                            <SearchField.Group className="w-full flex items-center bg-transparent border-none shadow-none">
-                              <SearchField.Input
-                                placeholder={language === "vi" ? "Nhập tên tour hoặc điểm đến..." : "Enter tour name or destination..."}
-                                className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none w-full border-none p-0 focus:ring-0"
-                              />
-                            </SearchField.Group>
-                          </SearchField>
+                            <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                              {t.homePage.searchTours}
+                            </Label>
+                            <Autocomplete.Trigger>
+                              <div className="flex items-center w-full justify-between mt-0.5 cursor-pointer bg-transparent border-none p-0 h-auto">
+                                <Autocomplete.Value className="text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent truncate" />
+                                <div className="flex items-center gap-1.5 ml-auto">
+                                  <Autocomplete.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600" />
+                                  <Autocomplete.Indicator className="text-slate-400 dark:text-slate-500" />
+                                </div>
+                              </div>
+                            </Autocomplete.Trigger>
+                            <Autocomplete.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                              <Autocomplete.Filter filter={contains}>
+                                <SearchField autoFocus name="search" variant="secondary" value={tourSearchQuery} onChange={setTourSearchQuery}>
+                                  <SearchField.Group className="flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10 bg-slate-50 dark:bg-black w-full mb-3">
+                                    <SearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
+                                    <SearchField.Input placeholder={t.homePage.tourPlaceholder} className="text-xs font-semibold bg-transparent border-none outline-none focus:ring-0 text-slate-800 dark:text-slate-100 w-full" />
+                                    <SearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto" />
+                                  </SearchField.Group>
+                                </SearchField>
+                                <ListBox
+                                  className="max-h-[200px] overflow-y-auto"
+                                  renderEmptyState={() => <EmptyState className="p-4 text-center text-xs text-slate-400">{t.common.noResults}</EmptyState>}
+                                >
+                                  {tourKeywordSuggestions.map((item) => (
+                                    <ListBox.Item
+                                      key={String(item.id)}
+                                      id={String(item.id)}
+                                      textValue={getTourName(item)}
+                                      className="p-2.5 hover:bg-amber-50/50 dark:hover:bg-slate-800 cursor-pointer rounded-lg transition-colors flex items-center gap-2"
+                                    >
+                                      <div className="flex items-center gap-2 w-full">
+                                        <Compass size={12} className="text-accent shrink-0" />
+                                        <div className="min-w-0 flex-grow text-left">
+                                          <span className="block truncate font-semibold text-xs text-slate-700 dark:text-slate-350">{getTourName(item)}</span>
+                                          <span className="block truncate text-[10px] text-slate-400">{item.durationDays}D{item.durationNights}N</span>
+                                        </div>
+                                        <ListBox.ItemIndicator className="ml-auto" />
+                                      </div>
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Autocomplete.Filter>
+                            </Autocomplete.Popover>
+                          </Autocomplete>
                         </div>
                       </div>
 
@@ -868,9 +1039,10 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
                     <Button
                       type="submit"
+                      isDisabled={!selectedTour}
                       className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer mt-1"
                     >
-                      {t.homePage.searchTours}
+                      {t.homePage.bookNow}
                     </Button>
                   </form>
                 </>

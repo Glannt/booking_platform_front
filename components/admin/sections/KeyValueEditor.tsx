@@ -15,7 +15,13 @@ import {
   Hash,
   ToggleLeft,
   Trash2,
+  Image as ImageIcon,
+  FileText,
+  Upload,
+  Loader2,
 } from "lucide-react";
+import { uploadMedia } from "@/lib/api/media";
+import { backendUrl } from "@/lib/api/client";
 
 interface KeyValueEditorProps {
   value: string;
@@ -477,6 +483,53 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
   const isMultiline = strVal.length > 60 || strVal.includes("\n");
   const rows = isMultiline ? Math.min(Math.max(2, Math.ceil(strVal.length / 50)), 6) : 1;
 
+  const isProbablyImageUrl = typeof value === "string" && (
+    value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")
+  ) && (
+    value.toLowerCase().includes("image") ||
+    value.toLowerCase().includes("img") ||
+    /\.(jpg|jpeg|png|webp|gif|svg|avif)(\?.*)?$/i.test(value) ||
+    value.includes("images.unsplash.com") ||
+    value.includes("res.cloudinary.com") ||
+    nodeKey.toLowerCase().includes("image") ||
+    nodeKey.toLowerCase().includes("img")
+  );
+
+  const [inputMode, setInputMode] = useState<"text" | "image">(
+    isProbablyImageUrl ? "image" : "text"
+  );
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const isStringOrEmpty = vType === "string" || vType === "empty";
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setUploading(true);
+      try {
+        const file = e.target.files[0];
+        const result = await uploadMedia(file, nodeKey || "Section Image");
+        const mediaObj = result.data?.media || (result as any).media;
+        const filePath = mediaObj?.filePath;
+        if (filePath) {
+          const url = filePath.startsWith("http") ? filePath : `${backendUrl}${filePath}`;
+          onChange(url);
+        } else {
+          alert("Tải lên thất bại");
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("Có lỗi xảy ra khi tải ảnh lên");
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const typeIcon = vType === "number" ? <Hash size={10} className="text-blue-400" />
     : vType === "boolean" ? <ToggleLeft size={10} className="text-emerald-400" />
     : null;
@@ -493,6 +546,17 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
 
       <span className="text-slate-300 dark:text-slate-600 mt-2 shrink-0">:</span>
 
+      {isStringOrEmpty && (
+        <button
+          type="button"
+          onClick={() => setInputMode(inputMode === "text" ? "image" : "text")}
+          className="p-1.5 rounded text-slate-400 hover:text-accent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mt-0.5 shrink-0"
+          title={inputMode === "text" ? "Chuyển sang chọn ảnh" : "Chuyển sang nhập chữ"}
+        >
+          {inputMode === "text" ? <ImageIcon size={12} /> : <FileText size={12} />}
+        </button>
+      )}
+
       {vType === "boolean" ? (
         <button
           type="button"
@@ -506,6 +570,62 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
           <ToggleLeft size={12} />
           {value ? "Có" : "Không"}
         </button>
+      ) : inputMode === "image" && isStringOrEmpty ? (
+        strVal && (strVal.startsWith("http") || strVal.startsWith("/")) ? (
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shrink-0">
+              <img src={strVal.startsWith("http") ? strVal : `${backendUrl}${strVal}`} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onChange("")}
+                className="absolute top-0.5 right-0.5 p-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md transition-colors"
+                title="Xóa ảnh"
+              >
+                <X size={8} />
+              </button>
+            </div>
+            <Input
+              value={strVal}
+              onChange={(e) => onChange(e.target.value)}
+              className="flex-1 text-xs font-mono min-w-0"
+              placeholder="URL hình ảnh"
+            />
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div
+              onClick={handleImageClick}
+              className="flex-1 h-9 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-accent bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center cursor-pointer transition-colors"
+            >
+              {uploading ? (
+                <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
+                  <Loader2 size={12} className="animate-spin text-accent" />
+                  Đang tải lên...
+                </span>
+              ) : (
+                <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
+                  <Upload size={12} />
+                  Chọn / Tải ảnh lên
+                </span>
+              )}
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+            {strVal && (
+              <Input
+                value={strVal}
+                onChange={(e) => onChange(e.target.value)}
+                className="flex-1 text-xs font-mono min-w-0"
+                placeholder="Nhập thủ công"
+              />
+            )}
+          </div>
+        )
       ) : isMultiline ? (
         <textarea
           value={strVal}

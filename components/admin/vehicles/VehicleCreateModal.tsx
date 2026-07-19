@@ -50,6 +50,7 @@ export default function VehicleCreateModal({
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [fuelType, setFuelType] = useState<string>("petrol");
   const [active, setActive] = useState<boolean>(true);
+  const [canRent, setCanRent] = useState<boolean>(true);
   const [luggage, setLuggage] = useState<number>(2);
   const [luggageUnit, setLuggageUnit] = useState<string>("kg");
   const [typeId, setTypeId] = useState<number>(categories[0]?.id || 0);
@@ -64,6 +65,7 @@ export default function VehicleCreateModal({
       setYear(new Date().getFullYear());
       setFuelType("petrol");
       setActive(true);
+      setCanRent(true);
       setLuggage(2);
       setLuggageUnit("kg");
       setTypeId(categories[0]?.id || 0);
@@ -92,6 +94,7 @@ export default function VehicleCreateModal({
       year,
       fuelType,
       active,
+      canRent,
       luggage,
       luggageUnit,
       imageIds: imageIds.length > 0 ? imageIds : undefined,
@@ -116,6 +119,7 @@ export default function VehicleCreateModal({
         year: payload.year,
         fuelType: payload.fuelType,
         active: payload.active,
+        canRent: payload.canRent,
         luggage: payload.luggage,
         luggageUnit: payload.luggageUnit,
         type: selectedCat
@@ -332,6 +336,24 @@ export default function VehicleCreateModal({
                   </Checkbox>
                   <Label htmlFor="vehicle-active" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
                     {language === "vi" ? "Kích hoạt hoạt động" : "Active / Available"}
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-3 py-2">
+                  <Checkbox
+                    id="vehicle-can-rent"
+                    isSelected={canRent}
+                    onChange={(val: boolean) => setCanRent(val)}
+                    render={(props) => <div {...props} data-custom="bar" />}
+                  >
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                    </Checkbox.Content>
+                  </Checkbox>
+                  <Label htmlFor="vehicle-can-rent" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                    {language === "vi" ? "Cho phép thuê xe" : "Available for Rent"}
                   </Label>
                 </div>
 

@@ -7,6 +7,7 @@ import * as z from "zod";
 import { Button, Label, toast } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/authStore";
 
@@ -42,8 +43,9 @@ export default function AdminLoginPage() {
 
       if (response?.data) {
         const { user, accessToken, refreshToken } = response.data;
-        if (user.role !== "ADMIN") {
-          toast.danger("Tài khoản này không có quyền quản trị.");
+        const allowedRoles = ["ADMIN", "STAFF", "MODERATOR"];
+        if (!allowedRoles.includes(user.role)) {
+          toast.danger("Tài khoản này không có quyền truy cập quản trị.");
           return;
         }
         setAuth(user, accessToken, refreshToken);
@@ -110,6 +112,15 @@ export default function AdminLoginPage() {
                 </button>
               </div>
               {errors.password && <p className="text-xs text-rose-500 mt-1">{errors.password.message}</p>}
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-[#C9A227] hover:underline font-medium transition-colors"
+              >
+                Quên mật khẩu?
+              </Link>
             </div>
 
             <Button

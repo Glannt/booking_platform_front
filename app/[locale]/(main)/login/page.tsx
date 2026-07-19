@@ -12,19 +12,19 @@ import { useI18n } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/authStore";
 
-const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email format" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 export default function LoginPage() {
   const router = useRouter();
   const { t, language } = useI18n();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const setAuth = useAuthStore((state) => state.setAuth);
+
+  const loginSchema = z.object({
+    email: z.string().email({ message: t.errors.invalidEmail }),
+    password: z.string().min(6, { message: t.errors.passwordTooShort }),
+  });
+
+  type LoginFormValues = z.infer<typeof loginSchema>;
 
   const {
     register,
@@ -48,21 +48,22 @@ export default function LoginPage() {
 
       if (response && response.data) {
         const { user, accessToken, refreshToken } = response.data;
+
+        // Only CUSTOMER can login here; ADMIN/STAFF/MODERATOR must use /admin/login
+        if (user.role === "ADMIN" || user.role === "STAFF" || user.role === "MODERATOR") {
+          toast.danger("Tài khoản này vui lòng đăng nhập tại trang quản trị.");
+          return;
+        }
+
         setAuth(user, accessToken, refreshToken);
         toast.success(t.auth.loginSuccess || "Logged in successfully!");
-        
-        // Redirect based on role
-        if (user.role === "ADMIN") {
-          router.push(`/${language}/admin/services`);
-        } else {
-          router.push(`/${language}`);
-        }
+        router.push(`/${language}`);
       } else {
-        throw new Error("Invalid response payload");
+        throw new Error(t.errors.unexpected);
       }
     } catch (error: any) {
       console.error("Login failed:", error);
-      toast.danger(error.message || "Login failed. Please check your credentials.");
+      toast.danger(error.message || t.errors.loginFailed);
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +134,15 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="text-xs text-rose-500 mt-1">{errors.password.message}</p>
               )}
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                href={`/${language}/forgot-password`}
+                className="text-sm text-primary hover:underline font-medium transition-colors"
+              >
+                {t.auth.forgotPassword}
+              </Link>
             </div>
 
             <Button
