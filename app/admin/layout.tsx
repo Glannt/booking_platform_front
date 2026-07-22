@@ -33,44 +33,8 @@ import AuthGuard from "@/components/auth-guard";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { language, setLanguage, t, supportedLanguages } = useI18n();
-  const [userLocation, setUserLocation] = useState<string>("");
   const mobileDrawerState = useOverlayState();
   const authUser = useAuthStore((s) => s.user);
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${language}`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              const address = data.address;
-              const city = address.city || address.town || address.village || address.county || address.state || "";
-              const country = address.country || "";
-              if (city && country) {
-                setUserLocation(`${city}, ${country}`);
-              } else if (data.display_name) {
-                setUserLocation(data.display_name.split(",").slice(0, 2).join(","));
-              } else {
-                setUserLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
-              }
-            } else {
-              setUserLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
-            }
-          } catch (error) {
-            setUserLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
-          }
-        },
-        (error) => {
-          console.warn("Geolocation permission denied or error occurred:", error);
-        }
-      );
-    }
-  }, [language]);
 
   const sidebarGroups: SidebarGroup[] = [
     {
@@ -122,25 +86,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           path: "/admin/sections",
           icon: <Layers size={20} />,
         },
+        {
+          key: "contact-settings",
+          label: "Cấu hình Liên hệ",
+          path: "/admin/contacts",
+          icon: <Globe size={20} />,
+        },
         ...(authUser?.role === "ADMIN"
           ? [
-              {
-                key: "roles",
-                label: "Phân quyền",
-                path: "/admin/roles",
-                icon: <Shield size={20} />,
-              },
-            ]
+            {
+              key: "roles",
+              label: "Phân quyền",
+              path: "/admin/roles",
+              icon: <Shield size={20} />,
+            },
+          ]
           : []),
         ...(authUser?.role === "ADMIN" || authUser?.role === "MODERATOR"
           ? [
-              {
-                key: "users-mgmt",
-                label: "Quản lý Users",
-                path: "/admin/users",
-                icon: <Users size={20} />,
-              },
-            ]
+            {
+              key: "users-mgmt",
+              label: "Quản lý Users",
+              path: "/admin/users",
+              icon: <Users size={20} />,
+            },
+          ]
           : []),
         {
           key: "settings",
@@ -173,14 +143,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isBookingsMgmt = pathname?.startsWith("/admin/bookings");
   const isToursMgmt = pathname?.startsWith("/admin/tours");
   const isVehiclesMgmt = pathname?.startsWith("/admin/vehicles");
-  const isCategoriesMgmt = pathname?.startsWith("/admin/services/categories");
   const isFaqsMgmt = pathname?.startsWith("/admin/services/faqs");
-  const isServicesMgmt = pathname?.startsWith("/admin/services") && !isCategoriesMgmt && !isFaqsMgmt;
   const isSettings = pathname?.startsWith("/admin/settings");
   const isRoles = pathname?.startsWith("/admin/roles");
   const isSections = pathname?.startsWith("/admin/sections");
+  const isContactsMgmt = pathname?.startsWith("/admin/contacts");
 
   const getPageTitle = () => {
+    if (isContactsMgmt) {
+      return "Cấu hình Liên hệ";
+    }
     if (isRoles) {
       return "Quản lý Phân quyền";
     }
@@ -189,9 +161,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     if (isBookingsMgmt) {
       return "Quản lý Đơn đặt xe & Tour";
-    }
-    if (isCategoriesMgmt) {
-      return "Danh mục Dịch vụ & Tour";
     }
     if (isFaqsMgmt) {
       return "Quản lý Feedback & Đánh giá";
@@ -202,9 +171,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isVehiclesMgmt) {
       return "Quản lý Xe";
     }
-    if (isServicesMgmt) {
-      return "Quản lý Đưa đón & Dịch vụ";
-    }
     if (isSettings) {
       return "Cài đặt tài khoản";
     }
@@ -212,11 +178,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const getPageSubtitle = () => {
+    if (isContactsMgmt) {
+      return "Quản lý các kênh liên hệ của khách hàng như Zalo, Phone, KakaoTalk, Whatsapp.";
+    }
     if (isBookingsMgmt) {
       return "Theo dõi và cập nhật trạng thái đơn đặt xe, dịch vụ, thông tin khách hàng và thanh toán.";
-    }
-    if (isCategoriesMgmt) {
-      return "Thiết lập các nhóm danh mục cho tour du lịch, thuê xe hoặc đưa đón.";
     }
     if (isFaqsMgmt) {
       return "Tạo và quản lý đánh giá khách hàng, chọn hiển thị trên trang chủ.";
@@ -226,9 +192,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     if (isVehiclesMgmt) {
       return "Thiết lập đội xe, danh mục xe, tuyến đường và bảng giá đưa đón sân bay.";
-    }
-    if (isServicesMgmt) {
-      return "Thiết lập danh mục dịch vụ, tuyến đưa đón, lịch trình chi tiết và bảng giá.";
     }
     if (isRoles) {
       return "Quản lý quyền hạn của từng vai trò quản trị viên.";

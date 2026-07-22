@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Language, translations, TranslationDictionary } from "@/config/translations";
+import { getContactSettings } from "@/lib/api/setting";
 
 export interface LanguageItem {
   code: Language;
@@ -22,6 +23,12 @@ interface LanguageContextType {
   setLanguage: (lang: Language) => void;
   t: TranslationDictionary;
   supportedLanguages: LanguageItem[];
+  contacts: {
+    phone: string;
+    zalo: string;
+    kakaotalk: string;
+    whatsapp: string;
+  };
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -29,9 +36,34 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname() || "";
 
+  const [contacts, setContacts] = useState({
+    phone: "0764971971",
+    zalo: "https://zalo.me/0764971971",
+    kakaotalk: "",
+    whatsapp: "",
+  });
+
+  useEffect(() => {
+    getContactSettings()
+      .then((res) => {
+        if (res?.data) {
+          setContacts({
+            phone: res.data.phone || "0764971971",
+            zalo: res.data.zalo || "https://zalo.me/0764971971",
+            kakaotalk: res.data.kakaotalk || "",
+            whatsapp: res.data.whatsapp || "",
+          });
+        }
+      })
+      .catch((err) => console.error("Failed to load contact settings:", err));
+  }, []);
+
   const getLangFromPath = (path: string): Language => {
     const segments = path.split("/");
     const firstSegment = segments[1] as Language;
+    if (["admin", "staff"].includes(firstSegment)) {
+      return "vi";
+    }
     if (["vi", "en", "ko", "ru"].includes(firstSegment)) {
       return firstSegment;
     }
@@ -43,11 +75,16 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
   // Sync state when URL pathname changes & read preferences on mount
   useEffect(() => {
-    const lang = getLangFromPath(pathname);
-    
-    // Check if the current route has a locale prefix
     const segments = pathname.split("/");
-    const hasLocalePrefix = ["vi", "en", "ko", "ru"].includes(segments[1]);
+    const firstSegment = segments[1];
+    
+    if (["admin", "staff"].includes(firstSegment)) {
+      setLanguageState("vi");
+      return;
+    }
+
+    const lang = getLangFromPath(pathname);
+    const hasLocalePrefix = ["vi", "en", "ko", "ru"].includes(firstSegment);
     
     if (hasLocalePrefix) {
       setLanguageState(lang);
@@ -96,7 +133,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const t = translations[language];
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, supportedLanguages: defaultLanguages }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, supportedLanguages: defaultLanguages, contacts }}>
       {children}
     </LanguageContext.Provider>
   );
