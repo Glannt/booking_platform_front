@@ -1,4 +1,4 @@
-import { apiFetch, ApiResponse } from "./client";
+import { apiFetch, ApiResponse, ApiOptions } from "./client";
 
 export interface VehicleCategoryTranslationDto {
   id?: number;
@@ -33,6 +33,7 @@ export interface VehicleDto {
   canRent: boolean;
   luggage: number;
   luggageUnit: string;
+  luggageWeight?: number;
   thumbnailId?: number;
   thumbnailUrl?: string;
   imageIds?: number[];
@@ -55,14 +56,17 @@ export async function getVehicleCategories(params?: {
   active?: boolean;
   page?: number;
   size?: number;
-}): Promise<ApiResponse<PaginatedResponse<VehicleCategoryDto>>> {
+}, options?: ApiOptions): Promise<ApiResponse<PaginatedResponse<VehicleCategoryDto>>> {
   const query = new URLSearchParams();
   if (params?.search !== undefined) query.append("search", params.search);
   if (params?.active !== undefined) query.append("active", params.active.toString());
   if (params?.page !== undefined) query.append("page", params.page.toString());
   if (params?.size !== undefined) query.append("size", params.size.toString());
   const queryString = query.toString();
-  return apiFetch<ApiResponse<PaginatedResponse<VehicleCategoryDto>>>(`/api/v1/vehicle-categories${queryString ? `?${queryString}` : ""}`);
+  return apiFetch<ApiResponse<PaginatedResponse<VehicleCategoryDto>>>(
+    `/api/v1/vehicle-categories${queryString ? `?${queryString}` : ""}`,
+    options
+  );
 }
 
 export async function createVehicleCategory(payload: Omit<VehicleCategoryDto, "id">): Promise<ApiResponse<VehicleCategoryDto>> {
@@ -103,6 +107,7 @@ export async function createVehicle(payload: {
   canRent: boolean;
   luggage: number;
   luggageUnit: string;
+  luggageWeight?: number;
   imageIds?: number[];
   thumbnailId?: number;
   typeId: number;
@@ -122,6 +127,7 @@ export async function updateVehicle(id: number, payload: {
   canRent: boolean;
   luggage: number;
   luggageUnit: string;
+  luggageWeight?: number;
   imageIds?: number[];
   thumbnailId?: number;
   typeId: number;

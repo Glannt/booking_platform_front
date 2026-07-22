@@ -1,4 +1,4 @@
-import { apiFetch, ApiResponse } from "./client";
+import { apiFetch, ApiResponse, ApiOptions } from "./client";
 
 export interface IntercityRouteTranslationDto {
   id?: number;
@@ -218,11 +218,11 @@ export async function deleteDepartureTime(id: number): Promise<ApiResponse<void>
 // === Rentals (self-drive) ===
 
 export async function getRentalPricesByRental(rentalId: number): Promise<ApiResponse<RentalPriceDto[]>> {
-  return apiFetch(`/api/rentals/${rentalId}/prices`);
+  return apiFetch(`/api/v1/rentals/${rentalId}/prices`);
 }
 
-export async function getActiveRentals(): Promise<ApiResponse<RentalDto[]>> {
-  const res = await apiFetch<ApiResponse<{ content: RentalDto[]; totalElements: number }>>("/api/rentals?page=0&size=100");
+export async function getActiveRentals(options?: ApiOptions): Promise<ApiResponse<RentalDto[]>> {
+  const res = await apiFetch<ApiResponse<{ content: RentalDto[]; totalElements: number }>>("/api/v1/rentals?page=0&size=100", options);
   if (res && res.data) {
     const active = (res.data.content || []).filter((r: RentalDto) => r.active);
     return { data: active } as ApiResponse<RentalDto[]>;
@@ -231,7 +231,7 @@ export async function getActiveRentals(): Promise<ApiResponse<RentalDto[]>> {
 }
 
 export async function getRentalTypes(): Promise<ApiResponse<RentalTypeDto[]>> {
-  const res = await apiFetch<ApiResponse<{ content: RentalTypeDto[]; totalElements: number }>>("/api/rental-types?page=0&size=100");
+  const res = await apiFetch<ApiResponse<{ content: RentalTypeDto[]; totalElements: number }>>("/api/v1/rental-types?page=0&size=100");
   return { data: res?.data?.content || [] } as ApiResponse<RentalTypeDto[]>;
 }
 
