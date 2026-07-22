@@ -66,13 +66,13 @@ export default function AirportRouteModal({ isOpen, onClose, route, airports, on
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="airport-route-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-md relative">
             <Button isIconOnly variant="ghost" onClick={onClose} className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none">✕</Button>
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
-              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              <h2 id="airport-route-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 {route ? "Chi Tiết Tuyến Đường" : "Tạo Tuyến Đường Mới"}
               </h2>
             </ModalHeader>

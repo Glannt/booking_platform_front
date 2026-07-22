@@ -46,7 +46,7 @@ interface RentCarClientProps {
 }
 
 export default function RentCarClient({ sections }: RentCarClientProps) {
-  const { language, t } = useI18n();
+  const { language, t, contacts } = useI18n();
   const router = useRouter();
   const vi = language === "vi";
 
@@ -502,7 +502,7 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
 
                     {route.prices && route.prices.length > 0 && (
                       <p className="text-xs font-black text-accent">
-                        {t.rentCar.priceFrom} 
+                        {t.rentCar.priceFrom}{" "}
                         {formatPrice(Math.min(...route.prices.filter(p => p.active).map(p => p.oneWayAmount)))}
                       </p>
                     )}
@@ -583,8 +583,14 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
                 </div>
               </div>
             </div>
-            <div className="rounded-3xl overflow-hidden shadow-sm relative h-full min-h-[300px] bg-slate-900 dark:bg-black/40 flex flex-col justify-end p-6">
-              <div className="space-y-2">
+            <div className="rounded-3xl overflow-hidden shadow-sm relative h-full min-h-[300px] flex flex-col justify-end p-6">
+              <img
+                src="/dcar-2.jpg"
+                alt="Luxury limousine Dcar"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+              <div className="space-y-2 relative z-10">
                 <h4 className="text-white font-extrabold text-sm">{t.rentCar.luxuryTitle}</h4>
                 <p className="text-slate-200 text-[10px] leading-relaxed">{language === "vi" ? "Tận hưởng chuyến đi tuyệt vời với các dòng xe đời mới chất lượng hàng đầu." : "Travel in comfort with our high-end passenger cabin amenities."}</p>
               </div>
@@ -629,12 +635,22 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
         {showContactMenu && (
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 w-40 flex flex-col gap-1.5 animate-fade-in-up">
-            <a href="tel:0901234567" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline">
+            <a href={`tel:${contacts.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline">
               <Phone size={14} className="text-accent" /><span>{t.common.callNow}</span>
             </a>
-            <a href="https://zalo.me/0901234567" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50">
+            <a href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50">
               <MessageCircle size={14} className="text-accent" /><span>Zalo</span>
             </a>
+            {contacts.kakaotalk && (
+              <a href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50">
+                <span className="text-accent">💛</span><span>KakaoTalk</span>
+              </a>
+            )}
+            {contacts.whatsapp && (
+              <a href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50">
+                <span className="text-accent">💚</span><span>WhatsApp</span>
+              </a>
+            )}
           </div>
         )}
         <button

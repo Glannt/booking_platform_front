@@ -111,7 +111,7 @@ export default function AirportTransferModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="airport-transfer-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-lg relative">
@@ -126,7 +126,7 @@ export default function AirportTransferModal({
 
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                <h2 id="airport-transfer-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                   {transfer ? "Chỉnh Sửa Giá Vé" : "Thêm Giá Vé Mới"}
                 </h2>
                 <p className="text-xs text-slate-500">

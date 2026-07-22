@@ -49,12 +49,12 @@ export default function UserDeleteModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="user-delete-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="sm">
           <ModalDialog className="max-w-md bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
             <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
-              <span className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <span id="user-delete-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <AlertCircle className="text-rose-500" size={20} />
                 Xác nhận xóa User
               </span>

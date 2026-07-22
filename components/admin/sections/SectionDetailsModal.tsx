@@ -38,9 +38,9 @@ export default function SectionDetailsModal({
   const viTrans = section.translations.find((t) => t.locale === "vi") || section.translations[0];
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="section-details-title">
       <Modal.Header className="flex flex-row items-center justify-between px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
-        <span className="text-lg font-extrabold text-slate-900 dark:text-white">Chi tiết Section</span>
+        <span id="section-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">Chi tiết Section</span>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

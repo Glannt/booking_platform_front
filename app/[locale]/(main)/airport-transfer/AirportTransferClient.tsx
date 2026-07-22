@@ -77,6 +77,7 @@ interface VehicleOption {
   priceOneWay: number;
   priceReturn: number;
   categoryId?: number;
+  thumbnailUrl?: string;
 }
 
 interface AirportTransferClientProps {
@@ -84,8 +85,12 @@ interface AirportTransferClientProps {
 }
 
 export default function AirportTransferClient({ sections }: AirportTransferClientProps) {
-  const { language, t } = useI18n();
+  const { language, t, contacts } = useI18n();
   const vi = language === "vi";
+  const zaloPhone = contacts.zalo.includes("zalo.me/")
+    ? contacts.zalo.split("zalo.me/")[1].split("?")[0]
+    : contacts.zalo;
+  const zaloUrl = `https://zalo.me/${zaloPhone}`;
 
   const heroSection = sections.find(s => s.sectionType === "HERO_BANNER") || null;
 
@@ -279,6 +284,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         priceOneWay: tripType === "one-way" ? apiPrice : Math.round(apiPrice / 1.85),
         priceReturn: apiPrice,
         categoryId: cat.id,
+        thumbnailUrl: cat.thumbnailUrl,
       };
     });
   };
@@ -514,7 +520,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         `- Ghi chú: ${notes}\n` +
         `- Tổng tiền tạm tính: ${formatPrice(unitPrice)}`;
 
-      window.open(`https://zalo.me/0764971971?text=${encodeURIComponent(message)}`, "_blank");
+      window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
     } catch (err) {
       console.error("Booking API error:", err);
       const vehicleName = vi ? selectedVehicle.nameVi : selectedVehicle.nameEn;
@@ -531,7 +537,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         `- Chiều đi: ${routeLine}\n` +
         `- Ngày giờ đón: ${dateText} lúc ${timeText}\n` +
         `- Tổng tiền tạm tính: ${formatPrice(unitPrice)}`;
-      window.open(`https://zalo.me/0764971971?text=${encodeURIComponent(message)}`, "_blank");
+      window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
       setBookingSuccess(true);
     } finally {
       setSubmitting(false);
@@ -1169,13 +1175,16 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
             ) : vehiclesLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-24 rounded" />
-                        <Skeleton className="h-3 w-16 rounded" />
+                  <div key={i} className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800">
+                    <div className="flex justify-between items-center gap-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-14 h-14 rounded-xl shrink-0" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-24 rounded" />
+                          <Skeleton className="h-3 w-16 rounded" />
+                        </div>
                       </div>
-                      <Skeleton className="h-5 w-20 rounded" />
+                      <Skeleton className="h-5 w-20 rounded shrink-0" />
                     </div>
                   </div>
                 ))}
@@ -1191,12 +1200,21 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                       onClick={() => setSelectedVehicleId(v.id)}
                       className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${isSelected ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300"}`}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="text-sm font-black text-slate-800 dark:text-white">{language === "vi" ? v.nameVi : v.nameEn}</h4>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{v.capacity} · {v.luggage}</p>
+                      <div className="flex justify-between items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-850 flex items-center justify-center border border-slate-200/50 dark:border-slate-800">
+                            {v.thumbnailUrl ? (
+                              <img src={v.thumbnailUrl} alt={language === "vi" ? v.nameVi : v.nameEn} className="w-full h-full object-cover" />
+                            ) : (
+                              <Car size={24} className="text-slate-400 dark:text-slate-650" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{language === "vi" ? v.nameVi : v.nameEn}</h4>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{v.capacity} · {v.luggage}</p>
+                          </div>
                         </div>
-                        <span className="text-base font-black text-accent">{formatPrice(price)}</span>
+                        <span className="text-base font-black text-accent shrink-0">{formatPrice(price)}</span>
                       </div>
                     </div>
                   );
@@ -1232,6 +1250,15 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
               </div>
             </div>
           </div>
+
+          {nhaTrangAddress && (
+            <RoutingMap
+              nhaTrangAddress={nhaTrangAddress}
+              direction={tripType === "return"
+                ? (outboundStartsFrom === "airport" ? "to-nhatrang" : "to-airport")
+                : direction}
+            />
+          )}
         </div>
       </main>
 

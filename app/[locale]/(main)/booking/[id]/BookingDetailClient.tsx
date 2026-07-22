@@ -619,7 +619,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
       </div>
 
       {/* Submission Status Modal */}
-      <Modal isOpen={modalState !== "idle"} onOpenChange={(open) => { if (!open) setModalState("idle"); }}>
+      <Modal isOpen={modalState !== "idle"} onOpenChange={(open) => { if (!open) setModalState("idle"); }} aria-label="Booking status">
         <ModalBackdrop className="bg-slate-950/60 backdrop-blur-sm">
           <ModalContainer size="sm">
             <ModalDialog className="bg-content1 border border-default-250/50 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl focus:outline-none overflow-hidden">

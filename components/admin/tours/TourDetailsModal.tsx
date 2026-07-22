@@ -350,7 +350,7 @@ export default function TourDetailsModal({
     const FormTag = isEditMode ? "form" : "div";
 
     return (
-        <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="tour-details-title">
             <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
                 <ModalContainer size="lg">
                     <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-3xl relative">
@@ -366,7 +366,7 @@ export default function TourDetailsModal({
 
                         <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
                             <div>
-                                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                                <h2 id="tour-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                                     <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Tour Du Lịch" : "Edit Tour Details") : (language === "vi" ? "Chi Tiết Tour Du Lịch" : "Sightseeing Tour Details")}</span>
                                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">#{tour.id}</span>
                                 </h2>
@@ -528,8 +528,7 @@ export default function TourDetailsModal({
                                                 <MultiImageUpload
                                                     imageIds={imageIds}
                                                     thumbnailId={thumbnailId}
-                                                    onImageIdsChange={() => { }}
-                                                    onThumbnailChange={() => { }}
+                                                    readOnly
                                                     label={language === "vi" ? "Hình ảnh Tour" : "Tour Images"}
                                                 />
                                             </div>

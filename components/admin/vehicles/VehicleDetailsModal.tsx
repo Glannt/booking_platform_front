@@ -56,6 +56,7 @@ export default function VehicleDetailsModal({
   const [canRent, setCanRent] = useState<boolean>(true);
   const [luggage, setLuggage] = useState<number>(2);
   const [luggageUnit, setLuggageUnit] = useState<string>("kg");
+  const [luggageWeight, setLuggageWeight] = useState<number>(20);
   const [typeId, setTypeId] = useState<number>(0);
   const [imageIds, setImageIds] = useState<number[]>([]);
   const [thumbnailId, setThumbnailId] = useState<number | null>(null);
@@ -70,7 +71,8 @@ export default function VehicleDetailsModal({
       setActive(vehicle.active);
       setCanRent(vehicle.canRent);
       setLuggage(vehicle.luggage);
-      setLuggageUnit(vehicle.luggageUnit || "kg");
+      setLuggageUnit(vehicle.luggageUnit || "kiện");
+      setLuggageWeight(vehicle.luggageWeight ?? 20);
       setTypeId(vehicle.type?.id || categories[0]?.id || 0);
       setImageIds(vehicle.imageIds || []);
       setThumbnailId(vehicle.thumbnailId ?? null);
@@ -101,6 +103,7 @@ export default function VehicleDetailsModal({
       canRent,
       luggage,
       luggageUnit,
+      luggageWeight,
       imageIds: imageIds.length > 0 ? imageIds : undefined,
       thumbnailId: thumbnailId ?? undefined,
       typeId
@@ -126,6 +129,7 @@ export default function VehicleDetailsModal({
         canRent: payload.canRent,
         luggage: payload.luggage,
         luggageUnit: payload.luggageUnit,
+        luggageWeight: payload.luggageWeight,
         type: selectedCat
       };
       onSaveSuccess(simulated);
@@ -138,10 +142,10 @@ export default function VehicleDetailsModal({
   if (!vehicle) return null;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="vehicle-details-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
-        <ModalContainer size="md">
-          <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-lg relative">
+        <ModalContainer size="lg">
+          <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-3xl relative">
             <Button
               isIconOnly
               variant="ghost"
@@ -152,14 +156,14 @@ export default function VehicleDetailsModal({
             </Button>
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Thông tin Xe" : "Edit Vehicle") : (language === "vi" ? "Chi tiết Thông tin Xe" : "Vehicle Details")}</span>
+                <h2 id="vehicle-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>{isEditMode ? "Chỉnh sửa Thông tin Xe" : "Chi tiết Thông tin Xe"}</span>
                   <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">#{vehicle.id}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isEditMode
-                    ? (language === "vi" ? "Cập nhật thông số kỹ thuật xe hoặc danh mục phân loại." : "Update vehicle technical details and category.")
-                    : (language === "vi" ? "Xem thông số kỹ thuật và trạng thái của xe." : "View specifications and status of the vehicle.")}
+                    ? "Cập nhật thông số kỹ thuật xe hoặc danh mục phân loại."
+                    : "Xem thông số kỹ thuật và trạng thái của xe."}
                 </p>
               </div>
             </ModalHeader>
@@ -169,7 +173,7 @@ export default function VehicleDetailsModal({
                 {!isEditMode ? (
                   // Read-only Details View
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-slate-50 dark:bg-black/30 p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {language === "vi" ? "Hãng xe / Thương hiệu" : "Brand"}
@@ -189,7 +193,7 @@ export default function VehicleDetailsModal({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-slate-50 dark:bg-black/30 p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {language === "vi" ? "Danh mục xe" : "Vehicle Category"}
@@ -210,7 +214,7 @@ export default function VehicleDetailsModal({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-slate-50 dark:bg-black/30 p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {language === "vi" ? "Loại nhiên liệu" : "Fuel Type"}
@@ -218,8 +222,8 @@ export default function VehicleDetailsModal({
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 capitalize">
                           {fuelType === "petrol" ? (language === "vi" ? "Xăng" : "Petrol") :
                             fuelType === "diesel" ? (language === "vi" ? "Dầu Diesel" : "Diesel") :
-                            fuelType === "electric" ? (language === "vi" ? "Điện" : "Electric") :
-                            fuelType || "—"}
+                              fuelType === "electric" ? (language === "vi" ? "Điện" : "Electric") :
+                                fuelType || "—"}
                         </span>
                       </div>
 
@@ -228,7 +232,7 @@ export default function VehicleDetailsModal({
                           {language === "vi" ? "Hành lý tối đa" : "Max Luggage"}
                         </span>
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                          {luggage} {luggageUnit}
+                          {luggage} {luggageUnit} {luggageWeight ? `(${luggageWeight} kg)` : ""}
                         </span>
                       </div>
                     </div>
@@ -237,11 +241,10 @@ export default function VehicleDetailsModal({
                       <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                         {language === "vi" ? "Trạng thái hoạt động" : "Operational Status"}
                       </span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                        active
-                          ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-900/50"
-                          : "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/50"
-                      }`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${active
+                        ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-900/50"
+                        : "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/50"
+                        }`}>
                         {active ? (language === "vi" ? "Đang hoạt động" : "Active / Available") : (language === "vi" ? "Ngừng hoạt động" : "Inactive / Unavailable")}
                       </span>
                     </div>
@@ -249,33 +252,32 @@ export default function VehicleDetailsModal({
                     <MultiImageUpload
                       imageIds={imageIds}
                       thumbnailId={thumbnailId}
-                      onImageIdsChange={setImageIds}
-                      onThumbnailChange={setThumbnailId}
-                      label="Hình ảnh Xe"
+                      readOnly
+                      label={language === "vi" ? "Hình ảnh Xe" : "Vehicle Images"}
                     />
                   </div>
                 ) : (
                   // Edit Mode form inputs
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                       <TextField isRequired className="w-full">
-                         <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Hãng xe / Thương hiệu *" : "Brand *"}</Label>
-                         <Input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Toyota, Mercedes" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
-                       </TextField>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <TextField isRequired className="w-full">
+                        <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Hãng xe / Thương hiệu *" : "Brand *"}</Label>
+                        <Input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Toyota, Mercedes" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                      </TextField>
 
-                       <TextField isRequired className="w-full">
-                         <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Mẫu xe / Dòng xe *" : "Model *"}</Label>
-                         <Input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. Camry, Vios" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
-                       </TextField>
-                     </div>
+                      <TextField isRequired className="w-full">
+                        <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Mẫu xe / Dòng xe *" : "Model *"}</Label>
+                        <Input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="e.g. Camry, Vios" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                      </TextField>
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="w-full">
                         <Select
                           isRequired
                           fullWidth
                           name="typeId"
-                          placeholder={language === "vi" ? "-- Chọn loại xe --" : "-- Select category --"}
+                          placeholder="-- Chọn loại xe --"
                           selectedKey={String(typeId)}
                           onSelectionChange={(key) => {
                             if (key) {
@@ -342,11 +344,12 @@ export default function VehicleDetailsModal({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="w-full">
                         <Select
                           isRequired
                           fullWidth
+                          placeholder="Chọn loại nhiên liệu"
                           name="fuelType"
                           selectedKey={fuelType}
                           onSelectionChange={(key) => {
@@ -385,7 +388,7 @@ export default function VehicleDetailsModal({
                         </Select>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
                           <NumberField
                             className="w-full"
@@ -394,7 +397,7 @@ export default function VehicleDetailsModal({
                             minValue={0}
                           >
                             <Label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">
-                              {language === "vi" ? "Hành lý" : "Luggage"}
+                              {language === "vi" ? "Số kiện" : "Pieces"}
                             </Label>
                             <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                               <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
@@ -414,9 +417,36 @@ export default function VehicleDetailsModal({
                           </NumberField>
                         </div>
                         <TextField className="w-full">
-                           <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Đơn vị" : "Unit"}</Label>
-                           <Input type="text" value={luggageUnit} onChange={(e) => setLuggageUnit(e.target.value)} placeholder="kg, vali" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
-                         </TextField>
+                          <Label className="text-xs font-bold uppercase tracking-wider mb-1"> Đơn vị</Label>
+                          <Input type="text" value={luggageUnit} onChange={(e) => setLuggageUnit(e.target.value)} placeholder="kiện, túi" className="w-full px-2 py-3 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                        </TextField>
+                        <div>
+                          <NumberField
+                            className="w-full"
+                            value={luggageWeight}
+                            onChange={(val) => setLuggageWeight(val || 0)}
+                            minValue={0}
+                          >
+                            <Label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">
+                              {language === "vi" ? "Số kg tối đa" : "Max weight (kg)"}
+                            </Label>
+                            <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
+                              <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
+                              <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent">
+                                  <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
+                                    <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
+                                  </svg>
+                                </NumberField.IncrementButton>
+                                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                                  <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
+                                    <path clipRule="evenodd" d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
+                                  </svg>
+                                </NumberField.DecrementButton>
+                              </div>
+                            </NumberField.Group>
+                          </NumberField>
+                        </div>
                       </div>
                     </div>
 
@@ -471,6 +501,7 @@ export default function VehicleDetailsModal({
                 {!isEditMode ? (
                   <>
                     <Button
+                      key="btn-close"
                       variant="outline"
                       className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
                       onClick={onClose}
@@ -478,9 +509,14 @@ export default function VehicleDetailsModal({
                       {language === "vi" ? "Đóng" : "Close"}
                     </Button>
                     <Button
+                      key="btn-edit"
                       type="button"
                       className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none"
-                      onClick={() => setIsEditMode(true)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsEditMode(true);
+                      }}
                     >
                       <Edit size={16} className="mr-1.5" />
                       {language === "vi" ? "Chỉnh sửa" : "Edit"}
@@ -489,6 +525,7 @@ export default function VehicleDetailsModal({
                 ) : (
                   <>
                     <Button
+                      key="btn-back"
                       variant="outline"
                       className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
                       onClick={() => setIsEditMode(false)}
@@ -497,6 +534,7 @@ export default function VehicleDetailsModal({
                       {language === "vi" ? "Quay lại" : "Back"}
                     </Button>
                     <Button
+                      key="btn-save"
                       type="submit"
                       isDisabled={loading}
                       className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none"

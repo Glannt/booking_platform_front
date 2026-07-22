@@ -100,12 +100,12 @@ export default function BookingDetailsModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="booking-details-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={true}>
         <ModalContainer size="lg">
           <ModalDialog className="max-w-3xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
             <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
-              <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+              <span id="booking-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 {language === "vi" ? "Chi tiết Đơn đặt" : "Booking Details"}
               </span>
               <span className="text-sm font-mono font-bold text-primary">

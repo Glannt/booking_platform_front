@@ -561,13 +561,13 @@ export default function ServiceCreateModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="service-create-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="lg">
           <ModalDialog className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] max-w-4xl flex flex-col">
             <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
               <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
-                <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+                <span id="service-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                   {language === "vi" ? "Thêm mới Tour Du Lịch" : "Register New Tour"}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">

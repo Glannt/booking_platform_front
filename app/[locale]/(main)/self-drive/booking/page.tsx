@@ -12,7 +12,7 @@ import {
   toast
 } from "@heroui/react";
 import { DateValue } from "@internationalized/date";
-import { getLocalTimeZone, today } from "@internationalized/date";
+import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import {
   Car,
   MapPin,
@@ -46,7 +46,7 @@ interface Vehicle {
 }
 
 export default function SelfDriveBookingPage() {
-  const { language, t } = useI18n();
+  const { language, t, contacts } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const vi = language === "vi";
@@ -84,8 +84,8 @@ export default function SelfDriveBookingPage() {
     (async () => {
       try {
         const [rentalsRes, categoriesRes] = await Promise.all([
-          getActiveRentals(),
-          getVehicleCategories({ active: true })
+          getActiveRentals({ skipTranslationFilter: true }),
+          getVehicleCategories({ active: true }, { skipTranslationFilter: true })
         ]);
         if (!active) return;
 
@@ -109,8 +109,18 @@ export default function SelfDriveBookingPage() {
           .filter(r => !r.driverRequired)
           .map(r => {
             const cat = catMap.get(r.vehicleCategoryId);
-            const trans = cat?.translations?.find(tr => tr.locale === language) || cat?.translations?.[0];
-            const name = trans?.name || (vi ? "Phân khúc xe" : "Vehicle Segment");
+            const trans = cat?.translations?.find(t => t.locale === language)
+              || cat?.translations?.find(t => t.locale === "en")
+              || cat?.translations?.find(t => t.locale === "vi")
+              || cat?.translations?.[0];
+            const name = trans?.name
+              || cat?.translations?.find(t => t.locale === "en")?.name
+              || cat?.translations?.find(t => t.locale === "vi")?.name
+              || "Phân khúc xe";
+            const desc = trans?.description
+              || cat?.translations?.find(t => t.locale === "en")?.description
+              || cat?.translations?.find(t => t.locale === "vi")?.description
+              || "";
             const rentalPrices = priceMap.get(r.id) || [];
             const activePrice = rentalPrices.find(p => p.active && p.vehicleCategoryId === r.vehicleCategoryId);
             const dailyRate = activePrice ? Number(activePrice.amount) : 0;
@@ -121,7 +131,7 @@ export default function SelfDriveBookingPage() {
               rentalId: r.id,
               vehicleCategoryId: r.vehicleCategoryId,
               name,
-              desc: trans?.description || "",
+              desc,
               pricePerDay: dailyRate,
               deposit: r.deposit || 0,
               minimumDays: r.minimumDays || 1,
@@ -156,11 +166,42 @@ export default function SelfDriveBookingPage() {
 
   useEffect(() => {
     if (user) {
-      if (user.fullname && !customerName) setCustomerName(user.fullname);
+      const nameParam = searchParams.get("customerName");
+      const phoneParam = searchParams.get("customerPhone");
+      if (user.fullname && !customerName && !nameParam) setCustomerName(user.fullname);
       if (user.email && !customerEmail) setCustomerEmail(user.email);
-      if (user.phone && !customerPhone) setCustomerPhone(user.phone);
+      if (user.phone && !customerPhone && !phoneParam) setCustomerPhone(user.phone);
     }
-  }, [user]);
+  }, [user, searchParams]);
+
+  useEffect(() => {
+    const pickupDateParam = searchParams.get("pickupDate");
+    if (pickupDateParam) {
+      try {
+        setDateValue(parseDate(pickupDateParam));
+      } catch (e) {
+        console.error("Failed to parse pickupDate from URL:", e);
+      }
+    }
+
+    const daysParam = searchParams.get("days");
+    if (daysParam) {
+      const days = parseInt(daysParam, 10);
+      if (!isNaN(days) && days > 0) {
+        setRentalDays(days);
+      }
+    }
+
+    const nameParam = searchParams.get("customerName");
+    if (nameParam) {
+      setCustomerName(nameParam);
+    }
+
+    const phoneParam = searchParams.get("customerPhone");
+    if (phoneParam) {
+      setCustomerPhone(phoneParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -217,7 +258,7 @@ export default function SelfDriveBookingPage() {
       }
     } catch (err) {
       console.error("Booking failed:", err);
-      toast.danger(vi ? "Đặt xe thất bại. Vui lòng thử lại." : "Booking failed. Please try again.");
+      toast.danger(t.selfDrive.toastFailed);
     } finally {
       setIsSubmitting(false);
       setShowConfirmModal(false);
@@ -238,13 +279,13 @@ export default function SelfDriveBookingPage() {
             className="inline-flex items-center gap-1.5 bg-white/10 dark:bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-white hover:bg-white/20 transition-colors cursor-pointer border border-white/20"
           >
             <ArrowLeft size={13} />
-            {vi ? "Quay lại" : "Back"}
+            {t.selfDrive.back}
           </button>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
-            {vi ? "Đặt xe tự lái Nha Trang" : "Self-Drive Car Booking"}
+            {t.selfDrive.heroTitle}
           </h1>
           <p className="text-sm text-slate-200 font-medium max-w-xl">
-            {vi ? "Chọn xe, điền thông tin và nhận xe ngay trong ngày." : "Choose your vehicle, fill in details, and pick up the car today."}
+            {t.selfDrive.heroSubtitle}
           </p>
         </div>
       </section>
@@ -261,26 +302,26 @@ export default function SelfDriveBookingPage() {
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6 space-y-3">
                   <CheckCircle size={32} className="text-green-600 dark:text-green-400 mx-auto" />
                   <h3 className="text-base font-extrabold text-green-800 dark:text-green-200">
-                    {vi ? "Đặt xe thành công!" : "Booking Successful!"}
+                    {t.selfDrive.bookingSuccess}
                   </h3>
                   <div className="bg-white dark:bg-black/40 rounded-xl px-5 py-3 border border-green-100 dark:border-green-800/40 inline-block">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
-                      {vi ? "Mã đặt chỗ" : "Booking Code"}
+                      {t.selfDrive.bookingCode}
                     </p>
                     <p className="text-xl font-black font-mono text-slate-800 dark:text-white tracking-wider">
                       {bookingSuccess}
                     </p>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {vi ? "Chúng tôi sẽ liên hệ bạn trong thời gian sớm nhất để xác nhận." : "We will contact you as soon as possible to confirm."}
+                    {t.selfDrive.bookingSuccessDesc}
                   </p>
                 </div>
                 <div className="flex gap-3 justify-center">
                   <Button onClick={() => { setBookingSuccess(null); }} variant="outline" className="text-xs font-bold cursor-pointer">
-                    {vi ? "Đặt thêm xe" : "Book Another"}
+                    {t.selfDrive.bookAnother}
                   </Button>
                   <Button onClick={() => router.push(`/${language}/self-drive`)} className="text-xs font-bold cursor-pointer bg-accent text-white border-none">
-                    {vi ? "Xem danh sách xe" : "View Fleet"}
+                    {t.selfDrive.viewFleet}
                   </Button>
                 </div>
               </div>
@@ -289,10 +330,10 @@ export default function SelfDriveBookingPage() {
 
                 <div className="space-y-1 pb-4 border-b border-slate-100 dark:border-slate-850">
                   <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-accent">
-                    ⚡ {vi ? "Đặt xe tự lái" : "Self-Drive Booking"}
+                    ⚡ {t.selfDrive.serviceType}
                   </span>
                   <h2 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                    {vi ? "Thông tin đặt xe" : "Booking Details"}
+                    {t.selfDrive.bookingDetails}
                   </h2>
                 </div>
 
@@ -303,12 +344,12 @@ export default function SelfDriveBookingPage() {
                   ) : (
                     <Select
                       className="w-full"
-                      placeholder={vi ? "Chọn dòng xe" : "Select vehicle"}
+                      placeholder={t.selfDrive.selectVehiclePlaceholder}
                       selectedKey={selectedVehicleKey}
                       onSelectionChange={(key) => { if (key) setSelectedVehicleKey(String(key)); }}
                     >
                       <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-slate-500 mb-1.5 pl-1">
-                        {vi ? "Dòng xe mong muốn" : "Desired Vehicle"}
+                        {t.selfDrive.desiredVehicle}
                       </Label>
                       <Select.Trigger className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3">
                         <Select.Value className="text-xs font-semibold" />
@@ -364,7 +405,7 @@ export default function SelfDriveBookingPage() {
                     labelClassName="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1"
                     value={timeValue}
                     onChange={setTimeValue}
-                    popoverTitle={vi ? "Chọn giờ nhận xe" : "Select Time"}
+                    popoverTitle={t.selfDrive.confirmTime}
                     language={language}
                   />
                 </div>
@@ -372,7 +413,7 @@ export default function SelfDriveBookingPage() {
                 {/* Rental Days */}
                 <div className="flex flex-col w-full">
                   <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">
-                    {vi ? "Số ngày thuê" : "Rental Duration"} <span className="text-red-500">*</span>
+                    {t.selfDrive.rentalDays} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black focus-within:border-accent/50 transition-colors">
                     <CalendarDays size={16} className="text-slate-400 mr-2 shrink-0" />
@@ -394,14 +435,14 @@ export default function SelfDriveBookingPage() {
                 {/* Delivery Location */}
                 <div className="flex flex-col w-full">
                   <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">
-                    {vi ? "Điểm giao/nhận xe" : "Delivery Location"} <span className="text-red-500">*</span>
+                    {t.selfDrive.pickupLocationLabel} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black focus-within:border-accent/50 transition-colors">
                     <MapPin size={16} className="text-slate-400 mr-2 shrink-0" />
                     <input
                       type="text"
                       required
-                      placeholder={vi ? "VD: Khách sạn Mường Thanh, Sân bay..." : "e.g. Muong Thanh Hotel, Airport..."}
+                      placeholder={t.selfDrive.pickupLocationPlaceholder}
                       value={pickupLocation}
                       onChange={(e) => setPickupLocation(e.target.value)}
                       className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
@@ -413,7 +454,7 @@ export default function SelfDriveBookingPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white pl-1">
-                      {vi ? "Thông tin liên hệ" : "Contact Information"}
+                      {t.selfDrive.contactInfo}
                     </label>
                     <AutofillButton
                       onFill={(d) => { setCustomerName(d.fullname); setCustomerPhone(d.phone); setCustomerEmail(d.email); }}
@@ -423,18 +464,18 @@ export default function SelfDriveBookingPage() {
                     <TextField isRequired className="w-full">
                       <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.common.name}</Label>
                       <Input
-                        type="text"
-                        placeholder={vi ? "Nguyễn Văn A" : "John Doe"}
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="text-xs font-semibold"
+                      type="text"
+                      placeholder={t.selfDrive.namePlaceholder}
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="text-xs font-semibold"
                       />
                     </TextField>
                     <TextField className="w-full">
-                      <Label className="text-[10px] font-extrabold uppercase tracking-wider">Email</Label>
+                      <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.selfDrive.email}</Label>
                       <Input
                         type="email"
-                        placeholder="email@example.com"
+                        placeholder={t.selfDrive.emailPlaceholder}
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         className="text-xs font-semibold"
@@ -444,7 +485,7 @@ export default function SelfDriveBookingPage() {
                       <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.common.phone}</Label>
                       <Input
                         type="tel"
-                        placeholder={vi ? "0901 234 567" : "+84 901 234 567"}
+                        placeholder={t.selfDrive.phonePlaceholder}
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
                         className="text-xs font-semibold"
@@ -461,7 +502,7 @@ export default function SelfDriveBookingPage() {
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder={vi ? "VD: Cần ghế trẻ em, giao xe sớm..." : "e.g. Child seat, early delivery..."}
+                    placeholder={t.selfDrive.notesPlaceholder}
                     className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-black text-xs font-semibold outline-none resize-none focus:border-accent transition-colors"
                   />
                 </div>
@@ -473,9 +514,9 @@ export default function SelfDriveBookingPage() {
                   className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
                 >
                   {isSubmitting ? (
-                    <span className="flex items-center gap-2"><Loader2 size={15} className="animate-spin" />{vi ? "Đang xử lý..." : "Processing..."}</span>
+                    <span className="flex items-center gap-2"><Loader2 size={15} className="animate-spin" />{t.selfDrive.processing}</span>
                   ) : (
-                    <span className="flex items-center gap-2"><CheckCircle size={15} />{vi ? "Đặt Xe Ngay" : "Book Now"}</span>
+                    <span className="flex items-center gap-2"><CheckCircle size={15} />{t.selfDrive.bookNowBtn}</span>
                   )}
                 </Button>
 
@@ -487,7 +528,7 @@ export default function SelfDriveBookingPage() {
           <div className="lg:col-span-4 lg:sticky lg:top-20 space-y-4">
             <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
-                {vi ? "Tóm tắt đặt xe" : "Booking Summary"}
+                {t.selfDrive.bookingSummary}
               </h3>
 
               {vehiclesLoading ? (
@@ -500,29 +541,29 @@ export default function SelfDriveBookingPage() {
                 <>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                      <span>{vi ? "Dòng xe:" : "Vehicle:"}</span>
+                      <span>{t.selfDrive.vehicleLabel}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-extrabold text-right max-w-[60%] truncate">{selectedVehicle.name}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                      <span>{vi ? "Sức chứa:" : "Capacity:"}</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedVehicle.capacity} {vi ? "chỗ" : "seats"}</span>
+                      <span>{t.selfDrive.capacityLabel}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedVehicle.capacity} {t.selfDrive.seatsCount}</span>
                     </div>
                   </div>
 
                   <div className="border-t border-slate-100 dark:border-slate-850 pt-3 space-y-2">
                     {selectedVehicle.pricePerDay > 0 && (
                       <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                        <span>{vi ? "Đơn giá/ngày:" : "Daily rate:"}</span>
+                        <span>{t.selfDrive.dailyRateLabel}</span>
                         <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedVehicle.pricePerDay.toLocaleString("vi-VN")}đ</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                      <span>{vi ? "Thời gian thuê:" : "Duration:"}</span>
+                      <span>{t.selfDrive.durationLabel}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-extrabold">{rentalDays} {t.selfDrive.perTrip}</span>
                     </div>
                     {selectedVehicle.deposit > 0 && (
                       <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                        <span>{vi ? "Đặt cọc:" : "Deposit:"}</span>
+                        <span>{t.selfDrive.depositLabel}</span>
                         <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedVehicle.deposit.toLocaleString("vi-VN")}đ</span>
                       </div>
                     )}
@@ -530,7 +571,7 @@ export default function SelfDriveBookingPage() {
 
                   <div className="border-t border-slate-100 dark:border-slate-850 pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-700 dark:text-slate-300 font-black">{vi ? "TỔNG TẠM TÍNH:" : "EST. TOTAL:"}</span>
+                      <span className="text-xs text-slate-700 dark:text-slate-300 font-black">{t.selfDrive.estTotalLabel}</span>
                       {isCalculating ? (
                         <Skeleton className="w-24 h-5 rounded-lg bg-slate-200 dark:bg-slate-800" />
                       ) : (
@@ -541,12 +582,12 @@ export default function SelfDriveBookingPage() {
                 </>
               ) : (
                 <p className="text-xs text-slate-400 text-center py-4">
-                  {vi ? "Chưa chọn xe" : "No vehicle selected"}
+                  {t.selfDrive.noVehicleSelected}
                 </p>
               )}
 
               <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-medium">
-                🔒 {vi ? "Xe mới, sạch sẽ - Giao xe đúng hẹn" : "Modern clean car - Prompt delivery"}
+                {t.selfDrive.guarantee}
               </p>
             </div>
           </div>
@@ -558,20 +599,20 @@ export default function SelfDriveBookingPage() {
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
-        serviceType={vi ? "Thuê xe tự lái" : "Self-Drive Rental"}
+        serviceType={t.selfDrive.serviceType}
         summaryItems={[
-          { label: vi ? "Dòng xe" : "Vehicle", value: selectedVehicle?.name || "" },
-          { label: vi ? "Ngày nhận xe" : "Pickup date", value: dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : "" },
-          { label: vi ? "Giờ nhận xe" : "Pickup time", value: `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}` },
-          { label: vi ? "Số ngày thuê" : "Rental days", value: `${rentalDays} ${vi ? "ngày" : "days"}` },
-          { label: vi ? "Điểm giao xe" : "Pickup location", value: pickupLocation || "-" },
-          { label: vi ? "Họ tên" : "Name", value: customerName },
-          { label: vi ? "Điện thoại" : "Phone", value: customerPhone },
-          { label: vi ? "Email" : "Email", value: customerEmail || "-" },
-          { label: vi ? "Ghi chú" : "Notes", value: notes || "-" },
+          { label: t.selfDrive.confirmName, value: selectedVehicle?.name || "" },
+          { label: t.selfDrive.confirmDate, value: dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : "" },
+          { label: t.selfDrive.confirmTime, value: `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}` },
+          { label: t.selfDrive.duration, value: `${rentalDays} ${vi ? "ngày" : "days"}` },
+          { label: t.selfDrive.pickupLocationLabel, value: pickupLocation || "-" },
+          { label: t.common.name, value: customerName },
+          { label: t.common.phone, value: customerPhone },
+          { label: t.selfDrive.email, value: customerEmail || "-" },
+          { label: t.selfDrive.confirmNotes, value: notes || "-" },
         ]}
         totalAmount={price}
-        totalLabel={vi ? "Tổng tiền tạm tính" : "Estimated total"}
+        totalLabel={t.selfDrive.estimatedTotal}
         submitting={isSubmitting}
       />
 
@@ -579,14 +620,26 @@ export default function SelfDriveBookingPage() {
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
         {showContactMenu && (
           <div className="bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 w-44 flex flex-col gap-2 animate-fade-in-up">
-            <a href="tel:0764971971" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline">
+            <a href={`tel:${contacts.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline">
               <Phone size={14} className="text-accent" />
-              <span>{`${t.common.callNow} 0764 971 971`}</span>
+              <span>{`${t.common.callNow} ${contacts.phone}`}</span>
             </a>
-            <a href="https://zalo.me/0764971971" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
+            <a href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
               <span className="text-accent">💬</span>
               <span>Zalo Tư vấn</span>
             </a>
+            {contacts.kakaotalk && (
+              <a href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
+                <span className="text-accent">💛</span>
+                <span>KakaoTalk</span>
+              </a>
+            )}
+            {contacts.whatsapp && (
+              <a href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
+                <span className="text-accent">💚</span>
+                <span>WhatsApp</span>
+              </a>
+            )}
           </div>
         )}
         <button

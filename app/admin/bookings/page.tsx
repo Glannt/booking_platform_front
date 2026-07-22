@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   RefreshCw,
@@ -12,18 +12,21 @@ import {
   TrendingUp,
   DollarSign
 } from "lucide-react";
-import { Button, Input, Table, toast, Select, ListBox } from "@heroui/react";
+import { Button, Input, Table, toast, Select, ListBox, Pagination } from "@heroui/react";
 import { BookingDto, getBookings } from "@/lib/api/bookings";
 import { StatusChip } from "@/components/StatusChip";
 import BookingDetailsModal from "@/components/admin/bookings/BookingDetailsModal";
 import BookingEditModal from "@/components/admin/bookings/BookingEditModal";
 import BookingDeleteModal from "@/components/admin/bookings/BookingDeleteModal";
 
+const PAGE_SIZE = 10;
+
 export default function BookingsManagementPage() {
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("all");
+  const [bookingPage, setBookingPage] = useState<number>(1);
 
   // Modal Triggers
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -80,6 +83,28 @@ export default function BookingsManagementPage() {
 
     return queryMatch && bStatusMatch;
   });
+
+  // Reset pagination on search/filter changes
+  useEffect(() => {
+    setBookingPage(1);
+  }, [searchTerm, bookingStatusFilter]);
+
+  const paginatedBookings = useMemo(
+    () => filteredBookings.slice(
+      (bookingPage - 1) * PAGE_SIZE,
+      bookingPage * PAGE_SIZE
+    ), [filteredBookings, bookingPage]
+  );
+
+  const bookingPageCount = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
+
+  const bookingPages = Array.from(
+    { length: Math.ceil(filteredBookings.length / PAGE_SIZE) },
+    (_, i) => i + 1
+  );
+
+  const bookingStart = filteredBookings.length === 0 ? 0 : (bookingPage - 1) * PAGE_SIZE + 1;
+  const bookingEnd = Math.min(bookingPage * PAGE_SIZE, filteredBookings.length);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -200,7 +225,7 @@ export default function BookingsManagementPage() {
                     <Table.Column className="px-6 py-4 text-right">Thao tác</Table.Column>
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                    {filteredBookings.map((b) => {
+                    {paginatedBookings.map((b) => {
                       return (
                         <Table.Row
                           key={b.id}
@@ -252,7 +277,7 @@ export default function BookingsManagementPage() {
                                   setSelectedBooking(b);
                                   setDeleteModalOpen(true);
                                 }}
-                                title="Xóa"
+                                  title="Xóa"
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -264,6 +289,43 @@ export default function BookingsManagementPage() {
                   </Table.Body>
                 </Table.Content>
               </Table.ScrollContainer>
+              <Table.Footer>
+                <Pagination size="sm">
+                  <Pagination.Summary>
+                    {bookingStart} - {bookingEnd} / {filteredBookings.length} kết quả
+                  </Pagination.Summary>
+                  <Pagination.Content>
+                    <Pagination.Item>
+                      <Pagination.Previous
+                        isDisabled={bookingPage <= 1}
+                        onPress={() => setBookingPage((p) => Math.max(1, p - 1))}
+                      >
+                        <Pagination.PreviousIcon />
+                        Trước
+                      </Pagination.Previous>
+                    </Pagination.Item>
+                    {bookingPages.map((p) => (
+                      <Pagination.Item key={p}>
+                        <Pagination.Link
+                          isActive={p === bookingPage}
+                          onPress={() => setBookingPage(p)}
+                        >
+                          {p}
+                        </Pagination.Link>
+                      </Pagination.Item>
+                    ))}
+                    <Pagination.Item>
+                      <Pagination.Next
+                        isDisabled={bookingPage >= bookingPageCount}
+                        onPress={() => setBookingPage((p) => Math.min(bookingPageCount, p + 1))}
+                      >
+                        Sau
+                        <Pagination.NextIcon />
+                      </Pagination.Next>
+                    </Pagination.Item>
+                  </Pagination.Content>
+                </Pagination>
+              </Table.Footer>
             </Table>
           </div>
         )}

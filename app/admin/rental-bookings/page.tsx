@@ -425,12 +425,12 @@ export default function RentalBookingsPage() {
       </div>
 
       {/* Detail Modal */}
-      <Modal isOpen={detailModalOpen} onOpenChange={(open) => { if (!open) { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); } }}>
+      <Modal isOpen={detailModalOpen} onOpenChange={(open) => { if (!open) { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); } }} aria-labelledby="rental-booking-detail-title">
         <ModalBackdrop />
         <ModalContainer size="lg">
           <ModalDialog>
             <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              <h2 id="rental-booking-detail-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 Chi tiết đặt chỗ cho thuê
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -507,12 +507,12 @@ export default function RentalBookingsPage() {
       </Modal>
 
       {/* Edit Status Modal */}
-      <Modal isOpen={editModalOpen} onOpenChange={(open) => { if (!open) { setEditModalOpen(false); setSelectedBooking(null); setSelectedItem(null); } }}>
+      <Modal isOpen={editModalOpen} onOpenChange={(open) => { if (!open) { setEditModalOpen(false); setSelectedBooking(null); setSelectedItem(null); } }} aria-labelledby="rental-booking-edit-title">
         <ModalBackdrop />
         <ModalContainer size="md">
           <ModalDialog>
             <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              <h2 id="rental-booking-edit-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 Cập nhật trạng thái
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">

@@ -57,13 +57,13 @@ export default function ServiceDeleteModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="service-delete-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
           <ModalDialog className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-w-md">
             <ModalHeader className="flex gap-2 items-center text-rose-600 dark:text-rose-400 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40">
               <AlertTriangle size={22} />
-              <span className="font-extrabold text-lg">
+              <span id="service-delete-title" className="font-extrabold text-lg">
                 {language === "vi" ? "Xác nhận xóa" : "Confirm Deletion"}
               </span>
             </ModalHeader>

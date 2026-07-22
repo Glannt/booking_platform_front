@@ -29,7 +29,7 @@ import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
 
 export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
-  const { language, t } = useI18n();
+  const { language, t, contacts } = useI18n();
   const vi = language === "vi";
   const { contains } = useFilter({ sensitivity: "base" });
 
@@ -1133,14 +1133,14 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
         {showContactMenu && (
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 w-40 flex flex-col gap-1.5 animate-fade-in-up">
             <a
-              href="tel:0901234567"
+              href={`tel:${contacts.phone}`}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline"
             >
               <Phone size={14} className="text-accent" />
               <span>{t.common.callNow}</span>
             </a>
             <a
-              href="https://zalo.me/0901234567"
+              href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50"
@@ -1148,6 +1148,28 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
               <MessageCircle size={14} className="text-accent" />
               <span>Zalo</span>
             </a>
+            {contacts.kakaotalk && (
+              <a
+                href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50"
+              >
+                <span className="text-accent">💛</span>
+                <span>KakaoTalk</span>
+              </a>
+            )}
+            {contacts.whatsapp && (
+              <a
+                href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50"
+              >
+                <span className="text-accent">💚</span>
+                <span>WhatsApp</span>
+              </a>
+            )}
           </div>
         )}
 

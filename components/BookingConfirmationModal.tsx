@@ -42,12 +42,12 @@ export default function BookingConfirmationModal({
   const modalTitle = title || t.airportTransfer.confirmTitle;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="booking-confirm-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden w-full max-w-md relative p-6 space-y-4">
             <ModalHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 id="booking-confirm-title" className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber-500" />
                 {modalTitle}
               </h2>

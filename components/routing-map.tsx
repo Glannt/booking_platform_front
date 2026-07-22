@@ -237,7 +237,7 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
         )}
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 h-72 z-10">
+      <div className="relative rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 h-56 sm:h-64 md:h-72 z-10">
         <div ref={mapContainerRef} className="w-full h-full" />
         {isLoading && (
           <div className="absolute inset-0 bg-white/70 dark:bg-black/70 flex items-center justify-center z-20">

@@ -19,6 +19,7 @@ import {
 } from "@heroui/react";
 import { Save, RefreshCw } from "lucide-react";
 import clsx from "clsx";
+import ImageUpload from "@/components/ImageUpload";
 
 import { createVehicleCategory, VehicleCategoryDto, VehicleCategoryTranslationDto } from "@/lib/api/fleet";
 
@@ -51,6 +52,7 @@ export default function VehicleCategoryCreateModal({
   const [unitLuggage, setUnitLuggage] = useState<string>("kiện");
   const [active, setActive] = useState<boolean>(true);
   const [isDefault, setIsDefault] = useState<boolean>(false);
+  const [thumbnailId, setThumbnailId] = useState<number | undefined>(undefined);
 
   // Translations
   const [translations, setTranslations] = useState({
@@ -71,6 +73,7 @@ export default function VehicleCategoryCreateModal({
       setUnitLuggage("kiện");
       setActive(true);
       setIsDefault(false);
+      setThumbnailId(undefined);
       setTranslations({
         vi: { name: "", slug: "", description: "" },
         en: { name: "", slug: "", description: "" },
@@ -142,7 +145,8 @@ export default function VehicleCategoryCreateModal({
       unitLuggage: unitLuggage.trim() || "kiện",
       active,
       translations: transPayload,
-      default: isDefault
+      default: isDefault,
+      thumbnailId: thumbnailId || undefined
     };
 
     setLoading(true);
@@ -166,7 +170,7 @@ export default function VehicleCategoryCreateModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="vehicle-category-create-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="lg">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-2xl relative">
@@ -181,7 +185,7 @@ export default function VehicleCategoryCreateModal({
 
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                <h2 id="vehicle-category-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                   {language === "vi" ? "Thêm Mới Danh Mục Xe" : "Add Vehicle Category"}
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -189,9 +193,17 @@ export default function VehicleCategoryCreateModal({
                 </p>
               </div>
             </ModalHeader>
-
             <form onSubmit={handleSave}>
               <ModalBody className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+                {/* Category Thumbnail Image Upload */}
+                <div className="bg-slate-50 dark:bg-black/30 p-4 rounded-2xl border border-divider">
+                  <ImageUpload
+                    label={language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail Image"}
+                    value={thumbnailId}
+                    onChange={(id) => setThumbnailId(id || undefined)}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TextField isRequired className="w-full">
                     <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Mã danh mục (Code) *" : "Category Code *"}</Label>

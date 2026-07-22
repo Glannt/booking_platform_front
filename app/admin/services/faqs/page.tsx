@@ -306,13 +306,13 @@ export default function AdminFeedbackPage() {
       </div>
 
       {/* Create / Edit Modal */}
-      <Modal isOpen={modalOpen} onOpenChange={open => { if (!open) setModalOpen(false); }}>
+      <Modal isOpen={modalOpen} onOpenChange={open => { if (!open) setModalOpen(false); }} aria-labelledby="faq-modal-title">
         <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
           <ModalContainer size="lg">
             <ModalDialog className="max-w-3xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl w-full max-h-[90vh] flex flex-col focus:outline-none">
               <form onSubmit={handleSave} className="flex flex-col h-full overflow-hidden">
                 <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
-                  <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+                  <span id="faq-modal-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                     {modalMode === "create" ? "Thêm Feedback mới" : "Chỉnh sửa Feedback"}
                   </span>
                 </ModalHeader>

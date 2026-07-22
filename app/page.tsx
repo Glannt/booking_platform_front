@@ -16,6 +16,7 @@ const LANGUAGES: { code: Language; label: string; flag: string; native: string; 
 export default function RootPage() {
   const { setLanguage } = useI18n();
   const [mounted, setMounted] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [hoveredLang, setHoveredLang] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,17 +25,64 @@ export default function RootPage() {
     if (selected) {
       const preferred = (localStorage.getItem("app_lang") || "vi") as Language;
       window.location.href = `/${preferred}`;
+      return;
+    }
+
+    // Try auto-detect location via browser geolocation
+    if (navigator.geolocation) {
+      setIsDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              const countryCode = data.address?.country_code;
+              if (countryCode) {
+                let detectedLang: Language = "en";
+                if (countryCode === "vn") {
+                  detectedLang = "vi";
+                } else if (countryCode === "kr" || countryCode === "kp") {
+                  detectedLang = "ko";
+                } else if (countryCode === "ru" || countryCode === "by" || countryCode === "kz") {
+                  detectedLang = "ru";
+                }
+                setLanguage(detectedLang);
+                return;
+              }
+            }
+            // Fallback to manual selection if API call fails
+            setIsDetecting(false);
+            setMounted(true);
+          } catch (error) {
+            console.error("Error reverse geocoding location:", error);
+            setIsDetecting(false);
+            setMounted(true);
+          }
+        },
+        (error) => {
+          console.warn("Geolocation permission denied or error occurred:", error);
+          setIsDetecting(false);
+          setMounted(true);
+        },
+        { timeout: 5000 }
+      );
     } else {
       setMounted(true);
     }
-  }, []);
+  }, [setLanguage]);
 
-  if (!mounted) {
+  if (isDetecting || !mounted) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
           <Globe className="text-primary animate-spin" size={40} />
-          <span className="text-slate-400 text-sm font-bold">Loading travel portal...</span>
+          <span className="text-slate-400 text-sm font-bold">
+            {isDetecting ? "Detecting your location..." : "Loading travel portal..."}
+          </span>
         </div>
       </div>
     );

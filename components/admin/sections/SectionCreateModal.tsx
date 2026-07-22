@@ -277,12 +277,12 @@ export default function SectionCreateModal({
   );
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="section-create-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="lg">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-3xl relative ">
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
-              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              <h2 id="section-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 {isEdit ? "Chỉnh sửa Section" : "Thêm Section mới"}
               </h2>
             </ModalHeader>

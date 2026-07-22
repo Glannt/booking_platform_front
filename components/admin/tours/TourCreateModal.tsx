@@ -299,7 +299,7 @@ export default function TourCreateModal({
     };
 
     return (
-        <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="tour-create-title">
             <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
                 <ModalContainer size="lg">
                     <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-3xl relative">
@@ -316,7 +316,7 @@ export default function TourCreateModal({
 
                         <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
                             <div>
-                                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                                <h2 id="tour-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                                     {language === "vi" ? "Thêm mới Tour Du Lịch" : "Add New Sightseeing Tour"}
                                 </h2>
                                 <p className="text-xs text-slate-500">

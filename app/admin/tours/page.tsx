@@ -384,7 +384,7 @@ export default function ToursManagementPage() {
                             <Table.Footer>
                                 <Pagination size="sm">
                                     <Pagination.Summary>
-                                        {tourStart} to {tourEnd} of {sortedTours.length} results
+                                        {tourStart} - {tourEnd} / {sortedTours.length} kết quả
                                     </Pagination.Summary>
                                     <Pagination.Content>
                                         <Pagination.Item>

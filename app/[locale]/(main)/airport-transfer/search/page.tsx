@@ -32,8 +32,12 @@ import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 export default function AirportTransferSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language, t } = useI18n();
+  const { language, t, contacts } = useI18n();
   const isVi = language === "vi";
+  const zaloPhone = contacts.zalo.includes("zalo.me/")
+    ? contacts.zalo.split("zalo.me/")[1].split("?")[0]
+    : contacts.zalo;
+  const zaloUrl = `https://zalo.me/${zaloPhone}`;
 
   // Search parameters from homepage
   const pickup = searchParams.get("pickup") || "";
@@ -261,7 +265,7 @@ export default function AirportTransferSearchPage() {
         `- Ghi chú: ${notes}\n` +
         `- Tổng tiền tạm tính: ${formatPrice(totalAmount)}`;
 
-      window.open(`https://zalo.me/0764971971?text=${encodeURIComponent(message)}`, "_blank");
+      window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
     } catch (err) {
       console.error("Booking API error:", err);
       // Fallback redirect directly to Zalo anyway so the booking request is never lost!
@@ -275,7 +279,7 @@ export default function AirportTransferSearchPage() {
         `- Ngày giờ đón: ${date} lúc ${time}\n` +
         `- Loại hình: ${tripType === "return" ? "Khứ hồi" : "Một chiều"}\n` +
         `- Tổng tiền tạm tính: ${formatPrice(totalAmount)}`;
-      window.open(`https://zalo.me/0764971971?text=${encodeURIComponent(message)}`, "_blank");
+      window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
       setBookingSuccess(true);
     } finally {
       setSubmitting(false);
@@ -602,7 +606,7 @@ export default function AirportTransferSearchPage() {
                       `- Lộ trình: ${pickup} ➔ ${destination}\n` +
                       `- Ngày giờ: ${date} lúc ${time}\n` +
                       `- Tổng tiền: ${formatPrice(totalAmount)}`;
-                    window.open(`https://zalo.me/0764971971?text=${encodeURIComponent(message)}`, "_blank");
+                    window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
                   }}
                   className="w-full h-12 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-accent-hover border-none cursor-pointer"
                 >

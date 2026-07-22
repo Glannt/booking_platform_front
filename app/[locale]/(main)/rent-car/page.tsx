@@ -4,8 +4,9 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import RentCarClient from "./RentCarClient";
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const locale = (params.locale || "vi") as keyof typeof translations;
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = (rawLocale || "vi") as keyof typeof translations;
   const t = translations[locale] || translations.vi;
   return {
     title: `${t.rentCar.title} | Minh Khoa Travel`,
@@ -18,11 +19,12 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   };
 }
 
-export default async function RentCarPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale || "vi";
+export default async function RentCarPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const resolvedLocale = locale || "vi";
   let sections: SectionDto[] = [];
   try {
-    sections = await getActiveSectionsServer("/rent-car", locale);
+    sections = await getActiveSectionsServer("/rent-car", resolvedLocale);
   } catch {
     sections = [];
   }

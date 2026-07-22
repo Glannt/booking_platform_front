@@ -630,7 +630,7 @@ export default function ServiceDetailsModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="service-details-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="lg">
           <ModalDialog className="max-w-4xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
@@ -638,7 +638,7 @@ export default function ServiceDetailsModal({
               /* ───────────── EDIT MODE FORM ───────────── */
               <form onSubmit={handleSaveChanges} className="flex flex-col h-full overflow-hidden">
                 <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
-                  <span className="text-lg font-extrabold text-slate-900 dark:text-white">
+                  <span id="service-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                     {language === "vi" ? "Chỉnh sửa Thông tin Tour" : "Edit Tour / Service"}
                   </span>
                   <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
@@ -1455,7 +1455,7 @@ export default function ServiceDetailsModal({
               /* ───────────── READ-ONLY MODE DETAILS ───────────── */
               <div className="flex flex-col h-full overflow-hidden">
                 <ModalHeader className="border-b border-divider bg-gradient-to-r from-indigo-50/50 via-slate-50 to-indigo-50/50 dark:from-indigo-950/25 dark:via-slate-950/40 dark:to-indigo-950/25 py-6 px-6 flex flex-col items-center justify-center text-center gap-3">
-                  <h3 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white capitalize tracking-tight">
+                  <h3 id="service-details-title" className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white capitalize tracking-tight">
                     {categoryLabel} - {currentTrans?.name || "Unnamed Tour"}
                   </h3>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-extrabold border ${service.status === "published"

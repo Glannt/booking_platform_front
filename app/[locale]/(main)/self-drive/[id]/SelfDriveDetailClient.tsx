@@ -36,7 +36,7 @@ interface SelfDriveDetailClientProps {
 
 export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriveDetailClientProps) {
   const router = useRouter();
-  const { language, t } = useI18n();
+  const { language, t, contacts } = useI18n();
   const vi = language === "vi";
 
   const prefixUrl = (url: string) => {
@@ -420,14 +420,14 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => window.open("tel:0764971971")}
+                onClick={() => window.open(`tel:${contacts.phone}`)}
                 className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-black py-2.5 rounded-xl text-xs font-black text-slate-700 dark:text-white border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-all"
               >
                 <Phone size={13} className="text-accent" />
                 {t.common.callNow}
               </button>
               <button
-                onClick={() => window.open("https://zalo.me/0764971971", "_blank")}
+                onClick={() => window.open(contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`, "_blank")}
                 className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-black py-2.5 rounded-xl text-xs font-black text-slate-700 dark:text-white border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-all"
               >
                 <MessageCircle size={13} className="text-accent" />
@@ -443,14 +443,14 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
         {showContactMenu && (
           <div className="bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 w-44 flex flex-col gap-2 animate-fade-in-up">
             <a
-              href="tel:0764971971"
+              href={`tel:${contacts.phone}`}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline"
             >
               <Phone size={14} className="text-accent" />
               <span>{t.common.callNow}</span>
             </a>
             <a
-              href="https://zalo.me/0764971971"
+              href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
@@ -458,6 +458,28 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
               <MessageCircle size={14} className="text-accent" />
               <span>Zalo Tư vấn</span>
             </a>
+            {contacts.kakaotalk && (
+              <a
+                href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
+              >
+                <span className="text-accent">💛</span>
+                <span>KakaoTalk</span>
+              </a>
+            )}
+            {contacts.whatsapp && (
+              <a
+                href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
+              >
+                <span className="text-accent">💚</span>
+                <span>WhatsApp</span>
+              </a>
+            )}
           </div>
         )}
         <button

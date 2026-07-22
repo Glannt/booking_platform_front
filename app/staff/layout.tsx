@@ -27,44 +27,8 @@ import AuthGuard from "@/components/auth-guard";
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { language, setLanguage, t, supportedLanguages } = useI18n();
-  const [userLocation, setUserLocation] = useState<string>("");
   const mobileDrawerState = useOverlayState();
   const authUser = useAuthStore((s) => s.user);
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${language}`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              const address = data.address;
-              const city = address.city || address.town || address.village || address.county || address.state || "";
-              const country = address.country || "";
-              if (city && country) {
-                setUserLocation(`${city}, ${country}`);
-              } else if (data.display_name) {
-                setUserLocation(data.display_name.split(",").slice(0, 2).join(","));
-              } else {
-                setUserLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
-              }
-            } else {
-              setUserLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
-            }
-          } catch (error) {
-            setUserLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
-          }
-        },
-        (error) => {
-          console.warn("Geolocation permission denied or error occurred:", error);
-        }
-      );
-    }
-  }, [language]);
 
   const sidebarGroups: SidebarGroup[] = [
     {

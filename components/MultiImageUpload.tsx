@@ -14,9 +14,10 @@ interface ImageItem {
 interface MultiImageUploadProps {
   imageIds?: number[];
   thumbnailId?: number | null;
-  onImageIdsChange: (ids: number[]) => void;
-  onThumbnailChange: (id: number | null) => void;
+  onImageIdsChange?: (ids: number[]) => void;
+  onThumbnailChange?: (id: number | null) => void;
   label?: string;
+  readOnly?: boolean;
 }
 
 export default function MultiImageUpload({
@@ -25,6 +26,7 @@ export default function MultiImageUpload({
   onImageIdsChange,
   onThumbnailChange,
   label,
+  readOnly = false,
 }: MultiImageUploadProps) {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ export default function MultiImageUpload({
   }, [imageIds]);
 
   const syncIds = (items: ImageItem[]) => {
-    onImageIdsChange(items.map((i) => i.id));
+    onImageIdsChange?.(items.map((i) => i.id));
   };
 
   const handleUpload = async (file: File) => {
@@ -86,7 +88,7 @@ export default function MultiImageUpload({
         syncIds(next);
         // Auto-select as thumbnail if first image
         if (next.length === 1) {
-          onThumbnailChange(mediaId);
+          onThumbnailChange?.(mediaId);
         }
       }
     } catch (e) {
@@ -107,12 +109,12 @@ export default function MultiImageUpload({
     setImages(next);
     syncIds(next);
     if (thumbnailId === id) {
-      onThumbnailChange(next.length > 0 ? next[0].id : null);
+      onThumbnailChange?.(next.length > 0 ? next[0].id : null);
     }
   };
 
   const handleSetThumbnail = (id: number) => {
-    onThumbnailChange(id);
+    onThumbnailChange?.(id);
   };
 
   return (
@@ -141,29 +143,31 @@ export default function MultiImageUpload({
               className="w-full h-full object-cover"
             />
             {/* Overlay controls */}
-            <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleSetThumbnail(img.id)}
-                className={clsx(
-                  "p-1.5 rounded-full shadow-lg transition-transform hover:scale-110",
-                  thumbnailId === img.id
-                    ? "bg-primary text-white"
-                    : "bg-white/90 text-slate-600 hover:text-primary"
-                )}
-                title="Đặt làm ảnh chính"
-              >
-                <Star size={14} fill={thumbnailId === img.id ? "currentColor" : "none"} />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRemove(img.id)}
-                className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-lg transition-transform hover:scale-110"
-                title="Xóa ảnh"
-              >
-                <X size={14} />
-              </button>
-            </div>
+            {!readOnly && (
+              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSetThumbnail(img.id)}
+                  className={clsx(
+                    "p-1.5 rounded-full shadow-lg transition-transform hover:scale-110",
+                    thumbnailId === img.id
+                      ? "bg-primary text-white"
+                      : "bg-white/90 text-slate-600 hover:text-primary"
+                  )}
+                  title="Đặt làm ảnh chính"
+                >
+                  <Star size={14} fill={thumbnailId === img.id ? "currentColor" : "none"} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(img.id)}
+                  className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-lg transition-transform hover:scale-110"
+                  title="Xóa ảnh"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
             {/* Thumbnail badge */}
             {thumbnailId === img.id && (
               <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-md">
@@ -172,29 +176,37 @@ export default function MultiImageUpload({
             )}
           </div>
         ))}
-
+ 
         {/* Upload button */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={loading}
-          className={clsx(
-            "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all",
-            dragOver
-              ? "border-primary bg-primary/5"
-              : "border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-900/30"
-          )}
-        >
-          {loading ? (
-            <RefreshCw className="animate-spin text-primary" size={20} />
-          ) : (
-            <>
-              <Plus className="text-slate-400" size={20} />
-              <span className="text-[10px] text-slate-400 font-medium">Thêm ảnh</span>
-            </>
-          )}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            className={clsx(
+              "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all",
+              dragOver
+                ? "border-primary bg-primary/5"
+                : "border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-900/30"
+            )}
+          >
+            {loading ? (
+              <RefreshCw className="animate-spin text-primary" size={20} />
+            ) : (
+              <>
+                <Plus className="text-slate-400" size={20} />
+                <span className="text-[10px] text-slate-400 font-medium">Thêm ảnh</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {readOnly && images.length === 0 && (
+        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 italic py-1">
+          — Chưa có hình ảnh / No images —
+        </div>
+      )}
 
       <input
         ref={fileInputRef}

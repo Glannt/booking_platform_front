@@ -52,7 +52,8 @@ export default function VehicleCreateModal({
   const [active, setActive] = useState<boolean>(true);
   const [canRent, setCanRent] = useState<boolean>(true);
   const [luggage, setLuggage] = useState<number>(2);
-  const [luggageUnit, setLuggageUnit] = useState<string>("kg");
+  const [luggageUnit, setLuggageUnit] = useState<string>("kiện");
+  const [luggageWeight, setLuggageWeight] = useState<number>(20);
   const [typeId, setTypeId] = useState<number>(categories[0]?.id || 0);
   const [imageIds, setImageIds] = useState<number[]>([]);
   const [thumbnailId, setThumbnailId] = useState<number | null>(null);
@@ -67,7 +68,8 @@ export default function VehicleCreateModal({
       setActive(true);
       setCanRent(true);
       setLuggage(2);
-      setLuggageUnit("kg");
+      setLuggageUnit("kiện");
+      setLuggageWeight(20);
       setTypeId(categories[0]?.id || 0);
       setImageIds([]);
       setThumbnailId(null);
@@ -97,6 +99,7 @@ export default function VehicleCreateModal({
       canRent,
       luggage,
       luggageUnit,
+      luggageWeight,
       imageIds: imageIds.length > 0 ? imageIds : undefined,
       thumbnailId: thumbnailId ?? undefined,
       typeId
@@ -122,6 +125,7 @@ export default function VehicleCreateModal({
         canRent: payload.canRent,
         luggage: payload.luggage,
         luggageUnit: payload.luggageUnit,
+        luggageWeight: payload.luggageWeight,
         type: selectedCat
       };
       onSaveSuccess(simulated);
@@ -132,7 +136,7 @@ export default function VehicleCreateModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="vehicle-create-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-lg relative">
@@ -147,7 +151,7 @@ export default function VehicleCreateModal({
 
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                <h2 id="vehicle-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                   {language === "vi" ? "Thêm Xe Mới" : "Add New Vehicle"}
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -158,7 +162,7 @@ export default function VehicleCreateModal({
 
             <form onSubmit={handleSave}>
               <ModalBody className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <TextField isRequired className="w-full">
                     <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Hãng xe / Thương hiệu *" : "Brand *"}</Label>
                     <Input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Toyota, Mercedes" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
@@ -170,7 +174,7 @@ export default function VehicleCreateModal({
                   </TextField>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="w-full">
                     <Select
                       isRequired
@@ -243,7 +247,7 @@ export default function VehicleCreateModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="w-full">
                     <Select
                       isRequired
@@ -286,7 +290,7 @@ export default function VehicleCreateModal({
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <div>
                       <NumberField
                         className="w-full"
@@ -295,7 +299,7 @@ export default function VehicleCreateModal({
                         minValue={0}
                       >
                         <Label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">
-                          {language === "vi" ? "Hành lý" : "Luggage"}
+                          {language === "vi" ? "Số kiện" : "Pieces"}
                         </Label>
                         <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                           <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
@@ -316,8 +320,35 @@ export default function VehicleCreateModal({
                     </div>
                     <TextField className="w-full">
                       <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Đơn vị" : "Unit"}</Label>
-                      <Input type="text" value={luggageUnit} onChange={(e) => setLuggageUnit(e.target.value)} placeholder="kg, vali" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                      <Input type="text" value={luggageUnit} onChange={(e) => setLuggageUnit(e.target.value)} placeholder="kiện, túi" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
                     </TextField>
+                    <div>
+                      <NumberField
+                        className="w-full"
+                        value={luggageWeight}
+                        onChange={(val) => setLuggageWeight(val || 0)}
+                        minValue={0}
+                      >
+                        <Label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">
+                          {language === "vi" ? "Số kg tối đa" : "Max weight (kg)"}
+                        </Label>
+                        <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
+                          <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
+                          <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                            <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent">
+                              <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
+                                <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
+                              </svg>
+                            </NumberField.IncrementButton>
+                            <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                              <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
+                                <path clipRule="evenodd" d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
+                              </svg>
+                            </NumberField.DecrementButton>
+                          </div>
+                        </NumberField.Group>
+                      </NumberField>
+                    </div>
                   </div>
                 </div>
 

@@ -11,7 +11,7 @@ import {
   ModalFooter,
   Button,
 } from "@heroui/react";
-import { Eye, Mail, Phone, Shield, User as UserIcon } from "lucide-react";
+import { Eye, Mail, Phone, Shield, User as UserIcon, MessageSquare } from "lucide-react";
 import { AdminUserDto } from "@/lib/api/users";
 
 interface UserDetailsModalProps {
@@ -37,12 +37,12 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
   if (!user) return null;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="user-details-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="md">
           <ModalDialog className="max-w-md bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
             <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
-              <span className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <span id="user-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <Eye className="text-accent" size={20} />
                 Chi tiết User
               </span>
@@ -74,6 +74,18 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
                   <Phone size={14} className="text-slate-400 shrink-0" />
                   <span className="text-slate-500 w-24 shrink-0">Điện thoại</span>
                   <span className="font-bold text-slate-900 dark:text-white">{user.phone || "Chưa cập nhật"}</span>
+                </div>
+
+                <div className="flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <MessageSquare size={14} className="text-slate-400 shrink-0" />
+                  <span className="text-slate-500 w-24 shrink-0">Số Zalo</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{user.zaloId || "Chưa cập nhật"}</span>
+                </div>
+
+                <div className="flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <MessageSquare size={14} className="text-slate-400 shrink-0" />
+                  <span className="text-slate-500 w-24 shrink-0">KakaoTalk ID</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{user.kakaoTalkId || "Chưa cập nhật"}</span>
                 </div>
 
                 <div className="flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800">

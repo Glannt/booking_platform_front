@@ -816,7 +816,7 @@ export default function VehiclesManagementPage() {
                     <Table.Footer>
                       <Pagination size="sm">
                         <Pagination.Summary>
-                          {vehicleStart} to {vehicleEnd} of {sortedVehicles.length} results
+                          {vehicleStart} - {vehicleEnd} / {sortedVehicles.length} kết quả
                         </Pagination.Summary>
                         <Pagination.Content>
                           <Pagination.Item>
@@ -825,7 +825,7 @@ export default function VehiclesManagementPage() {
                               onPress={() => setVehiclePage((p) => Math.max(1, p - 1))}
                             >
                               <Pagination.PreviousIcon />
-                              Prev
+                              Trước
                             </Pagination.Previous>
                           </Pagination.Item>
                           {vehiclePages.map((p) => (
@@ -843,7 +843,7 @@ export default function VehiclesManagementPage() {
                               isDisabled={vehiclePage >= vehiclePageCount}
                               onPress={() => setVehiclePage((p) => Math.min(vehiclePageCount, p + 1))}
                             >
-                              Next
+                              Sau
                               <Pagination.NextIcon />
                             </Pagination.Next>
                           </Pagination.Item>
@@ -910,7 +910,7 @@ export default function VehiclesManagementPage() {
                                   {category.minSeat}-{category.maxSeat}
                                 </Table.Cell>
                                 <Table.Cell>
-                                   <StatusChip status={String(category.active)} type="active" />
+                                  <StatusChip status={String(category.active)} type="active" />
                                 </Table.Cell>
                                 <Table.Cell>
                                   <div className="flex gap-2">
@@ -947,7 +947,7 @@ export default function VehiclesManagementPage() {
                       <Table.Footer>
                         <Pagination size="sm">
                           <Pagination.Summary>
-                            {categoryStart} to {categoryEnd} of {sortedCategories.length} results
+                            {categoryStart} - {categoryEnd} / {sortedCategories.length} kết quả
                           </Pagination.Summary>
                           <Pagination.Content>
                             <Pagination.Item>
@@ -956,7 +956,7 @@ export default function VehiclesManagementPage() {
                                 onPress={() => setCategoryPage((p) => Math.max(1, p - 1))}
                               >
                                 <Pagination.PreviousIcon />
-                                Prev
+                                Trước
                               </Pagination.Previous>
                             </Pagination.Item>
                             {categoryPages.map((p) => (
@@ -974,7 +974,7 @@ export default function VehiclesManagementPage() {
                                 isDisabled={categoryPage >= categoryPageCount}
                                 onPress={() => setCategoryPage((p) => Math.min(categoryPageCount, p + 1))}
                               >
-                                Next
+                                Sau
                                 <Pagination.NextIcon />
                               </Pagination.Next>
                             </Pagination.Item>
