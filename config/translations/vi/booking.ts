@@ -6,6 +6,8 @@ export const booking = {
   phone: "Số điện thoại liên hệ",
   zaloOrKakao: "Zalo ID hoặc KakaoTalk ID",
   socialType: "Kênh liên hệ mong muốn",
+  zaloId: "Zalo ID",
+  kakaoTalkId: "KakaoTalk ID",
   notes: "Ghi chú thêm (yêu cầu đặc biệt, khách sạn đón...)",
   selectService: "Chọn dịch vụ muốn đặt",
   selectOption: "Chọn tùy chọn / loại hình",

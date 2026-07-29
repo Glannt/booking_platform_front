@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { FloatingSupport } from "@/components/FloatingSupport";
 
 type Params = Promise<{ locale: string }>;
 
@@ -19,6 +20,7 @@ export default async function MainLayout({
         {children}
       </div>
       <Footer />
+      <FloatingSupport />
     </>
   );
 }

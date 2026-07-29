@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   RefreshCw,
@@ -46,6 +47,7 @@ interface RentalBookingItem {
 }
 
 export default function RentalBookingsPage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -86,6 +88,11 @@ export default function RentalBookingsPage() {
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  // Redirect to the new self-drive page
+  useEffect(() => {
+    router.replace("/admin/bookings/self-drive");
+  }, [router]);
 
   const rentalItems = useMemo(() => {
     const items: RentalBookingItem[] = [];
@@ -270,7 +277,7 @@ export default function RentalBookingsPage() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <Button
               variant="outline"
-              className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+              className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
               onClick={fetchBookings}
             >
               <RefreshCw size={16} className="mr-1.5" />
@@ -316,7 +323,7 @@ export default function RentalBookingsPage() {
                     {paginatedItems.map((ri) => (
                       <Table.Row
                         key={`${ri.booking.id}-${ri.item.id}`}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors duration-150"
+                        className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
                       >
                         <Table.Cell className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400 font-mono font-bold">
                           {ri.booking.id}
@@ -357,14 +364,14 @@ export default function RentalBookingsPage() {
                         <Table.Cell className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                               onClick={() => handleViewDetail(ri)}
                               title="Xem chi tiết"
                             >
                               <Eye size={16} />
                             </button>
                             <button
-                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                               onClick={() => handleOpenEdit(ri)}
                               title="Cập nhật trạng thái"
                             >
@@ -426,16 +433,28 @@ export default function RentalBookingsPage() {
 
       {/* Detail Modal */}
       <Modal isOpen={detailModalOpen} onOpenChange={(open) => { if (!open) { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); } }} aria-labelledby="rental-booking-detail-title">
-        <ModalBackdrop />
-        <ModalContainer size="lg">
-          <ModalDialog>
-            <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <h2 id="rental-booking-detail-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                Chi tiết đặt chỗ cho thuê
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {selectedBooking?.bookingCode}
-              </p>
+        <ModalBackdrop>
+          <ModalContainer size="lg">
+            <ModalDialog>
+            <ModalHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex flex-col gap-1">
+                <h2 id="rental-booking-detail-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
+                  Chi tiết đặt chỗ cho thuê
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {selectedBooking?.bookingCode}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setDetailModalOpen(false);
+                  if (selectedItem) handleOpenEdit(selectedItem);
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
+              >
+                <Edit3 size={14} /> Chỉnh sửa
+              </Button>
             </ModalHeader>
             <ModalBody className="py-6">
               {selectedBooking && selectedItem && (
@@ -496,21 +515,22 @@ export default function RentalBookingsPage() {
             <ModalFooter className="border-t border-slate-100 dark:border-slate-800 pt-4">
               <Button
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200"
                 onClick={() => { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); }}
               >
                 Đóng
               </Button>
             </ModalFooter>
-          </ModalDialog>
-        </ModalContainer>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
 
       {/* Edit Status Modal */}
       <Modal isOpen={editModalOpen} onOpenChange={(open) => { if (!open) { setEditModalOpen(false); setSelectedBooking(null); setSelectedItem(null); } }} aria-labelledby="rental-booking-edit-title">
-        <ModalBackdrop />
-        <ModalContainer size="md">
-          <ModalDialog>
+        <ModalBackdrop>
+          <ModalContainer size="md">
+            <ModalDialog>
             <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-4">
               <h2 id="rental-booking-edit-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 Cập nhật trạng thái
@@ -561,7 +581,7 @@ export default function RentalBookingsPage() {
             <ModalFooter className="border-t border-slate-100 dark:border-slate-800 pt-4">
               <Button
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200"
                 onClick={() => { setEditModalOpen(false); setSelectedBooking(null); setSelectedItem(null); }}
               >
                 Hủy
@@ -573,8 +593,9 @@ export default function RentalBookingsPage() {
                 Lưu thay đổi
               </Button>
             </ModalFooter>
-          </ModalDialog>
-        </ModalContainer>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
     </div>
   );

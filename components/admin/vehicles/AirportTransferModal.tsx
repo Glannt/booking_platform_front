@@ -119,7 +119,7 @@ export default function AirportTransferModal({
               isIconOnly
               variant="ghost"
               onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none"
+              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
             >
               ✕
             </Button>
@@ -161,7 +161,7 @@ export default function AirportTransferModal({
                               key={r.id}
                               id={String(r.id)}
                               textValue={routeName}
-                              className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between"
+                              className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between"
                             >
                               {routeName}
                               <ListBox.ItemIndicator />
@@ -198,7 +198,7 @@ export default function AirportTransferModal({
                               key={c.id}
                               id={String(c.id)}
                               textValue={catName}
-                              className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between"
+                              className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between"
                             >
                               {catName}
                               <ListBox.ItemIndicator />
@@ -225,11 +225,11 @@ export default function AirportTransferModal({
                     </Select.Trigger>
                     <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                       <ListBox>
-                        <ListBox.Item key="ONE_WAY" id="ONE_WAY" textValue="Một chiều" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item key="ONE_WAY" id="ONE_WAY" textValue="Một chiều" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                           {"Một chiều"}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item key="ROUND_TRIP" id="ROUND_TRIP" textValue="Khứ hồi" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item key="ROUND_TRIP" id="ROUND_TRIP" textValue="Khứ hồi" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                           {"Khứ hồi"}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -251,10 +251,10 @@ export default function AirportTransferModal({
                     <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                       <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
                       <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                        <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent">
+                        <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
                           ▲
                         </NumberField.IncrementButton>
-                        <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                        <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
                           ▼
                         </NumberField.DecrementButton>
                       </div>
@@ -283,7 +283,7 @@ export default function AirportTransferModal({
               <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
                 <Button
                   variant="outline"
-                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                   onClick={onClose}
                   isDisabled={loading}
                 >

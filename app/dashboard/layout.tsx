@@ -25,9 +25,9 @@ import {
   CheckCircle2,
   Layers,
   MenuSquare,
+  Home,
 } from "lucide-react";
 import {
-  Button,
   Drawer,
   Dropdown,
   Label,
@@ -199,13 +199,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const sidebarGroups: SidebarGroup[] = [
     {
-      title: language === "vi" ? "Khám phá" : language === "en" ? "Explore" : language === "ko" ? "탐색" : "Исследовать",
+      title: language === "vi" ? "Điều hướng" : language === "en" ? "Navigation" : language === "ko" ? "네비게이션" : "Навигация",
       items: [
         {
-          key: "dashboard",
-          label: language === "vi" ? "Tổng quan" : language === "en" ? "Dashboard" : language === "ko" ? "대시보드" : "Панель управления",
-          path: "/dashboard",
-          icon: <LayoutDashboard size={20} />,
+          key: "home",
+          label: language === "vi" ? "Trang chủ" : language === "en" ? "Home" : language === "ko" ? "홈" : "Главная",
+          path: `/${language}`,
+          icon: <Home size={20} />,
         },
       ],
     },
@@ -373,7 +373,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Header Actions */}
             <div className="flex items-center gap-3">
               {/* Theme Switcher Component */}
-              <ThemeSwitch className="flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:border-slate-300 w-10 h-10 rounded-xl text-slate-700 dark:text-slate-200 shadow-sm min-w-0 p-0 flex-shrink-0" />
+              <ThemeSwitch />
 
               {/* Language Selector Dropdown */}
               <Dropdown>
@@ -402,17 +402,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </Dropdown>
 
               {/* Notification Button */}
-              {/* <button className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 text-foreground hover:bg-slate-50 dark:hover:bg-slate-900 shadow-sm transition-colors bg-transparent cursor-pointer">
+              {/* <button className="relative flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 text-foreground hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] shadow-sm transition-colors bg-transparent cursor-pointer">
                 <Bell size={18} />
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[var(--bg-page)]"></span>
               </button> */}
 
-              {/* Book New Trip Button */}
-              <Button
-                className="bg-accent text-white hover:bg-accent-hover h-10 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-100 dark:shadow-none transition-all border-none"
-              >
-                {t.dashboard.bookNewTrip}
-              </Button>
+              {/* Book New Trip Dropdown */}
+              <Dropdown>
+                <Dropdown.Trigger className="bg-accent text-white hover:bg-accent-hover h-10 px-5 rounded-xl font-bold text-sm shadow-md shadow-blue-100 dark:shadow-none transition-all border-none flex items-center gap-1.5 cursor-pointer outline-none">
+                  {t.dashboard.bookNewTrip}
+                  <ChevronDown size={14} />
+                </Dropdown.Trigger>
+                <Dropdown.Popover className="min-w-[180px]">
+                  <Dropdown.Menu aria-label="Booking services" onAction={(key) => router.push(key as string)}>
+                    <Dropdown.Item id={`/${language}/tours`} key={`/${language}/tours`} textValue={t.nav.tour}>
+                      <Label>{t.nav.tour}</Label>
+                    </Dropdown.Item>
+                    <Dropdown.Item id={`/${language}/airport-transfer`} key={`/${language}/airport-transfer`} textValue={t.nav.airportTransfer}>
+                      <Label>{t.nav.airportTransfer}</Label>
+                    </Dropdown.Item>
+                    <Dropdown.Item id={`/${language}/rent-car`} key={`/${language}/rent-car`} textValue={t.nav.rentCar}>
+                      <Label>{t.nav.rentCar}</Label>
+                    </Dropdown.Item>
+                    <Dropdown.Item id={`/${language}/self-drive`} key={`/${language}/self-drive`} textValue={t.nav.selfDrive}>
+                      <Label>{t.nav.selfDrive}</Label>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
             </div>
           </div>
 
@@ -421,7 +438,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* Toast Message Notification */}
           {toastMessage && (
-            <div className="fixed bottom-4 right-4 z-50 text-white dark:text-slate-100 bg-slate-900 dark:bg-slate-800 px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-slate-700/50 animate-in fade-in slide-in-from-bottom-5 duration-200">
+            <div className="fixed bottom-4 right-4 z-50 text-white dark:text-slate-100 bg-slate-900 dark:bg-[var(--bg-card)] px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-2 border border-slate-700/50 animate-in fade-in slide-in-from-bottom-5 duration-200">
               <CheckCircle2 className="text-emerald-400" size={20} />
               <span className="text-sm font-bold">{toastMessage}</span>
             </div>
@@ -465,7 +482,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <button
                     onClick={closeModal}
                     aria-label="Close"
-                    className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer"
+                    className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer"
                   >
                     <X size={18} />
                   </button>
@@ -514,7 +531,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <div className="flex items-start gap-3">
                         <div className="flex flex-col items-center pt-1">
                           <span className="w-2.5 h-2.5 rounded-full bg-accent flex-shrink-0" />
-                          <span className="w-px flex-grow bg-slate-200 dark:bg-slate-700 my-1" style={{ minHeight: "20px" }} />
+                          <span className="w-px flex-grow bg-slate-200 dark:bg-[var(--bg-elevated)] my-1" style={{ minHeight: "20px" }} />
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
                         </div>
                         <div className="flex-grow space-y-2">

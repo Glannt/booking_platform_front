@@ -22,12 +22,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function TourConfirmPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
-  const { locale } = await params;
+  const { id, locale } = await params;
   let sections: SectionDto[] = [];
   try {
     sections = await getActiveSectionsServer("/tours", locale);
   } catch {
     sections = [];
   }
-  return <TourConfirmClient sections={sections} />;
+  return <TourConfirmClient tourId={Number(id)} sections={sections} />;
 }

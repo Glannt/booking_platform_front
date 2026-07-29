@@ -2,77 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Compass, Calendar, User, Search, MapPin, Clock, Tag, Star, CheckCircle, Shield, Ship, Utensils, Award } from "lucide-react";
-import { Button, Input, Label, SearchField, Skeleton } from "@heroui/react";
+import { Compass, Calendar, User, Search, MapPin, Clock, Tag, Star, CheckCircle, Shield, Ship, Utensils, Award, ArrowUpDown } from "lucide-react";
+import { Button, Input, Label, SearchField, Skeleton, Select, ListBox } from "@heroui/react";
 
 import { getTours, getTourCategories, TourDto, TourCategoryDto } from "@/lib/api/tours";
 import { useI18n } from "@/context/LanguageContext";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { resolveImageUrls } from "@/lib/api/media";
+import { resolveLocalizedName, resolveLocalizedDescription, resolveTranslation } from "@/lib/i18n-helpers";
 import { ImageGrid } from "@/components/ImageGallery";
 import type { SectionDto } from "@/lib/api/sections";
-
-const ENABLE_MOCK_FALLBACK = true;
-
-const MOCK_CATEGORIES: TourCategoryDto[] = [
-  { id: 0, code: "all", active: true, translations: [{ locale: "vi", name: "Tất Cả" }, { locale: "en", name: "All Tours" }, { locale: "ko", name: "전체" }, { locale: "ru", name: "Все туры" }] },
-  { id: 1, code: "island", active: true, translations: [{ locale: "vi", name: "Tour Đảo Nha Trang" }, { locale: "en", name: "Nha Trang Island Tours" }, { locale: "ko", name: "섬 투어" }, { locale: "ru", name: "Островные туры" }] },
-  { id: 2, code: "daily", active: true, translations: [{ locale: "vi", name: "Tour Hằng Ngày" }, { locale: "en", name: "Daily Sightseeing" }, { locale: "ko", name: "일일 투어" }, { locale: "ru", name: "Дневные туры" }] },
-];
-
-const MOCK_TOURS: TourDto[] = [
-  {
-    id: 1,
-    tourCategoryId: 1,
-    durationDays: 1,
-    durationNights: 0,
-    minGuest: 2,
-    maxGuest: 30,
-    active: true,
-    thumbnailId: 1,
-    imageIds: [1, 2, 3],
-    isDefault: true,
-    translations: [
-      { locale: "vi", name: "Tour 3 Đảo Nha Trang VIP (Cano Cao Tốc)", description: "Trải nghiệm cano cao tốc tham quan Bãi Tranh, Làng Chài và Vịnh San Hô với bữa trưa hải sản vô cùng hấp dẫn.", content: "" },
-      { locale: "en", name: "VIP Nha Trang 3 Islands Tour (Speedboat)", description: "Experience high-speed canoe sightseeing Bãi Tranh, Làng Chài, and Coral Bay with a delicious seafood lunch.", content: "" }
-    ],
-    options: [
-      { id: 1, iconUrl: "ship", colorText: "#0ea5e9", colorIcon: "#0ea5e9", translations: [{ locale: "vi", content: "Cano cao tốc" }, { locale: "en", content: "Speedboat" }] },
-      { id: 2, iconUrl: "utensils", colorText: "#f97316", colorIcon: "#f97316", translations: [{ locale: "vi", content: "Ăn trưa hải sản" }, { locale: "en", content: "Seafood lunch" }] },
-      { id: 3, iconUrl: "shield", colorText: "#22c55e", colorIcon: "#22c55e", translations: [{ locale: "vi", content: "Bảo hiểm trọn gói" }, { locale: "en", content: "Insurance included" }] }
-    ],
-    days: [],
-    prices: [
-      { id: 1, vehicleCategoryId: 1, currency: "VND", amount: 600000, active: true },
-      { id: 2, vehicleCategoryId: 2, currency: "VND", amount: 900000, active: true }
-    ]
-  },
-  {
-    id: 2,
-    tourCategoryId: 2,
-    durationDays: 1,
-    durationNights: 0,
-    minGuest: 1,
-    maxGuest: 15,
-    active: true,
-    thumbnailId: 2,
-    imageIds: [4, 5, 6],
-    isDefault: false,
-    translations: [
-      { locale: "vi", name: "Tour Khám Phá Thành Phố Nha Trang Danh Thắng", description: "Tham quan Tháp Bà Ponagar, Chùa Long Sơn, Nhà Thờ Núi và Viện Hải Dương Học bằng xe ô tô riêng đời mới.", content: "" },
-      { locale: "en", name: "Nha Trang Cultural City Sightseeing Tour", description: "Visit Ponagar Temple, Long Son Pagoda, Stone Church, and Oceanographic Institute in a private air-conditioned car.", content: "" }
-    ],
-    options: [
-      { id: 4, iconUrl: "award", colorText: "#8b5cf6", colorIcon: "#8b5cf6", translations: [{ locale: "vi", content: "Hướng dẫn viên" }, { locale: "en", content: "Local guide" }] },
-      { id: 5, iconUrl: "shield", colorText: "#22c55e", colorIcon: "#22c55e", translations: [{ locale: "vi", content: "Nước uống, khăn lạnh" }, { locale: "en", content: "Bottled water" }] }
-    ],
-    days: [],
-    prices: [
-      { id: 3, vehicleCategoryId: 1, currency: "VND", amount: 450000, active: true },
-      { id: 4, vehicleCategoryId: 2, currency: "VND", amount: 700000, active: true }
-    ]
-  }
-];
 
 interface ToursListingClientProps {
   sections: SectionDto[];
@@ -93,6 +32,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
   const [categories, setCategories] = useState<TourCategoryDto[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState(initialKeyword);
+  const [sortOrder, setSortOrder] = useState<"default" | "price_asc" | "price_desc">("default");
   const [loading, setLoading] = useState(true);
   const [tourImages, setTourImages] = useState<Record<number, { id: number; url: string }[]>>({});
 
@@ -123,11 +63,16 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
         if (catRes?.data?.content && catRes.data.content.length > 0) {
           const list = catRes.data.content;
           setCategories([
-            { id: 0, code: "all", active: true, translations: [{ locale: "vi", name: "Tất Cả" }, { locale: "en", name: "All Tours" }] } as any,
+            {
+              id: 0, code: "all", active: true, translations: [
+                { locale: "vi", name: "Tất cả" },
+                { locale: "en", name: "All Tours" },
+                { locale: "ko", name: "전체" },
+                { locale: "ru", name: "Все туры" }
+              ]
+            } as any,
             ...list
           ]);
-        } else if (ENABLE_MOCK_FALLBACK) {
-          setCategories(MOCK_CATEGORIES);
         }
 
         const toursRes = await getTours({
@@ -137,25 +82,9 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
 
         if (toursRes?.data?.content && toursRes.data.content.length > 0) {
           setTours(toursRes.data.content);
-        } else if (ENABLE_MOCK_FALLBACK) {
-          let filtered = MOCK_TOURS;
-          if (activeCategoryId > 0) {
-            filtered = filtered.filter(t => t.tourCategoryId === activeCategoryId);
-          }
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(t =>
-              t.translations.some(tr => tr.name.toLowerCase().includes(query) || tr.description.toLowerCase().includes(query))
-            );
-          }
-          setTours(filtered);
         }
       } catch (err) {
         console.error("Error fetching tours directory:", err);
-        if (ENABLE_MOCK_FALLBACK) {
-          setCategories(MOCK_CATEGORIES);
-          setTours(MOCK_TOURS);
-        }
       } finally {
         setLoading(false);
       }
@@ -173,18 +102,6 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
       });
       if (toursRes?.data?.content) {
         setTours(toursRes.data.content);
-      } else if (ENABLE_MOCK_FALLBACK) {
-        let filtered = MOCK_TOURS;
-        if (activeCategoryId > 0) {
-          filtered = filtered.filter(t => t.tourCategoryId === activeCategoryId);
-        }
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filtered = filtered.filter(t =>
-            t.translations.some(tr => tr.name.toLowerCase().includes(query) || tr.description.toLowerCase().includes(query))
-          );
-        }
-        setTours(filtered);
       }
     } catch (err) {
       console.error(err);
@@ -194,18 +111,15 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
   };
 
   const getLocalizedCatName = (c: TourCategoryDto) => {
-    const translation = c.translations?.find(tr => tr.locale === language) || c.translations?.[0];
-    return translation ? translation.name : c.code;
+    return resolveLocalizedName(c.translations, language, c.code);
   };
 
-  const getLocalizedName = (t: TourDto) => {
-    const translation = t.translations?.find(tr => tr.locale === language) || t.translations?.[0];
-    return translation ? translation.name : "Sightseeing Tour";
+  const getLocalizedName = (tour: TourDto) => {
+    return resolveLocalizedName(tour.translations, language, "Tour");
   };
 
-  const getLocalizedDesc = (t: TourDto) => {
-    const translation = t.translations?.find(tr => tr.locale === language) || t.translations?.[0];
-    return translation ? translation.description : "";
+  const getLocalizedDesc = (tour: TourDto) => {
+    return resolveLocalizedDescription(tour.translations, language);
   };
 
   const getMinPrice = (t: TourDto) => {
@@ -230,6 +144,13 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
     }
   };
 
+  const sortedTours = [...tours].sort((a, b) => {
+    if (sortOrder === "default") return 0;
+    const priceA = getMinPrice(a);
+    const priceB = getMinPrice(b);
+    return sortOrder === "price_asc" ? priceA - priceB : priceB - priceA;
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
       <section className="relative w-full pt-28 pb-12 px-6 bg-slate-900 overflow-hidden">
@@ -244,10 +165,10 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
         <div className="max-w-7xl mx-auto w-full relative z-10 text-white flex flex-col gap-5 items-center">
           <div className="text-center space-y-2 max-w-2xl">
             <h1 className="text-2xl md:text-4xl font-black tracking-tight uppercase">
-              {heroSection?.translations?.find(tr => tr.locale === language)?.title || t.tours.catalogTitle}
+              {resolveTranslation(heroSection?.translations, language)?.title || t.tours.catalogTitle}
             </h1>
             <p className="text-xs md:text-sm text-slate-300 font-medium">
-              {heroSection?.translations?.find(tr => tr.locale === language)?.description || t.tours.catalogSubtitle}
+              {resolveTranslation(heroSection?.translations, language)?.description || t.tours.catalogSubtitle}
             </p>
           </div>
 
@@ -282,22 +203,55 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
       </section>
 
       <main className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 flex-1 flex flex-col gap-6">
-        <div className="flex items-center justify-start md:justify-center overflow-x-auto scrollbar-hide pb-2 gap-2 border-b border-slate-200 dark:border-slate-800">
-          {categories.map((c) => {
-            const isActive = activeCategoryId === c.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setActiveCategoryId(c.id)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-none shrink-0 cursor-pointer ${isActive
-                  ? "bg-accent text-white shadow-md"
-                  : "bg-white dark:bg-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                  }`}
-              >
-                {getLocalizedCatName(c)}
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between overflow-x-auto scrollbar-hide pb-2 gap-2 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-hide">
+            {categories.map((c) => {
+              const isActive = activeCategoryId === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveCategoryId(c.id)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-none shrink-0 cursor-pointer ${isActive
+                    ? "bg-accent text-white shadow-md"
+                    : "bg-white dark:bg-black text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                >
+                  {getLocalizedCatName(c)}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0 ml-3">
+            <ArrowUpDown size={14} className="text-slate-400 dark:text-slate-500" />
+            <Select
+              selectedKey={sortOrder}
+              onSelectionChange={(key) => { if (key) setSortOrder(key as typeof sortOrder); }}
+              className="w-34"
+            >
+              <Label className="sr-only">Sort</Label>
+              <Select.Trigger className="h-8 px-3 text-[10px] font-bold bg-slate-100 dark:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 rounded-lg border-none cursor-pointer">
+                <Select.Value className="text-[10px]" />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
+                <ListBox>
+                  <ListBox.Item key="default" id="default" textValue={t.tours.sortDefault} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                    {t.tours.sortDefault}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item key="price_asc" id="price_asc" textValue={t.tours.sortPriceLow} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                    {t.tours.sortPriceLow}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item key="price_desc" id="price_desc" textValue={t.tours.sortPriceHigh} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                    {t.tours.sortPriceHigh}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          </div>
         </div>
 
         {loading ? (
@@ -327,7 +281,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tours.map((tour) => {
+            {sortedTours.map((tour) => {
               const minPrice = getMinPrice(tour);
               const name = getLocalizedName(tour);
               const desc = getLocalizedDesc(tour);
@@ -345,7 +299,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
                   className="group bg-white dark:bg-black rounded-3xl border border-slate-250 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all duration-300 transform hover:scale-[1.01]"
                 >
                   <div>
-                    <div className="h-48 overflow-hidden relative bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-center p-4">
+                    <div className="h-48 overflow-hidden relative bg-slate-100 dark:bg-[var(--bg-surface)] flex items-center justify-center text-center p-4">
                       {bgImg && bgImg !== "/images/placeholder.jpg" ? (
                         <img
                           src={bgImg}
@@ -375,7 +329,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
                       <p className="text-xs text-slate-400 dark:text-slate-400 leading-normal line-clamp-2">{desc}</p>
                       <div className="flex flex-wrap gap-1.5 pt-2">
                         {tour.options?.slice(0, 3).map((opt) => {
-                          const trans = opt.translations?.find(tr => tr.locale === language) || opt.translations?.[0];
+                          const trans = resolveTranslation(opt.translations, language);
                           return (
                             <span key={opt.id} style={{ color: opt.colorText || "#3b82f6", backgroundColor: `${opt.colorText || "#3b82f6"}10` }} className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide flex items-center gap-1">
                               {renderIcon(opt.iconUrl)}<span>{trans ? trans.content : ""}</span>

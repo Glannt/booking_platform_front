@@ -70,7 +70,7 @@ export default function AirportRouteModal({ isOpen, onClose, route, airports, on
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-md relative">
-            <Button isIconOnly variant="ghost" onClick={onClose} className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none">✕</Button>
+            <Button isIconOnly variant="ghost" onClick={onClose} className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none">✕</Button>
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
               <h2 id="airport-route-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 {route ? "Chi Tiết Tuyến Đường" : "Tạo Tuyến Đường Mới"}
@@ -101,7 +101,7 @@ export default function AirportRouteModal({ isOpen, onClose, route, airports, on
                     <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                       <ListBox>
                         {airports.map((a) => (
-                          <ListBox.Item key={a.id} id={String(a.id)} textValue={`${a.name} (${a.code})`} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                          <ListBox.Item key={a.id} id={String(a.id)} textValue={`${a.name} (${a.code})`} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                             {a.name} ({a.code})
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
@@ -120,7 +120,7 @@ export default function AirportRouteModal({ isOpen, onClose, route, airports, on
                 </div>
               </ModalBody>
               <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3">
-                <Button variant="outline" className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none" onClick={onClose} isDisabled={loading}>
+                <Button variant="outline" className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none" onClick={onClose} isDisabled={loading}>
                   {"Hủy"}
                 </Button>
                 <Button type="submit" isDisabled={loading} className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none">

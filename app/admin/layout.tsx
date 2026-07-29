@@ -19,6 +19,10 @@ import {
   Shield,
   Layers,
   Users,
+  CalendarDays,
+  Milestone,
+  Coins,
+  Search,
 } from "lucide-react";
 import {
   Drawer,
@@ -54,8 +58,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {
           key: "bookings-mgmt",
           label: "Quản lý Đơn đặt",
-          path: "/admin/bookings",
           icon: <Calendar size={20} />,
+          children: [
+            { key: "booking-tours", label: "Đơn đặt Tours", path: "/admin/bookings" },
+            { key: "booking-self-drive", label: "Đơn đặt xe tự lái", path: "/admin/bookings/self-drive" },
+            { key: "booking-intercity", label: "Đơn đặt xe liên tỉnh", path: "/admin/bookings/intercity" },
+            { key: "booking-airport", label: "Đơn đưa đón sân bay", path: "/admin/bookings/airport-transfers" },
+          ],
         },
         {
           key: "tours-mgmt",
@@ -75,6 +84,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           path: "/admin/airport-transfers",
           icon: <Plane size={20} />,
         },
+        {
+          key: "intercity-mgmt",
+          label: "Tuyến xe Liên tỉnh",
+          path: "/admin/intercity",
+          icon: <Milestone size={20} />,
+        },
+        {
+          key: "flights-mgmt",
+          label: "Tra cứu chuyến bay",
+          path: "/admin/flights",
+          icon: <Search size={20} />,
+        },
       ],
     },
     {
@@ -85,6 +106,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           label: "Sections / Banner",
           path: "/admin/sections",
           icon: <Layers size={20} />,
+        },
+        {
+          key: "currencies-mgmt",
+          label: "Tiền tệ & Tỉ giá",
+          path: "/admin/currencies",
+          icon: <Coins size={20} />,
         },
         {
           key: "contact-settings",
@@ -141,6 +168,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const isBookingsMgmt = pathname?.startsWith("/admin/bookings");
+  const isBookingTours = pathname === "/admin/bookings";
+  const isBookingSelfDrive = pathname?.startsWith("/admin/bookings/self-drive");
+  const isBookingIntercity = pathname?.startsWith("/admin/bookings/intercity");
+  const isBookingAirport = pathname?.startsWith("/admin/bookings/airport-transfers");
   const isToursMgmt = pathname?.startsWith("/admin/tours");
   const isVehiclesMgmt = pathname?.startsWith("/admin/vehicles");
   const isFaqsMgmt = pathname?.startsWith("/admin/services/faqs");
@@ -148,10 +179,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isRoles = pathname?.startsWith("/admin/roles");
   const isSections = pathname?.startsWith("/admin/sections");
   const isContactsMgmt = pathname?.startsWith("/admin/contacts");
+  const isRentalBookings = pathname?.startsWith("/admin/rental-bookings");
+  const isIntercityMgmt = pathname?.startsWith("/admin/intercity");
+  const isCurrenciesMgmt = pathname?.startsWith("/admin/currencies");
+  const isFlightsMgmt = pathname?.startsWith("/admin/flights");
 
   const getPageTitle = () => {
+    if (isBookingSelfDrive) {
+      return "Quản lý Đơn đặt xe tự lái";
+    }
+    if (isBookingIntercity) {
+      return "Quản lý Đơn đặt xe Liên tỉnh";
+    }
+    if (isBookingAirport) {
+      return "Quản lý Đơn đưa đón sân bay";
+    }
+    if (isRentalBookings) {
+      return "Quản lý Đơn thuê xe tự lái";
+    }
+    if (isIntercityMgmt) {
+      return "Quản lý Tuyến xe Liên tỉnh";
+    }
     if (isContactsMgmt) {
       return "Cấu hình Liên hệ";
+    }
+    if (isCurrenciesMgmt) {
+      return "Tiền tệ & Tỉ giá";
     }
     if (isRoles) {
       return "Quản lý Phân quyền";
@@ -159,8 +212,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isSections) {
       return "Quản lý Sections / Banner";
     }
+    if (isBookingTours) {
+      return "Quản lý Đơn đặt Tours";
+    }
     if (isBookingsMgmt) {
-      return "Quản lý Đơn đặt xe & Tour";
+      return "Quản lý Đơn đặt";
     }
     if (isFaqsMgmt) {
       return "Quản lý Feedback & Đánh giá";
@@ -171,6 +227,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isVehiclesMgmt) {
       return "Quản lý Xe";
     }
+    if (isFlightsMgmt) {
+      return "Tra cứu chuyến bay";
+    }
     if (isSettings) {
       return "Cài đặt tài khoản";
     }
@@ -178,11 +237,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const getPageSubtitle = () => {
+    if (isBookingSelfDrive) {
+      return "Quản lý danh sách đơn đặt xe tự lái, trạng thái và thông tin khách hàng.";
+    }
+    if (isBookingIntercity) {
+      return "Quản lý danh sách đơn đặt xe liên tỉnh, trạng thái và thông tin khách hàng.";
+    }
+    if (isBookingAirport) {
+      return "Quản lý danh sách đơn đặt đưa đón sân bay, trạng thái và thông tin khách hàng.";
+    }
+    if (isRentalBookings) {
+      return "Theo dõi danh sách, trạng thái thanh toán và thông tin giao nhận xe tự lái.";
+    }
+    if (isIntercityMgmt) {
+      return "Cấu hình danh sách tuyến đường liên tỉnh, bảng giá chi tiết theo loại xe và phụ phí thời gian.";
+    }
     if (isContactsMgmt) {
       return "Quản lý các kênh liên hệ của khách hàng như Zalo, Phone, KakaoTalk, Whatsapp.";
     }
+    if (isCurrenciesMgmt) {
+      return "Quản lý loại tiền tệ, tỉ giá so với VND và hiển thị giá theo ngôn ngữ.";
+    }
+    if (isBookingTours) {
+      return "Theo dõi và cập nhật trạng thái đơn đặt tour, dịch vụ, thông tin khách hàng và thanh toán.";
+    }
     if (isBookingsMgmt) {
-      return "Theo dõi và cập nhật trạng thái đơn đặt xe, dịch vụ, thông tin khách hàng và thanh toán.";
+      return "Theo dõi và quản lý tất cả các đơn đặt trong hệ thống.";
     }
     if (isFaqsMgmt) {
       return "Tạo và quản lý đánh giá khách hàng, chọn hiển thị trên trang chủ.";
@@ -199,6 +279,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isSections) {
       return "Quản lý banner, nội dung hiển thị trên từng trang của website.";
     }
+    if (isFlightsMgmt) {
+      return "Tra cứu thông tin chuyến bay theo số hiệu và xem lịch sử tra cứu.";
+    }
     if (isSettings) {
       return "Thiết lập cấu hình tài khoản và phân quyền quản trị.";
     }
@@ -213,7 +296,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AuthGuard allowedRoles={["ADMIN", "STAFF", "MODERATOR"]}>
-      <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
+      <div className="admin-layout flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
         {/* Sidebar - desktop */}
         <div className="hidden md:flex">
           <Sidebar

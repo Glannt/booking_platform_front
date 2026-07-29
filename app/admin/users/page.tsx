@@ -8,6 +8,7 @@ import {
   Trash2,
   Users,
   UserPlus,
+  Edit3,
 } from "lucide-react";
 import { Button, Input, Table, toast } from "@heroui/react";
 import { getUsers, AdminUserDto } from "@/lib/api/users";
@@ -26,7 +27,7 @@ const roleColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  inactive: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",
+  inactive: "bg-slate-100 text-slate-700 dark:bg-[var(--bg-card)] dark:text-slate-400",
   blocked: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
@@ -42,6 +43,7 @@ export default function UsersManagementPage() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUserDto | null>(null);
+  const [editingUser, setEditingUser] = useState<AdminUserDto | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") toast.success(message);
@@ -80,6 +82,7 @@ export default function UsersManagementPage() {
 
   const handleSaveSuccess = () => {
     fetchUsers(currentPage, searchTerm);
+    setEditingUser(null);
   };
 
   return (
@@ -99,7 +102,7 @@ export default function UsersManagementPage() {
             />
           </div>
           <Button
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
             onClick={handleSearch}
           >
             <Search size={16} className="mr-1.5" />
@@ -109,7 +112,7 @@ export default function UsersManagementPage() {
 
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
             onClick={() => fetchUsers(currentPage, searchTerm)}
           >
             <RefreshCw size={16} className="mr-1.5" />
@@ -159,7 +162,7 @@ export default function UsersManagementPage() {
                     {users.map((u) => (
                       <Table.Row
                         key={u.id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors duration-150"
+                        className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
                       >
                         <Table.Cell className="px-6 py-4 font-bold text-slate-900 dark:text-white text-xs">
                           {u.email}
@@ -183,14 +186,21 @@ export default function UsersManagementPage() {
                         <Table.Cell className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors border-none bg-transparent cursor-pointer"
                               onClick={() => { setSelectedUser(u); setDetailsModalOpen(true); }}
                               title="Xem Chi Tiết"
                             >
                               <Eye size={16} />
                             </button>
                             <button
-                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                              onClick={() => { setEditingUser(u); setCreateModalOpen(true); }}
+                              title="Chỉnh Sửa"
+                            >
+                              <Edit3 size={16} />
+                            </button>
+                            <button
+                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors border-none bg-transparent cursor-pointer"
                               onClick={() => { setSelectedUser(u); setDeleteModalOpen(true); }}
                               title="Xóa"
                             >
@@ -216,7 +226,7 @@ export default function UsersManagementPage() {
             <div className="flex gap-2">
               <Button
                 size="sm"
-                className="rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="rounded-lg font-bold bg-slate-100 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
                 isDisabled={currentPage === 0}
                 onClick={() => fetchUsers(currentPage - 1, searchTerm)}
               >
@@ -224,7 +234,7 @@ export default function UsersManagementPage() {
               </Button>
               <Button
                 size="sm"
-                className="rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="rounded-lg font-bold bg-slate-100 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
                 isDisabled={currentPage >= totalPages - 1}
                 onClick={() => fetchUsers(currentPage + 1, searchTerm)}
               >
@@ -238,15 +248,21 @@ export default function UsersManagementPage() {
       {/* Modals */}
       <UserCreateModal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        onClose={() => { setCreateModalOpen(false); setEditingUser(null); }}
         onSaveSuccess={handleSaveSuccess}
         showToast={showToast}
+        editingUser={editingUser}
       />
 
       <UserDetailsModal
         isOpen={detailsModalOpen}
         onClose={() => { setDetailsModalOpen(false); setSelectedUser(null); }}
         user={selectedUser}
+        onEdit={() => {
+          setDetailsModalOpen(false);
+          setEditingUser(selectedUser);
+          setCreateModalOpen(true);
+        }}
       />
 
       <UserDeleteModal

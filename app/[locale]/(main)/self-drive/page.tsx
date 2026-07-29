@@ -79,8 +79,6 @@ export default function SelfDrivePage() {
   );
 
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showContactMenu, setShowContactMenu] = useState(false);
   const [heroSection, setHeroSection] = useState<SectionDto | null>(null);
 
   const [formVehicleId, setFormVehicleId] = useState<string>("");
@@ -334,14 +332,6 @@ export default function SelfDrivePage() {
     }
   }, [vehicles, bookableCategories, selectedCategoryId]);
 
-  useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
   const handleCall = () => window.open(`tel:${contacts.phone}`);
 
   const handleQuickBookSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -362,12 +352,8 @@ export default function SelfDrivePage() {
       {/* Hero Banner Section */}
       <section className="relative w-full min-h-[340px] flex items-center pt-28 pb-14 px-6 [overflow:clip]">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: heroSection?.imageUrls?.[0]
-              ? `url('${heroSection.imageUrls[0]}')`
-              : `url('')`
-          }}
+          className={`absolute inset-0 ${heroSection?.imageUrls?.[0] ? "bg-cover bg-center bg-no-repeat" : "bg-gradient-to-br from-slate-900 to-slate-800"}`}
+          style={heroSection?.imageUrls?.[0] ? { backgroundImage: `url('${heroSection.imageUrls[0]}')` } : undefined}
         >
           <div className="absolute inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-[1.5px]" />
         </div>
@@ -408,7 +394,7 @@ export default function SelfDrivePage() {
           <div className="w-full max-w-sm dark:backdrop-blur-xl bg-white dark:bg-black p-6 rounded-3xl border border-white/20 dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-slate-800 flex flex-col gap-4">
             <div className="space-y-1 pb-3 border-b border-white/20 dark:border-slate-700">
               <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-accent">
-                ⚡ {t.selfDrive.quickBookLabel}
+                {t.selfDrive.quickBookLabel}
               </span>
               <Typography className="text-sm font-extrabold uppercase tracking-wider">
                 {t.selfDrive.selfDriveRental}
@@ -436,7 +422,7 @@ export default function SelfDrivePage() {
                         const tr = cat.translations?.find(t => t.locale === language) || cat.translations?.[0];
                         const name = tr?.name || cat.code;
                         return (
-                          <ListBox.Item key={cat.id} id={String(cat.id)} textValue={name} className="text-xs font-semibold px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-100 flex items-center justify-between outline-none">
+                          <ListBox.Item key={cat.id} id={String(cat.id)} textValue={name} className="text-xs font-semibold px-3 py-2 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-100 flex items-center justify-between outline-none">
                             {name}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
@@ -485,8 +471,8 @@ export default function SelfDrivePage() {
                           <Calendar.YearPickerTriggerIndicator />
                         </Calendar.YearPickerTrigger>
                         <div className="flex gap-1">
-                          <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                          <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                          <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                          <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                         </div>
                       </Calendar.Header>
                       <Calendar.Grid className="w-full">
@@ -687,7 +673,7 @@ export default function SelfDrivePage() {
                           <Typography type="h4" className="font-extrabold text-slate-900 dark:text-white text-sm">
                             {language === "vi" ? vehicle.nameVi : vehicle.nameEn}
                           </Typography>
-                          <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-[var(--bg-card)] px-2 py-0.5 rounded">
                             {vehicle.capacity} {t.selfDrive.capacity}
                           </span>
                         </div>
@@ -723,7 +709,7 @@ export default function SelfDrivePage() {
                             e.stopPropagation();
                             router.push(`/${language}/self-drive/${vehicle.vehicleCategoryId}`);
                           }}
-                          className="py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer border-none"
+                          className="py-2.5 px-3 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer border-none"
                         >
                           {t.selfDrive.moreVehicles}
                         </button>
@@ -785,7 +771,7 @@ export default function SelfDrivePage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
                     {vehicles.map((v) => (
-                      <tr key={v.id} className="hover:bg-slate-50/55 dark:hover:bg-slate-850/40 transition-colors">
+                      <tr key={v.id} className="hover:bg-slate-50/55 dark:hover:bg-[var(--bg-card)]/40 transition-colors">
                         <td className="p-4 font-bold text-slate-900 dark:text-slate-200">
                           {language === "vi" ? v.nameVi : v.nameEn}
                         </td>
@@ -1009,72 +995,7 @@ export default function SelfDrivePage() {
         </div>
       </main>
 
-      {/* Floating contact supports */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {showContactMenu && (
-          <div className="bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 w-44 flex flex-col gap-2 animate-fade-in-up">
-            <a
-              href={`tel:${contacts.phone}`}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline"
-            >
-              <Phone size={14} className="text-accent" />
-              <span>{`${t.common.callNow} ${contacts.phone}`}</span>
-            </a>
-            <a
-              href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
-            >
-              <MessageCircle size={14} className="text-accent" />
-              <span>{t.selfDrive.zaloContactLabel}</span>
-            </a>
-            {contacts.kakaotalk && (
-              <a
-                href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
-              >
-                <span className="text-accent">💛</span>
-                <span>KakaoTalk</span>
-              </a>
-            )}
-            {contacts.whatsapp && (
-              <a
-                href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
-              >
-                <span className="text-accent">💚</span>
-                <span>WhatsApp</span>
-              </a>
-            )}
-          </div>
-        )}
 
-        <button
-          onClick={() => setShowContactMenu(!showContactMenu)}
-          className={`p-4 rounded-full border shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer flex items-center justify-center border-none ${showContactMenu
-            ? "bg-accent text-white"
-            : "bg-white dark:bg-black text-accent dark:text-white"
-            }`}
-          aria-label={t.selfDrive.contactSupportLabel}
-        >
-          <Headset size={22} />
-        </button>
-
-        {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="p-4 rounded-full bg-white dark:bg-black border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-accent dark:text-white shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer animate-bounce-subtle flex items-center justify-center"
-            aria-label={t.selfDrive.backToTopLabel}
-          >
-            <ChevronUp size={22} />
-          </button>
-        )}
-      </div>
     </div>
   );
 }

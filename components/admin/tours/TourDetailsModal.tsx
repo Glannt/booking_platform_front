@@ -46,6 +46,7 @@ interface TourDetailsModalProps {
     backendUrl: string;
     onSaveSuccess: (updatedTour?: TourDto) => void;
     showToast: (msg: string, type: "success" | "error") => void;
+    defaultEditMode?: boolean;
 }
 
 export default function TourDetailsModal({
@@ -56,12 +57,13 @@ export default function TourDetailsModal({
     language,
     backendUrl,
     onSaveSuccess,
-    showToast
+    showToast,
+    defaultEditMode = false,
 }: TourDetailsModalProps) {
     const [activeFormLocale, setActiveFormLocale] = useState<string>("vi");
     const [loading, setLoading] = useState(false);
     const [vehicleCategories, setVehicleCategories] = useState<VehicleCategoryDto[]>([]);
-    const [isEditMode, setIsEditMode] = useState<boolean>(false);
+    const [isEditMode, setIsEditMode] = useState<boolean>(defaultEditMode);
 
     // Form states
     const [tourCategoryId, setTourCategoryId] = useState<number>(0);
@@ -118,7 +120,7 @@ export default function TourDetailsModal({
             setMaxGuest(tour.maxGuest || 20);
             setActive(tour.active);
             setIsDefault(tour.isDefault || false);
-            setIsEditMode(false);
+            setIsEditMode(defaultEditMode);
 
             // Prepopulate translations
             const newTrans = {
@@ -358,7 +360,7 @@ export default function TourDetailsModal({
                             type="button"
                             isIconOnly
                             onClick={onClose}
-                            className="absolute top-4 right-4 z-50 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent"
+                            className="absolute top-4 right-4 z-50 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors border-none bg-transparent"
                             aria-label={language === "vi" ? "Đóng" : "Close"}
                         >
                             ✕
@@ -368,7 +370,7 @@ export default function TourDetailsModal({
                             <div>
                                 <h2 id="tour-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                                     <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Tour Du Lịch" : "Edit Tour Details") : (language === "vi" ? "Chi Tiết Tour Du Lịch" : "Sightseeing Tour Details")}</span>
-                                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">#{tour.id}</span>
+                                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500">#{tour.id}</span>
                                 </h2>
                                 <p className="text-xs text-slate-500">
                                     {isEditMode
@@ -426,7 +428,7 @@ export default function TourDetailsModal({
                                             </div>
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Translation content section */}
                                         <div className="space-y-4">
@@ -442,7 +444,7 @@ export default function TourDetailsModal({
                                                             className={clsx(
                                                                 "px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-none bg-transparent",
                                                                 activeFormLocale === lang
-                                                                    ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                                                    ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                                                     : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                                                             )}
                                                             onClick={() => setActiveFormLocale(lang)}
@@ -463,7 +465,7 @@ export default function TourDetailsModal({
                                                     </p>
                                                 </div>
 
-                                                <Separator className="bg-slate-100/60 dark:bg-slate-800/60" />
+                                                <Separator className="bg-slate-100/60 dark:bg-[var(--bg-card)]/60" />
 
                                                 <div>
                                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -474,7 +476,7 @@ export default function TourDetailsModal({
                                                     </p>
                                                 </div>
 
-                                                <Separator className="bg-slate-100/60 dark:bg-slate-800/60" />
+                                                <Separator className="bg-slate-100/60 dark:bg-[var(--bg-card)]/60" />
 
                                                 <div>
                                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -487,7 +489,7 @@ export default function TourDetailsModal({
                                             </div>
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Tour Options Display */}
                                         <div className="space-y-3">
@@ -517,7 +519,7 @@ export default function TourDetailsModal({
                                             )}
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Tour Images Display */}
                                         {(tour.imageIds?.length || tour.thumbnailId) && (
@@ -534,7 +536,7 @@ export default function TourDetailsModal({
                                             </div>
                                         )}
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Pricing Matrix */}
                                         <div className="space-y-4">
@@ -677,7 +679,7 @@ export default function TourDetailsModal({
                                             </div>
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Translation Content tab section */}
                                         <div className="space-y-4">
@@ -693,7 +695,7 @@ export default function TourDetailsModal({
                                                             className={clsx(
                                                                 "px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-none bg-transparent",
                                                                 activeFormLocale === lang
-                                                                    ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                                                    ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                                                     : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                                                             )}
                                                             onClick={() => setActiveFormLocale(lang)}
@@ -748,7 +750,7 @@ export default function TourDetailsModal({
                                             </div>
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Tour Options Editor */}
                                         <div className="space-y-4">
@@ -933,7 +935,7 @@ export default function TourDetailsModal({
                                             )}
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Tour Images */}
                                         <div className="space-y-4">
@@ -946,7 +948,7 @@ export default function TourDetailsModal({
                                             />
                                         </div>
 
-                                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                                         {/* Pricing Matrix */}
                                         <div className="space-y-4">
@@ -1026,7 +1028,7 @@ export default function TourDetailsModal({
                                     <>
                                         <Button
                                             variant="outline"
-                                            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                                            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                                             onClick={onClose}
                                         >
                                             {language === "vi" ? "Đóng lại" : "Close"}
@@ -1044,7 +1046,7 @@ export default function TourDetailsModal({
                                     <>
                                         <Button
                                             variant="outline"
-                                            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                                            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                                             onClick={() => {
                                                 // Reset form state on cancel
                                                 if (tour) {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useRef, useEffect, useState } from "react";
 import { SectionDto } from "@/lib/api/sections";
@@ -97,10 +97,10 @@ export function SlideReviewSection({ section, locale }: { section: SectionDto; l
             >
               <ReviewCard review={pair.first} locale={locale} />
               <div className="hidden md:flex items-center">
-                <Separator orientation="vertical" className="h-28 w-[1px] bg-slate-200 dark:bg-slate-800" />
+                <Separator orientation="vertical" className="h-28 w-[1px] bg-slate-200 dark:bg-[var(--bg-card)]" />
               </div>
               <div className="flex md:hidden w-full">
-                <Separator orientation="horizontal" className="w-full h-[1px] bg-slate-200 dark:bg-slate-800" />
+                <Separator orientation="horizontal" className="w-full h-[1px] bg-slate-200 dark:bg-[var(--bg-card)]" />
               </div>
               <ReviewCard review={pair.second} locale={locale} />
             </div>

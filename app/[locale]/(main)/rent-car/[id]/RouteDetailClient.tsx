@@ -8,21 +8,24 @@ import {
   Clock,
   Calendar as CalendarIcon,
   Car,
-  Users,
-  Luggage,
-  CheckCircle,
   Info,
+  X,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Button, Skeleton, Select, ListBox, DatePicker, DateField, Calendar, Label } from "@heroui/react";
+import { Button, Skeleton, Select, ListBox, DatePicker, DateField, Calendar, Label, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody } from "@heroui/react";
 import type { DateValue } from "@internationalized/date";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
+import dynamic from "next/dynamic";
 
 import { useI18n } from "@/context/LanguageContext";
-import { getActiveIntercityRoutes, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/rental";
+import { getActiveIntercityRoutes, getIntercityRouteById, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/rental";
+import { resolveImageUrls } from "@/lib/api/media";
 import { getVehicleCategories, getRentableVehiclesByCategory, type VehicleCategoryDto, type VehicleDto } from "@/lib/api/fleet";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { backendUrl } from "@/lib/api/client";
+
+const RouteMap = dynamic(() => import("@/components/route-map"), { ssr: false });
 import type { SectionDto } from "@/lib/api/sections";
 
 interface CategoryWithVehicles {
@@ -33,12 +36,17 @@ interface CategoryWithVehicles {
 
 interface RouteDetailClientProps {
   sections: SectionDto[];
+  routeId: number;
 }
 
-export default function RouteDetailClient({ sections }: RouteDetailClientProps) {
+export default function RouteDetailClient({ sections, routeId }: RouteDetailClientProps) {
   const router = useRouter();
+
+  const getImageUrl = (url: string | null | undefined) => {
+    if (!url) return "";
+    return url.startsWith("http") ? url : `${backendUrl}${url}`;
+  };
   const { language, t } = useI18n();
-  const vi = language === "vi";
 
   const prefixUrl = (url: string) => {
     if (!url) return "";
@@ -56,12 +64,20 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
   const [dateValue, setDateValue] = useState<DateValue | null>(null);
   const [departureTime, setDepartureTime] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const vehicleScrollRef = useRef<HTMLDivElement>(null);
-  const [activeVehicleSlide, setActiveVehicleSlide] = useState(0);
-  const [vehicleDotCount, setVehicleDotCount] = useState(0);
+  const [vehicleModalCategoryId, setVehicleModalCategoryId] = useState<number | null>(null);
+  const carouselRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const [heroImageIndex, setHeroImageIndex] = useState(0);
 
   const currentDate = today(getLocalTimeZone());
   const formatPrice = (value: number) => _formatPrice(value, language);
+
+  const scrollCarousel = (vehicleId: number, dir: "left" | "right") => {
+    const el = carouselRefs.current.get(vehicleId);
+    if (!el) return;
+    const img = el.querySelector<HTMLElement>("[data-carousel-img]");
+    if (!img) return;
+    el.scrollBy({ left: dir === "left" ? -img.offsetWidth : img.offsetWidth, behavior: "smooth" });
+  };
 
   const getRouteName = (r: IntercityRouteDto) => {
     const tr = r.translations?.find((t) => t.locale === language);
@@ -74,20 +90,46 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
     return tr?.description || "";
   };
 
+  const [routeImages, setRouteImages] = useState<string[]>([]);
+
+  const heroSection = sections.find((s) => s.sectionType === "HERO_BANNER");
+  const fallbackHeroImages = heroSection?.imageUrls?.filter(url => url) ?? [];
+  const displayHeroImages = routeImages.length > 0 ? routeImages : fallbackHeroImages;
+  const isHeroCarousel = displayHeroImages.length > 1;
+
+  useEffect(() => {
+    if (!isHeroCarousel) return;
+    const timer = setInterval(() => {
+      setHeroImageIndex(prev => (prev + 1) % displayHeroImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [isHeroCarousel, displayHeroImages.length]);
+
+  const prevHero = () => setHeroImageIndex(prev => (prev - 1 + displayHeroImages.length) % displayHeroImages.length);
+  const nextHero = () => setHeroImageIndex(prev => (prev + 1) % displayHeroImages.length);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [routesRes, catsRes] = await Promise.all([
-          getActiveIntercityRoutes(),
+        const [routeRes, catsRes] = await Promise.all([
+          getIntercityRouteById(routeId),
           getVehicleCategories({ active: true, page: 0, size: 100 }),
         ]);
 
-        const routes = (routesRes?.data ?? []) as IntercityRouteDto[];
-        const foundRoute = routes[0];
+        const foundRoute = (routeRes?.data ?? null) as IntercityRouteDto | null;
 
         if (foundRoute) {
           setRoute(foundRoute);
+
+          if (foundRoute.imageIds && foundRoute.imageIds.length > 0) {
+            try {
+              const resolved = await resolveImageUrls(foundRoute.imageIds);
+              setRouteImages(resolved.map(r => r.url));
+            } catch (err) {
+              console.error("Failed to resolve route images:", err);
+            }
+          }
 
           const allCats = (catsRes?.data?.content ?? []) as VehicleCategoryDto[];
           const routePrices = foundRoute.prices ?? [];
@@ -129,41 +171,10 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
     };
 
     fetchData();
-  }, [language]);
-
-  useEffect(() => {
-    const el = vehicleScrollRef.current;
-    if (!el || categories.length === 0) return;
-
-    const calcDots = () => {
-      const cards = el.querySelectorAll<HTMLElement>("[data-vehicle-card]");
-      if (cards.length === 0) { setVehicleDotCount(0); return; }
-      const cardWidth = cards[0].offsetWidth + 16;
-      const visibleCount = Math.max(1, Math.floor(el.clientWidth / cardWidth));
-      const dots = Math.max(1, categories.length - visibleCount + 1);
-      setVehicleDotCount(dots);
-      setActiveVehicleSlide((prev) => Math.min(prev, dots - 1));
-    };
-
-    const handleScroll = () => {
-      const cards = el.querySelectorAll<HTMLElement>("[data-vehicle-card]");
-      if (cards.length === 0) return;
-      const cardWidth = cards[0].offsetWidth + 16;
-      const idx = Math.round(el.scrollLeft / cardWidth);
-      setActiveVehicleSlide(Math.min(idx, Math.max(0, vehicleDotCount - 1)));
-    };
-
-    calcDots();
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    const ro = new ResizeObserver(calcDots);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", handleScroll);
-      ro.disconnect();
-    };
-  }, [categories.length, vehicleDotCount]);
+  }, [routeId, language]);
 
   const selectedCategory = categories.find((c) => c.category.id === selectedCategoryId);
+  const selectedModalCategory = categories.find((c) => c.category.id === vehicleModalCategoryId);
 
   const handleBooking = () => {
     if (!route) return;
@@ -215,7 +226,7 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
         <p className="text-sm font-bold text-slate-500">
           {t.rentCar.routeNotFound}
         </p>
-          <Button
+        <Button
           onClick={() => router.push(prefixUrl("/rent-car"))}
           className="bg-accent text-white text-xs font-bold px-4 py-2 rounded-xl"
         >
@@ -229,31 +240,73 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
     ? [...route.departureTimes].sort((a, b) => a.orderIndex - b.orderIndex)
     : [];
 
-  const heroSection = sections.find((s) => s.sectionType === "HERO_BANNER");
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
 
       {/* Hero Banner */}
       <section className="relative w-full h-[280px] md:h-[340px] bg-gradient-to-br from-accent/90 to-blue-600/80 overflow-hidden flex items-end">
-        {heroSection?.imageUrls?.[0] && (
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-30"
-            style={{ backgroundImage: `url('${heroSection.imageUrls[0]}')` }}
-          />
-        )}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
-
-        <div className="max-w-7xl mx-auto w-full px-6 pb-8 relative z-10 text-white space-y-3">
+        {/* Floating Back Button at Top Left */}
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-30">
           <Button
             onClick={() => router.push(prefixUrl("/rent-car"))}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-200 hover:text-white bg-black/40 hover:bg-black/60 border-none rounded-full px-4 py-2 cursor-pointer mb-2"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-200 hover:text-white bg-black/40 hover:bg-black/60 backdrop-blur-sm border-none rounded-full px-4 py-2 cursor-pointer transition-all"
           >
             <ArrowLeft size={13} />
             <span>{t.common.goBack}</span>
           </Button>
+        </div>
+        {/* Background images — layered with fade transition */}
+        {displayHeroImages.length > 0 && (
+          <div className="absolute inset-0">
+            {displayHeroImages.map((url, idx) => (
+              <div
+                key={url}
+                className="absolute inset-0 transition-opacity duration-1000"
+                style={{ opacity: idx === heroImageIndex ? 1 : 0 }}
+              >
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
 
+        {/* Chevron arrows */}
+        {isHeroCarousel && (
+          <>
+            <button
+              onClick={prevHero}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={20} className="text-white" />
+            </button>
+            <button
+              onClick={nextHero}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+            >
+              <ChevronRight size={20} className="text-white" />
+            </button>
+          </>
+        )}
+
+        {/* Dots indicator */}
+        {isHeroCarousel && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {displayHeroImages.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setHeroImageIndex(idx)}
+                className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === heroImageIndex
+                  ? "bg-white scale-110"
+                  : "bg-white/40 hover:bg-white/60"
+                  }`}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto w-full px-6 pb-8 relative z-10 text-white space-y-3">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs text-white/70 font-semibold">
               <MapPin size={14} className="text-white" />
@@ -304,26 +357,26 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
             <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
               {t.common.overview}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+            <p className="text-xs leading-relaxed font-semibold">
               {getRouteDescription(route) || t.rentCar.heroDesc}
             </p>
 
             {/* Route stats */}
             <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-accent dark:border-accent-foreground">
                 <MapPin size={18} className="text-accent mx-auto mb-1" />
                 <p className="text-lg font-black text-slate-800 dark:text-white">{route.distanceKm || "?"}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">km</p>
+                <p className="text-[10px] font-bold uppercase">km</p>
               </div>
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-accent dark:border-accent-foreground">
                 <Clock size={18} className="text-accent mx-auto mb-1" />
                 <p className="text-lg font-black text-slate-800 dark:text-white">{route.estimatedHours || "?"}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">{t.common.hours}</p>
+                <p className="text-[10px] font-bold uppercase">{t.common.hours}</p>
               </div>
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-accent dark:border-accent-foreground">
                 <Car size={18} className="text-accent mx-auto mb-1" />
                 <p className="text-lg font-black text-slate-800 dark:text-white">{categories.length}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">{t.rentCar.vehicleTypes}</p>
+                <p className="text-[10px] font-bold uppercase">{t.rentCar.vehicleTypes}</p>
               </div>
             </div>
           </div>
@@ -338,7 +391,7 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
                 {departureTimes.map((dt) => (
                   <div
                     key={dt.departureTime}
-                    className="text-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
+                    className="text-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)]"
                   >
                     <Clock size={16} className="text-accent mx-auto mb-1" />
                     <p className="text-sm font-black text-slate-800 dark:text-white">{dt.departureTime}</p>
@@ -357,23 +410,36 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="text-left py-2 font-bold text-slate-500 uppercase tracking-wider">{t.rentCar.vehicleType}</th>
-                    <th className="text-center py-2 font-bold text-slate-500 uppercase tracking-wider">{t.common.seats}</th>
-                    <th className="text-right py-2 font-bold text-slate-500 uppercase tracking-wider">{t.rentCar.oneWay}</th>
-                    <th className="text-right py-2 font-bold text-slate-500 uppercase tracking-wider">{t.rentCar.roundTrip}</th>
+                    <th className="text-left py-2 font-bold uppercase tracking-wider">{t.rentCar.vehicleType}</th>
+                    <th className="text-center py-2 font-bold uppercase tracking-wider">{t.common.seats}</th>
+                    <th className="text-right py-2 font-bold uppercase tracking-wider">{t.rentCar.oneWay}</th>
+                    <th className="text-right py-2 font-bold uppercase tracking-wider">{t.rentCar.roundTrip}</th>
+                    <th className="text-center py-2 font-bold uppercase tracking-wider"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {route.prices?.filter(p => p.active).map((price) => {
-                    const cat = categories.find(c => c.category.id === price.vehicleCategoryId)?.category;
+                    const catWithVehicles = categories.find(c => c.category.id === price.vehicleCategoryId);
+                    const cat = catWithVehicles?.category;
                     if (!cat) return null;
                     const catName = cat.translations?.find(tr => tr.locale === language)?.name || cat.code;
+                    const hasVehicles = (catWithVehicles?.vehicles.length ?? 0) > 0;
                     return (
                       <tr key={price.id} className="border-b border-slate-50 dark:border-slate-900">
                         <td className="py-3 font-bold text-slate-800 dark:text-white">{catName}</td>
                         <td className="py-3 text-center text-slate-500">{cat.minSeat}-{cat.maxSeat}</td>
                         <td className="py-3 text-right font-black text-accent">{formatPrice(price.oneWayAmount)}</td>
                         <td className="py-3 text-right font-bold text-slate-600 dark:text-slate-300">{formatPrice(price.roundTripAmount)}</td>
+                        <td className="py-3 text-center">
+                          {hasVehicles && (
+                            <button
+                              onClick={() => setVehicleModalCategoryId(price.vehicleCategoryId)}
+                              className="text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                            >
+                              {t.rentCar.viewRepresentativeVehicles}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -382,132 +448,6 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
             </div>
           </div>
 
-          {/* Vehicle Examples - Slider */}
-          {categories.length > 0 && (
-            <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider">
-                  {t.rentCar.representativeVehicles}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      if (!vehicleScrollRef.current) return;
-                      const card = vehicleScrollRef.current.querySelector<HTMLElement>("[data-vehicle-card]");
-                      if (card) vehicleScrollRef.current.scrollBy({ left: -(card.offsetWidth + 16), behavior: "smooth" });
-                    }}
-                    className="p-2 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                  >
-                    <ChevronLeft size={16} className="text-slate-500" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!vehicleScrollRef.current) return;
-                      const card = vehicleScrollRef.current.querySelector<HTMLElement>("[data-vehicle-card]");
-                      if (card) vehicleScrollRef.current.scrollBy({ left: card.offsetWidth + 16, behavior: "smooth" });
-                    }}
-                    className="p-2 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                  >
-                    <ChevronRight size={16} className="text-slate-500" />
-                  </button>
-                </div>
-              </div>
-
-              <div
-                ref={vehicleScrollRef}
-                className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory gap-4 pb-2"
-              >
-                {categories.map((item) => {
-                  const catName = item.category.translations?.find(tr => tr.locale === language)?.name || item.category.code;
-                  const displayVehicles = item.vehicles.slice(0, 3);
-                  return (
-                    <div
-                      key={item.category.id}
-                      data-vehicle-card
-                      className="min-w-[75vw] sm:min-w-[calc(50%-8px)] lg:min-w-[calc(25%-12px)] snap-start flex flex-col rounded-tl-3xl rounded-bl-3xl rounded-br-3xl rounded-tr-[48px] overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shrink-0"
-                    >
-                      {/* Vehicle thumbnail */}
-                      <div className="relative h-40 overflow-hidden bg-slate-100 dark:bg-slate-800">
-                        {displayVehicles[0]?.thumbnailUrl ? (
-                          <img
-                            src={displayVehicles[0].thumbnailUrl}
-                            alt={catName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent/5 to-accent/15">
-                            <Car size={36} className="text-accent/30" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                        <div className="absolute bottom-3 left-3 right-3">
-                          <p className="text-white text-sm font-black leading-tight">{catName}</p>
-                          <p className="text-white/70 text-[10px] font-bold mt-0.5">
-                            {item.category.minSeat}-{item.category.maxSeat} {t.common.seats}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Vehicle list */}
-                      <div className="p-4 space-y-2.5 flex-1">
-                        {displayVehicles.map((v) => (
-                          <div key={v.id} className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-800 bg-white dark:bg-black">
-                              {v.thumbnailUrl ? (
-                                <img src={v.thumbnailUrl} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Car size={14} className="text-slate-300 dark:text-slate-600" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{v.brand} {v.model}</p>
-                              <p className="text-[10px] text-slate-400">{v.year} · {v.fuelType}</p>
-                            </div>
-                          </div>
-                        ))}
-                        {item.vehicles.length > 3 && (
-                          <p className="text-[10px] text-slate-400 font-bold text-center pt-1">
-                            +{item.vehicles.length - 3} {t.rentCar.otherVehiclesHint}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Price footer */}
-                      <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-black/50">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.rentCar.from}</p>
-                        <p className="text-sm font-black text-accent">{formatPrice(item.price)}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Pagination dots */}
-              {vehicleDotCount > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  {Array.from({ length: vehicleDotCount }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        if (!vehicleScrollRef.current) return;
-                        const cards = vehicleScrollRef.current.querySelectorAll<HTMLElement>("[data-vehicle-card]");
-                        if (!cards[i]) return;
-                        vehicleScrollRef.current.scrollTo({ left: cards[i].offsetLeft - 16, behavior: "smooth" });
-                      }}
-                      className={`rounded-full transition-all duration-300 cursor-pointer border-none ${
-                        i === activeVehicleSlide
-                          ? "w-6 h-2 bg-accent"
-                          : "w-2 h-2 bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500"
-                      }`}
-                      aria-label={`Slide ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Right Column: Booking Sidebar */}
@@ -519,22 +459,22 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
 
             {/* Trip Type */}
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t.rentCar.tripType}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.tripType}</p>
               <Select
                 selectedKey={tripType}
                 onSelectionChange={(key) => { if (key) setTripType(key as string); }}
               >
-                <Select.Trigger className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer">
+                <Select.Trigger className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)]/50 text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer">
                   <Select.Value />
                   <Select.Indicator />
                 </Select.Trigger>
-                <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
+                <Select.Popover className="bg-white dark:bg-[var(--bg-surface)]/80 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
                   <ListBox>
-                    <ListBox.Item key="one-way" id="one-way" textValue={t.rentCar.oneWay} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <ListBox.Item key="one-way" id="one-way" textValue={t.rentCar.oneWay} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                       {t.rentCar.oneWay}
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
-                    <ListBox.Item key="round-trip" id="round-trip" textValue={t.rentCar.roundTrip} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <ListBox.Item key="round-trip" id="round-trip" textValue={t.rentCar.roundTrip} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                       {t.rentCar.roundTrip}
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
@@ -551,8 +491,8 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
                 value={dateValue}
                 onChange={setDateValue}
               >
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t.rentCar.date}</Label>
-                <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                <Label className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.date}</Label>
+                <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)]/80 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                   <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                     {(segment) => <DateField.Segment segment={segment} />}
                   </DateField.Input>
@@ -570,8 +510,8 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
                         <Calendar.YearPickerTriggerIndicator />
                       </Calendar.YearPickerTrigger>
                       <div className="flex gap-1">
-                        <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                        <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                        <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                        <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                       </div>
                     </Calendar.Header>
                     <Calendar.Grid className="w-full">
@@ -610,8 +550,108 @@ export default function RouteDetailClient({ sections }: RouteDetailClientProps) 
               {t.common.bookNow}
             </Button>
           </div>
+
+          {/* Route Map */}
+          {route && (
+            <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-wider">
+                {t.rentCar.routeMap}
+              </h3>
+              <RouteMap
+                originLat={route.originLat ? Number(route.originLat) : null}
+                originLng={route.originLng ? Number(route.originLng) : null}
+                originLabel={route.originCity}
+                destinationLat={route.destinationLat ? Number(route.destinationLat) : null}
+                destinationLng={route.destinationLng ? Number(route.destinationLng) : null}
+                destinationLabel={route.destinationCity}
+              />
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Vehicle List Modal */}
+      <Modal isOpen={!!vehicleModalCategoryId} onOpenChange={(open) => { if (!open) setVehicleModalCategoryId(null); }}>
+        <ModalBackdrop>
+          <ModalContainer>
+            <ModalDialog className="max-w-lg w-[calc(100vw-2rem)]">
+              <ModalHeader className="flex items-center justify-between">
+                <span>
+                  {selectedModalCategory?.category.translations?.find(tr => tr.locale === language)?.name
+                    || selectedModalCategory?.category.code}
+                  <span className="text-xs font-normal text-slate-400 ml-2">
+                    ({selectedModalCategory?.vehicles.length} {t.rentCar.vehicleList})
+                  </span>
+                </span>
+                <button onClick={() => setVehicleModalCategoryId(null)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer">
+                  <X size={16} className="text-slate-400" />
+                </button>
+              </ModalHeader>
+              <ModalBody className="gap-4 max-h-[70vh] overflow-y-auto p-1">
+                {selectedModalCategory?.vehicles.map((v) => {
+                  const images = v.images && v.images.length > 0
+                    ? v.images.map(img => getImageUrl(img.filePath))
+                    : v.thumbnailUrl
+                      ? [getImageUrl(v.thumbnailUrl)]
+                      : [];
+                  const hasMultiple = images.length > 1;
+
+                  return (
+                    <div key={v.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] overflow-hidden">
+                      {/* Image Carousel */}
+                      <div className="relative">
+                        <div
+                          ref={(el) => { if (el) carouselRefs.current.set(v.id, el); }}
+                          className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+                        >
+                          {images.length > 0 ? images.map((src, i) => (
+                            <div key={i} data-carousel-img className="w-full shrink-0 snap-start">
+                              <img
+                                src={src}
+                                alt={`${v.brand} ${v.model} ${i + 1}`}
+                                className="w-full h-40 sm:h-48 object-cover"
+                              />
+                            </div>
+                          )) : (
+                            <div className="w-full h-40 sm:h-48 flex items-center justify-center bg-slate-100 dark:bg-[var(--bg-card)]">
+                              <Car size={32} className="text-slate-300 dark:text-slate-600" />
+                            </div>
+                          )}
+                        </div>
+                        {hasMultiple && (
+                          <>
+                            <button
+                              onClick={() => scrollCarousel(v.id, "left")}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white cursor-pointer transition-colors"
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <button
+                              onClick={() => scrollCarousel(v.id, "right")}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white cursor-pointer transition-colors"
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Vehicle Info */}
+                      <div className="p-3">
+                        <p className="text-sm font-bold text-slate-800 dark:text-white">{v.brand} {v.model}</p>
+                        <p className="text-[11px] text-black dark:text-white mt-0.5">{v.year} · {v.fuelType} · {v.luggage} {v.luggageUnit}{v.luggageWeight ? ` · ${v.luggageWeight}kg` : ""}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {(!selectedModalCategory?.vehicles || selectedModalCategory.vehicles.length === 0) && (
+                  <p className="text-xs text-slate-400 text-center py-8">{t.rentCar.noVehiclesFound}</p>
+                )}
+              </ModalBody>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </div>
   );
 }

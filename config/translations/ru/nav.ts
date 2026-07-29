@@ -8,6 +8,7 @@ export const nav = {
   cityTour: "Экскурсия по городу",
   about: "О нас",
   booking: "Заказать услугу",
-  myBookings: "Мои бронирования",
+  dashboard: "Панель управления",
+  bookingHistory: "История бронирований",
   myProfile: "Мой профиль",
 };

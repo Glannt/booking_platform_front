@@ -8,12 +8,22 @@
   --accent: oklch(0.82 0.17 85);
   --accent-foreground: oklch(0.18 0.02 70);
   --accent-hover: oklch(0.75 0.18 85);
+  --bg-page: #fafafa;
+  --bg-surface: #ffffff;
+  --bg-card: #f4f4f5;
+  --bg-elevated: #e4e4e7;
+  --bg-muted: #f4f4f580;
 }
 
 .dark {
   --accent: oklch(0.65 0.15 75);
   --accent-foreground: oklch(0.97 0.01 80);
   --accent-hover: oklch(0.58 0.16 75);
+  --bg-page: #09090b;
+  --bg-surface: #18181b;
+  --bg-card: #27272a;
+  --bg-elevated: #3f3f46;
+  --bg-muted: #27272a80;
 }
 
 @theme {
@@ -23,7 +33,7 @@
 
 @layer components {
 	.accordion {
-		@apply rounded-xl bg-gray-50 dark:bg-slate-900;
+		@apply rounded-xl bg-gray-50 dark:bg-[var(--bg-surface)];
 	}
 	.accordion__trigger {
 		@apply font-semibold text-lg;
@@ -103,3 +113,66 @@
   stroke-dashoffset: 48;
   animation: draw-checkmark 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
 }
+
+/* ponytail: Style inputs, textareas, selects, and checkbox controls inside admin modals and pages for better visibility */
+div[role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
+div[role="dialog"] textarea,
+div[role="dialog"] select,
+div[role="dialog"] .border,
+div[role="dialog"] .border-slate-200,
+div[role="dialog"] .border-slate-800,
+div[role="dialog"] [class*="border-slate-"],
+div[role="dialog"] .rounded-xl.border {
+  border-width: 2px !important;
+  border-color: #cbd5e1 !important; /* slate-300 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
+}
+.dark div[role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
+.dark div[role="dialog"] textarea,
+.dark div[role="dialog"] select,
+.dark div[role="dialog"] .border,
+.dark div[role="dialog"] .border-slate-800,
+.dark div[role="dialog"] [class*="border-slate-"],
+.dark div[role="dialog"] .rounded-xl.border {
+  border-color: #3f3f46 !important; /* zinc-700 */
+}
+
+/* Checkbox control box border, shadow and custom state styling */
+div[role="dialog"] [data-custom="bar"] div,
+div[role="dialog"] div[role="checkbox"] [role="presentation"],
+div[role="dialog"] span[role="checkbox"] [role="presentation"] {
+  border-width: 2px !important;
+  border-color: #94a3b8 !important; /* slate-400 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
+  border-radius: 6px !important;
+}
+.dark div[role="dialog"] [data-custom="bar"] div,
+.dark div[role="dialog"] div[role="checkbox"] [role="presentation"],
+.dark div[role="dialog"] span[role="checkbox"] [role="presentation"] {
+  border-color: #4b5563 !important; /* slate-600 */
+}
+
+/* Accent bg for selected checkboxes in modals */
+div[role="dialog"] [data-custom="bar"][data-selected="true"] div,
+div[role="dialog"] div[role="checkbox"][data-selected="true"] [role="presentation"],
+div[role="dialog"] span[role="checkbox"][data-selected="true"] [role="presentation"] {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Admin Page Search Fields */
+.admin-layout div[role="search"] > div,
+.admin-layout .admin-search-field-group,
+.admin-layout [class*="border-slate-250"],
+.admin-layout [class*="border-slate-200"],
+.admin-layout [class*="border-slate-850"] {
+  border-width: 2px !important;
+  border-color: #cbd5e1 !important; /* slate-300 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
+}
+.dark .admin-layout div[role="search"] > div,
+.dark .admin-layout .admin-search-field-group,
+.dark .admin-layout [class*="border-slate-800"] {
+  border-color: #3f3f46 !important; /* zinc-700 */
+}
+

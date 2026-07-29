@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Upload, X, RefreshCw, Star, Plus } from "lucide-react";
 import { getMediaDetails, uploadMedia } from "@/lib/api/media";
 import { backendUrl } from "@/lib/api/client";
+import { Tooltip } from "@heroui/react";
 
 interface ImageItem {
   id: number;
@@ -145,27 +146,44 @@ export default function MultiImageUpload({
             {/* Overlay controls */}
             {!readOnly && (
               <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSetThumbnail(img.id)}
-                  className={clsx(
-                    "p-1.5 rounded-full shadow-lg transition-transform hover:scale-110",
-                    thumbnailId === img.id
-                      ? "bg-primary text-white"
-                      : "bg-white/90 text-slate-600 hover:text-primary"
-                  )}
-                  title="Đặt làm ảnh chính"
-                >
-                  <Star size={14} fill={thumbnailId === img.id ? "currentColor" : "none"} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(img.id)}
-                  className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-lg transition-transform hover:scale-110"
-                  title="Xóa ảnh"
-                >
-                  <X size={14} />
-                </button>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <button
+                      type="button"
+                      onClick={() => handleSetThumbnail(img.id)}
+                      className={clsx(
+                        "p-1.5 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer",
+                        thumbnailId === img.id
+                          ? "bg-primary text-white"
+                          : "bg-white/90 text-slate-600 hover:text-primary"
+                      )}
+                      aria-label="Đặt làm ảnh chính"
+                    >
+                      <Star size={14} fill={thumbnailId === img.id ? "currentColor" : "none"} />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content className="bg-default-900 dark:bg-default-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-default-800 z-[999]">
+                    <Tooltip.Arrow />
+                    {thumbnailId === img.id ? "Ảnh chính hiện tại" : "Đặt làm ảnh chính"}
+                  </Tooltip.Content>
+                </Tooltip>
+
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(img.id)}
+                      className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer"
+                      aria-label="Xóa ảnh"
+                    >
+                      <X size={14} />
+                    </button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content className="bg-rose-600 text-white text-xs px-2.5 py-1.5 rounded-lg z-[999]">
+                    <Tooltip.Arrow />
+                    Xóa ảnh này
+                  </Tooltip.Content>
+                </Tooltip>
               </div>
             )}
             {/* Thumbnail badge */}
@@ -187,7 +205,7 @@ export default function MultiImageUpload({
               "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all",
               dragOver
                 ? "border-primary bg-primary/5"
-                : "border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-900/30"
+                : "border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)]/30"
             )}
           >
             {loading ? (

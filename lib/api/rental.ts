@@ -32,8 +32,15 @@ export interface IntercityRouteDto {
   destinationCity: string;
   distanceKm?: number;
   estimatedHours?: number;
+  originLat?: number;
+  originLng?: number;
+  destinationLat?: number;
+  destinationLng?: number;
   active: boolean;
   hasDepartureTimes: boolean;
+  thumbnailId?: number;
+  thumbnailUrl?: string;
+  imageIds?: number[];
   translations: IntercityRouteTranslationDto[];
   prices: IntercityRoutePriceDto[];
   departureTimes: IntercityDepartureTimeDto[];
@@ -42,6 +49,7 @@ export interface IntercityRouteDto {
 export interface IntercitySeasonalSurchargeDto {
   id: number;
   routeId?: number;
+  routeIds?: number[];
   seasonName: string;
   startDate: string;
   endDate: string;
@@ -99,6 +107,10 @@ export async function getIntercityRouteById(id: number): Promise<ApiResponse<Int
 
 export async function getIntercityRoutePrices(routeId: number): Promise<ApiResponse<IntercityRoutePriceDto[]>> {
   return apiFetch(`/api/v1/intercity-route-prices/by-route/${routeId}`, { skipTranslationFilter: true });
+}
+
+export async function getAllIntercityRoutePrices(): Promise<ApiResponse<IntercityRoutePriceDto[]>> {
+  return apiFetch("/api/v1/intercity-route-prices", { skipTranslationFilter: true });
 }
 
 export async function createIntercityRoute(dto: Partial<IntercityRouteDto>): Promise<ApiResponse<IntercityRouteDto>> {
@@ -182,6 +194,24 @@ export async function deleteIntercitySurcharge(id: number): Promise<ApiResponse<
   });
 }
 
+export async function getSurchargesByRoute(routeId: number): Promise<ApiResponse<IntercitySeasonalSurchargeDto[]>> {
+  return apiFetch(`/api/v1/intercity-surcharges/by-route/${routeId}`, { skipTranslationFilter: true });
+}
+
+export async function assignSurchargeToRoute(surchargeId: number, routeId: number): Promise<ApiResponse<void>> {
+  return apiFetch(`/api/v1/intercity-surcharges/${surchargeId}/routes/${routeId}`, {
+    method: "POST",
+    skipTranslationFilter: true,
+  });
+}
+
+export async function unassignSurchargeFromRoute(surchargeId: number, routeId: number): Promise<ApiResponse<void>> {
+  return apiFetch(`/api/v1/intercity-surcharges/${surchargeId}/routes/${routeId}`, {
+    method: "DELETE",
+    skipTranslationFilter: true,
+  });
+}
+
 // === Intercity Departure Times ===
 
 export async function getActiveDepartureTimes(routeId: number): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
@@ -256,6 +286,8 @@ export interface CreateBookingRequest {
   customerNotes?: string;
   contactChannel?: string;
   contactId?: string;
+  zaloId?: string;
+  kakaoTalkId?: string;
   idempotencyKey?: string;
   items: CreateBookingItemRequest[];
 }

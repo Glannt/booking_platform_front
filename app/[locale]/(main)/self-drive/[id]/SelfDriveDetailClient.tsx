@@ -51,8 +51,6 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
   const [rentals, setRentals] = useState<RentalWithPrice[]>([]);
   const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showContactMenu, setShowContactMenu] = useState(false);
 
   const getCatName = (cat: VehicleCategoryDto) => {
     const tr = cat.translations?.find((t) => t.locale === language);
@@ -126,14 +124,6 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
     load();
     return () => { active = false; };
   }, [categoryId, language]);
-
-  useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   if (loading) {
     return (
@@ -234,17 +224,17 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
             </p>
 
             <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800">
                 <Users size={18} className="text-accent mx-auto mb-1" />
                 <p className="text-lg font-black text-slate-800 dark:text-white">{category.minSeat}-{category.maxSeat}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">{t.selfDrive.seats}</p>
               </div>
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800">
                 <Luggage size={18} className="text-accent mx-auto mb-1" />
                 <p className="text-lg font-black text-slate-800 dark:text-white">{category.minLuggage}-{category.maxLuggage}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">{category.unitLuggage || "kg"}</p>
               </div>
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800">
                 <Car size={18} className="text-accent mx-auto mb-1" />
                 <p className="text-lg font-black text-slate-800 dark:text-white">{vehicles.length}</p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">{t.selfDrive.capacity}</p>
@@ -277,8 +267,8 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {vehicles.slice(0, 6).map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800">
+                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-[var(--bg-card)]">
                       {v.thumbnailUrl ? (
                         <img src={v.thumbnailUrl} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover" />
                       ) : (
@@ -314,7 +304,7 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
                 { step: 3, title: vi ? "Đặt cọc giữ xe" : "Deposit to secure", icon: <ShieldCheck size={14} className="text-amber-600" /> },
                 { step: 4, title: vi ? "Nhận xe & tận hưởng" : "Receive car & enjoy", icon: <MapPin size={14} className="text-accent" /> },
               ].map((s) => (
-                <div key={s.step} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                <div key={s.step} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800">
                   <div className="w-8 h-8 rounded-lg bg-white dark:bg-black flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800">
                     {s.icon}
                   </div>
@@ -421,14 +411,14 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
             <div className="flex gap-2">
               <button
                 onClick={() => window.open(`tel:${contacts.phone}`)}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-black py-2.5 rounded-xl text-xs font-black text-slate-700 dark:text-white border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-black py-2.5 rounded-xl text-xs font-black text-slate-700 dark:text-white border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] cursor-pointer transition-all"
               >
                 <Phone size={13} className="text-accent" />
                 {t.common.callNow}
               </button>
               <button
                 onClick={() => window.open(contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`, "_blank")}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-black py-2.5 rounded-xl text-xs font-black text-slate-700 dark:text-white border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-all"
+                className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-black py-2.5 rounded-xl text-xs font-black text-slate-700 dark:text-white border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] cursor-pointer transition-all"
               >
                 <MessageCircle size={13} className="text-accent" />
                 Zalo
@@ -438,67 +428,7 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
         </div>
       </main>
 
-      {/* Floating contact */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {showContactMenu && (
-          <div className="bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 w-44 flex flex-col gap-2 animate-fade-in-up">
-            <a
-              href={`tel:${contacts.phone}`}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline"
-            >
-              <Phone size={14} className="text-accent" />
-              <span>{t.common.callNow}</span>
-            </a>
-            <a
-              href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
-            >
-              <MessageCircle size={14} className="text-accent" />
-              <span>Zalo Tư vấn</span>
-            </a>
-            {contacts.kakaotalk && (
-              <a
-                href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
-              >
-                <span className="text-accent">💛</span>
-                <span>KakaoTalk</span>
-              </a>
-            )}
-            {contacts.whatsapp && (
-              <a
-                href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800"
-              >
-                <span className="text-accent">💚</span>
-                <span>WhatsApp</span>
-              </a>
-            )}
-          </div>
-        )}
-        <button
-          onClick={() => setShowContactMenu(!showContactMenu)}
-          className={`p-4 rounded-full border shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer flex items-center justify-center border-none ${showContactMenu ? "bg-accent text-white" : "bg-white dark:bg-black text-accent dark:text-white"}`}
-          aria-label="Contact Support"
-        >
-          <Headset size={22} />
-        </button>
-        {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="p-4 rounded-full bg-white dark:bg-black border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-accent dark:text-white shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer flex items-center justify-center"
-            aria-label="Back to Top"
-          >
-            <ChevronUp size={22} />
-          </button>
-        )}
-      </div>
+      
     </div>
   );
 }

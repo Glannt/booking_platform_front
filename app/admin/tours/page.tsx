@@ -7,7 +7,8 @@ import {
     Trash2,
     RefreshCw,
     Compass,
-    Eye
+    Eye,
+    Edit3
 } from "lucide-react";
 import { Button, Label, Pagination, SearchField, SortDescriptor, Table, toast } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
@@ -51,6 +52,7 @@ export default function ToursManagementPage() {
 
     // Modal states
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [detailsDefaultEditMode, setDetailsDefaultEditMode] = useState(false);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [selectedTour, setSelectedTour] = useState<TourDto | null>(null);
 
@@ -241,7 +243,7 @@ export default function ToursManagementPage() {
                 <div className="flex items-center gap-3 flex-shrink-0">
                     <Button
                         variant="outline"
-                        className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+                        className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
                         onClick={fetchInitialData}
                     >
                         <RefreshCw size={16} className="mr-1.5" />
@@ -313,7 +315,7 @@ export default function ToursManagementPage() {
                                             return (
                                                 <Table.Row
                                                     key={t.id}
-                                                    className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors duration-150"
+                                                    className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
                                                 >
                                                     <Table.Cell className="px-6 py-4 font-mono text-xs text-slate-400">#{t.id}</Table.Cell>
                                                     <Table.Cell className="px-6 py-4">
@@ -355,9 +357,10 @@ export default function ToursManagementPage() {
                                                     <Table.Cell className="px-6 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
-                                                                className="p-2 text-slate-650 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                                                                className="p-2 text-slate-650 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors border-none bg-transparent cursor-pointer"
                                                                 onClick={() => {
                                                                     setSelectedTour(t);
+                                                                    setDetailsDefaultEditMode(false);
                                                                     setDetailsModalOpen(true);
                                                                 }}
                                                                 title="Xem Chi Tiết"
@@ -366,7 +369,19 @@ export default function ToursManagementPage() {
                                                                 <Eye size={16} />
                                                             </button>
                                                             <button
-                                                                className="p-2 text-slate-650 dark:text-slate-350 hover:text-rose-605 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                                                                className="p-2 text-slate-650 dark:text-slate-350 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                                                                onClick={() => {
+                                                                    setSelectedTour(t);
+                                                                    setDetailsDefaultEditMode(true);
+                                                                    setDetailsModalOpen(true);
+                                                                }}
+                                                                title="Chỉnh Sửa"
+                                                                aria-label="Chỉnh Sửa"
+                                                            >
+                                                                <Edit3 size={16} />
+                                                            </button>
+                                                            <button
+                                                                className="p-2 text-slate-650 dark:text-slate-350 hover:text-rose-605 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors border-none bg-transparent cursor-pointer"
                                                                 onClick={() => handleDeleteTour(t.id)}
                                                                 title="Xóa"
                                                                 aria-label="Xóa"
@@ -445,6 +460,7 @@ export default function ToursManagementPage() {
                 backendUrl={backendUrl}
                 onSaveSuccess={handleSaveSuccess}
                 showToast={showToast}
+                defaultEditMode={detailsDefaultEditMode}
             />
         </div>
     );

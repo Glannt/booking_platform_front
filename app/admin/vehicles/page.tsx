@@ -8,7 +8,8 @@ import {
   RefreshCw,
   Car,
   Layers,
-  Eye
+  Eye,
+  Edit3
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
 import { Button, Pagination, SearchField, Spinner, Table, Tabs, toast } from "@heroui/react";
@@ -80,6 +81,9 @@ export default function VehiclesManagementPage() {
   const [selectedVehicle, setSelectedVehicle] =
     useState<VehicleDto | null>(null);
 
+  const [defaultEditMode, setDefaultEditMode] =
+    useState(false);
+
 
 
   /**
@@ -93,6 +97,9 @@ export default function VehiclesManagementPage() {
 
   const [selectedCategory, setSelectedCategory] =
     useState<VehicleCategoryDto | null>(null);
+
+  const [catDefaultEditMode, setCatDefaultEditMode] =
+    useState(false);
 
 
 
@@ -790,10 +797,24 @@ export default function VehiclesManagementPage() {
                                     aria-label="Xem chi tiết xe"
                                     onPress={() => {
                                       setSelectedVehicle(vehicle);
+                                      setDefaultEditMode(false);
                                       setDetailsModalOpen(true);
                                     }}
                                   >
                                     <Eye size={16} />
+                                  </Button>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="ghost"
+                                    aria-label="Sửa xe"
+                                    onPress={() => {
+                                      setSelectedVehicle(vehicle);
+                                      setDefaultEditMode(true);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit3 size={16} />
                                   </Button>
                                   <Button
                                     isIconOnly
@@ -921,10 +942,24 @@ export default function VehiclesManagementPage() {
                                       aria-label="Xem chi tiết danh mục"
                                       onPress={() => {
                                         setSelectedCategory(category);
+                                        setCatDefaultEditMode(false);
                                         setCatDetailsModalOpen(true);
                                       }}
                                     >
                                       <Eye size={16} />
+                                    </Button>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="ghost"
+                                      aria-label="Sửa danh mục"
+                                      onPress={() => {
+                                        setSelectedCategory(category);
+                                        setCatDefaultEditMode(true);
+                                        setCatDetailsModalOpen(true);
+                                      }}
+                                    >
+                                      <Edit3 size={16} />
                                     </Button>
                                     <Button
                                       isIconOnly
@@ -1033,6 +1068,8 @@ export default function VehiclesManagementPage() {
 
           setSelectedVehicle(null);
 
+          setDefaultEditMode(false);
+
         }}
 
         vehicle={selectedVehicle}
@@ -1046,6 +1083,8 @@ export default function VehiclesManagementPage() {
         onSaveSuccess={handleSaveSuccess}
 
         showToast={showToast}
+
+        defaultEditMode={defaultEditMode}
 
       />
 
@@ -1102,6 +1141,8 @@ export default function VehiclesManagementPage() {
 
           setSelectedCategory(null);
 
+          setCatDefaultEditMode(false);
+
         }}
 
 
@@ -1121,6 +1162,7 @@ export default function VehiclesManagementPage() {
 
         showToast={showToast}
 
+        defaultEditMode={catDefaultEditMode}
 
       />
 

@@ -1,4 +1,5 @@
 "use client";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import {
   DatePicker,
@@ -20,9 +21,11 @@ import {
   Autocomplete,
   EmptyState,
   ListBox,
-  SearchField as HeroSearchField
+  SearchField as HeroSearchField,
+  TextArea
 } from "@heroui/react";
-import { createBooking, trackFlight } from "@/lib/api/bookings";
+import { trackFlight } from "@/lib/api/bookings";
+import { createAirportTransferBooking } from "@/lib/api/airport-transfer/bookings";
 import { searchLocations, LocationSearchResult } from "@/lib/api/locations";
 import {
   getVehicleCategories,
@@ -37,7 +40,7 @@ import {
   AirportTransferPrice
 } from "@/lib/api/fleet";
 import type { DateValue } from "@internationalized/date";
-import { getLocalTimeZone, today } from "@internationalized/date";
+import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import {
   Plane,
   MapPin,
@@ -58,9 +61,11 @@ const RoutingMap = dynamic(
 );
 import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
+import SuccessOverlay from "@/components/SuccessOverlay";
+import ErrorOverlay from "@/components/ErrorOverlay";
 import type { SectionDto } from "@/lib/api/sections";
 
 // Build vehicle list from API data (VehicleCategory + Vehicle)
@@ -85,12 +90,10 @@ interface AirportTransferClientProps {
 }
 
 export default function AirportTransferClient({ sections }: AirportTransferClientProps) {
-  const { language, t, contacts } = useI18n();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { language, t } = useI18n();
   const vi = language === "vi";
-  const zaloPhone = contacts.zalo.includes("zalo.me/")
-    ? contacts.zalo.split("zalo.me/")[1].split("?")[0]
-    : contacts.zalo;
-  const zaloUrl = `https://zalo.me/${zaloPhone}`;
 
   const heroSection = sections.find(s => s.sectionType === "HERO_BANNER") || null;
 
@@ -135,16 +138,16 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
 
   // Checkout states
-  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [contactChannel, setContactChannel] = useState<"zalo" | "kakaotalk">("zalo");
-  const [contactId, setContactId] = useState("");
+  const [zaloId, setZaloId] = useState("");
+  const [kakaoTalkId, setKakaoTalkId] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [createdCode, setCreatedCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [checkingFlight, setCheckingFlight] = useState(false);
   const [flightData, setFlightData] = useState<any>(null);
 
@@ -243,6 +246,62 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     handleSearchVehicles();
   }, [isFormComplete, vehiclesLoaded, vehiclesLoading]);
 
+  // Pre-fill form from searchParams when airports are loaded
+  useEffect(() => {
+    const dir = searchParams.get("direction");
+    const pickup = searchParams.get("pickup");
+    const destination = searchParams.get("destination");
+    const dateStr = searchParams.get("date");
+    const timeStr = searchParams.get("time");
+    const trip = searchParams.get("tripType");
+
+    if (!dir && !pickup && !dateStr) return;
+    if (airports.length === 0 || airportsLoading) return;
+
+    if (dir === "FROM_AIRPORT") {
+      setDirection("to-nhatrang");
+    } else if (dir === "TO_AIRPORT") {
+      setDirection("to-airport");
+    }
+
+    const isFromAirport = dir === "FROM_AIRPORT";
+    const airportName = isFromAirport ? pickup : destination;
+    const nhaTrangAddr = isFromAirport ? destination : pickup;
+
+    if (nhaTrangAddr) {
+      setNhaTrangAddress(nhaTrangAddr);
+    }
+
+    if (airportName) {
+      const match = airports.find(a => {
+        const name = a.translations?.find(t => t.locale === language)?.name || a.name;
+        return name?.toLowerCase().includes(airportName.toLowerCase()) || a.code.toLowerCase() === airportName.toLowerCase();
+      });
+      if (match) setSelectedAirport(match);
+    }
+
+    if (dateStr) {
+      try { setDateValue(parseDate(dateStr)); } catch {}
+    }
+
+    if (timeStr) {
+      const parts = timeStr.split(":");
+      if (parts.length === 2) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m)) {
+          setTimeValue({
+            hour: h % 12 || 12,
+            minute: m,
+            period: h >= 12 ? "PM" : "AM",
+          });
+        }
+      }
+    }
+
+    if (trip === "return") setTripType("return");
+  }, [searchParams, airports, airportsLoading, language]);
+
   // Helper: get airport display name by locale
   const getAirportName = (airport: AirportDto) => {
     const tr = airport.translations?.find(t => t.locale === language) || airport.translations?.[0];
@@ -289,7 +348,14 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     });
   };
 
-  const activeVehicles = getVehiclesList();
+  const activeVehicles = getVehiclesList().sort((a, b) => {
+    const pa = tripType === "one-way" ? a.priceOneWay : a.priceReturn;
+    const pb = tripType === "one-way" ? b.priceOneWay : b.priceReturn;
+    if (pa === 0 && pb === 0) return 0;
+    if (pa === 0) return 1;
+    if (pb === 0) return -1;
+    return pa - pb;
+  });
 
   // Location search effect for Outbound Address
   useEffect(() => {
@@ -355,12 +421,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     setCheckingFlight(true);
     setFlightData(null);
     try {
-      const res = await trackFlight(flightNum);
-      if (res && res.data) {
-        setFlightData(res.data);
-      } else {
-        setFlightData({ error: true });
-      }
+      const flight = await trackFlight(flightNum);
+      setFlightData(flight);
     } catch (e) {
       setFlightData({ error: true });
     } finally {
@@ -376,8 +438,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   // Format currency
   const formatPrice = (p: number) => _formatPrice(p, language);
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitBooking = async () => {
     if (!selectedVehicle) return;
 
     setSubmitting(true);
@@ -459,86 +520,48 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       returnFlightNumber: tripType === "return" ? (returnFlightNumber || null) : null,
       returnPickupAddress: tripType === "return" ? returnPickup : null,
       returnDropoffAddress: tripType === "return" ? returnDropoff : null,
-      vehicleCategoryId: selectedVehicle.categoryId || null,
+      vehicleCategoryId: selectedVehicle.categoryId || 0,
       basePrice: outboundPrice,
       totalPrice: unitPrice,
-      currency: "VND",
     };
 
     const payload = {
       customerName: fullName,
       customerEmail: email || `${phone}@traveler.com`,
       customerPhone: phone,
-      totalAmount: unitPrice,
-      contactChannel: contactChannel,
-      contactId: contactId,
-      customerNotes: `[Social: ${contactChannel.toUpperCase()} ID: ${contactId}] Notes: ${notes}`,
-      items: [
-        {
-          serviceId: serviceId,
-          serviceOptionId: serviceOptionId,
-          quantity: 1,
-          unitPrice: unitPrice,
-          startDate: startDateFormatted,
-          endDate: endDateFormatted,
-          pickupLocation: pickupLoc,
-          dropoffLocation: dropoffLoc,
-          flightNumber: flightNumber || undefined,
-          dynamicDetails: JSON.stringify(airportDetails)
-        }
-      ]
+      customerNotes: `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes}`,
+      zaloId: zaloId || undefined,
+      kakaoTalkId: kakaoTalkId || undefined,
+      contactChannel: zaloId ? "zalo" : kakaoTalkId ? "kakaotalk" : undefined,
+      contactId: zaloId || kakaoTalkId || undefined,
+      vehicleCategoryId: selectedVehicle.categoryId || 0,
+      tripType: tripType === "return" ? "ROUND_TRIP" : "ONE_WAY",
+      outboundDirection,
+      outboundDate: dateText || "",
+      outboundPickupTime: startDateFormatted || "",
+      outboundFlightNumber: flightNumber || undefined,
+      outboundPickupAddress: outboundPickup,
+      outboundDropoffAddress: outboundDropoff,
+      returnDirection: tripType === "return" ? returnDirection : undefined,
+      returnDate: tripType === "return" && returnDateValue ? returnDateValue.toString() : undefined,
+      returnPickupTime: endDateFormatted || undefined,
+      returnFlightNumber: tripType === "return" ? (returnFlightNumber || undefined) : undefined,
+      returnPickupAddress: tripType === "return" ? returnPickup : undefined,
+      returnDropoffAddress: tripType === "return" ? returnDropoff : undefined,
+      basePrice: outboundPrice,
+      totalPrice: unitPrice,
     };
 
     try {
-      const res = await createBooking(payload);
+      const res = await createAirportTransferBooking(payload);
       if (res && res.data) {
         setCreatedCode(res.data.bookingCode || "BK-SUCCESS");
       }
       setBookingSuccess(true);
 
-      const vehicleName = vi ? selectedVehicle.nameVi : selectedVehicle.nameEn;
-      const vehicleDesc = vi ? selectedVehicle.descVi : selectedVehicle.descEn;
-      const tripLabel = tripType === "return" ? "Khứ hồi" : "Một chiều";
-      let routeLine = `${outboundPickup} ➔ ${outboundDropoff}`;
-      if (tripType === "return") {
-        routeLine += `\n- Chiều về: ${returnPickup} ➔ ${returnDropoff}`;
-      }
-      const message = `[Minh Khoa Travel - Đơn Đặt Xe Sân Bay]\n` +
-        `- Mã đặt xe: ${res.data?.bookingCode || "BK-PENDING"}\n` +
-        `- Họ và tên: ${fullName}\n` +
-        `- Số điện thoại: ${phone}\n` +
-        `- Kênh liên hệ: ${contactChannel.toUpperCase()} (${contactId})\n` +
-        `- Dòng xe: ${vehicleName} (${vehicleDesc})\n` +
-        `- Loại hình: ${tripLabel}\n` +
-        `- Chiều đi: ${routeLine}\n` +
-        `- Ngày giờ đón: ${dateText} lúc ${timeText}\n` +
-        (tripType === "return" && returnDateValue
-          ? `- Ngày giờ về: ${returnDateValue.toString()} lúc ${String(returnTimeValue.hour).padStart(2, "0")}:${String(returnTimeValue.minute).padStart(2, "0")} ${returnTimeValue.period}\n`
-          : "") +
-        (flightNumber ? `- Chuyến bay đi: ${flightNumber}\n` : "") +
-        (returnFlightNumber ? `- Chuyến bay về: ${returnFlightNumber}\n` : "") +
-        `- Ghi chú: ${notes}\n` +
-        `- Tổng tiền tạm tính: ${formatPrice(unitPrice)}`;
-
-      window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
     } catch (err) {
       console.error("Booking API error:", err);
-      const vehicleName = vi ? selectedVehicle.nameVi : selectedVehicle.nameEn;
-      const tripLabel = tripType === "return" ? "Khứ hồi" : "Một chiều";
-      let routeLine = `${outboundPickup} ➔ ${outboundDropoff}`;
-      if (tripType === "return") {
-        routeLine += `\n- Chiều về: ${returnPickup} ➔ ${returnDropoff}`;
-      }
-      const message = `[Minh Khoa Travel - Yêu Cầu Đặt Xe Sân Bay]\n` +
-        `- Họ và tên: ${fullName}\n` +
-        `- Số điện thoại: ${phone}\n` +
-        `- Dòng xe: ${vehicleName}\n` +
-        `- Loại hình: ${tripLabel}\n` +
-        `- Chiều đi: ${routeLine}\n` +
-        `- Ngày giờ đón: ${dateText} lúc ${timeText}\n` +
-        `- Tổng tiền tạm tính: ${formatPrice(unitPrice)}`;
-      window.open(`${zaloUrl}?text=${encodeURIComponent(message)}`, "_blank");
-      setBookingSuccess(true);
+      setErrorMessage(err instanceof Error ? err.message : t.errors.bookingFailed);
     } finally {
       setSubmitting(false);
       setShowConfirmModal(false);
@@ -550,12 +573,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   };
 
   const handleConfirmBooking = () => {
-    setShowConfirmModal(false);
-    setShowCheckoutForm(true);
-    setTimeout(() => {
-      const el = document.getElementById("checkout-form-container");
-      el?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    submitBooking();
   };
 
   return (
@@ -606,10 +624,10 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         <div className="lg:col-span-8 space-y-6">
 
           {/* Form Card */}
-          <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+          <div className=" rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
             {/* Direction & Trip Type Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1 shrink-0 self-start sm:self-auto">
+              <div className="flex bg-slate-100 dark:bg-[var(--bg-elevated)]/80 p-1.5 rounded-2xl gap-1 shrink-0 self-start sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setTripType("one-way")}
@@ -633,7 +651,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
               </div>
 
               {tripType === "one-way" ? (
-                <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1 flex-1 max-w-md">
+                <div className="flex bg-slate-100 dark:bg-[var(--bg-elevated)]/80 p-1.5 rounded-2xl gap-1 flex-1 max-w-md">
                   <button
                     type="button"
                     onClick={() => setDirection("to-nhatrang")}
@@ -656,7 +674,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   </button>
                 </div>
               ) : (
-                <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl gap-1 flex-1 max-w-md items-center">
+                <div className="flex bg-slate-100 dark:bg-[var(--bg-elevated)]/80 p-1.5 rounded-2xl gap-1 flex-1 max-w-md items-center">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 shrink-0">
                     {`${t.airportTransfer.outbound}:`}
                   </span>
@@ -701,7 +719,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   }}
                 >
                   <Autocomplete.Trigger>
-                    <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black hover:border-blue-500/50 transition-colors">
+                    <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
                       <Plane size={16} className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                       <Autocomplete.Value className="text-xs font-semibold text-slate-800 dark:text-slate-100" />
                       <Autocomplete.ClearButton className="ml-auto" />
@@ -713,11 +731,11 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                       <HeroSearchField autoFocus name="search" variant="secondary">
                         <HeroSearchField.Group>
                           <HeroSearchField.SearchIcon />
-                           <HeroSearchField.Input placeholder={t.airportTransfer.searchAirports} />
+                          <HeroSearchField.Input placeholder={t.airportTransfer.searchAirports} />
                           <HeroSearchField.ClearButton />
                         </HeroSearchField.Group>
                       </HeroSearchField>
-                       <ListBox className="max-h-[200px] overflow-y-auto" renderEmptyState={() => <EmptyState>{t.common.noResults}</EmptyState>}>
+                      <ListBox className="max-h-[200px] overflow-y-auto" renderEmptyState={() => <EmptyState>{t.common.noResults}</EmptyState>}>
                         {airports.map((airport) => (
                           <ListBox.Item key={String(airport.id)} id={String(airport.id)} textValue={getAirportName(airport)}>
                             <div className="flex items-center gap-2 py-0.5">
@@ -740,7 +758,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {direction === "to-nhatrang" ? (
                     <>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
+                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
                         <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
                         <div>
                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.pickup}</p>
@@ -748,39 +766,39 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug">{t.airportTransfer.driverMeetDesc}</p>
                         </div>
                       </div>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
                         <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                         <div className="w-full flex-1">
-                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.dropoff}</p>
-                           <div className="relative w-full">
-                             <HeroSearchField
-                               isRequired
-                               isInvalid={formTouched && nhaTrangAddress.length === 0}
-                               name="dropoff-address"
-                               value={nhaTrangAddress}
-                               onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
-                             >
-                               <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10 bg-white dark:bg-black focus-within:border-blue-500/50 transition-colors w-full">
-                                 <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                                 <HeroSearchField.Input
-                                   placeholder={t.airportTransfer.addressPlaceholder}
-                                   className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
-                                 />
-                                 <HeroSearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto" />
-                               </HeroSearchField.Group>
-                               {formTouched && nhaTrangAddress.length === 0 && (
-                                 <FieldError className="text-[9px] text-red-500 mt-1 pl-1">Vui lòng nhập địa điểm</FieldError>
-                               )}
-                             </HeroSearchField>
+                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.dropoff}</p>
+                          <div className="relative w-full">
+                            <HeroSearchField
+                              isRequired
+                              isInvalid={formTouched && nhaTrangAddress.length === 0}
+                              name="dropoff-address"
+                              value={nhaTrangAddress}
+                              onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
+                            >
+                              <HeroSearchField.Group className="mt-1.5 flex items-center border border-accent dark:border-accent rounded-xl px-3 h-10 focus-within:border-blue-500/50 transition-colors w-full shadow-xs shadow-accent-soft-foreground">
+                                <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
+                                <HeroSearchField.Input
+                                  placeholder={t.airportTransfer.addressPlaceholder}
+                                  className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
+                                />
+                                <HeroSearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto" />
+                              </HeroSearchField.Group>
+                              {formTouched && nhaTrangAddress.length === 0 && (
+                                <FieldError className="text-[9px] text-red-500 mt-1 pl-1">Vui lòng nhập địa điểm</FieldError>
+                              )}
+                            </HeroSearchField>
                             {showSuggestions && suggestions.length > 0 && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                <div className="absolute left-0 right-0 mt-1 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                   {suggestions.map((item, idx) => (
                                     <div
                                       key={idx}
                                       onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }}
-                                      className="p-3 hover:bg-blue-50/50 dark:hover:bg-slate-850 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2"
+                                      className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2"
                                     >
                                       <MapPin size={14} className="text-blue-500 shrink-0" />
                                       <div className="flex flex-col min-w-0">
@@ -799,39 +817,39 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     </>
                   ) : (
                     <>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
                         <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                         <div className="w-full flex-1">
-                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.pickupLocationNT}</p>
-                           <div className="relative w-full">
-                             <HeroSearchField
-                               isRequired
-                               isInvalid={formTouched && nhaTrangAddress.length === 0}
-                               name="pickup-address"
-                               value={nhaTrangAddress}
-                               onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
-                             >
-                               <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10 bg-white dark:bg-black focus-within:border-blue-500/50 transition-colors w-full">
-                                 <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                                 <HeroSearchField.Input
-                                   placeholder={t.airportTransfer.addressPlaceholder}
-                                   className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
-                                 />
-                                 <HeroSearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto" />
-                               </HeroSearchField.Group>
-                               {formTouched && nhaTrangAddress.length === 0 && (
-                                 <FieldError className="text-[9px] text-red-500 mt-1 pl-1">Vui lòng nhập địa điểm</FieldError>
-                               )}
-                             </HeroSearchField>
+                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.pickupLocationNT}</p>
+                          <div className="relative w-full">
+                            <HeroSearchField
+                              isRequired
+                              isInvalid={formTouched && nhaTrangAddress.length === 0}
+                              name="pickup-address"
+                              value={nhaTrangAddress}
+                              onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
+                            >
+                              <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-blue-500/50 transition-colors w-full">
+                                <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
+                                <HeroSearchField.Input
+                                  placeholder={t.airportTransfer.addressPlaceholder}
+                                  className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
+                                />
+                                <HeroSearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto" />
+                              </HeroSearchField.Group>
+                              {formTouched && nhaTrangAddress.length === 0 && (
+                                <FieldError className="text-[9px] text-red-500 mt-1 pl-1">Vui lòng nhập địa điểm</FieldError>
+                              )}
+                            </HeroSearchField>
                             {showSuggestions && suggestions.length > 0 && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                <div className="absolute left-0 right-0 mt-1  border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                   {suggestions.map((item, idx) => (
                                     <div
                                       key={idx}
                                       onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }}
-                                      className="p-3 hover:bg-blue-50/50 dark:hover:bg-slate-850 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-355 transition-colors flex items-center gap-2"
+                                      className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-355 transition-colors flex items-center gap-2"
                                     >
                                       <MapPin size={14} className="text-blue-500 shrink-0" />
                                       <div className="flex flex-col min-w-0">
@@ -847,7 +865,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 leading-snug">{t.airportTransfer.accommodationTypes}</p>
                         </div>
                       </div>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
+                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
                         <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
                         <div>
                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.dropoffLocation}</p>
@@ -870,7 +888,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                       aria-label="Date Picker"
                     >
                       <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">{t.airportTransfer.date}</Label>
-                      <DateField.Group className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                      <DateField.Group className="h-10  border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                         <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                           {(segment) => <DateField.Segment segment={segment} />}
                         </DateField.Input>
@@ -881,7 +899,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                         </DateField.Suffix>
                       </DateField.Group>
                       <FieldError className="text-[9px] text-red-500 mt-1 pl-1" />
-                      <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                      <DatePicker.Popover className=" border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                         <Calendar aria-label="Travel date">
                           <Calendar.Header className="flex items-center justify-between mb-2">
                             <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
@@ -889,8 +907,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                               <Calendar.YearPickerTriggerIndicator />
                             </Calendar.YearPickerTrigger>
                             <div className="flex gap-1">
-                              <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                              <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                              <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                              <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                             </div>
                           </Calendar.Header>
                           <Calendar.Grid className="w-full">
@@ -928,23 +946,26 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     labelClassName="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1"
                     popoverTitle={t.airportTransfer.selectPickupTime}
                     language={language}
+                    triggerClassName="bg-white dark:bg-zinc-900"
                     isRequired
                   />
 
                   <div className="flex flex-col w-full">
-                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">{t.airportTransfer.flightNumber}</label>
-                    <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black hover:border-blue-500/50 transition-colors">
-                      <Plane size={16} className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                      <input
-                        type="text"
-                        placeholder="VN123, QH456..."
-                        value={flightNumber}
-                        onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
-                        className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
-                      />
-                    </div>
+                    <Label className="text-[11px] font-extrabold uppercase tracking-wider mb-1.5">{t.airportTransfer.flightNumber}</Label>
+                    <HeroSearchField>
+                      <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
+                        <Plane size={16} className="mr-2 shrink-0" />
+                        <HeroSearchField.Input
+                          placeholder="VN123, QH456..."
+                          value={flightNumber}
+                          onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
+                          className="w-full text-xs font-semibold outline-none bg-transparent"
+                        />
+                        <HeroSearchField.ClearButton />
+                      </HeroSearchField.Group>
+                    </HeroSearchField>
                     {!flightNumber && (
-                      <span className="text-[9px] text-slate-400 mt-1 pl-1">Tùy chọn</span>
+                      <span className="text-[9px] mt-1 pl-1">Tùy chọn</span>
                     )}
                   </div>
                 </div>
@@ -958,12 +979,12 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   <div className="flex items-center gap-2 py-1">
                     <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                     <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">{t.airportTransfer.outboundLeg}</span>
-                    <div className="flex-1 h-[1px] bg-slate-100 dark:bg-slate-800/80" />
+                    <div className="flex-1 h-[1px] bg-slate-100 dark:bg-[var(--bg-elevated)]/80" />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {outboundStartsFrom === "airport" ? (
                       <>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
                           <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
                           <div>
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.pickup}`}</p>
@@ -971,7 +992,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug">{t.airportTransfer.driverMeetDesc}</p>
                           </div>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
                           <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                           <div className="w-full flex-1">
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.dropoff}`}</p>
@@ -983,7 +1004,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                                 value={nhaTrangAddress}
                                 onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
                               >
-                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10 bg-white dark:bg-black focus-within:border-blue-500/50 transition-colors w-full">
+                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-blue-500/50 transition-colors w-full">
                                   <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                                   <HeroSearchField.Input
                                     placeholder={t.airportTransfer.addressPlaceholder}
@@ -998,9 +1019,9 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                               {showSuggestions && suggestions.length > 0 && (
                                 <>
                                   <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                  <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                  <div className="absolute left-0 right-0 mt-1  border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                     {suggestions.map((item, idx) => (
-                                      <div key={idx} onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }} className="p-3 hover:bg-blue-50/50 dark:hover:bg-slate-850 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2">
+                                      <div key={idx} onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }} className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2">
                                         <MapPin size={14} className="text-blue-500 shrink-0" />
                                         <div className="flex flex-col min-w-0">
                                           <span className="truncate font-semibold">{item.name}</span>
@@ -1017,7 +1038,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                       </>
                     ) : (
                       <>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
                           <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                           <div className="w-full flex-1">
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.pickupLocationNT}`}</p>
@@ -1029,7 +1050,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                                 value={nhaTrangAddress}
                                 onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
                               >
-                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10 bg-white dark:bg-black focus-within:border-blue-500/50 transition-colors w-full">
+                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-blue-500/50 transition-colors w-full">
                                   <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                                   <HeroSearchField.Input
                                     placeholder={t.airportTransfer.addressPlaceholder}
@@ -1044,7 +1065,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                             </div>
                           </div>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
                           <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
                           <div>
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.dropoffLocation}`}</p>
@@ -1058,7 +1079,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     <div className="flex flex-col w-full">
                       <DatePicker value={dateValue} onChange={setDateValue} minValue={today(getLocalTimeZone())} className="w-full" isRequired aria-label="Outbound Date">
                         <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">{t.airportTransfer.date}</Label>
-                        <DateField.Group className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                        <DateField.Group className="h-10  border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                           <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                             {(segment) => <DateField.Segment segment={segment} />}
                           </DateField.Input>
@@ -1067,13 +1088,13 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                           </DateField.Suffix>
                         </DateField.Group>
                         <FieldError className="text-[9px] text-red-500 mt-1 pl-1" />
-                        <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                        <DatePicker.Popover className=" border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                           <Calendar aria-label="Outbound date">
                             <Calendar.Header className="flex items-center justify-between mb-2">
                               <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer"><Calendar.YearPickerTriggerHeading /><Calendar.YearPickerTriggerIndicator /></Calendar.YearPickerTrigger>
                               <div className="flex gap-1">
-                                <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                                <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                                <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                               </div>
                             </Calendar.Header>
                             <Calendar.Grid className="w-full">
@@ -1084,15 +1105,30 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                         </DatePicker.Popover>
                       </DatePicker>
                     </div>
-                    <TimePicker value={timeValue} onChange={setTimeValue} label={t.airportTransfer.time} labelClassName="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1" language={language} isRequired />
+                    <TimePicker
+                      value={timeValue}
+                      onChange={setTimeValue}
+                      label={t.airportTransfer.time}
+                      labelClassName="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1"
+                      language={language}
+                      triggerClassName="bg-white dark:bg-zinc-900"
+                      isRequired />
                     <div className="flex flex-col w-full">
-                      <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">{t.airportTransfer.flightNumber}</label>
-                      <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black hover:border-blue-500/50 transition-colors">
-                        <Plane size={16} className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                        <input type="text" placeholder="VN123, QH456..." value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400" />
-                      </div>
+                      <Label className="text-[11px] font-extrabold uppercase tracking-wider mb-1.5">{t.airportTransfer.flightNumber}</Label>
+                      <HeroSearchField>
+                        <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
+                          <Plane size={16} className="mr-2 shrink-0" />
+                          <HeroSearchField.Input
+                            placeholder="VN123, QH456..."
+                            value={flightNumber}
+                            onChange={(e) => setFlightNumber(e.target.value.toUpperCase())}
+                            className="w-full text-xs font-semibold outline-none bg-transparent"
+                          />
+                          <HeroSearchField.ClearButton />
+                        </HeroSearchField.Group>
+                      </HeroSearchField>
                       {!flightNumber && (
-                        <span className="text-[9px] text-slate-400 mt-1 pl-1">Tùy chọn</span>
+                        <span className="text-[9px] mt-1 pl-1">Tùy chọn</span>
                       )}
                     </div>
                   </div>
@@ -1102,17 +1138,17 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   <div className="flex items-center gap-2 py-1">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                     <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">{t.airportTransfer.returnLeg}</span>
-                    <div className="flex-1 h-[1px] bg-slate-100 dark:bg-slate-800/80" />
+                    <div className="flex-1 h-[1px] bg-slate-100 dark:bg-[var(--bg-elevated)]/80" />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
+                    <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
                       <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                       <div>
                         <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.returnLeg} ${t.airportTransfer.pickup}`}</p>
                         <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{nhaTrangReturnAddress || nhaTrangAddress || "Trung tâm Nha Trang"}</p>
                       </div>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
+                    <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
                       <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
                       <div>
                         <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.returnLeg} ${t.airportTransfer.dropoff}`}</p>
@@ -1124,7 +1160,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     <div className="flex flex-col w-full">
                       <DatePicker value={returnDateValue} onChange={setReturnDateValue} minValue={today(getLocalTimeZone())} className="w-full" isRequired aria-label="Return Date">
                         <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">{t.airportTransfer.returnDate}</Label>
-                        <DateField.Group className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                        <DateField.Group className="h-10  border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                           <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                             {(segment) => <DateField.Segment segment={segment} />}
                           </DateField.Input>
@@ -1133,13 +1169,13 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                           </DateField.Suffix>
                         </DateField.Group>
                         <FieldError className="text-[9px] text-red-500 mt-1 pl-1" />
-                        <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                        <DatePicker.Popover className=" border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                           <Calendar aria-label="Return date">
                             <Calendar.Header className="flex items-center justify-between mb-2">
                               <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer"><Calendar.YearPickerTriggerHeading /><Calendar.YearPickerTriggerIndicator /></Calendar.YearPickerTrigger>
                               <div className="flex gap-1">
-                                <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                                <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                                <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                               </div>
                             </Calendar.Header>
                             <Calendar.Grid className="w-full">
@@ -1150,15 +1186,30 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                         </DatePicker.Popover>
                       </DatePicker>
                     </div>
-                    <TimePicker value={returnTimeValue} onChange={setReturnTimeValue} label={t.airportTransfer.returnTime} labelClassName="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1" language={language} isRequired />
+                    <TimePicker
+                      value={returnTimeValue}
+                      onChange={setReturnTimeValue}
+                      label={t.airportTransfer.returnTime}
+                      labelClassName="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1"
+                      language={language}
+                      triggerClassName="bg-white dark:bg-zinc-900"
+                      isRequired />
                     <div className="flex flex-col w-full">
-                      <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">{t.airportTransfer.flightNumber}</label>
-                      <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 bg-white dark:bg-black hover:border-blue-500/50 transition-colors">
-                        <Plane size={16} className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                        <input type="text" placeholder="VN456..." value={returnFlightNumber} onChange={(e) => setReturnFlightNumber(e.target.value.toUpperCase())} className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400" />
-                      </div>
+                      <Label className="text-[11px] font-extrabold uppercase tracking-wider mb-1.5">{t.airportTransfer.flightNumber}</Label>
+                      <HeroSearchField>
+                        <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
+                          <Plane size={16} className="mr-2 shrink-0" />
+                          <HeroSearchField.Input
+                            placeholder="VN456..."
+                            value={returnFlightNumber}
+                            onChange={(e) => setReturnFlightNumber(e.target.value.toUpperCase())}
+                            className="w-full text-xs font-semibold outline-none bg-transparent"
+                          />
+                          <HeroSearchField.ClearButton />
+                        </HeroSearchField.Group>
+                      </HeroSearchField>
                       {!returnFlightNumber && (
-                        <span className="text-[9px] text-slate-400 mt-1 pl-1">Tùy chọn</span>
+                        <span className="text-[9px] mt-1 pl-1">Tùy chọn</span>
                       )}
                     </div>
                   </div>
@@ -1168,7 +1219,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
           </div>
 
           {/* Vehicle Selection */}
-          <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+          <div className=" rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.airportTransfer.selectVehicle}</h3>
             {!isFormComplete ? (
               <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">{t.airportTransfer.pleaseFillInfo}</p>
@@ -1202,7 +1253,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     >
                       <div className="flex justify-between items-center gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-850 flex items-center justify-center border border-slate-200/50 dark:border-slate-800">
+                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-[var(--bg-card)] flex items-center justify-center border border-slate-200/50 dark:border-slate-800">
                             {v.thumbnailUrl ? (
                               <img src={v.thumbnailUrl} alt={language === "vi" ? v.nameVi : v.nameEn} className="w-full h-full object-cover" />
                             ) : (
@@ -1222,33 +1273,55 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
               </div>
             )}
           </div>
-
-          {/* Booking Button */}
-          <Button
-            onClick={handleBooking}
-            isDisabled={!selectedVehicle || !dateValue}
-            className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
-          >
-            {t.airportTransfer.bookNow}
-          </Button>
         </div>
 
         {/* Right Column: Summary & Info */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4 sticky top-24">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.airportTransfer.summary}</h3>
+          <div className=" rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4 sticky top-24">
+            <h3 className="text-sm font-extrabold uppercase tracking-wider">{t.airportTransfer.summary}</h3>
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between"><span className="text-slate-400">{t.rentCar.tripType}</span><span className="font-bold">{tripType === "one-way" ? t.airportTransfer.oneWay : t.airportTransfer.roundTrip}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">{t.airportTransfer.airport}</span><span className="font-bold">{airportNameShort}</span></div>
-              {dateValue && <div className="flex justify-between"><span className="text-slate-400">{t.airportTransfer.date}</span><span className="font-bold">{dateValue.toString()}</span></div>}
-              {selectedVehicle && <div className="flex justify-between"><span className="text-slate-400">{t.airportTransfer.vehicle}</span><span className="font-bold">{language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn}</span></div>}
+              <div className="flex justify-between"><span className="font-extrabold">{t.rentCar.tripType}</span><span className="font-bold">{tripType === "one-way" ? t.airportTransfer.oneWay : t.airportTransfer.roundTrip}</span></div>
+              <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.airport}</span><span className="font-bold">{airportNameShort}</span></div>
+              {dateValue && <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.date}</span><span className="font-bold">{dateValue.toString()}</span></div>}
+              {selectedVehicle && <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.vehicle}</span><span className="font-bold">{language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn}</span></div>}
             </div>
+
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+              <div className="flex justify-end">
+                <AutofillButton
+                  onFill={(d) => { setFullName(d.fullname); setPhone(d.phone); setEmail(d.email); setZaloId(d.zaloId ?? ""); setKakaoTalkId(d.kakaoTalkId ?? ""); }}
+                  label={t.common.autoFill}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <TextField isRequired><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.fullName}</Label><Input placeholder="Nguyễn Văn A" value={fullName} onChange={(e) => setFullName(e.target.value)} /></TextField>
+                <TextField isRequired><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.phone}</Label><Input placeholder="0987654321" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></TextField>
+                <TextField><Label className="text-[10px] font-bold uppercase tracking-wider" isRequired>Email</Label><Input placeholder="email@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></TextField>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <TextField><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.zaloId}</Label><Input className="border-1 border-accent shadow-md shadow-accent/40" value={zaloId} onChange={(e) => setZaloId(e.target.value)} placeholder="Zalo ID" /></TextField>
+                <TextField><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.kakaoTalkId}</Label><Input className="border-1 border-accent shadow-md shadow-accent/40" value={kakaoTalkId} onChange={(e) => setKakaoTalkId(e.target.value)} placeholder="KakaoTalk ID" /></TextField>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.notes}</Label>
+                <TextArea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.airportTransfer.notesPlaceholder} className="w-full h-16 p-3 border border-accent shadow-md shadow-accent/40 rounded-xl text-xs font-semibold outline-none resize-none" />
+              </div>
+            </div>
+
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
               <div className="flex justify-between items-end">
                 <span className="text-sm font-bold text-slate-500">{t.common.total}</span>
                 <span className="text-xl font-black text-accent">{formatPrice(unitPrice)}</span>
               </div>
             </div>
+
+            <Button
+              onClick={handleBooking}
+              isDisabled={!selectedVehicle || !dateValue}
+              className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-2xs gap-2 border-none cursor-pointer"
+            >
+              {t.airportTransfer.bookNow}
+            </Button>
           </div>
 
           {nhaTrangAddress && (
@@ -1281,61 +1354,18 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         submitting={submitting}
       />
 
-      {/* Checkout Form Modal */}
-      {showCheckoutForm && !bookingSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" id="checkout-form-container">
-          <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-xl border border-slate-100 dark:border-slate-800 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.airportTransfer.contactInfo}</h3>
-              <button onClick={() => setShowCheckoutForm(false)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">✕</button>
-            </div>
-            <div className="flex justify-end">
-              <AutofillButton
-                onFill={(d) => { setFullName(d.fullname); setPhone(d.phone); setEmail(d.email); }}
-                label={t.common.autoFill}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <TextField isRequired><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.fullName}</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} /></TextField>
-              <TextField isRequired><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.phone}</Label><Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></TextField>
-              <TextField><Label className="text-[10px] font-bold uppercase tracking-wider">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></TextField>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.contactChannel}</Label>
-                <select value={contactChannel} onChange={(e) => setContactChannel(e.target.value as any)} className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-xs font-bold">
-                  <option value="zalo">Zalo</option>
-                  <option value="kakaotalk">KakaoTalk</option>
-                </select>
-              </div>
-              <TextField><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.contactId}</Label><Input value={contactId} onChange={(e) => setContactId(e.target.value)} /></TextField>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.notes}</Label>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.airportTransfer.notesPlaceholder} className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-black text-xs font-semibold outline-none resize-none" />
-            </div>
-            <Button
-              onClick={handleFormSubmit}
-              isDisabled={!fullName || !phone || submitting}
-              className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
-            >
-              {t.airportTransfer.confirmBooking}
-            </Button>
-          </div>
-        </div>
+      {/* Success Overlay */}
+      {bookingSuccess && (
+        <SuccessOverlay
+          bookingCode={createdCode}
+          onComplete={() => { setBookingSuccess(false); router.push(`/${language}/airport-transfer/success?bookingCode=${createdCode}`); }}
+          title={t.airportTransfer.confirmSuccessTitle}
+          subtitle={t.airportTransfer.redirecting}
+        />
       )}
 
-      {/* Success Screen */}
-      {bookingSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-black rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800 w-full max-w-md mx-4 text-center space-y-4">
-            <CheckCircle size={48} className="text-green-500 mx-auto" />
-            <h3 className="text-lg font-black text-slate-800 dark:text-white">{t.airportTransfer.successTitle}</h3>
-            <p className="text-xs text-slate-500">{t.airportTransfer.bookingCode} <span className="font-bold text-accent">{createdCode}</span></p>
-            <Button onClick={() => setBookingSuccess(false)} className="bg-accent text-white rounded-2xl text-xs font-black border-none cursor-pointer">
-              {t.common.close}
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Error Overlay */}
+      {errorMessage && <ErrorOverlay message={errorMessage} onClose={() => setErrorMessage("")} />}
     </div>
   );
 }

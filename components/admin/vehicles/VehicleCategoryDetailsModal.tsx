@@ -34,6 +34,7 @@ interface VehicleCategoryDetailsModalProps {
   backendUrl: string;
   onSaveSuccess: (updatedCat?: VehicleCategoryDto) => void;
   showToast: (msg: string, type: "success" | "error") => void;
+  defaultEditMode?: boolean;
 }
 
 export default function VehicleCategoryDetailsModal({
@@ -43,7 +44,8 @@ export default function VehicleCategoryDetailsModal({
   language,
   backendUrl,
   onSaveSuccess,
-  showToast
+  showToast,
+  defaultEditMode
 }: VehicleCategoryDetailsModalProps) {
   const [activeFormLocale, setActiveFormLocale] = useState<string>("vi");
   const [loading, setLoading] = useState(false);
@@ -91,7 +93,7 @@ export default function VehicleCategoryDetailsModal({
       setActive(category.active);
       setIsDefault(category.default || false);
       setThumbnailId(category.thumbnailId);
-      setIsEditMode(false);
+      setIsEditMode(!!defaultEditMode);
 
       const newTrans = {
         vi: { name: "", slug: "", description: "" },
@@ -211,7 +213,7 @@ export default function VehicleCategoryDetailsModal({
               isIconOnly
               variant="ghost"
               onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none"
+              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
             >
               ✕
             </Button>
@@ -220,7 +222,7 @@ export default function VehicleCategoryDetailsModal({
               <div>
                 <h2 id="vehicle-category-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Danh mục Xe" : "Edit Vehicle Category") : (language === "vi" ? "Chi tiết Danh mục Xe" : "Vehicle Category Details")}</span>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">#{category.id}</span>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500">#{category.id}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isEditMode
@@ -240,7 +242,7 @@ export default function VehicleCategoryDetailsModal({
                         {language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail"}
                       </Label>
                       {category.thumbnailUrl ? (
-                        <div className="w-32 h-20 rounded-xl overflow-hidden border border-divider bg-slate-100 dark:bg-slate-800">
+                        <div className="w-32 h-20 rounded-xl overflow-hidden border border-divider bg-slate-100 dark:bg-[var(--bg-card)]">
                           <img
                             src={category.thumbnailUrl}
                             alt={category.code}
@@ -298,7 +300,7 @@ export default function VehicleCategoryDetailsModal({
                       )}
                     </div>
 
-                    <Separator className="bg-slate-100 dark:bg-slate-800" />
+                    <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3">
@@ -313,7 +315,7 @@ export default function VehicleCategoryDetailsModal({
                               className={clsx(
                                 "px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-none bg-transparent",
                                 activeFormLocale === lang
-                                  ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                  ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                   : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                               )}
                               onClick={() => setActiveFormLocale(lang)}
@@ -521,7 +523,7 @@ export default function VehicleCategoryDetailsModal({
                       </div>
                     </div>
 
-                    <Separator className="bg-slate-100 dark:bg-slate-800" />
+                    <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                     <div className="space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -536,7 +538,7 @@ export default function VehicleCategoryDetailsModal({
                               className={clsx(
                                 "px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-none bg-transparent",
                                 activeFormLocale === lang
-                                  ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                  ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                   : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                               )}
                               onClick={() => setActiveFormLocale(lang)}
@@ -592,7 +594,7 @@ export default function VehicleCategoryDetailsModal({
                     <Button
                       key="btn-close"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                       onClick={onClose}
                     >
                       {language === "vi" ? "Đóng" : "Close"}
@@ -617,7 +619,7 @@ export default function VehicleCategoryDetailsModal({
                     <Button
                       key="btn-back"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                       onClick={() => setIsEditMode(false)}
                       isDisabled={loading}
                     >

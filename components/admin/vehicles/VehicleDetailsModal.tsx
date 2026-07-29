@@ -32,6 +32,7 @@ interface VehicleDetailsModalProps {
   backendUrl: string;
   onSaveSuccess: (updatedVehicle?: VehicleDto) => void;
   showToast: (msg: string, type: "success" | "error") => void;
+  defaultEditMode?: boolean;
 }
 
 export default function VehicleDetailsModal({
@@ -42,7 +43,8 @@ export default function VehicleDetailsModal({
   language,
   backendUrl,
   onSaveSuccess,
-  showToast
+  showToast,
+  defaultEditMode
 }: VehicleDetailsModalProps) {
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -76,7 +78,7 @@ export default function VehicleDetailsModal({
       setTypeId(vehicle.type?.id || categories[0]?.id || 0);
       setImageIds(vehicle.imageIds || []);
       setThumbnailId(vehicle.thumbnailId ?? null);
-      setIsEditMode(false);
+      setIsEditMode(!!defaultEditMode);
     }
   }, [isOpen, vehicle, categories]);
 
@@ -150,7 +152,7 @@ export default function VehicleDetailsModal({
               isIconOnly
               variant="ghost"
               onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none"
+              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
             >
               ✕
             </Button>
@@ -158,7 +160,7 @@ export default function VehicleDetailsModal({
               <div>
                 <h2 id="vehicle-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <span>{isEditMode ? "Chỉnh sửa Thông tin Xe" : "Chi tiết Thông tin Xe"}</span>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">#{vehicle.id}</span>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500">#{vehicle.id}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isEditMode
@@ -302,7 +304,7 @@ export default function VehicleDetailsModal({
                                     key={c.id}
                                     id={String(c.id)}
                                     textValue={labelText}
-                                    className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between"
+                                    className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between"
                                   >
                                     {labelText}
                                     <ListBox.ItemIndicator />
@@ -328,12 +330,12 @@ export default function VehicleDetailsModal({
                           <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                             <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
                             <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                              <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent">
+                              <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
                                 <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
                                   <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
                                 </svg>
                               </NumberField.IncrementButton>
-                              <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                              <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
                                 <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
                                   <path clipRule="evenodd" d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
                                 </svg>
@@ -377,7 +379,7 @@ export default function VehicleDetailsModal({
                                   key={item.id}
                                   id={item.id}
                                   textValue={item.label}
-                                  className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between"
+                                  className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between"
                                 >
                                   {item.label}
                                   <ListBox.ItemIndicator />
@@ -402,12 +404,12 @@ export default function VehicleDetailsModal({
                             <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                               <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
                               <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent">
+                                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
                                   <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
                                     <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
                                   </svg>
                                 </NumberField.IncrementButton>
-                                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
                                   <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
                                     <path clipRule="evenodd" d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
                                   </svg>
@@ -433,12 +435,12 @@ export default function VehicleDetailsModal({
                             <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                               <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
                               <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent">
+                                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
                                   <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
                                     <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
                                   </svg>
                                 </NumberField.IncrementButton>
-                                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
                                   <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg">
                                     <path clipRule="evenodd" d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
                                   </svg>
@@ -503,7 +505,7 @@ export default function VehicleDetailsModal({
                     <Button
                       key="btn-close"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                       onClick={onClose}
                     >
                       {language === "vi" ? "Đóng" : "Close"}
@@ -527,7 +529,7 @@ export default function VehicleDetailsModal({
                     <Button
                       key="btn-back"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                       onClick={() => setIsEditMode(false)}
                       isDisabled={loading}
                     >

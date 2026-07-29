@@ -88,7 +88,7 @@ export default function ServiceDeleteModal({
             <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3">
               <Button
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-250 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                className="rounded-xl font-bold bg-slate-250 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                 onClick={onClose}
                 isDisabled={loading}
               >

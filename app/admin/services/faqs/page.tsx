@@ -195,7 +195,7 @@ export default function AdminFeedbackPage() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none shadow-sm" onClick={fetchFeedbacks}>
+          <Button variant="outline" className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none shadow-sm" onClick={fetchFeedbacks}>
             <RefreshCw size={16} className="mr-1.5" />
             Làm mới
           </Button>
@@ -239,7 +239,7 @@ export default function AdminFeedbackPage() {
                     {filtered.map((fb, idx) => {
                       const tr = getTranslation(fb);
                       return (
-                        <Table.Row key={fb.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors">
+                        <Table.Row key={fb.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors">
                           <Table.Cell className="px-6 py-4">
                             <div className="flex items-center gap-0.5 text-amber-500">
                               {Array.from({ length: fb.rating }).map((_, i) => (
@@ -267,7 +267,7 @@ export default function AdminFeedbackPage() {
                               onClick={() => handleToggleIndex(fb)}
                               className={clsx(
                                 "relative inline-flex w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none cursor-pointer",
-                                fb.showOnIndex ? "bg-[#C9A227]" : "bg-slate-200 dark:bg-slate-700"
+                                fb.showOnIndex ? "bg-[#C9A227]" : "bg-slate-200 dark:bg-[var(--bg-elevated)]"
                               )}
                             >
                               <span className={clsx(
@@ -279,14 +279,14 @@ export default function AdminFeedbackPage() {
                           <Table.Cell className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => handleOpenEdit(fb)}
                                 title="Edit"
                               >
                                 <Edit size={15} />
                               </button>
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => handleDelete(fb.id)}
                                 title="Delete"
                               >
@@ -428,7 +428,7 @@ export default function AdminFeedbackPage() {
                       onClick={() => setForm(prev => ({ ...prev, showOnIndex: !prev.showOnIndex }))}
                       className={clsx(
                         "relative inline-flex w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none cursor-pointer",
-                        form.showOnIndex ? "bg-[#C9A227]" : "bg-slate-200 dark:bg-slate-700"
+                        form.showOnIndex ? "bg-[#C9A227]" : "bg-slate-200 dark:bg-[var(--bg-elevated)]"
                       )}
                     >
                       <span className={clsx(
@@ -441,7 +441,7 @@ export default function AdminFeedbackPage() {
                     </Label>
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Translations */}
                   <div className="space-y-4">
@@ -458,7 +458,7 @@ export default function AdminFeedbackPage() {
                             className={clsx(
                               "px-3 py-1 text-xs font-bold rounded-lg transition-all",
                               activeLocale === loc
-                                ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                 : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                             )}
                           >
@@ -499,7 +499,7 @@ export default function AdminFeedbackPage() {
                 </ModalBody>
 
                 <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 flex justify-end gap-3">
-                  <Button variant="outline" className="rounded-xl font-bold bg-white hover:bg-slate-50 border border-slate-200 dark:border-slate-800 dark:bg-black dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300" onClick={() => setModalOpen(false)}>
+                  <Button variant="outline" className="rounded-xl font-bold bg-white hover:bg-slate-50 border border-slate-200 dark:border-slate-800 dark:bg-black dark:hover:bg-[var(--bg-card)] text-slate-700 dark:text-slate-300" onClick={() => setModalOpen(false)}>
                     Hủy bỏ
                   </Button>
                   <Button type="submit" className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8922a] text-white shadow-sm border-none">

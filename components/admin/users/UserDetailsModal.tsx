@@ -11,13 +11,14 @@ import {
   ModalFooter,
   Button,
 } from "@heroui/react";
-import { Eye, Mail, Phone, Shield, User as UserIcon, MessageSquare } from "lucide-react";
+import { Eye, Mail, Phone, Shield, User as UserIcon, MessageSquare, Edit3 } from "lucide-react";
 import { AdminUserDto } from "@/lib/api/users";
 
 interface UserDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: AdminUserDto | null;
+  onEdit: () => void;
 }
 
 const roleColors: Record<string, string> = {
@@ -29,11 +30,11 @@ const roleColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  inactive: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400",
+  inactive: "bg-slate-100 text-slate-700 dark:bg-[var(--bg-card)] dark:text-slate-400",
   blocked: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
-export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsModalProps) {
+export default function UserDetailsModal({ isOpen, onClose, user, onEdit }: UserDetailsModalProps) {
   if (!user) return null;
 
   return (
@@ -42,10 +43,19 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
         <ModalContainer size="md">
           <ModalDialog className="max-w-md bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
             <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
-              <span id="user-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <Eye className="text-accent" size={20} />
-                Chi tiết User
-              </span>
+              <div className="flex items-center justify-between w-full">
+                <span id="user-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Eye className="text-accent" size={20} />
+                  Chi tiết User
+                </span>
+                <Button
+                  size="sm"
+                  onClick={onEdit}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
+                >
+                  <Edit3 size={14} /> Chỉnh sửa
+                </Button>
+              </div>
             </ModalHeader>
 
             <ModalBody className="p-6 space-y-4">
@@ -110,7 +120,7 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
 
             <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 justify-end">
               <Button
-                className="rounded-xl font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
                 onClick={onClose}
               >
                 Đóng

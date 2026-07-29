@@ -12,7 +12,7 @@ export default function PricingPage() {
       <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
         {t.pricing.subtitle}
       </p>
-      <div className="mt-12 p-8 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+      <div className="mt-12 p-8 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800">
         <p className="text-slate-500 dark:text-slate-400">
           {t.pricing.comingSoon}
         </p>

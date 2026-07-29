@@ -178,7 +178,7 @@ export default function VehicleCategoryCreateModal({
               isIconOnly
               variant="ghost"
               onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none"
+              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
             >
               ✕
             </Button>
@@ -330,7 +330,7 @@ export default function VehicleCategoryCreateModal({
                   </div>
                 </div>
 
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                 {/* Translation Content tab section */}
                 <div className="space-y-4">
@@ -346,7 +346,7 @@ export default function VehicleCategoryCreateModal({
                           className={clsx(
                             "px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-none bg-transparent",
                             activeFormLocale === lang
-                              ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                              ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                               : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                           )}
                           onClick={() => setActiveFormLocale(lang)}
@@ -387,7 +387,7 @@ export default function VehicleCategoryCreateModal({
               <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
                 <Button
                   variant="outline"
-                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                   onClick={onClose}
                   isDisabled={loading}
                 >

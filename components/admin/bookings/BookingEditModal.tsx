@@ -161,19 +161,19 @@ export default function BookingEditModal({
                     </Select.Trigger>
                     <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                       <ListBox>
-                        <ListBox.Item id="pending" textValue={getStatusLabel("pending", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="pending" textValue={getStatusLabel("pending", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                           {getStatusLabel("pending", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="confirmed" textValue={getStatusLabel("confirmed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="confirmed" textValue={getStatusLabel("confirmed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                           {getStatusLabel("confirmed", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="completed" textValue={getStatusLabel("completed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="completed" textValue={getStatusLabel("completed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                           {getStatusLabel("completed", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="cancelled" textValue={getStatusLabel("cancelled", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="cancelled" textValue={getStatusLabel("cancelled", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                           {getStatusLabel("cancelled", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -183,7 +183,11 @@ export default function BookingEditModal({
                 </div>
 
                 <div>
+                  <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    {language === "vi" ? "Tổng tiền" : "Total Amount"}
+                  </Label>
                   <NumberField
+                    isDisabled
                     minValue={0}
                     value={formData.totalAmount || 0}
                     onChange={(val) => setFormData({ ...formData, totalAmount: val ?? 0 })}
@@ -191,11 +195,14 @@ export default function BookingEditModal({
                     isRequired
                     fullWidth
                   >
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                      {language === "vi" ? "Tổng tiền" : "Total Amount"}
-                    </Label>
-                    <NumberField.Group>
-                      <NumberField.Input />
+                    <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
+                      <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
+                      <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
+                        ▲
+                      </NumberField.IncrementButton>
+                      <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                        ▼
+                      </NumberField.DecrementButton>
                     </NumberField.Group>
                   </NumberField>
                 </div>
@@ -215,7 +222,7 @@ export default function BookingEditModal({
 
               <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 justify-end gap-2.5">
                 <Button
-                  className="rounded-xl font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                  className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
                   onClick={onClose}
                   type="button"
                 >

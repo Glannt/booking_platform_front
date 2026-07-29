@@ -240,7 +240,7 @@ export default function ProfileClient() {
           ) : (
             <Button
               onClick={handleEdit}
-              className="gap-1.5 px-5 py-2 rounded-xl text-sm font-bold border border-accent text-accent hover:bg-accent/10"
+              className="gap-1.5 px-5 py-2 rounded-xl text-sm font-bold border border-accent text-accent bg-transparent hover:bg-accent/10"
             >
               <Pencil size={14} />
               {tr.editButton}

@@ -41,8 +41,8 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [contactChannel, setContactChannel] = useState<"zalo" | "kakaotalk">("zalo");
-  const [contactId, setContactId] = useState("");
+  const [zaloId, setZaloId] = useState("");
+  const [kakaoTalkId, setKakaoTalkId] = useState("");
   const [notes, setNotes] = useState("");
 
   // Specific service fields
@@ -135,7 +135,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !phone || !email || !contactId) {
+    if (!fullName || !phone || !email) {
       alert(isVi ? "Vui lòng nhập đầy đủ các thông tin bắt buộc!" : "Please enter all required information!");
       return;
     }
@@ -143,12 +143,12 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
   };
 
   const handleConfirmBooking = async () => {
-    if (!fullName || !phone || !email || !contactId) return;
+    if (!fullName || !phone || !email) return;
 
     setModalState("submitting");
     setErrorMessage("");
 
-    const compiledNotes = `[Social: ${contactChannel.toUpperCase()} ID: ${contactId}] Notes: ${notes}`;
+    const compiledNotes = `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes}`;
     const itemDetails = `Category ID: ${catId}, StartDate: ${startDate}, EndDate: ${endDate}, Pickup: ${pickup}, Dropoff: ${dropoff}, Flight: ${flightNo}`;
 
     const payload = {
@@ -157,6 +157,10 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
       customerPhone: phone,
       totalAmount: totalPrice,
       customerNotes: compiledNotes,
+      zaloId: zaloId || undefined,
+      kakaoTalkId: kakaoTalkId || undefined,
+      contactChannel: zaloId ? "zalo" : kakaoTalkId ? "kakaotalk" : undefined,
+      contactId: zaloId || kakaoTalkId || undefined,
       items: [
         {
           serviceId: service.id,
@@ -482,54 +486,25 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
                 />
               </div>
 
-              {/* Social Link Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-default-500 flex items-center gap-1.5 mb-1.5">
-                  <MessageCircle size={14} className="text-primary" />
-                  {t.booking.zaloOrKakao} *
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="min-w-[30%] flex-1">
-                    <Select
-                      className="w-full"
-                      selectedKey={contactChannel}
-                      onSelectionChange={(key) => setContactChannel(key as "zalo" | "kakaotalk")}
-                    >
-                      <Select.Trigger className="h-10 bg-content1 border border-default-200 rounded-2xl px-3">
-                        <Select.Value className="text-xs font-semibold" />
-                        <Select.Indicator />
-                      </Select.Trigger>
-
-                      <Select.Popover className="bg-content1 border border-default-200 rounded-xl p-1 shadow-xl z-50">
-                        <ListBox>
-                          <ListBox.Item id="zalo" textValue="Zalo" className="text-xs font-semibold px-3 py-2 hover:bg-default-100 rounded-lg cursor-pointer">
-                            Zalo
-                          </ListBox.Item>
-                          <ListBox.Item id="kakaotalk" textValue="KakaoTalk" className="text-xs font-semibold px-3 py-2 hover:bg-default-100 rounded-lg cursor-pointer">
-                            KakaoTalk
-                          </ListBox.Item>
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-
-                  <div className="flex-[3]">
-                    <input
-                      required
-                      value={contactId}
-                      onChange={(e) => setContactId(e.target.value)}
-                      placeholder={
-                        contactChannel === "zalo"
-                          ? isVi
-                            ? "Số điện thoại Zalo"
-                            : "Zalo Phone Number"
-                          : isVi
-                            ? "Nhập KakaoTalk ID"
-                            : "Enter KakaoTalk ID"
-                      }
-                      className="w-full p-3 bg-content2 border border-default-200 rounded-2xl text-xs font-semibold outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
+              {/* Zalo ID & KakaoTalk ID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:col-span-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-default-500">{t.booking.zaloId}</label>
+                  <input
+                    value={zaloId}
+                    onChange={(e) => setZaloId(e.target.value)}
+                    placeholder="Zalo ID"
+                    className="w-full p-3 bg-content2 border border-default-200 rounded-2xl text-xs font-semibold outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-default-500">{t.booking.kakaoTalkId}</label>
+                  <input
+                    value={kakaoTalkId}
+                    onChange={(e) => setKakaoTalkId(e.target.value)}
+                    placeholder="KakaoTalk ID"
+                    className="w-full p-3 bg-content2 border border-default-200 rounded-2xl text-xs font-semibold outline-none focus:border-primary transition-colors"
+                  />
                 </div>
               </div>
 
@@ -682,7 +657,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
                         {catId === 2 ? t.booking.successTour : t.booking.successVehicle}
                       </div>
                       <p className="text-[11px] text-default-450 leading-relaxed">
-                        {t.booking.successFooter} ({contactChannel === "zalo" ? "Zalo" : "KakaoTalk"} ID: <span className="font-extrabold text-default-700 dark:text-default-200">{contactId}</span>)
+                        {t.booking.successFooter} (Zalo: {zaloId || "—"} / KakaoTalk: {kakaoTalkId || "—"})
                       </p>
                     </div>
 

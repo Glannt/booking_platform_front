@@ -8,6 +8,7 @@ export const nav = {
   cityTour: "Tham quan thành phố",
   about: "Giới thiệu",
   booking: "Đặt dịch vụ",
-  myBookings: "Đơn đặt của tôi",
+  dashboard: "Bảng điều khiển",
+  bookingHistory: "Lịch sử đặt lịch",
   myProfile: "Hồ sơ cá nhân",
 };

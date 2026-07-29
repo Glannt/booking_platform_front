@@ -29,6 +29,7 @@ interface AirportModalProps {
   airport: AirportDto | null;
   onSaveSuccess: () => void;
   showToast: (msg: string, type: "success" | "error") => void;
+  defaultEditMode?: boolean;
 }
 
 export default function AirportModal({
@@ -36,7 +37,8 @@ export default function AirportModal({
   onClose,
   airport,
   onSaveSuccess,
-  showToast
+  showToast,
+  defaultEditMode
 }: AirportModalProps) {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"view" | "edit" | "create">("create");
@@ -57,7 +59,7 @@ export default function AirportModal({
     if (isOpen) {
       setActiveLocale("vi");
       if (airport) {
-        setMode("view");
+        setMode(defaultEditMode ? "edit" : "view");
         setCode(airport.code || "");
         setName(airport.name || "");
         setLocation(airport.location || "");
@@ -182,7 +184,7 @@ export default function AirportModal({
               variant="ghost"
               onClick={onClose}
               aria-label="Đóng"
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none"
+              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
             >
               <X size={18} />
             </Button>
@@ -263,7 +265,7 @@ export default function AirportModal({
                 <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
                   <Button
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                     onClick={onClose}
                   >
                     {"Đóng"}
@@ -347,7 +349,7 @@ export default function AirportModal({
                 <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
                   <Button
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                     onClick={() => airport ? setMode("view") : onClose()}
                     isDisabled={loading}
                   >

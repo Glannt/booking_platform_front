@@ -9,7 +9,10 @@ import {
   Skeleton,
   Input,
   TextField,
-  toast
+  DatePicker,
+  DateField,
+  Calendar,
+  FieldError
 } from "@heroui/react";
 import { DateValue } from "@internationalized/date";
 import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
@@ -29,9 +32,12 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { useAuthStore } from "@/lib/store/authStore";
 import { AutofillButton } from "@/components/AutofillButton";
-import { getActiveRentals, createBooking, getRentalPricesByRental, type RentalPriceDto } from "@/lib/api/rental";
+import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto } from "@/lib/api/rental";
+import { createSelfDriveBooking } from "@/lib/api/self-drive/bookings";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
+import SuccessOverlay from "@/components/SuccessOverlay";
+import ErrorOverlay from "@/components/ErrorOverlay";
 
 interface Vehicle {
   id: string;
@@ -59,6 +65,8 @@ export default function SelfDriveBookingPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [zaloId, setZaloId] = useState("");
+  const [kakaoTalkId, setKakaoTalkId] = useState("");
   const [dateValue, setDateValue] = useState<DateValue | null>(null);
   const [timeValue, setTimeValue] = useState<TimeValue>({ hour: 8, minute: 0, period: "AM" });
   const [rentalDays, setRentalDays] = useState<number>(1);
@@ -70,9 +78,7 @@ export default function SelfDriveBookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showContactMenu, setShowContactMenu] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const currentDate = today(getLocalTimeZone());
   const isDateInvalid = dateValue != null && dateValue.compare(currentDate) < 0;
@@ -203,14 +209,6 @@ export default function SelfDriveBookingPage() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isDateInvalid || !dateValue || isSubmitting || !customerName.trim() || !customerPhone.trim() || !selectedVehicle) return;
@@ -223,42 +221,36 @@ export default function SelfDriveBookingPage() {
     setIsSubmitting(true);
     try {
       const startDate = `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}`;
-      const startTime = `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}`;
+      const end = new Date(dateValue.year, dateValue.month - 1, dateValue.day + rentalDays);
+      const endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
 
-      const dynamicDetails = JSON.stringify({
-        vehicleCategoryId: selectedVehicle.vehicleCategoryId,
-        rentalId: selectedVehicle.rentalId,
-        startDate,
-        startTime,
-        rentalDays,
-        basePrice: selectedVehicle.pricePerDay,
-        totalPrice: price,
-        deposit: selectedVehicle.deposit,
-        pickupLocation,
-        vehicleName: selectedVehicle.name
-      });
-
-      const res = await createBooking({
+      const res = await createSelfDriveBooking({
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim() || `${customerPhone.trim()}@traveler.com`,
         customerPhone: customerPhone.trim(),
-        customerNotes: notes.trim() || (vi ? `Thuê xe tự lái - ${selectedVehicle.name}` : `Self-drive rental - ${selectedVehicle.name}`),
-        items: [{
-          serviceId: 103,
-          quantity: rentalDays,
-          unitPrice: selectedVehicle.pricePerDay,
-          dynamicDetails,
-          pickupLocation
-        }]
+        customerNotes: `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes.trim() || (vi ? `Thuê xe tự lái - ${selectedVehicle.name}` : `Self-drive rental - ${selectedVehicle.name}`)}`,
+        vehicleCategoryId: selectedVehicle.vehicleCategoryId,
+        zaloId: zaloId || undefined,
+        kakaoTalkId: kakaoTalkId || undefined,
+        contactChannel: zaloId ? "zalo" : kakaoTalkId ? "kakaotalk" : undefined,
+        contactId: zaloId || kakaoTalkId || undefined,
+        startDate,
+        endDate,
+        rentalDays,
+        pickupLocation,
+        basePrice: selectedVehicle.pricePerDay,
+        deposit: selectedVehicle.deposit,
+        totalPrice: price,
       });
 
       if (res?.data?.bookingCode) {
         setBookingSuccess(res.data.bookingCode);
-        toast.success(vi ? `Đặt xe thành công! Mã đặt: ${res.data.bookingCode}` : `Booking successful! Code: ${res.data.bookingCode}`);
+      } else {
+        setErrorMessage(t.errors.bookingFailed);
       }
     } catch (err) {
       console.error("Booking failed:", err);
-      toast.danger(t.selfDrive.toastFailed);
+      setErrorMessage(err instanceof Error ? err.message : t.errors.bookingFailed);
     } finally {
       setIsSubmitting(false);
       setShowConfirmModal(false);
@@ -298,39 +290,18 @@ export default function SelfDriveBookingPage() {
           <div className="lg:col-span-8 space-y-6">
 
             {bookingSuccess ? (
-              <div className="bg-white dark:bg-black rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-800 text-center space-y-5 animate-fade-in-up">
-                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6 space-y-3">
-                  <CheckCircle size={32} className="text-green-600 dark:text-green-400 mx-auto" />
-                  <h3 className="text-base font-extrabold text-green-800 dark:text-green-200">
-                    {t.selfDrive.bookingSuccess}
-                  </h3>
-                  <div className="bg-white dark:bg-black/40 rounded-xl px-5 py-3 border border-green-100 dark:border-green-800/40 inline-block">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
-                      {t.selfDrive.bookingCode}
-                    </p>
-                    <p className="text-xl font-black font-mono text-slate-800 dark:text-white tracking-wider">
-                      {bookingSuccess}
-                    </p>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {t.selfDrive.bookingSuccessDesc}
-                  </p>
-                </div>
-                <div className="flex gap-3 justify-center">
-                  <Button onClick={() => { setBookingSuccess(null); }} variant="outline" className="text-xs font-bold cursor-pointer">
-                    {t.selfDrive.bookAnother}
-                  </Button>
-                  <Button onClick={() => router.push(`/${language}/self-drive`)} className="text-xs font-bold cursor-pointer bg-accent text-white border-none">
-                    {t.selfDrive.viewFleet}
-                  </Button>
-                </div>
-              </div>
+              <SuccessOverlay
+                bookingCode={bookingSuccess}
+                onComplete={() => { setBookingSuccess(null); router.push(`/${language}/self-drive/success?bookingCode=${bookingSuccess}`); }}
+                title={t.selfDrive.confirmSuccessTitle}
+                subtitle={t.selfDrive.redirecting}
+              />
             ) : (
               <form onSubmit={handleSubmit} className="bg-white dark:bg-black rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
 
                 <div className="space-y-1 pb-4 border-b border-slate-100 dark:border-slate-850">
                   <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-accent">
-                    ⚡ {t.selfDrive.serviceType}
+                    {t.selfDrive.serviceType}
                   </span>
                   <h2 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                     {t.selfDrive.bookingDetails}
@@ -358,7 +329,7 @@ export default function SelfDriveBookingPage() {
                       <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl">
                         <ListBox>
                           {vehicles.map((v) => (
-                            <ListBox.Item id={v.id} key={v.id} textValue={v.name} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-lg cursor-pointer">
+                            <ListBox.Item id={v.id} key={v.id} textValue={v.name} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer">
                               <span className="flex items-center gap-2">
                                 <Car size={14} className="text-slate-400" />
                                 {v.name}
@@ -379,26 +350,55 @@ export default function SelfDriveBookingPage() {
 
                 {/* Date & Time */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col w-full">
-                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">
-                      {t.common.date} <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      min={currentDate.toString()}
-                      value={dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (!val) return;
-                        const [y, m, d] = val.split("-").map(Number);
-                        import("@internationalized/date").then(({ CalendarDate }) => {
-                          setDateValue(new CalendarDate(y, m, d));
-                        });
-                      }}
-                      className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs font-semibold outline-none focus:border-accent transition-colors"
-                    />
-                  </div>
+                  <DatePicker
+                    className="w-full"
+                    value={dateValue}
+                    onChange={(v) => setDateValue(v)}
+                    minValue={today(getLocalTimeZone())}
+                    isRequired
+                  >
+                    <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1">
+                      {t.common.date}
+                    </Label>
+                    <DateField.Group className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                      <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
+                        {(segment) => <DateField.Segment segment={segment} />}
+                      </DateField.Input>
+                      <DateField.Suffix>
+                        <DatePicker.Trigger className="cursor-pointer">
+                          <DatePicker.TriggerIndicator />
+                        </DatePicker.Trigger>
+                      </DateField.Suffix>
+                    </DateField.Group>
+                    <FieldError className="text-[9px] text-red-500 mt-1 pl-1" />
+                    <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                      <Calendar aria-label="Pickup date">
+                        <Calendar.Header className="flex items-center justify-between mb-2">
+                          <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <Calendar.YearPickerTriggerHeading />
+                            <Calendar.YearPickerTriggerIndicator />
+                          </Calendar.YearPickerTrigger>
+                          <div className="flex gap-1">
+                            <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                            <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                          </div>
+                        </Calendar.Header>
+                        <Calendar.Grid className="w-full">
+                          <Calendar.GridHeader className="text-slate-400 text-[10px] font-bold">
+                            {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
+                          </Calendar.GridHeader>
+                          <Calendar.GridBody>
+                            {(date) => (
+                              <Calendar.Cell
+                                date={date}
+                                className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
+                              />
+                            )}
+                          </Calendar.GridBody>
+                        </Calendar.Grid>
+                      </Calendar>
+                    </DatePicker.Popover>
+                  </DatePicker>
 
                   <TimePicker
                     label={t.common.time}
@@ -407,6 +407,8 @@ export default function SelfDriveBookingPage() {
                     onChange={setTimeValue}
                     popoverTitle={t.selfDrive.confirmTime}
                     language={language}
+                    isRequired
+                    triggerClassName="mt-0.75 bg-white dark:bg-zinc-900 border-2 h-10.5"
                   />
                 </div>
 
@@ -457,18 +459,18 @@ export default function SelfDriveBookingPage() {
                       {t.selfDrive.contactInfo}
                     </label>
                     <AutofillButton
-                      onFill={(d) => { setCustomerName(d.fullname); setCustomerPhone(d.phone); setCustomerEmail(d.email); }}
+                      onFill={(d) => { setCustomerName(d.fullname); setCustomerPhone(d.phone); setCustomerEmail(d.email); setZaloId(d.zaloId ?? ""); setKakaoTalkId(d.kakaoTalkId ?? ""); }}
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <TextField isRequired className="w-full">
                       <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.common.name}</Label>
                       <Input
-                      type="text"
-                      placeholder={t.selfDrive.namePlaceholder}
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="text-xs font-semibold"
+                        type="text"
+                        placeholder={t.selfDrive.namePlaceholder}
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="text-xs font-semibold"
                       />
                     </TextField>
                     <TextField className="w-full">
@@ -492,6 +494,30 @@ export default function SelfDriveBookingPage() {
                       />
                     </TextField>
                   </div>
+                </div>
+
+                {/* Zalo & KakaoTalk ID */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <TextField className="w-full">
+                    <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.selfDrive.zaloId}</Label>
+                    <Input
+                      type="text"
+                      value={zaloId}
+                      onChange={(e) => setZaloId(e.target.value)}
+                      placeholder="Zalo ID"
+                      className="text-xs font-semibold"
+                    />
+                  </TextField>
+                  <TextField className="w-full">
+                    <Label className="text-[10px] font-extrabold uppercase tracking-wider">{t.selfDrive.kakaoTalkId}</Label>
+                    <Input
+                      type="text"
+                      value={kakaoTalkId}
+                      onChange={(e) => setKakaoTalkId(e.target.value)}
+                      placeholder="KakaoTalk ID"
+                      className="text-xs font-semibold"
+                    />
+                  </TextField>
                 </div>
 
                 {/* Notes */}
@@ -573,7 +599,7 @@ export default function SelfDriveBookingPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-slate-700 dark:text-slate-300 font-black">{t.selfDrive.estTotalLabel}</span>
                       {isCalculating ? (
-                        <Skeleton className="w-24 h-5 rounded-lg bg-slate-200 dark:bg-slate-800" />
+                        <Skeleton className="w-24 h-5 rounded-lg bg-slate-200 dark:bg-[var(--bg-card)]" />
                       ) : (
                         <span className="text-base font-black text-blue-700 dark:text-blue-400">{price.toLocaleString("vi-VN")}đ</span>
                       )}
@@ -594,6 +620,8 @@ export default function SelfDriveBookingPage() {
 
         </div>
       </main>
+
+      {errorMessage && <ErrorOverlay message={errorMessage} onClose={() => setErrorMessage("")} />}
 
       <BookingConfirmationModal
         isOpen={showConfirmModal}
@@ -616,49 +644,7 @@ export default function SelfDriveBookingPage() {
         submitting={isSubmitting}
       />
 
-      {/* Floating contact */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {showContactMenu && (
-          <div className="bg-white dark:bg-slate-850 border border-slate-250 dark:border-slate-700 rounded-2xl shadow-2xl p-2.5 w-44 flex flex-col gap-2 animate-fade-in-up">
-            <a href={`tel:${contacts.phone}`} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline">
-              <Phone size={14} className="text-accent" />
-              <span>{`${t.common.callNow} ${contacts.phone}`}</span>
-            </a>
-            <a href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
-              <span className="text-accent">💬</span>
-              <span>Zalo Tư vấn</span>
-            </a>
-            {contacts.kakaotalk && (
-              <a href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
-                <span className="text-accent">💛</span>
-                <span>KakaoTalk</span>
-              </a>
-            )}
-            {contacts.whatsapp && (
-              <a href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-800">
-                <span className="text-accent">💚</span>
-                <span>WhatsApp</span>
-              </a>
-            )}
-          </div>
-        )}
-        <button
-          onClick={() => setShowContactMenu(!showContactMenu)}
-          className={`p-4 rounded-full border shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer flex items-center justify-center border-none ${showContactMenu ? "bg-accent text-white" : "bg-white dark:bg-black text-accent dark:text-white"}`}
-          aria-label="Contact Support"
-        >
-          <span className="text-lg">🎧</span>
-        </button>
-        {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="p-4 rounded-full bg-white dark:bg-black border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-accent dark:text-white shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer animate-bounce-subtle flex items-center justify-center"
-            aria-label="Back to Top"
-          >
-            <ArrowLeft size={22} className="rotate-90" />
-          </button>
-        )}
-      </div>
+
     </div>
   );
 }

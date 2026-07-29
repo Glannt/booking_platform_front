@@ -108,20 +108,21 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     document.cookie = `app_lang_selected=true; path=/; max-age=31536000; samesite=lax`;
 
     // Update URL to switch locale
+    const search = window.location.search;
     const segments = pathname.split("/");
     let newPath = "";
 
     if (segments.length > 1 && ["vi", "en", "ko", "ru"].includes(segments[1])) {
       // Replace existing locale prefix
       segments[1] = lang;
-      newPath = segments.join("/");
+      newPath = segments.join("/") + search;
     } else {
       const firstSegment = segments[1];
       if (["admin", "dashboard", "staff"].includes(firstSegment)) {
         // Admin/dashboard paths: just reload (no locale prefix)
-        newPath = pathname;
+        newPath = pathname + search;
       } else {
-        newPath = `/${lang}${pathname === "/" ? "" : pathname}`;
+        newPath = `/${lang}${pathname === "/" ? "" : pathname}` + search;
       }
     }
 

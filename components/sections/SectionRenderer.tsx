@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { SectionDto, SectionTranslationDto } from "@/lib/api/sections";
@@ -56,7 +56,7 @@ function FeaturesSection({ section, locale }: { section: SectionDto; locale: str
         {features.map((f, idx) => (
           <div
             key={idx}
-            className="flex flex-col items-center text-center p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 hover:shadow-md transition-shadow"
+            className="flex flex-col items-center text-center p-6 rounded-2xl bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50 hover:shadow-md transition-shadow"
           >
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               {ICONS[f.icon] || <CheckCircle size={32} className="text-primary" />}

@@ -8,6 +8,7 @@ export const nav = {
   cityTour: "도시 관광",
   about: "소개",
   booking: "서비스 예약",
-  myBookings: "내 예약",
+  dashboard: "대시보드",
+  bookingHistory: "예약 내역",
   myProfile: "내 프로필",
 };

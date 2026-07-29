@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   Eye,
+  Edit3,
   RefreshCw,
   Sparkles,
   Layers,
@@ -58,6 +59,7 @@ export default function ServiceCategoriesPage() {
   const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategoryDto | null>(null);
+  const [detailsDefaultEditMode, setDetailsDefaultEditMode] = useState(false);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") {
@@ -141,7 +143,7 @@ export default function ServiceCategoriesPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button
             variant="outline"
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
             onClick={fetchCategories}
           >
             <RefreshCw size={16} className="mr-1.5" />
@@ -194,7 +196,7 @@ export default function ServiceCategoriesPage() {
                       return (
                         <Table.Row
                           key={cat.id}
-                          className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors duration-150"
+                          className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
                         >
                           <Table.Cell className="px-6 py-4 font-mono text-xs text-slate-400">#{cat.id}</Table.Cell>
                           <Table.Cell className="px-6 py-4 font-bold text-slate-900 dark:text-white">
@@ -224,7 +226,7 @@ export default function ServiceCategoriesPage() {
                           <Table.Cell className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => {
                                   setSelectedCategory(cat);
                                   setDetailsModalOpen(true);
@@ -234,11 +236,22 @@ export default function ServiceCategoriesPage() {
                                 <Eye size={16} />
                               </button>
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-305 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-305 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => handleDeleteCategory(cat.id)}
                                 title="Xóa"
                               >
                                 <Trash2 size={16} />
+                              </button>
+                              <button
+                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
+                                onClick={() => {
+                                  setSelectedCategory(cat);
+                                  setDetailsDefaultEditMode(true);
+                                  setDetailsModalOpen(true);
+                                }}
+                                title="Chỉnh Sửa"
+                              >
+                                <Edit3 size={16} />
                               </button>
                             </div>
                           </Table.Cell>
@@ -268,12 +281,14 @@ export default function ServiceCategoriesPage() {
         onClose={() => {
           setDetailsModalOpen(false);
           setSelectedCategory(null);
+          setDetailsDefaultEditMode(false);
         }}
         category={selectedCategory}
         language={language}
         backendUrl={backendUrl}
         onSaveSuccess={handleSaveSuccess}
         showToast={showToast}
+        defaultEditMode={detailsDefaultEditMode}
       />
     </div>
   );

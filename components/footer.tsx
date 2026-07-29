@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useI18n } from "@/context/LanguageContext";
 import Link from "next/link";
@@ -7,7 +7,7 @@ export const Footer = () => {
   const { t } = useI18n();
 
   return (
-    <footer className="w-full bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 py-16 border-t border-slate-200 dark:border-slate-900 transition-colors">
+    <footer className="w-full bg-slate-50 dark:bg-[var(--bg-page)] text-slate-600 dark:text-slate-400 py-16 border-t border-slate-200 dark:border-slate-900 transition-colors">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-10">
 
         {/* Col 1 – Brand & Company Info */}

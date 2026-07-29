@@ -21,10 +21,14 @@ import { parseDate } from "@internationalized/date";
 import { useI18n } from "@/context/LanguageContext";
 import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/rental";
 import { getVehicleCategories, getRentableVehiclesByCategory, type VehicleCategoryDto, type VehicleDto } from "@/lib/api/fleet";
-import { createBooking } from "@/lib/api/rental";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { createRentCarBooking } from "@/lib/api/rent-car/bookings";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { backendUrl } from "@/lib/api/client";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
+import SuccessOverlay from "@/components/SuccessOverlay";
+import ErrorOverlay from "@/components/ErrorOverlay";
+import { TimePicker, type TimeValue } from "@/components/time-picker";
 
 interface CategoryWithVehicles {
   category: VehicleCategoryDto;
@@ -36,7 +40,6 @@ export default function RentCarConfirmPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t } = useI18n();
-  const vi = language === "vi";
   const { contains } = useFilter({ sensitivity: "base" });
 
   const prefixUrl = (url: string) => {
@@ -55,6 +58,8 @@ export default function RentCarConfirmPage() {
   const customerEmail = searchParams.get("customerEmail") || "";
   const customerPhone = searchParams.get("customerPhone") || "";
   const notes = searchParams.get("notes") || "";
+  const initialPickupAddress = searchParams.get("pickupAddress") || "";
+  const initialDropoffAddress = searchParams.get("dropoffAddress") || "";
 
   const [route, setRoute] = useState<IntercityRouteDto | null>(null);
   const [allRoutes, setAllRoutes] = useState<IntercityRouteDto[]>([]);
@@ -66,17 +71,48 @@ export default function RentCarConfirmPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [createdCode, setCreatedCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const timeStringToValue = (s: string): TimeValue => {
+    if (!s) return { hour: 8, minute: 0, period: "AM" };
+    const parts = s.split(":");
+    const h = parseInt(parts[0], 10) || 0;
+    const m = parseInt(parts[1], 10) || 0;
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return { hour: hour12, minute: m, period: period as "AM" | "PM" };
+  };
+
+  const timeValueToString = (v: TimeValue): string => {
+    let h24 = v.hour + (v.period === "PM" ? 12 : 0);
+    if (h24 === 24) h24 = 12;
+    if (v.period === "AM" && v.hour === 12) h24 = 0;
+    return `${String(h24).padStart(2, "0")}:${String(v.minute).padStart(2, "0")}`;
+  };
 
   const [editName, setEditName] = useState(customerName);
   const [editPhone, setEditPhone] = useState(customerPhone);
   const [editEmail, setEditEmail] = useState(customerEmail);
   const [editNotes, setEditNotes] = useState(notes);
+  const [editZaloId, setEditZaloId] = useState("");
+  const [editKakaoTalkId, setEditKakaoTalkId] = useState("");
   const [editTripType, setEditTripType] = useState(tripType);
   const [editDate, setEditDate] = useState(departureDate);
-  const [editTime, setEditTime] = useState(departureTime);
+  const defaultTimeValue = timeStringToValue(departureTime);
+  const [editTime, setEditTime] = useState(departureTime || timeValueToString(defaultTimeValue));
+  const [editTimeValue, setEditTimeValue] = useState<TimeValue>(defaultTimeValue);
   const [editRouteId, setEditRouteId] = useState(routeId);
+  const [editPickupAddress, setEditPickupAddress] = useState(initialPickupAddress);
+  const [editDropoffAddress, setEditDropoffAddress] = useState(initialDropoffAddress);
   const [departureTimes, setDepartureTimes] = useState<{ departureTime: string; orderIndex: number }[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const clearError = (field: string) => setErrors(prev => {
+    if (!prev[field]) return prev;
+    const next = { ...prev };
+    delete next[field];
+    return next;
+  });
 
   const formatPrice = useCallback((value: number) => _formatPrice(value, language), [language]);
 
@@ -150,7 +186,16 @@ export default function RentCarConfirmPage() {
 
         setAllCategories(catsWithVehicles);
         setDisplayCount(3);
-        setSelectedCategoryId(catsWithVehicles.length > 0 ? catsWithVehicles[0].category.id : null);
+        const seatsParam = searchParams.get("seats");
+        let preselectedId = null;
+        if (seatsParam && catsWithVehicles.length > 0) {
+          const matched = catsWithVehicles.find(c => c.category.code === seatsParam);
+          if (matched) preselectedId = matched.category.id;
+        }
+        if (!preselectedId && catsWithVehicles.length > 0) {
+          preselectedId = catsWithVehicles[0].category.id;
+        }
+        setSelectedCategoryId(preselectedId);
       } catch (err) {
         console.error("Failed to load categories:", err);
       }
@@ -186,50 +231,79 @@ export default function RentCarConfirmPage() {
 
   const selectedCategory = allCategories.find((c) => c.category.id === selectedCategoryId);
 
+  const validate = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!editRouteId || editRouteId === 0) newErrors.route = t.errors.routeRequired;
+    if (!editTripType) newErrors.tripType = t.errors.tripTypeRequired;
+    if (!editDate) newErrors.date = t.errors.dateRequired;
+    if (!editTime) newErrors.time = t.errors.timeRequired;
+    if (!editName?.trim()) newErrors.name = t.errors.nameRequired;
+    if (!editPhone?.trim()) newErrors.phone = t.errors.phoneRequired;
+    if (!editEmail?.trim()) newErrors.email = t.errors.emailRequired;
+    if (!editPickupAddress?.trim()) newErrors.pickupAddress = t.errors.pickupAddressRequired;
+    if (!editDropoffAddress?.trim()) newErrors.dropoffAddress = t.errors.dropoffAddressRequired;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [editRouteId, editTripType, editDate, editTime, editName, editPhone, editEmail, editPickupAddress, editDropoffAddress, t.errors]);
+
+  const isFormValid = !!(
+    editRouteId && editRouteId > 0 &&
+    editTripType &&
+    editDate &&
+    editTime &&
+    editName?.trim() &&
+    editPhone?.trim() &&
+    editEmail?.trim() &&
+    editPickupAddress?.trim() &&
+    editDropoffAddress?.trim() &&
+    route &&
+    selectedCategory
+  );
+
   const handleSubmit = async () => {
     if (!route || !selectedCategory || submitting) return;
+    if (!validate()) return;
     setShowConfirmModal(true);
   };
 
   const handleConfirmBooking = async () => {
     if (!route || !selectedCategory || submitting) return;
+    if (!validate()) { setShowConfirmModal(false); return; }
 
     setSubmitting(true);
 
-    const catName = selectedCategory.category.translations?.find((tr) => tr.locale === language)?.name || selectedCategory.category.code;
-
-    const dynamicDetails = JSON.stringify({
-      routeId: route.id,
-      vehicleCategoryId: selectedCategory.category.id,
-      tripType: editTripType,
-      departureDate: editDate,
-      departureTime: editTime,
-      basePrice: selectedCategory.price,
-      totalPrice: selectedCategory.price,
-      routeName: getRouteName(route),
-      vehicleCategory: catName,
-    });
-
     try {
-      const res = await createBooking({
+      const res = await createRentCarBooking({
         customerName: editName || "Guest",
         customerEmail: editEmail || `${editPhone || "guest"}@traveler.com`,
         customerPhone: editPhone || "",
-        customerNotes: editNotes || undefined,
-        items: [{
-          serviceId: 102,
-          quantity: 1,
-          unitPrice: selectedCategory.price,
-          dynamicDetails,
-        }],
+        customerNotes: `[Zalo: ${editZaloId}] [KakaoTalk: ${editKakaoTalkId}] ${editNotes || ""}`,
+        routeId: route.id,
+        zaloId: editZaloId || undefined,
+        kakaoTalkId: editKakaoTalkId || undefined,
+        contactChannel: editZaloId ? "zalo" : editKakaoTalkId ? "kakaotalk" : undefined,
+        contactId: editZaloId || editKakaoTalkId || undefined,
+        vehicleCategoryId: selectedCategory.category.id,
+        tripType: editTripType,
+        departureDate: editDate,
+        departureTime: editTime,
+        pickupAddress: editPickupAddress,
+        dropoffAddress: editDropoffAddress,
+        basePrice: selectedCategory.price,
+        totalPrice: selectedCategory.price,
       });
 
       if (res?.data?.bookingCode) {
         setCreatedCode(res.data.bookingCode);
         setBookingSuccess(true);
+      } else {
+        setErrorMessage(t.errors.bookingFailed);
       }
     } catch (err) {
       console.error("Booking API error:", err);
+      setErrorMessage(err instanceof Error ? err.message : t.errors.bookingFailed);
     } finally {
       setSubmitting(false);
       setShowConfirmModal(false);
@@ -248,63 +322,68 @@ export default function RentCarConfirmPage() {
   }
 
   if (bookingSuccess) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white dark:bg-black/20 rounded-3xl border border-slate-100 dark:border-slate-800 p-8 text-center space-y-6 animate-fade-in-up">
-          <CheckCircle size={48} className="text-green-600 dark:text-green-400 mx-auto" />
-          <h2 className="text-xl font-black text-slate-800 dark:text-white">
-            {t.airportTransfer.successTitle}
-          </h2>
-          <div className="bg-slate-50 dark:bg-black/40 rounded-xl px-4 py-3 border border-slate-100 dark:border-slate-800">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-              {t.airportTransfer.bookingCode}
-            </p>
-            <p className="text-2xl font-black font-mono text-slate-800 dark:text-white tracking-wider">
-              {createdCode}
-            </p>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            {vi
-              ? "Chúng tôi sẽ liên hệ với bạn qua số điện thoại trong thời gian sớm nhất."
-              : "We will contact you via phone shortly."}
-          </p>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => router.push(prefixUrl("/"))}
-              variant="outline"
-              className="flex-1 text-xs font-bold cursor-pointer"
-            >
-              {t.common.backToHome}
-            </Button>
-            <Button
-              onClick={() => router.push(prefixUrl("/rent-car"))}
-              className="flex-1 text-xs font-bold bg-accent text-white cursor-pointer"
-            >
-              {t.airportTransfer.bookAnother}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    const onSuccessComplete = () => {
+      setBookingSuccess(false);
+      router.push(`/${language}/rent-car/success?bookingCode=${createdCode}`);
+    };
+    return <SuccessOverlay bookingCode={createdCode} onComplete={onSuccessComplete} title={t.rentCar.confirmSuccessTitle} subtitle={t.rentCar.redirecting} />;
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="bg-slate-50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
+      {/* Scenic Route Panoramic Banner */}
+      <div className="relative w-full h-[200px] sm:h-[260px] overflow-hidden">
+        {/* Background panorama image */}
+        <img
+          src={
+            route?.thumbnailUrl
+              ? (route.thumbnailUrl.startsWith("http")
+                ? route.thumbnailUrl
+                : `${backendUrl}${route.thumbnailUrl}`)
+              : "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&h=685&q=80"
+          }
+          alt={route ? getRouteName(route) : "Scenic Route"}
+          className="w-full h-full object-cover scale-105"
+        />
+        {/* Black gradient overlay (45-60% opacity) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/30" />
+
+        {/* Content overlaid on banner */}
+        <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8 max-w-4xl mx-auto w-full">
+          {/* Back button with semi-transparent blur backdrop */}
           <button
+            type="button"
             onClick={() => router.back()}
-            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="absolute top-4 left-4 p-2 rounded-xl bg-black/35 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 transition-all cursor-pointer"
+            aria-label="Back"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-lg sm:text-xl font-black text-slate-800 dark:text-white">
-              {t.airportTransfer.confirmBooking}
+
+          {/* Route Title with Backdrop Blur Plate */}
+          <div className="inline-block self-start rounded-2xl bg-black/40 backdrop-blur-[3px] border border-white/10 px-5 py-3.5 mt-auto">
+            <span className="text-[10px] font-extrabold tracking-widest text-accent uppercase block mb-1">
+              {t.rentCar.requestedRoute}
+            </span>
+            <h1 className="text-xl sm:text-3xl font-black text-white tracking-wide uppercase leading-none drop-shadow-md flex items-center gap-3">
+              {route ? (
+                <>
+                  <span>{route.originCity}</span>
+                  <span className="text-accent">⇄</span>
+                  <span>{route.destinationCity}</span>
+                </>
+              ) : (
+                "--- ⇄ ---"
+              )}
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {vi ? "Kiểm tra thông tin và chọn xe" : "Review details and select vehicle"}
+            <p className="text-[11px] font-bold text-white/70 mt-1.5 flex items-center gap-1.5">
+              <span>{t.rentCar.reviewAndSelect}</span>
+              {route?.distanceKm && (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                  <span>{route.distanceKm} km</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -314,7 +393,7 @@ export default function RentCarConfirmPage() {
         {/* Booking Summary - Editable */}
         <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
           <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            {vi ? "Thông tin chuyến đi" : "Trip Information"}
+            {t.rentCar.tripInformation}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Route - Autocomplete */}
@@ -326,12 +405,11 @@ export default function RentCarConfirmPage() {
                   placeholder={t.rentCar.selectRoute}
                   selectionMode="single"
                   value={route ? String(route.id) : null}
-                  onChange={(key) => { if (key) setEditRouteId(Number(key)); }}
+                  onChange={(key) => { if (key) { setEditRouteId(Number(key)); clearError("route"); } }}
                 >
-                  <Label>{t.rentCar.route}</Label>
-                  <Autocomplete.Trigger>
+                  <Label className="font-bold" isRequired>{t.rentCar.route}</Label>
+                  <Autocomplete.Trigger className="dark:shadow-accent dark:shadow-xs w-full h-10 px-3 rounded-xl border-1 border-slate-300 dark:border-slate-700 shadow-sm text-sm font-bold flex items-center justify-between cursor-pointer">
                     <Autocomplete.Value />
-                    <Autocomplete.ClearButton />
                     <Autocomplete.Indicator />
                   </Autocomplete.Trigger>
                   <Autocomplete.Popover>
@@ -360,6 +438,7 @@ export default function RentCarConfirmPage() {
                     </Autocomplete.Filter>
                   </Autocomplete.Popover>
                 </Autocomplete>
+                {errors.route && <FieldError>{errors.route}</FieldError>}
               </div>
             </div>
 
@@ -367,29 +446,31 @@ export default function RentCarConfirmPage() {
             <div className="flex items-start gap-3">
               <Car size={16} className="text-accent mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{t.rentCar.oneWay}</p>
+                <Label className="font-bold" isRequired>{t.rentCar.tripType}</Label>
                 <Select
                   isRequired
                   selectedKey={editTripType}
-                  onSelectionChange={(key) => { if (key) setEditTripType(key as string); }}
+                  onSelectionChange={(key) => { if (key) { setEditTripType(key as string); clearError("tripType"); } }}
+                  fullWidth
                 >
-                  <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                  <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[40px] dark:shadow-accent dark:shadow-xs">
                     <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
-                  <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
+                  <Select.Popover className="border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
                     <ListBox>
-                      <ListBox.Item key="one-way" id="one-way" textValue={t.rentCar.oneWay} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                      <ListBox.Item key="one-way" id="one-way" textValue={t.rentCar.oneWay} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                         {t.rentCar.oneWay}
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
-                      <ListBox.Item key="round-trip" id="round-trip" textValue={t.rentCar.roundTrip} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                      <ListBox.Item key="round-trip" id="round-trip" textValue={t.rentCar.roundTrip} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                         {t.rentCar.roundTrip}
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
                     </ListBox>
                   </Select.Popover>
                 </Select>
+                {errors.tripType && <FieldError>{errors.tripType}</FieldError>}
               </div>
             </div>
 
@@ -407,11 +488,12 @@ export default function RentCarConfirmPage() {
                       const m = String(d.month).padStart(2, "0");
                       const day = String(d.day).padStart(2, "0");
                       setEditDate(`${y}-${m}-${day}`);
+                      clearError("date");
                     }
                   }}
                 >
-                  <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{t.rentCar.date}</Label>
-                  <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                  <Label className="font-bold" isRequired>{t.rentCar.date}</Label>
+                  <DateField.Group fullWidth className="dark:shadow-accent dark:shadow-xs h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                     <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                       {(segment) => <DateField.Segment segment={segment} />}
                     </DateField.Input>
@@ -429,8 +511,8 @@ export default function RentCarConfirmPage() {
                           <Calendar.YearPickerTriggerIndicator />
                         </Calendar.YearPickerTrigger>
                         <div className="flex gap-1">
-                          <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                          <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                          <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                          <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                         </div>
                       </Calendar.Header>
                       <Calendar.Grid className="w-full">
@@ -459,27 +541,28 @@ export default function RentCarConfirmPage() {
                     </Calendar>
                   </DatePicker.Popover>
                 </DatePicker>
+                {errors.date && <FieldError>{errors.date}</FieldError>}
               </div>
             </div>
 
-            {/* Time - departure times or input */}
+            {/* Time - departure times or picker */}
             <div className="flex items-start gap-3">
               <Clock size={16} className="text-accent mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{t.rentCar.time}</p>
                 {route?.hasDepartureTimes && departureTimes.length > 0 ? (
                   <Select
                     selectedKey={editTime || undefined}
-                    onSelectionChange={(key) => { if (key) setEditTime(String(key)); }}
+                    onSelectionChange={(key) => { if (key) { setEditTime(String(key)); clearError("time"); } }}
                   >
-                    <Select.Trigger className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer">
+                    <Label className="font-bold" isRequired>{t.rentCar.time}</Label>
+                    <Select.Trigger className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer">
                       <Select.Value />
                       <Select.Indicator />
                     </Select.Trigger>
                     <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
                       <ListBox>
                         {departureTimes.map((dt) => (
-                          <ListBox.Item key={dt.departureTime} id={dt.departureTime} textValue={dt.departureTime} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                          <ListBox.Item key={dt.departureTime} id={dt.departureTime} textValue={dt.departureTime} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                             {dt.departureTime}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
@@ -488,13 +571,22 @@ export default function RentCarConfirmPage() {
                     </Select.Popover>
                   </Select>
                 ) : (
-                  <Input
-                    type="time"
-                    value={editTime}
-                    onChange={(e) => setEditTime(e.target.value)}
-                    className="w-full"
+                  <TimePicker
+                    value={editTimeValue}
+                    onChange={(v) => {
+                      setEditTimeValue(v);
+                      setEditTime(timeValueToString(v));
+                      clearError("time");
+                    }}
+                    label={t.rentCar.time}
+                    language={language}
+                    popoverTitle="Chọn giờ xuất phát"
+                    isRequired
+                    labelClassName="dark:text-white dark:text-sm text-sm font-bold mb-1 mt-0.5"
+                    triggerClassName="dark:shadow-accent dark:shadow-xs bg-white dark:bg-zinc-900"
                   />
                 )}
+                {errors.time && <FieldError>{errors.time}</FieldError>}
               </div>
             </div>
           </div>
@@ -506,7 +598,7 @@ export default function RentCarConfirmPage() {
             {t.rentCar.contactInfo}
           </h3>
           <AutofillButton
-            onFill={(d) => { setEditName(d.fullname); setEditPhone(d.phone); setEditEmail(d.email); }}
+            onFill={(d) => { setEditName(d.fullname); setEditPhone(d.phone); setEditEmail(d.email); setEditZaloId(d.zaloId ?? ""); setEditKakaoTalkId(d.kakaoTalkId ?? ""); }}
             label={t.common.autoFill}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -514,13 +606,14 @@ export default function RentCarConfirmPage() {
             <div className="flex items-start gap-3">
               <User size={16} className="text-accent mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{t.common.name}</p>
+                <Label className="font-bold mb-1" isRequired>{t.common.name}</Label>
                 <Input
                   value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder={vi ? "Nhập họ tên" : "Enter name"}
+                  onChange={(e) => { setEditName(e.target.value); clearError("name"); }}
+                  placeholder={t.rentCar.namePlaceholder}
                   className="w-full"
                 />
+                {errors.name && <FieldError>{errors.name}</FieldError>}
               </div>
             </div>
 
@@ -528,13 +621,14 @@ export default function RentCarConfirmPage() {
             <div className="flex items-start gap-3">
               <Phone size={16} className="text-accent mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{t.common.phone}</p>
+                <Label className="font-bold mb-1" isRequired>{t.common.phone}</Label>
                 <Input
                   value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder={vi ? "Nhập số điện thoại" : "Enter phone number"}
+                  onChange={(e) => { setEditPhone(e.target.value); clearError("phone"); }}
+                  placeholder={t.rentCar.phonePlaceholder}
                   className="w-full"
                 />
+                {errors.phone && <FieldError>{errors.phone}</FieldError>}
               </div>
             </div>
 
@@ -542,15 +636,74 @@ export default function RentCarConfirmPage() {
             <div className="flex items-start gap-3">
               <Mail size={16} className="text-accent mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Email</p>
+                <Label className="font-bold mb-1" isRequired>Email</Label>
                 <Input
                   type="email"
                   value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder={vi ? "Nhập email" : "Enter email"}
+                  onChange={(e) => { setEditEmail(e.target.value); clearError("email"); }}
+                  placeholder={t.rentCar.emailPlaceholder}
+                  className="w-full"
+                />
+                {errors.email && <FieldError>{errors.email}</FieldError>}
+              </div>
+            </div>
+          </div>
+
+          {/* Zalo ID & KakaoTalk ID */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3">
+              <MessageSquare size={16} className="text-accent mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <Label className="font-bold mb-1">{t.rentCar.zaloId}</Label>
+                <Input
+                  value={editZaloId}
+                  onChange={(e) => setEditZaloId(e.target.value)}
+                  placeholder="Zalo ID"
                   className="w-full"
                 />
               </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <MessageSquare size={16} className="text-accent mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <Label className="font-bold mb-1">{t.rentCar.kakaoTalkId}</Label>
+                <Input
+                  value={editKakaoTalkId}
+                  onChange={(e) => setEditKakaoTalkId(e.target.value)}
+                  placeholder="KakaoTalk ID"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Pickup Address */}
+          <div className="flex items-start gap-3">
+            <MapPin size={16} className="text-accent mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <Label className="font-bold mb-1" isRequired>{t.rentCar.pickupAddress}</Label>
+              <Input
+                value={editPickupAddress}
+                onChange={(e) => { setEditPickupAddress(e.target.value); clearError("pickupAddress"); }}
+                placeholder={t.rentCar.pickupAddressPlaceholder}
+                className="w-full"
+              />
+              {errors.pickupAddress && <FieldError>{errors.pickupAddress}</FieldError>}
+            </div>
+          </div>
+
+          {/* Dropoff Address */}
+          <div className="flex items-start gap-3">
+            <MapPin size={16} className="text-accent mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <Label className="font-bold mb-1" isRequired>{t.rentCar.dropoffAddress}</Label>
+              <Input
+                value={editDropoffAddress}
+                onChange={(e) => { setEditDropoffAddress(e.target.value); clearError("dropoffAddress"); }}
+                placeholder={t.rentCar.dropoffAddressPlaceholder}
+                className="w-full"
+              />
+              {errors.dropoffAddress && <FieldError>{errors.dropoffAddress}</FieldError>}
             </div>
           </div>
 
@@ -558,7 +711,7 @@ export default function RentCarConfirmPage() {
           <div className="flex items-start gap-3">
             <MessageSquare size={16} className="text-accent mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{t.rentCar.notes}</p>
+              <Label className="font-bold mb-1">{t.rentCar.notes}</Label>
               <TextArea
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
@@ -572,19 +725,19 @@ export default function RentCarConfirmPage() {
 
         {/* Vehicle Category Selection */}
         <div className="space-y-4">
-          <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-1">
+          <Label className="font-bold text-lg" isRequired>
             {t.rentCar.vehicleType}
-          </h3>
+          </Label>
           {allCategories.length === 0 ? (
-            <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-8 text-center">
+            <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-8 text-center mt-3">
               <Car size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {vi ? "Không có xe nào khả dụng cho tuyến này" : "No vehicles available for this route"}
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                {t.rentCar.noVehiclesForRoute}
               </p>
             </div>
           ) : (
             <ScrollShadow
-              className="max-h-[600px]"
+              className="max-h-[600px] mt-3"
               onScrollEnd={loadMore}
             >
               <div className="flex flex-col gap-3">
@@ -601,7 +754,7 @@ export default function RentCarConfirmPage() {
                       type="button"
                       onClick={() => setSelectedCategoryId(item.category.id)}
                       className={`card card--default w-full text-left transition-all cursor-pointer ${isSelected
-                        ? "!border-2 !border-accent !bg-blue-50 dark:!bg-blue-950/30 shadow-md"
+                        ? "!border-2 !border-accent shadow-md"
                         : "hover:shadow-sm"
                         }`}
                     >
@@ -616,7 +769,7 @@ export default function RentCarConfirmPage() {
                               src={thumbnailUrl}
                             />
                           ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-[var(--bg-card)]">
                               <Car size={32} className="text-slate-300 dark:text-slate-600" />
                             </div>
                           )}
@@ -643,9 +796,6 @@ export default function RentCarConfirmPage() {
                               <span className="text-base font-black text-accent">
                                 {formatPrice(item.price)}
                               </span>
-                              <span className="block text-[9px] text-slate-400 mt-0.5">
-                                {tripType === "one-way" ? t.rentCar.oneWay : t.rentCar.roundTrip}
-                              </span>
                             </div>
                           </div>
 
@@ -656,7 +806,7 @@ export default function RentCarConfirmPage() {
                           )}
 
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            {vi ? "Đại diện:" : "Examples:"} {vehicleNames.join(", ")}
+                            {t.rentCar.vehicleExamples} {vehicleNames.join(", ")}
                             {item.vehicles.length > 3 && ` +${item.vehicles.length - 3}`}
                           </div>
                         </div>
@@ -677,7 +827,7 @@ export default function RentCarConfirmPage() {
           {hasMore && !loadingMore && allCategories.length > 0 && (
             <div className="text-center">
               <span className="text-[10px] text-slate-400">
-                {vi ? `Đang hiển thị ${categories.length}/${allCategories.length}` : `Showing ${categories.length}/${allCategories.length}`}
+                {`${t.rentCar.showing} ${categories.length}/${allCategories.length}`}
               </span>
             </div>
           )}
@@ -694,7 +844,7 @@ export default function RentCarConfirmPage() {
             </div>
             <Button
               onClick={handleSubmit}
-              isDisabled={!selectedCategory || submitting}
+              isDisabled={!isFormValid || submitting}
               className="w-full h-12 rounded-2xl font-black text-sm sm:text-base bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
             >
               {submitting
@@ -705,11 +855,13 @@ export default function RentCarConfirmPage() {
         )}
       </div>
 
+      {errorMessage && <ErrorOverlay message={errorMessage} onClose={() => setErrorMessage("")} />}
+
       <BookingConfirmationModal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
-        serviceType={vi ? "Thuê xe liên tỉnh" : "Intercity Car Rental"}
+        serviceType={t.rentCar.intercityRental}
         summaryItems={[
           { label: t.rentCar.route, value: route ? getRouteName(route) : "" },
           { label: t.rentCar.tripType, value: editTripType === "one-way" ? t.rentCar.oneWay : t.rentCar.roundTrip },

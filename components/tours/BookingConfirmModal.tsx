@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
@@ -6,7 +6,8 @@ import { CheckCircle, AlertTriangle } from "lucide-react";
 import { VehicleDto } from "@/lib/api/fleet";
 import { TourDto } from "@/lib/api/tours";
 import { useI18n } from "@/context/LanguageContext";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { resolveLocalizedName, resolveTranslation } from "@/lib/i18n-helpers";
 
 interface BookingConfirmModalProps {
   isOpen: boolean;
@@ -40,14 +41,13 @@ export default function BookingConfirmModal({
   const { language, t } = useI18n();
 
   const getLocalizedName = (srv: TourDto) => {
-    const translation = srv.translations?.find((tr) => tr.locale === language) || srv.translations?.[0];
-    return translation ? translation.name : t.tours.defaultTourName;
+    return resolveLocalizedName(srv.translations, language, "Tour");
   };
 
   const getLocalizedVehicleName = (v: VehicleDto) => {
     const cat = v.type;
     if (!cat) return `${v.brand} ${v.model}`;
-    const translation = cat.translations?.find((tr) => tr.locale === language) || cat.translations?.[0];
+    const translation = resolveTranslation(cat.translations, language);
     return translation ? `${translation.name} (${v.brand} ${v.model})` : `${v.brand} ${v.model}`;
   };
 
@@ -123,7 +123,7 @@ export default function BookingConfirmModal({
             <ModalFooter className="p-0 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
               <Button
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-none px-4 py-2"
+                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-250 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200 border-none px-4 py-2"
                 onClick={onClose}
                 isDisabled={submitting}
               >

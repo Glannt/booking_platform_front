@@ -6,16 +6,13 @@ import TourDetailClient from "./TourDetailClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
+  const t = translations[locale as keyof typeof translations] || translations.vi;
   return {
-    title: `${locale === "vi" ? "Chi tiết tour" : "Tour Detail"} | Minh Khoa Travel`,
-    description: locale === "vi"
-      ? "Xem chi tiết tour, lịch trình, giá tour và chọn xe đồng hành."
-      : "View tour details, itinerary, pricing and choose your vehicle.",
+    title: `${t.tours.tourDetailTitle} | Minh Khoa Travel`,
+    description: t.tours.tourDetailDescription,
     openGraph: {
-      title: `${locale === "vi" ? "Chi tiết tour" : "Tour Detail"} | Minh Khoa Travel`,
-      description: locale === "vi"
-        ? "Xem chi tiết tour, lịch trình, giá tour và chọn xe đồng hành."
-        : "View tour details, itinerary, pricing and choose your vehicle.",
+      title: `${t.tours.tourDetailTitle} | Minh Khoa Travel`,
+      description: t.tours.tourDetailDescription,
       type: "website",
     },
   };

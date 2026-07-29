@@ -10,9 +10,16 @@ import {
   Calendar,
   Edit3,
   Clock,
+  Eye,
 } from "lucide-react";
+import { RouteFormModal } from "@/components/admin/intercity/RouteFormModal";
+import { RouteDetailModal } from "@/components/admin/intercity/RouteDetailModal";
+import { PriceFormModal } from "@/components/admin/intercity/PriceFormModal";
+import { SurchargeFormModal } from "@/components/admin/intercity/SurchargeFormModal";
+import { PriceDetailModal } from "@/components/admin/intercity/PriceDetailModal";
+import { SurchargeDetailModal } from "@/components/admin/intercity/SurchargeDetailModal";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Chip, Input, Label, ListBox, NumberField, Pagination, SearchField, Select, Spinner, Table, Tabs, toast } from "@heroui/react";
+import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Typography } from "@heroui/react";
 import clsx from "clsx";
 
 import {
@@ -21,6 +28,7 @@ import {
   updateIntercityRoute,
   deleteIntercityRoute,
   getIntercityRoutePrices,
+  getAllIntercityRoutePrices,
   createIntercityRoutePrice,
   updateIntercityRoutePrice,
   deleteIntercityRoutePrice,
@@ -28,12 +36,17 @@ import {
   createIntercitySurcharge,
   updateIntercitySurcharge,
   deleteIntercitySurcharge,
+  getSurchargesByRoute,
+  assignSurchargeToRoute,
+  unassignSurchargeFromRoute,
   IntercityRouteDto,
   IntercityRoutePriceDto,
   IntercitySeasonalSurchargeDto,
 } from "@/lib/api/rental";
 
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
+import MultiImageUpload from "@/components/MultiImageUpload";
+import { backendUrl } from "@/lib/api/client";
 import { IntercityDepartureTimeModal } from "@/components/admin/vehicles/IntercityDepartureTimeModal";
 
 import { ColumnInterface } from "@/lib/interface/column.interface";
@@ -54,20 +67,34 @@ export default function IntercityManagementPage() {
   const [totalSurcharges, setTotalSurcharges] = useState(0);
   const [categories, setCategories] = useState<VehicleCategoryDto[]>([]);
 
-  // Route form state
+  // Route form modal state
   const [routeFormOpen, setRouteFormOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<IntercityRouteDto | null>(null);
-  const [routeForm, setRouteForm] = useState({ originCity: "", destinationCity: "", distanceKm: "", estimatedHours: "", name: "" });
 
-  // Price form state
+  // Route detail modal state
+  const [detailRoute, setDetailRoute] = useState<IntercityRouteDto | null>(null);
+  const [detailRouteOpen, setDetailRouteOpen] = useState(false);
+
+  // Price form modal state
   const [priceFormOpen, setPriceFormOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<IntercityRoutePriceDto | null>(null);
-  const [priceForm, setPriceForm] = useState({ routeId: "", vehicleCategoryId: "", oneWayAmount: "", roundTripAmount: "", currency: "VND" });
+  const [priceRouteId, setPriceRouteId] = useState<number | null>(null);
 
-  // Surcharge form state
+  // Surcharge form modal state
   const [surchargeFormOpen, setSurchargeFormOpen] = useState(false);
   const [editingSurcharge, setEditingSurcharge] = useState<IntercitySeasonalSurchargeDto | null>(null);
-  const [surchargeForm, setSurchargeForm] = useState({ seasonName: "", startDate: "", endDate: "", surchargePercent: "", routeId: "" });
+
+  // Surcharge assign/unassign state
+  const [assignedSurcharges, setAssignedSurcharges] = useState<IntercitySeasonalSurchargeDto[]>([]);
+  const [unassignedSurcharges, setUnassignedSurcharges] = useState<IntercitySeasonalSurchargeDto[]>([]);
+
+  // Price detail modal state
+  const [detailPrice, setDetailPrice] = useState<IntercityRoutePriceDto | null>(null);
+  const [detailPriceOpen, setDetailPriceOpen] = useState(false);
+
+  // Surcharge detail modal state
+  const [detailSurcharge, setDetailSurcharge] = useState<IntercitySeasonalSurchargeDto | null>(null);
+  const [detailSurchargeOpen, setDetailSurchargeOpen] = useState(false);
 
   // Departure time modal state
   const [departureTimeModalOpen, setDepartureTimeModalOpen] = useState(false);
@@ -108,21 +135,28 @@ export default function IntercityManagementPage() {
     setLoading(true);
     try {
       const res = await getIntercitySurcharges(page, 200);
+      console.log("fetchSurcharges raw res:", res);
       if (res.data?.content) {
+        console.log("fetchSurcharges content:", res.data.content);
         setSurcharges(res.data.content);
         setTotalSurcharges(res.data.totalElements || res.data.content.length);
+      } else {
+        console.log("fetchSurcharges: res.data?.content is falsy. res.data:", res.data);
       }
-    } catch {
+    } catch (err) {
+      console.error("fetchSurcharges error:", err);
       showToast("Không thể tải phụ thu.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchPricesForRoute = async (routeId: number) => {
+  const fetchPricesForRoute = async (routeId: number | null) => {
     setLoading(true);
     try {
-      const res = await getIntercityRoutePrices(routeId);
+      const res = routeId != null
+        ? await getIntercityRoutePrices(routeId)
+        : await getAllIntercityRoutePrices();
       if (res.data) setAllPrices(Array.isArray(res.data) ? res.data : []);
     } catch {
       showToast("Không thể tải bảng giá.", "error");
@@ -143,38 +177,38 @@ export default function IntercityManagementPage() {
   useEffect(() => { fetchAllData(); }, []);
   useEffect(() => { setRoutePage(1); setSurchargePage(1); }, [searchTerm, activeTab]);
   useEffect(() => {
-    if (activeTab === "prices" && selectedPriceRouteId) fetchPricesForRoute(selectedPriceRouteId);
+    if (activeTab === "prices") {
+      fetchPricesForRoute(selectedPriceRouteId);
+    }
   }, [activeTab, selectedPriceRouteId]);
+
+  // Fetch assigned/unassigned surcharges when editingRoute changes
+  useEffect(() => {
+    if (editingRoute?.id) {
+      getSurchargesByRoute(editingRoute.id).then(res => {
+        const assigned = res.data || [];
+        setAssignedSurcharges(assigned);
+        const assignedIds = new Set(assigned.map(s => s.id));
+        setUnassignedSurcharges(surcharges.filter(s => !assignedIds.has(s.id)));
+      }).catch(() => {
+        setAssignedSurcharges([]);
+        setUnassignedSurcharges(surcharges);
+      });
+    }
+  }, [editingRoute?.id, surcharges]);
 
   // ── Routes CRUD ──
   const handleAddRoute = () => {
     setEditingRoute(null);
-    setRouteForm({ originCity: "", destinationCity: "", distanceKm: "", estimatedHours: "", name: "" });
     setRouteFormOpen(true);
   };
 
   const handleEditRoute = (r: IntercityRouteDto) => {
     setEditingRoute(r);
-    const t = r.translations?.find(t => t.locale === "vi") || r.translations?.[0];
-    setRouteForm({
-      originCity: r.originCity,
-      destinationCity: r.destinationCity,
-      distanceKm: String(r.distanceKm ?? ""),
-      estimatedHours: String(r.estimatedHours ?? ""),
-      name: t?.name || "",
-    });
     setRouteFormOpen(true);
   };
 
-  const handleSaveRoute = async () => {
-    const payload: any = {
-      originCity: routeForm.originCity,
-      destinationCity: routeForm.destinationCity,
-      distanceKm: routeForm.distanceKm ? Number(routeForm.distanceKm) : undefined,
-      estimatedHours: routeForm.estimatedHours ? Number(routeForm.estimatedHours) : undefined,
-      translations: routeForm.name ? [{ locale: "vi", name: routeForm.name }] : undefined,
-      active: true,
-    };
+  const handleSaveRoute = async (payload: any) => {
     try {
       if (editingRoute?.id) {
         await updateIntercityRoute(editingRoute.id, payload);
@@ -196,46 +230,40 @@ export default function IntercityManagementPage() {
       await deleteIntercityRoute(id);
       showToast("Đã xóa!", "success");
       setRoutes(prev => prev.filter(r => r.id !== id));
+      if (detailRoute?.id === id) {
+        setDetailRouteOpen(false);
+        setDetailRoute(null);
+      }
     } catch {
       showToast("Xóa thất bại.", "error");
     }
   };
 
-  const handleOpenDepartureTimes = (route: IntercityRouteDto) => {
-    setDepartureTimeRouteId(route.id);
-    const name = getRouteName(route);
-    setDepartureTimeRouteName(name);
-    setDepartureTimeModalOpen(true);
+  const handleOpenRouteDetail = async (r: IntercityRouteDto) => {
+    setDetailRoute(r);
+    setDetailRouteOpen(true);
+    await fetchPricesForRoute(r.id!);
   };
 
   // ── Prices CRUD ──
-  const handleAddPrice = () => {
+  const handleAddPrice = (routeId?: number) => {
     setEditingPrice(null);
-    setPriceForm({ routeId: selectedPriceRouteId ? String(selectedPriceRouteId) : "", vehicleCategoryId: "", oneWayAmount: "", roundTripAmount: "", currency: "VND" });
+    setPriceRouteId(routeId ?? selectedPriceRouteId ?? null);
     setPriceFormOpen(true);
   };
 
   const handleEditPrice = (p: IntercityRoutePriceDto) => {
     setEditingPrice(p);
-    setPriceForm({
-      routeId: String(p.routeId ?? ""),
-      vehicleCategoryId: String(p.vehicleCategoryId),
-      oneWayAmount: String(p.oneWayAmount),
-      roundTripAmount: String(p.roundTripAmount),
-      currency: p.currency || "VND",
-    });
+    setPriceRouteId(p.routeId ?? null);
     setPriceFormOpen(true);
   };
 
-  const handleSavePrice = async () => {
-    const payload: any = {
-      routeId: Number(priceForm.routeId),
-      vehicleCategoryId: Number(priceForm.vehicleCategoryId),
-      oneWayAmount: Number(priceForm.oneWayAmount),
-      roundTripAmount: Number(priceForm.roundTripAmount),
-      currency: priceForm.currency,
-      active: true,
-    };
+  const handleOpenPriceDetail = (p: IntercityRoutePriceDto) => {
+    setDetailPrice(p);
+    setDetailPriceOpen(true);
+  };
+
+  const handleSavePrice = async (payload: any) => {
     try {
       if (editingPrice?.id) {
         await updateIntercityRoutePrice(editingPrice.id, payload);
@@ -245,7 +273,8 @@ export default function IntercityManagementPage() {
         showToast("Đã thêm giá!", "success");
       }
       setPriceFormOpen(false);
-      if (selectedPriceRouteId) fetchPricesForRoute(selectedPriceRouteId);
+      const activeRouteId = editingRoute?.id || detailRoute?.id || selectedPriceRouteId;
+      await fetchPricesForRoute(activeRouteId);
     } catch {
       showToast("Thao tác thất bại.", "error");
     }
@@ -263,33 +292,22 @@ export default function IntercityManagementPage() {
   };
 
   // ── Surcharges CRUD ──
-  const handleAddSurcharge = () => {
+  const handleAddSurcharge = (routeId?: number) => {
     setEditingSurcharge(null);
-    setSurchargeForm({ seasonName: "", startDate: "", endDate: "", surchargePercent: "", routeId: "" });
     setSurchargeFormOpen(true);
   };
 
   const handleEditSurcharge = (s: IntercitySeasonalSurchargeDto) => {
     setEditingSurcharge(s);
-    setSurchargeForm({
-      seasonName: s.seasonName,
-      startDate: s.startDate?.substring(0, 10) || "",
-      endDate: s.endDate?.substring(0, 10) || "",
-      surchargePercent: String(s.surchargePercent),
-      routeId: s.routeId ? String(s.routeId) : "",
-    });
     setSurchargeFormOpen(true);
   };
 
-  const handleSaveSurcharge = async () => {
-    const payload: any = {
-      seasonName: surchargeForm.seasonName,
-      startDate: surchargeForm.startDate,
-      endDate: surchargeForm.endDate,
-      surchargePercent: Number(surchargeForm.surchargePercent),
-      routeId: surchargeForm.routeId ? Number(surchargeForm.routeId) : undefined,
-      active: true,
-    };
+  const handleOpenSurchargeDetail = (s: IntercitySeasonalSurchargeDto) => {
+    setDetailSurcharge(s);
+    setDetailSurchargeOpen(true);
+  };
+
+  const handleSaveSurcharge = async (payload: any) => {
     try {
       if (editingSurcharge?.id) {
         await updateIntercitySurcharge(editingSurcharge.id, payload);
@@ -316,8 +334,46 @@ export default function IntercityManagementPage() {
     }
   };
 
+  // ── Surcharge Assign/Unassign ──
+  const handleAssignSurcharge = async (surchargeId: number) => {
+    if (!editingRoute?.id) return;
+    try {
+      await assignSurchargeToRoute(surchargeId, editingRoute.id);
+      showToast("Đã gán phụ thu!", "success");
+      const res = await getSurchargesByRoute(editingRoute.id);
+      const assigned = res.data || [];
+      setAssignedSurcharges(assigned);
+      const assignedIds = new Set(assigned.map(s => s.id));
+      setUnassignedSurcharges(surcharges.filter(s => !assignedIds.has(s.id)));
+    } catch {
+      showToast("Gán phụ thu thất bại.", "error");
+    }
+  };
+
+  const handleUnassignSurcharge = async (surchargeId: number) => {
+    if (!editingRoute?.id) return;
+    try {
+      await unassignSurchargeFromRoute(surchargeId, editingRoute.id);
+      showToast("Đã bỏ gán phụ thu!", "success");
+      const res = await getSurchargesByRoute(editingRoute.id);
+      const assigned = res.data || [];
+      setAssignedSurcharges(assigned);
+      const assignedIds = new Set(assigned.map(s => s.id));
+      setUnassignedSurcharges(surcharges.filter(s => !assignedIds.has(s.id)));
+    } catch {
+      showToast("Bỏ gán thất bại.", "error");
+    }
+  };
+
+  const handleAdd = () => {
+    if (activeTab === "routes") handleAddRoute();
+    else if (activeTab === "prices") handleAddPrice();
+    else handleAddSurcharge();
+  };
+
   // ── Helpers ──
-  const getRouteName = (r: IntercityRouteDto) => {
+  const getRouteName = (r: IntercityRouteDto | undefined) => {
+    if (!r) return "N/A";
     const t = r.translations?.find(t => t.locale === "vi") || r.translations?.[0];
     return t?.name || `${r.originCity} ⇌ ${r.destinationCity}`;
   };
@@ -334,11 +390,7 @@ export default function IntercityManagementPage() {
     return "Thêm Phụ Thu";
   };
 
-  const handleAdd = () => {
-    if (activeTab === "routes") handleAddRoute();
-    else if (activeTab === "prices") handleAddPrice();
-    else handleAddSurcharge();
-  };
+
 
   // ── Routes tab: pagination + sort ──
   const [routeSort, setRouteSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
@@ -400,11 +452,14 @@ export default function IntercityManagementPage() {
   ];
 
   const filteredPrices = useMemo(() => {
-    if (!selectedPriceRouteId) return [];
     const kw = searchTerm.toLowerCase();
     return allPrices.filter(p => {
       const cat = categories.find(c => c.id === p.vehicleCategoryId);
-      return getCategoryName(cat).toLowerCase().includes(kw);
+      const matchesSearch = getCategoryName(cat).toLowerCase().includes(kw);
+      if (selectedPriceRouteId != null) {
+        return p.routeId === selectedPriceRouteId && matchesSearch;
+      }
+      return matchesSearch;
     });
   }, [allPrices, selectedPriceRouteId, searchTerm, categories]);
 
@@ -447,7 +502,10 @@ export default function IntercityManagementPage() {
 
   const filteredSurcharges = useMemo(() => {
     const kw = searchTerm.toLowerCase();
-    return surcharges.filter(s => s.seasonName.toLowerCase().includes(kw));
+    console.log("filtering surcharges. surcharges state:", surcharges, "kw:", kw);
+    const result = surcharges.filter(s => (s.seasonName || "").toLowerCase().includes(kw));
+    console.log("filtering surcharges result:", result);
+    return result;
   }, [surcharges, searchTerm]);
 
   const sortedSurcharges = useMemo(() => {
@@ -474,176 +532,6 @@ export default function IntercityManagementPage() {
   const surchargeStart = sortedSurcharges.length === 0 ? 0 : (surchargePage - 1) * PAGE_SIZE + 1;
   const surchargeEnd = Math.min(surchargePage * PAGE_SIZE, sortedSurcharges.length);
   useEffect(() => { if (surchargePage > surchargePageCount) setSurchargePage(surchargePageCount); }, [surchargePage, surchargePageCount]);
-
-  // ── Inline form component ──
-  const renderRouteForm = () => {
-    if (!routeFormOpen) return null;
-    return (
-      <div className="p-4 mb-4 border rounded-xl bg-slate-50 dark:bg-black/20 space-y-3">
-        <h4 className="font-bold text-sm">{editingRoute ? "Chỉnh sửa tuyến đường" : "Thêm tuyến đường mới"}</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Input placeholder="Origin city" value={routeForm.originCity} onChange={e => setRouteForm(f => ({ ...f, originCity: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-          <Input placeholder="Destination city" value={routeForm.destinationCity} onChange={e => setRouteForm(f => ({ ...f, destinationCity: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-          <Input placeholder="Tên (vi)" value={routeForm.name} onChange={e => setRouteForm(f => ({ ...f, name: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-           <NumberField value={routeForm.distanceKm ? Number(routeForm.distanceKm) : 0} onChange={val => setRouteForm(f => ({ ...f, distanceKm: String(val || 0) }))} minValue={0}>
-            <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
-              <NumberField.Input placeholder="Khoảng cách (km)" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-              <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
-           <NumberField value={routeForm.estimatedHours ? Number(routeForm.estimatedHours) : 0} onChange={val => setRouteForm(f => ({ ...f, estimatedHours: String(val || 0) }))} minValue={0}>
-            <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
-              <NumberField.Input placeholder="Thời gian (giờ)" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-              <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSaveRoute}>Lưu</Button>
-          <Button size="sm" variant="ghost" onClick={() => setRouteFormOpen(false)}>Hủy</Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderPriceForm = () => {
-    if (!priceFormOpen) return null;
-    return (
-      <div className="p-4 mb-4 border rounded-xl bg-slate-50 dark:bg-black/20 space-y-3">
-        <h4 className="font-bold text-sm">{editingPrice ? "Chỉnh sửa giá" : "Thêm giá mới"}</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs font-bold text-slate-500">Tuyến đường</Label>
-            <Select
-              fullWidth
-              selectedKey={priceForm.routeId || undefined}
-              onSelectionChange={(key) => { if (key) setPriceForm(f => ({ ...f, routeId: String(key) })); }}
-            >
-              <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm h-[38px]">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
-                <ListBox>
-                  {routes.map(r => (
-                    <ListBox.Item key={r.id} id={String(r.id)} textValue={getRouteName(r)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                      {getRouteName(r)}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs font-bold text-slate-500">Loại xe</Label>
-            <Select
-              fullWidth
-              selectedKey={priceForm.vehicleCategoryId || undefined}
-              onSelectionChange={(key) => { if (key) setPriceForm(f => ({ ...f, vehicleCategoryId: String(key) })); }}
-            >
-              <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm h-[38px]">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
-                <ListBox>
-                  {categories.map(c => (
-                    <ListBox.Item key={c.id} id={String(c.id)} textValue={getCategoryName(c)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                      {getCategoryName(c)}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-           <NumberField value={priceForm.oneWayAmount ? Number(priceForm.oneWayAmount) : 0} onChange={val => setPriceForm(f => ({ ...f, oneWayAmount: String(val || 0) }))} minValue={0}>
-            <Label className="text-xs font-bold text-slate-500">Giá 1 chiều</Label>
-            <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
-              <NumberField.Input placeholder="Giá 1 chiều" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-              <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
-           <NumberField value={priceForm.roundTripAmount ? Number(priceForm.roundTripAmount) : 0} onChange={val => setPriceForm(f => ({ ...f, roundTripAmount: String(val || 0) }))} minValue={0}>
-            <Label className="text-xs font-bold text-slate-500">Giá khứ hồi</Label>
-            <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
-              <NumberField.Input placeholder="Giá khứ hồi" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-              <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
-          <Input placeholder="Tiền tệ" value={priceForm.currency} onChange={e => setPriceForm(f => ({ ...f, currency: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSavePrice}>Lưu</Button>
-          <Button size="sm" variant="ghost" onClick={() => setPriceFormOpen(false)}>Hủy</Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSurchargeForm = () => {
-    if (!surchargeFormOpen) return null;
-    return (
-      <div className="p-4 mb-4 border rounded-xl bg-slate-50 dark:bg-black/20 space-y-3">
-        <h4 className="font-bold text-sm">{editingSurcharge ? "Chỉnh sửa phụ thu" : "Thêm phụ thu mới"}</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Input placeholder="Tên mùa" value={surchargeForm.seasonName} onChange={e => setSurchargeForm(f => ({ ...f, seasonName: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-          <Input placeholder="Ngày bắt đầu" type="date" value={surchargeForm.startDate} onChange={e => setSurchargeForm(f => ({ ...f, startDate: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-          <Input placeholder="Ngày kết thúc" type="date" value={surchargeForm.endDate} onChange={e => setSurchargeForm(f => ({ ...f, endDate: e.target.value }))} className="px-3 py-2 border rounded-lg text-sm" />
-           <NumberField value={surchargeForm.surchargePercent ? Number(surchargeForm.surchargePercent) : 0} onChange={val => setSurchargeForm(f => ({ ...f, surchargePercent: String(val || 0) }))} minValue={0} maxValue={100}>
-            <Label className="text-xs font-bold text-slate-500">Phụ thu (%)</Label>
-            <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
-              <NumberField.Input placeholder="Phụ thu (%)" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-              <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
-              </div>
-            </NumberField.Group>
-          </NumberField>
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs font-bold text-slate-500">Tuyến đường</Label>
-            <Select
-              fullWidth
-              selectedKey={surchargeForm.routeId || undefined}
-              onSelectionChange={(key) => { if (key) setSurchargeForm(f => ({ ...f, routeId: String(key) })); }}
-            >
-              <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm h-[38px]">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
-                <ListBox>
-                  {routes.map(r => (
-                    <ListBox.Item key={r.id} id={String(r.id)} textValue={getRouteName(r)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                      {getRouteName(r)}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSaveSurcharge}>Lưu</Button>
-          <Button size="sm" variant="ghost" onClick={() => setSurchargeFormOpen(false)}>Hủy</Button>
-        </div>
-      </div>
-    );
-  };
 
   const renderTableFooter = (pages: number[], page: number, setPage: (v: number) => void, pageCount: number, start: number, end: number, total: number) => (
     <Table.Footer>
@@ -760,18 +648,18 @@ export default function IntercityManagementPage() {
               setAllPrices([]);
             }}
           >
-            <Select.Trigger className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm h-[38px]">
+            <Select.Trigger className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[38px]">
               <Select.Value />
               <Select.Indicator />
             </Select.Trigger>
             <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
               <ListBox>
-                <ListBox.Item id="__all__" textValue="Tất cả tuyến" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                <ListBox.Item id="__all__" textValue="Tất cả tuyến" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                   Tất cả tuyến
                   <ListBox.ItemIndicator />
                 </ListBox.Item>
                 {routes.map(r => (
-                  <ListBox.Item key={r.id} id={String(r.id)} textValue={getRouteName(r)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                  <ListBox.Item key={r.id} id={String(r.id)} textValue={getRouteName(r)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                     {getRouteName(r)}
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
@@ -790,7 +678,7 @@ export default function IntercityManagementPage() {
           </div>
         ) : activeTab === "routes" ? (
           <>
-            {routeFormOpen && renderRouteForm()}
+            
             {filteredRoutes.length === 0 ? (
               renderEmptyState(<Route className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Không tìm thấy kết quả")
             ) : (
@@ -825,8 +713,8 @@ export default function IntercityManagementPage() {
                           </Table.Cell>
                           <Table.Cell>
                             <div className="flex gap-2">
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Giờ khởi hành" onPress={() => handleOpenDepartureTimes(r)}>
-                                <Clock size={16} />
+                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleOpenRouteDetail(r)}>
+                                <Eye size={16} />
                               </Button>
                               <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditRoute(r)}>
                                 <Edit3 size={16} />
@@ -847,11 +735,9 @@ export default function IntercityManagementPage() {
           </>
         ) : activeTab === "prices" ? (
           <>
-            {priceFormOpen && renderPriceForm()}
-            {!selectedPriceRouteId ? (
-              renderEmptyState(<DollarSign className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Chọn tuyến đường để xem bảng giá")
-            ) : filteredPrices.length === 0 ? (
-              renderEmptyState(<DollarSign className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Chưa có giá cho tuyến này")
+            
+            {filteredPrices.length === 0 ? (
+              renderEmptyState(<DollarSign className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Không có giá dịch vụ nào được tìm thấy")
             ) : (
               <Table>
                 <Table.ScrollContainer>
@@ -889,6 +775,9 @@ export default function IntercityManagementPage() {
                             </Table.Cell>
                             <Table.Cell>
                               <div className="flex gap-2">
+                                <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleOpenPriceDetail(p)}>
+                                  <Eye size={16} />
+                                </Button>
                                 <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditPrice(p)}>
                                   <Edit3 size={16} />
                                 </Button>
@@ -909,7 +798,7 @@ export default function IntercityManagementPage() {
           </>
         ) : (
           <>
-            {surchargeFormOpen && renderSurchargeForm()}
+            
             {filteredSurcharges.length === 0 ? (
               renderEmptyState(<Calendar className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Không tìm thấy kết quả")
             ) : (
@@ -945,6 +834,9 @@ export default function IntercityManagementPage() {
                           </Table.Cell>
                           <Table.Cell>
                             <div className="flex gap-2">
+                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleOpenSurchargeDetail(s)}>
+                                <Eye size={16} />
+                              </Button>
                               <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditSurcharge(s)}>
                                 <Edit3 size={16} />
                               </Button>
@@ -964,6 +856,107 @@ export default function IntercityManagementPage() {
           </>
         )}
       </div>
+
+      {/* Route Form Modal */}
+      {routeFormOpen && (
+        <RouteFormModal
+          isOpen={routeFormOpen}
+          onClose={() => setRouteFormOpen(false)}
+          editingRoute={editingRoute}
+          onSave={handleSaveRoute}
+          categories={categories}
+          prices={allPrices}
+          surcharges={surcharges}
+          onAddPrice={handleAddPrice}
+          onEditPrice={handleEditPrice}
+          onDeletePrice={handleDeletePrice}
+          onAddSurcharge={handleAddSurcharge}
+          onEditSurcharge={handleEditSurcharge}
+          onDeleteSurcharge={handleDeleteSurcharge}
+          assignedSurcharges={assignedSurcharges}
+          unassignedSurcharges={unassignedSurcharges}
+          onAssignSurcharge={handleAssignSurcharge}
+          onUnassignSurcharge={handleUnassignSurcharge}
+        />
+      )}
+
+      {/* Route Detail Modal */}
+      {detailRouteOpen && (
+        <RouteDetailModal
+          isOpen={detailRouteOpen}
+          onClose={() => {
+            setDetailRouteOpen(false);
+            setDetailRoute(null);
+          }}
+          route={detailRoute}
+          prices={allPrices}
+          surcharges={surcharges}
+          categories={categories}
+          onEditRoute={() => {
+            setDetailRouteOpen(false);
+            handleEditRoute(detailRoute!);
+          }}
+        />
+      )}
+
+      {/* Price Form Modal */}
+      {priceFormOpen && (
+        <PriceFormModal
+          isOpen={priceFormOpen}
+          onClose={() => setPriceFormOpen(false)}
+          routeId={priceRouteId || undefined}
+          editingPrice={editingPrice}
+          categories={categories}
+          routes={routes}
+          onSave={handleSavePrice}
+        />
+      )}
+
+      {/* Price Detail Modal */}
+      {detailPriceOpen && (
+        <PriceDetailModal
+          isOpen={detailPriceOpen}
+          onClose={() => {
+            setDetailPriceOpen(false);
+            setDetailPrice(null);
+          }}
+          price={detailPrice}
+          routes={routes}
+          categories={categories}
+          onEdit={() => {
+            setDetailPriceOpen(false);
+            handleEditPrice(detailPrice!);
+          }}
+        />
+      )}
+
+      {/* Surcharge Form Modal */}
+      {surchargeFormOpen && (
+        <SurchargeFormModal
+          isOpen={surchargeFormOpen}
+          onClose={() => setSurchargeFormOpen(false)}
+          editingSurcharge={editingSurcharge}
+          routes={routes}
+          onSave={handleSaveSurcharge}
+        />
+      )}
+
+      {/* Surcharge Detail Modal */}
+      {detailSurchargeOpen && (
+        <SurchargeDetailModal
+          isOpen={detailSurchargeOpen}
+          onClose={() => {
+            setDetailSurchargeOpen(false);
+            setDetailSurcharge(null);
+          }}
+          surcharge={detailSurcharge}
+          routes={routes}
+          onEdit={() => {
+            setDetailSurchargeOpen(false);
+            handleEditSurcharge(detailSurcharge!);
+          }}
+        />
+      )}
 
       {/* Departure Time Modal */}
       {departureTimeRouteId && (

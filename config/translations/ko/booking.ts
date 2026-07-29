@@ -6,6 +6,8 @@ export const booking = {
   phone: "연락처 번호",
   zaloOrKakao: "Zalo ID 또는 KakaoTalk ID",
   socialType: "선호하는 연락 방법",
+  zaloId: "Zalo ID",
+  kakaoTalkId: "KakaoTalk ID",
   notes: "기타 요청사항 (픽업 호텔, 특별 요청...)",
   selectService: "원하시는 서비스 선택",
   selectOption: "옵션 / 등급 선택",

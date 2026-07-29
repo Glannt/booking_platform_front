@@ -9,7 +9,8 @@ import { getTourById, TourDto } from "@/lib/api/tours";
 import { getVehicles, VehicleDto } from "@/lib/api/fleet";
 import { getMediaDetails } from "@/lib/api/media";
 import { useI18n } from "@/context/LanguageContext";
-import { formatPrice as _formatPrice, formatTimeDisplay } from "@/lib/format";
+import { formatPriceSync as _formatPrice, formatTimeDisplay } from "@/lib/format";
+import { resolveLocalizedName, resolveLocalizedContent, resolveTranslation } from "@/lib/i18n-helpers";
 import { ImageGallery } from "@/components/ImageGallery";
 import type { SectionDto } from "@/lib/api/sections";
 
@@ -86,20 +87,18 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
 
   const getLocalizedName = () => {
     if (!tour) return "";
-    const translation = tour.translations?.find(tr => tr.locale === language) || tour.translations?.[0];
-    return translation ? translation.name : "Nha Trang Tour";
+    return resolveLocalizedName(tour.translations, language, "Tour");
   };
 
   const getLocalizedContent = () => {
     if (!tour) return "";
-    const translation = tour.translations?.find(tr => tr.locale === language) || tour.translations?.[0];
-    return translation ? translation.content : "";
+    return resolveLocalizedContent(tour.translations, language);
   };
 
   const getLocalizedVehicleName = (v: VehicleDto) => {
     const cat = v.type;
     if (!cat) return `${v.brand} ${v.model}`;
-    const translation = cat.translations?.find((tr) => tr.locale === language) || cat.translations?.[0];
+    const translation = resolveTranslation(cat.translations, language);
     return translation ? `${translation.name} (${v.brand} ${v.model})` : `${v.brand} ${v.model}`;
   };
 
@@ -287,7 +286,7 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
             {/* Options highlights */}
             <div className="flex flex-wrap gap-2.5 pt-3">
               {tour.options?.map((opt) => {
-                const trans = opt.translations?.find(tr => tr.locale === language) || opt.translations?.[0];
+                const trans = resolveTranslation(opt.translations, language);
                 return (
                   <div
                     key={opt.id}
@@ -311,7 +310,7 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
             {tour.days && tour.days.length > 0 ? (
               <div className="space-y-6">
                 {tour.days.map((day) => {
-                  const dayTrans = day.translations?.find(tr => tr.locale === language) || day.translations?.[0];
+                  const dayTrans = resolveTranslation(day.translations, language);
                   return (
                     <div key={day.id} className="space-y-4">
                       <div className="flex items-center gap-2 bg-accent/5 dark:bg-black px-4 py-2 rounded-2xl">
@@ -329,13 +328,13 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
                       {/* Activities */}
                       <div className="relative border-l border-dashed border-slate-200 dark:border-slate-800 pl-6 ml-3.5 space-y-5">
                         {day.activities?.map((act, index) => {
-                          const actTrans = act.translations?.find(tr => tr.locale === language) || act.translations?.[0];
+                          const actTrans = resolveTranslation(act.translations, language);
                           return (
                             <div key={act.id} className="relative space-y-1">
                               <div className="absolute -left-[30px] top-1 bg-white dark:bg-black w-3 h-3 rounded-full border-2 border-accent flex items-center justify-center" />
 
                               <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-accent uppercase tracking-wider">
-                                <span className="bg-blue-50 dark:bg-slate-800 px-2 py-0.5 rounded-full">{formatTimeDisplay(act.startTime)} - {formatTimeDisplay(act.endTime)}</span>
+                                <span className="bg-blue-50 dark:bg-[var(--bg-card)] px-2 py-0.5 rounded-full">{formatTimeDisplay(act.startTime)} - {formatTimeDisplay(act.endTime)}</span>
                                 <span className="text-slate-400 font-normal">|</span>
                                 <span className="text-slate-500 flex items-center gap-0.5"><MapPin size={10} /> {act.location}</span>
                               </div>

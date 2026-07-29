@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Clock, GripVertical } from "lucide-react";
@@ -95,7 +95,7 @@ export function IntercityDepartureTimeModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="departure-time-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
-          <ModalDialog className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md p-6">
             <ModalHeader className="p-0 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-accent" />
@@ -139,8 +139,8 @@ export function IntercityDepartureTimeModal({
                       key={dt.id}
                       className={`flex items-center justify-between p-3 rounded-xl border ${
                         dt.active
-                          ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-                          : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 opacity-60"
+                          ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)]"
+                          : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] opacity-60"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -156,7 +156,7 @@ export function IntercityDepartureTimeModal({
                           className={`text-[10px] font-bold px-2 py-1 rounded-lg cursor-pointer ${
                             dt.active
                               ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                              : "bg-slate-100 text-slate-500 dark:bg-[var(--bg-card)] dark:text-slate-400"
                           }`}
                         >
                           {dt.active ? "Active" : "Off"}
@@ -175,7 +175,7 @@ export function IntercityDepartureTimeModal({
             </ModalBody>
 
             <ModalFooter className="p-0 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              <Button onClick={onClose} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              <Button onClick={onClose} className="bg-slate-100 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-300">
                 Đóng
               </Button>
             </ModalFooter>

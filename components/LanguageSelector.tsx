@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Language } from "@/config/translations";
@@ -67,7 +67,7 @@ export function LanguageSelector() {
             <button
               key={lang.code}
               onClick={() => selectLanguage(lang.code)}
-              className="group flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500"
+              className="group flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50 dark:bg-[var(--bg-muted)] hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500"
             >
               {/* <span className="text-3xl group-hover:scale-110 transition-transform duration-200">{lang.flag}</span> */}
               <span className="text-sm font-extrabold text-slate-900 dark:text-white">{lang.label}</span>

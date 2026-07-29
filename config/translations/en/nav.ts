@@ -8,6 +8,7 @@ export const nav = {
   cityTour: "City Tour",
   about: "About",
   booking: "Book Services",
-  myBookings: "My Bookings",
+  dashboard: "Dashboard",
+  bookingHistory: "Booking History",
   myProfile: "My Profile",
 };

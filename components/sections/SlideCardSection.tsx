@@ -69,10 +69,10 @@ export function SlideCardSection({ section, locale }: { section: SectionDto; loc
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => scroll("left")} className="p-3 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 cursor-pointer transition-all" aria-label="Previous">
+          <button onClick={() => scroll("left")} className="p-3 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 cursor-pointer transition-all" aria-label="Previous">
             <ChevronLeft size={20} />
           </button>
-          <button onClick={() => scroll("right")} className="p-3 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 cursor-pointer transition-all" aria-label="Next">
+          <button onClick={() => scroll("right")} className="p-3 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 cursor-pointer transition-all" aria-label="Next">
             <ChevronRight size={20} />
           </button>
         </div>

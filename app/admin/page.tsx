@@ -1,86 +1,317 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   Layers,
-  MenuSquare,
+  Compass,
+  Car,
   TrendingUp,
   DollarSign,
   Activity,
   ArrowUpRight,
-  UserCheck,
-  Settings,
+  Users,
+  Shield,
+  Plane,
+  Globe,
+  Milestone,
+  CalendarDays,
 } from "lucide-react";
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
+import { getBookings } from "@/lib/api/bookings";
+import { getDashboardStats } from "@/lib/api/dashboard";
+import { formatPriceSync } from "@/lib/format";
+import { useI18n } from "@/context/LanguageContext";
+import { useRouter } from "next/navigation";
 
 export default function AdminOverviewPage() {
+  const { language } = useI18n();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  
+  const [stats, setStats] = useState({
+    bookingsToday: 0,
+    bookingsThisWeek: 0,
+    bookingsThisMonth: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    totalVehicleCategories: 0,
+    totalVehicles: 0,
+    totalUsers: 0,
+    totalTours: 0,
+  });
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
+      try {
+        const results = await Promise.allSettled([
+          getDashboardStats(),
+          getBookings(),
+        ]);
+
+        if (!active) return;
+
+        if (results[0].status === "fulfilled" && results[0].value?.data) {
+          const s = results[0].value.data;
+          setStats({
+            bookingsToday: s.bookingsToday || 0,
+            bookingsThisWeek: s.bookingsThisWeek || 0,
+            bookingsThisMonth: s.bookingsThisMonth || 0,
+            totalBookings: s.totalBookings || 0,
+            totalRevenue: s.totalRevenue || 0,
+            totalVehicleCategories: s.totalVehicleCategories || 0,
+            totalVehicles: s.totalVehicles || 0,
+            totalUsers: s.totalUsers || 0,
+            totalTours: s.totalTours || 0,
+          });
+        }
+
+        if (results[1].status === "fulfilled" && results[1].value?.data) {
+          const bookings = results[1].value.data;
+          const sortedBookings = [...bookings].sort((a, b) => {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }).slice(0, 5);
+          setRecentBookings(sortedBookings);
+        }
+      } catch (err) {
+        console.error("Error loading admin dashboard stats:", err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    loadData();
+    return () => { active = false; };
+  }, []);
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "completed":
+      case "confirmed":
+        return "bg-success/10 text-success border border-success/20";
+      case "pending":
+        return "bg-warning/10 text-warning border border-warning/20";
+      case "cancelled":
+        return "bg-danger/10 text-danger border border-danger/20";
+      default:
+        return "bg-default-300/10 text-default-600 dark:text-default-400 border border-default-300/20";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "completed": return "Đã hoàn thành";
+      case "confirmed": return "Đã xác nhận";
+      case "pending": return "Chờ xử lý";
+      case "cancelled": return "Đã hủy";
+      default: return status || "Không rõ";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4">
+        <Spinner size="lg" color="accent" />
+        <p className="text-sm font-semibold text-default-500">Đang tải dữ liệu tổng quan...</p>
+      </div>
+    );
+  }
+
+  const shortcuts = [
+    {
+      label: "Quản lý Đơn đặt",
+      path: "/admin/bookings",
+      icon: <Calendar size={16} className="text-primary" />,
+    },
+    {
+      label: "Quản lý Tours",
+      path: "/admin/tours",
+      icon: <Compass size={16} className="text-success" />,
+    },
+    {
+      label: "Đội xe & Xe tự lái",
+      path: "/admin/vehicles",
+      icon: <Car size={16} className="text-warning" />,
+    },
+    {
+      label: "Đưa đón Sân bay",
+      path: "/admin/airport-transfers",
+      icon: <Plane size={16} className="text-secondary" />,
+    },
+    {
+      label: "Đơn thuê xe tự lái",
+      path: "/admin/rental-bookings",
+      icon: <CalendarDays size={16} className="text-primary" />,
+    },
+    {
+      label: "Tuyến xe Liên tỉnh",
+      path: "/admin/intercity",
+      icon: <Milestone size={16} className="text-success" />,
+    },
+    {
+      label: "Sections & Banners",
+      path: "/admin/sections",
+      icon: <Layers size={16} className="text-danger" />,
+    },
+    {
+      label: "Quản lý Users",
+      path: "/admin/users",
+      icon: <Users size={16} className="text-default-600" />,
+    },
+    {
+      label: "Phân quyền hệ thống",
+      path: "/admin/roles",
+      icon: <Shield size={16} className="text-success" />,
+    },
+    {
+      label: "Cấu hình Liên hệ",
+      path: "/admin/contacts",
+      icon: <Globe size={16} className="text-danger" />,
+    },
+  ];
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1: Bookings */}
-        <div className="rounded-2xl p-6 border border-slate-100 dark:border-slate-800 bg-card shadow-xs transition-colors flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Tổng đơn đặt
-            </span>
-            <p className="text-2xl font-black text-foreground">1,248</p>
-            <span className="text-xs text-emerald-500 font-bold flex items-center gap-1">
-              <TrendingUp size={12} />
-              +12% tháng này
-            </span>
+    <div className="space-y-8 animate-fade-in pb-12 text-foreground">
+      
+      {/* SECTION 1: Core Metrics */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-black tracking-tight text-foreground border-l-4 border-primary pl-3">
+          Chỉ số tài chính & quy mô
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Revenue Card */}
+          <div className="rounded-2xl p-6 border border-divider bg-content1 shadow-xs flex items-center justify-between transition-colors">
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-default-500 uppercase tracking-wider">
+                Doanh thu hệ thống
+              </span>
+              <p className="text-2xl font-black text-foreground">
+                {formatPriceSync(stats.totalRevenue, language)}
+              </p>
+              <span className="text-xs text-success font-bold flex items-center gap-1">
+                <TrendingUp size={12} />
+                Toàn bộ thời gian
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-success-100/30 dark:bg-success-950/20 text-success flex items-center justify-center">
+              <DollarSign size={22} />
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-accent flex items-center justify-center">
-            <Calendar size={22} />
+
+          {/* Bookings Card */}
+          <div className="rounded-2xl p-6 border border-divider bg-content1 shadow-xs flex items-center justify-between transition-colors">
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-default-500 uppercase tracking-wider">
+                Tổng đơn đặt
+              </span>
+              <p className="text-2xl font-black text-foreground">{stats.totalBookings}</p>
+              <span className="text-xs text-primary font-bold">
+                Tất cả các dịch vụ
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-primary-100/30 dark:bg-primary-950/20 text-primary flex items-center justify-center">
+              <Calendar size={22} />
+            </div>
+          </div>
+
+          {/* Users Card */}
+          <div className="rounded-2xl p-6 border border-divider bg-content1 shadow-xs flex items-center justify-between transition-colors">
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-default-500 uppercase tracking-wider">
+                Người dùng đã đăng ký
+              </span>
+              <p className="text-2xl font-black text-foreground">{stats.totalUsers}</p>
+              <span className="text-xs text-secondary font-bold">
+                Tài khoản khách & quản trị
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-secondary-100/30 dark:bg-secondary-950/20 text-secondary flex items-center justify-center">
+              <Users size={22} />
+            </div>
+          </div>
+
+          {/* Vehicles Card */}
+          <div className="rounded-2xl p-6 border border-divider bg-content1 shadow-xs flex items-center justify-between transition-colors">
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-default-500 uppercase tracking-wider">
+                Đội xe hệ thống
+              </span>
+              <p className="text-2xl font-black text-foreground">{stats.totalVehicles}</p>
+              <span className="text-xs text-warning font-bold">
+                Số lượng phương tiện
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-warning-100/30 dark:bg-warning-950/20 text-warning flex items-center justify-center">
+              <Car size={22} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2: Detailed Performance & Time Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {/* Bookings Today */}
+        <div className="rounded-2xl p-5 border border-divider bg-content1 flex items-center gap-4 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-danger-100/30 dark:bg-danger-950/20 text-danger flex items-center justify-center shrink-0">
+            <Activity size={18} />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-default-500 uppercase tracking-wider block">
+              Đặt trong ngày
+            </span>
+            <p className="text-lg font-black text-foreground mt-0.5">{stats.bookingsToday} đơn</p>
           </div>
         </div>
 
-        {/* Card 2: Revenue */}
-        <div className="rounded-2xl p-6 border border-slate-100 dark:border-slate-800 bg-card shadow-xs transition-colors flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Doanh thu tháng
-            </span>
-            <p className="text-2xl font-black text-foreground">845M VND</p>
-            <span className="text-xs text-emerald-500 font-bold flex items-center gap-1">
-              <TrendingUp size={12} />
-              +8.5% tháng này
-            </span>
+        {/* Bookings This Week */}
+        <div className="rounded-2xl p-5 border border-divider bg-content1 flex items-center gap-4 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-primary-100/30 dark:bg-primary-950/20 text-primary flex items-center justify-center shrink-0">
+            <TrendingUp size={18} />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <DollarSign size={22} />
+          <div>
+            <span className="text-[10px] font-bold text-default-500 uppercase tracking-wider block">
+              Đặt trong tuần
+            </span>
+            <p className="text-lg font-black text-foreground mt-0.5">{stats.bookingsThisWeek} đơn</p>
           </div>
         </div>
 
-        {/* Card 3: Managed Pages */}
-        <div className="rounded-2xl p-6 border border-slate-100 dark:border-slate-800 bg-card shadow-xs transition-colors flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Trang Landing
-            </span>
-            <p className="text-2xl font-black text-foreground">6 Trang</p>
-            <span className="text-xs text-slate-400 dark:text-slate-500">
-              Đã xuất bản
-            </span>
+        {/* Bookings This Month */}
+        <div className="rounded-2xl p-5 border border-divider bg-content1 flex items-center gap-4 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-secondary-100/30 dark:bg-secondary-950/20 text-secondary flex items-center justify-center shrink-0">
+            <CalendarDays size={18} />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-            <Layers size={22} />
+          <div>
+            <span className="text-[10px] font-bold text-default-500 uppercase tracking-wider block">
+              Đặt trong tháng
+            </span>
+            <p className="text-lg font-black text-foreground mt-0.5">{stats.bookingsThisMonth} đơn</p>
           </div>
         </div>
 
-        {/* Card 4: Active Operators */}
-        <div className="rounded-2xl p-6 border border-slate-100 dark:border-slate-800 bg-card shadow-xs transition-colors flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Nhân sự trực
-            </span>
-            <p className="text-2xl font-black text-foreground">8 Nhân viên</p>
-            <span className="text-xs text-blue-500 font-bold">
-              4 điều phối viên xe
-            </span>
+        {/* Vehicle Categories */}
+        <div className="rounded-2xl p-5 border border-divider bg-content1 flex items-center gap-4 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-danger-100/30 dark:bg-danger-950/20 text-danger flex items-center justify-center shrink-0">
+            <Layers size={18} />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <UserCheck size={22} />
+          <div>
+            <span className="text-[10px] font-bold text-default-500 uppercase tracking-wider block">
+              Tổng loại xe
+            </span>
+            <p className="text-lg font-black text-foreground mt-0.5">{stats.totalVehicleCategories} loại</p>
+          </div>
+        </div>
+
+        {/* Active Tours */}
+        <div className="rounded-2xl p-5 border border-divider bg-content1 flex items-center gap-4 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-success-100/30 dark:bg-success-950/20 text-success flex items-center justify-center shrink-0">
+            <Compass size={18} />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-default-500 uppercase tracking-wider block">
+              Tours du lịch
+            </span>
+            <p className="text-lg font-black text-foreground mt-0.5">{stats.totalTours} tuyến</p>
           </div>
         </div>
       </div>
@@ -88,95 +319,71 @@ export default function AdminOverviewPage() {
       {/* Shortcuts & Logs Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Shortcuts */}
-        <div className="rounded-2xl p-6 border border-slate-100 dark:border-slate-800 bg-card space-y-4 shadow-xs">
+        <div className="rounded-2xl p-6 border border-divider bg-content1 space-y-4 shadow-xs transition-colors">
           <h3 className="text-lg font-extrabold text-foreground tracking-tight">
-            Lối tắt quản trị
+            Lối tắt quản trị thực tế
           </h3>
-          <div className="flex flex-col gap-2.5">
-            <Button
-              className="w-full justify-between font-bold text-sm bg-default-100 hover:bg-default-200 text-foreground h-11 px-4 rounded-xl border-none cursor-pointer"
-              onClick={() => window.location.href = "/admin/pages"}
-            >
-              <span className="flex items-center gap-2">
-                <Layers size={16} className="text-amber-500" />
-                Quản lý Landing Pages
-              </span>
-              <ArrowUpRight size={16} className="opacity-60" />
-            </Button>
-            <Button
-              className="w-full justify-between font-bold text-sm bg-default-100 hover:bg-default-200 text-foreground h-11 px-4 rounded-xl border-none cursor-pointer"
-              onClick={() => window.location.href = "/admin/menus"}
-            >
-              <span className="flex items-center gap-2">
-                <MenuSquare size={16} className="text-indigo-500" />
-                Quản lý Menu điều hướng
-              </span>
-              <ArrowUpRight size={16} className="opacity-60" />
-            </Button>
-            <Button
-              className="w-full justify-between font-bold text-sm bg-default-100 hover:bg-default-200 text-foreground h-11 px-4 rounded-xl border-none cursor-pointer"
-              onClick={() => window.location.href = "/admin/settings"}
-            >
-              <span className="flex items-center gap-2">
-                <Settings size={16} className="text-slate-500" />
-                Cấu hình tài khoản & Phân quyền
-              </span>
-              <ArrowUpRight size={16} className="opacity-60" />
-            </Button>
+          <div className="flex flex-col gap-2.5 max-h-[350px] overflow-y-auto pr-1">
+            {shortcuts.map((item, idx) => (
+              <Button
+                key={idx}
+                className="w-full justify-between font-bold text-sm bg-default hover:bg-default-200 dark:bg-default-50 dark:hover:bg-default-100 text-foreground h-11 px-4 rounded-xl border-none cursor-pointer transition-colors text-left font-sans"
+                onClick={() => router.push(item.path)}
+              >
+                <span className="flex items-center gap-2">
+                  {item.icon}
+                  {item.label}
+                </span>
+                <ArrowUpRight size={16} className="opacity-60" />
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* System Logs */}
-        <div className="lg:col-span-2 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 bg-card space-y-4 shadow-xs">
+        {/* Recent System Activity / Real Booking Logs */}
+        <div className="lg:col-span-2 rounded-2xl p-6 border border-divider bg-content1 space-y-4 shadow-xs transition-colors">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-extrabold text-foreground tracking-tight">
-              Hoạt động hệ thống gần đây
+              Đơn hàng gần đây
             </h3>
-            <span className="text-xs font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-success bg-success-500/10 px-2.5 py-1 rounded-full flex items-center gap-1 border border-success-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
               Live
             </span>
           </div>
 
           <div className="divide-y divide-divider text-sm space-y-3.5">
-            <div className="flex items-center justify-between pt-3.5 first:pt-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-accent flex items-center justify-center">
-                  <Activity size={14} />
+            {recentBookings.length > 0 ? (
+              recentBookings.map((b) => (
+                <div key={b.id} className="flex items-center justify-between pt-3.5 first:pt-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                      <Activity size={14} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-foreground font-sans">
+                        Đơn đặt {b.bookingCode}
+                      </p>
+                      <p className="text-xs text-default-500 font-sans">
+                        Khách hàng: {b.customerName} • {b.customerPhone} • {formatPriceSync(b.totalAmount || 0, language)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusColor(b.bookingStatus)} font-sans`}>
+                      {getStatusLabel(b.bookingStatus)}
+                    </span>
+                    <span className="text-[10px] font-semibold text-default-400 font-sans">
+                      {new Date(b.createdAt).toLocaleDateString("vi-VN")}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-foreground">Cập nhật Landing Page Home</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Alex Sterling • Sửa HERO Section (tiếng Việt)</p>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-default-400 font-semibold font-sans">
+                Chưa có đơn hàng nào trong hệ thống.
               </div>
-              <span className="text-xs font-semibold text-slate-400">10 mins ago</span>
-            </div>
-
-            <div className="flex items-center justify-between pt-3.5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                  <MenuSquare size={14} />
-                </div>
-                <div>
-                  <p className="font-bold text-foreground">Điều chỉnh cấu trúc MAIN_NAV</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Alex Sterling • Thêm mục "Airport Transfer"</p>
-                </div>
-              </div>
-              <span className="text-xs font-semibold text-slate-400">45 mins ago</span>
-            </div>
-
-            <div className="flex items-center justify-between pt-3.5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <Calendar size={14} />
-                </div>
-                <div>
-                  <p className="font-bold text-foreground">Đơn đặt CXR ➔ Nha Trang mới</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Hệ thống • Khách hàng Minh Khoa vừa đặt xe</p>
-                </div>
-              </div>
-              <span className="text-xs font-semibold text-slate-400">1 hour ago</span>
-            </div>
+            )}
           </div>
         </div>
       </div>

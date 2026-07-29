@@ -31,6 +31,7 @@ interface CategoryDetailsModalProps {
   backendUrl: string;
   onSaveSuccess: (updatedCat?: ServiceCategoryDto) => void;
   showToast: (msg: string, type: "success" | "error") => void;
+  defaultEditMode?: boolean;
 }
 
 export default function CategoryDetailsModal({
@@ -40,7 +41,8 @@ export default function CategoryDetailsModal({
   language,
   backendUrl,
   onSaveSuccess,
-  showToast
+  showToast,
+  defaultEditMode
 }: CategoryDetailsModalProps) {
   const [activeFormLocale, setActiveFormLocale] = useState<string>("vi");
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -72,7 +74,7 @@ export default function CategoryDetailsModal({
         status: category.status,
         translations: translationsCopy
       });
-      setIsEditMode(false);
+      setIsEditMode(!!defaultEditMode);
       setActiveFormLocale("vi");
     }
   }, [isOpen, category]);
@@ -158,7 +160,7 @@ export default function CategoryDetailsModal({
               isIconOnly
               variant="ghost"
               onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer border-none"
+              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
             >
               ✕
             </Button>
@@ -166,7 +168,7 @@ export default function CategoryDetailsModal({
               <div>
                 <h2 id="category-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Danh Mục" : "Edit Category") : (language === "vi" ? "Chi tiết Danh Mục" : "Category Details")}</span>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">#{category.id}</span>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500">#{category.id}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {language === "vi" ? "Thiết lập nhóm phân loại và hỗ trợ hiển thị đa ngôn ngữ." : "Configure category taxonomies and translations."}
@@ -242,7 +244,7 @@ export default function CategoryDetailsModal({
                   </div>
                 </div>
 
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                 {/* Translation Content tab section */}
                 <div className="space-y-4">
@@ -259,7 +261,7 @@ export default function CategoryDetailsModal({
                           className={clsx(
                             "px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-none bg-transparent",
                             activeFormLocale === lang
-                              ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                              ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                               : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
                           )}
                           onClick={() => setActiveFormLocale(lang)}
@@ -346,7 +348,7 @@ export default function CategoryDetailsModal({
                   <>
                     <Button
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                       onClick={() => setIsEditMode(false)}
                       isDisabled={loading}
                     >
@@ -369,7 +371,7 @@ export default function CategoryDetailsModal({
                   <>
                     <Button
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                       onClick={onClose}
                     >
                       {language === "vi" ? "Đóng" : "Close"}

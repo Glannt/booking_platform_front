@@ -4,31 +4,29 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import RouteDetailClient from "./RouteDetailClient";
 
-export async function generateMetadata({ params }: { params: { id: string; locale: string } }): Promise<Metadata> {
-  const locale = params.locale || "vi";
+export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = rawLocale || "vi";
   const t = translations[locale as "vi" | "en" | "ko" | "ru"] || translations.vi;
   return {
-    title: `${locale === "vi" ? "Chi tiết tuyến xe" : "Route Detail"} | Minh Khoa Travel`,
-    description: locale === "vi"
-      ? "Xem chi tiết tuyến xe, bảng giá, giờ khởi hành và loại xe."
-      : "View route details, pricing, departure times and vehicle types.",
+    title: `${t.rentCar.routeDetailTitle} | Minh Khoa Travel`,
+    description: t.rentCar.routeDetailDesc,
     openGraph: {
-      title: `${locale === "vi" ? "Chi tiết tuyến xe" : "Route Detail"} | Minh Khoa Travel`,
-      description: locale === "vi"
-        ? "Xem chi tiết tuyến xe, bảng giá, giờ khởi hành và loại xe."
-        : "View route details, pricing, departure times and vehicle types.",
+      title: `${t.rentCar.routeDetailTitle} | Minh Khoa Travel`,
+      description: t.rentCar.routeDetailDesc,
       type: "website",
     },
   };
 }
 
-export default async function RouteDetailPage({ params }: { params: { id: string; locale: string } }) {
-  const locale = params.locale || "vi";
+export default async function RouteDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
+  const { id, locale: rawLocale } = await params;
+  const locale = rawLocale || "vi";
   let sections: SectionDto[] = [];
   try {
     sections = await getActiveSectionsServer("/rent-car", locale);
   } catch {
     sections = [];
   }
-  return <RouteDetailClient sections={sections} />;
+  return <RouteDetailClient sections={sections} routeId={Number(id)} />;
 }

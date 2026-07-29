@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Button, Input, Label } from "@heroui/react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Button, Input, Label, toast } from "@heroui/react";
 import {
   Plus,
   X,
@@ -35,6 +35,7 @@ const SECTION_HINTS: Record<string, { keys: string[]; description: string }> = {
   SLIDE_CARD: { keys: ["badgeTitle", "cards"], description: "badgeTitle (đa ngôn ngữ) và cards (mảng card)" },
   SLIDE_REVIEW: { keys: ["ratingSummary", "reviews"], description: "ratingSummary (string) và reviews (mảng đánh giá)" },
   INSPIRATION: { keys: ["items", "showInstagram", "instagramHandle"], description: "items (mảng), showInstagram (boolean), instagramHandle (string)" },
+  HERO_BANNER: { keys: ["badges"], description: "Mảng badges với text, textColor, bgColor, iconUrl" },
 };
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -66,6 +67,8 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
   const [rawJson, setRawJson] = useState("");
   const [jsonError, setJsonError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showAddKey, setShowAddKey] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
 
   const hints = sectionType ? SECTION_HINTS[sectionType] : undefined;
 
@@ -119,9 +122,15 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
   };
 
   const addKey = (key?: string) => {
-    const newKey = key || prompt("Key name:");
-    if (!newKey || treeData[newKey] !== undefined) return;
+    const newKey = key || newKeyName.trim();
+    if (!newKey) return;
+    if (treeData[newKey] !== undefined) {
+      toast.danger("Key đã tồn tại!");
+      return;
+    }
     syncTree({ ...treeData, [newKey]: "" });
+    setNewKeyName("");
+    setShowAddKey(false);
   };
 
   // ── JSON mode ──
@@ -172,14 +181,14 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
               <button
                 type="button"
                 onClick={() => setRawJson(prettyJson(rawJson))}
-                className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
               >
                 <Braces size={11} /> Format
               </button>
               <button
                 type="button"
                 onClick={copyJson}
-                className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
               >
                 {copied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
                 {copied ? "Đã copy" : "Copy"}
@@ -189,7 +198,7 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
           <button
             type="button"
             onClick={mode === "tree" ? switchToJson : switchToTree}
-            className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
           >
             {mode === "tree" ? <><Braces size={12} /> JSON</> : <><List size={12} /> Tree</>}
           </button>
@@ -229,13 +238,44 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => addKey()}
-            className="flex items-center gap-1.5 w-full justify-center py-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors cursor-pointer"
-          >
-            <Plus size={14} /> Thêm Key
-          </button>
+          {showAddKey ? (
+            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-xl border border-divider">
+              <Input
+                placeholder="Tên key mới..."
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addKey();
+                  if (e.key === "Escape") { setShowAddKey(false); setNewKeyName(""); }
+                }}
+                autoFocus
+                className="flex-1"
+              />
+              <Button
+                size="sm"
+                className="bg-[#C9A227] hover:bg-[#B8911F] text-white font-bold text-xs"
+                onClick={() => addKey()}
+              >
+                Thêm
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs"
+                onClick={() => { setShowAddKey(false); setNewKeyName(""); }}
+              >
+                Hủy
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowAddKey(true)}
+              className="flex items-center gap-1.5 w-full justify-center py-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors cursor-pointer bg-transparent"
+            >
+              <Plus size={14} /> Thêm Key
+            </button>
+          )}
         </div>
       )}
 
@@ -247,13 +287,80 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
             onChange={(e) => handleJsonChange(e.target.value)}
             rows={12}
             placeholder='{ "key": "value" }'
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-xs font-mono resize-y focus:outline-none focus:ring-1 focus:ring-accent"
           />
           {jsonError && (
             <p className="text-[10px] font-bold text-red-500 flex items-center gap-1">
               <AlertTriangle size={11} /> {jsonError}
             </p>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface TypeSelectorProps {
+  value: string;
+  onChange: (type: string) => void;
+  className?: string;
+}
+
+function TypeSelector({ value, onChange, className = "" }: TypeSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isOpen]);
+
+  const types = [
+    { value: "string", label: "Text", color: "text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400" },
+    { value: "number", label: "Số", color: "text-purple-600 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400" },
+    { value: "boolean", label: "Boolean", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    { value: "object", label: "Object", color: "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400" },
+    { value: "array", label: "Mảng", color: "text-pink-600 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400" },
+  ];
+
+  const current = types.find((t) => t.value === value) || types[0];
+
+  return (
+    <div className={`relative shrink-0 ${className}`} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`text-[9px] font-black px-2.5 py-1 rounded-full cursor-pointer border-none flex items-center gap-1 transition-all ${current.color} hover:opacity-85 select-none`}
+      >
+        {current.label}
+        <span className="text-[6px] opacity-70">▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1 w-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-30 flex flex-col gap-0.5 animate-scale-up">
+          {types.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => {
+                onChange(t.value);
+                setIsOpen(false);
+              }}
+              className={`text-[9px] font-bold px-2.5 py-1 border-none cursor-pointer text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 w-full ${
+                t.value === value
+                  ? "text-[#C9A227] bg-[#C9A227]/5 font-black"
+                  : "text-slate-600 dark:text-slate-350"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -396,7 +503,7 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
   const childCount = vType === "object" ? entries.length : arrItems.length;
 
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 overflow-hidden">
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[var(--bg-card)]/30 overflow-hidden">
       {/* Header row */}
       <div className="flex items-center gap-2 px-2.5 py-2">
         <button
@@ -411,6 +518,17 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
           value={nodeKey}
           onChange={(e) => onRename(e.target.value)}
           className="flex-1 max-w-[160px] text-xs font-mono font-bold"
+        />
+
+        <TypeSelector
+          value={vType}
+          onChange={(t) => {
+            if (t === "string") onChange("");
+            else if (t === "number") onChange(0);
+            else if (t === "boolean") onChange(true);
+            else if (t === "object") onChange({});
+            else if (t === "array") onChange([]);
+          }}
         />
 
         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${vType === "array" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"}`}>
@@ -515,11 +633,11 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
           const url = filePath.startsWith("http") ? filePath : `${backendUrl}${filePath}`;
           onChange(url);
         } else {
-          alert("Tải lên thất bại");
+          toast.danger("Tải lên thất bại");
         }
       } catch (err) {
         console.error("Upload error:", err);
-        alert("Có lỗi xảy ra khi tải ảnh lên");
+        toast.danger("Có lỗi xảy ra khi tải ảnh lên");
       } finally {
         setUploading(false);
       }
@@ -535,7 +653,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
     : null;
 
   return (
-    <div className="flex items-start gap-1.5 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900/50 group">
+    <div className="flex items-start gap-1.5 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[var(--bg-surface)]/50 group">
       {typeIcon && <span className="mt-2 shrink-0">{typeIcon}</span>}
 
       <Input
@@ -544,13 +662,25 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
         className="max-w-[120px] text-xs font-mono font-bold shrink-0"
       />
 
+      <TypeSelector
+        value={vType}
+        onChange={(t) => {
+          if (t === "string") onChange("");
+          else if (t === "number") onChange(0);
+          else if (t === "boolean") onChange(true);
+          else if (t === "object") onChange({});
+          else if (t === "array") onChange([]);
+        }}
+        className="mt-1"
+      />
+
       <span className="text-slate-300 dark:text-slate-600 mt-2 shrink-0">:</span>
 
       {isStringOrEmpty && (
         <button
           type="button"
           onClick={() => setInputMode(inputMode === "text" ? "image" : "text")}
-          className="p-1.5 rounded text-slate-400 hover:text-accent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mt-0.5 shrink-0"
+          className="p-1.5 rounded text-slate-400 hover:text-accent hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors mt-0.5 shrink-0"
           title={inputMode === "text" ? "Chuyển sang chọn ảnh" : "Chuyển sang nhập chữ"}
         >
           {inputMode === "text" ? <ImageIcon size={12} /> : <FileText size={12} />}
@@ -564,7 +694,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
           className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer mt-0.5 ${
             value
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+              : "bg-slate-100 text-slate-500 dark:bg-[var(--bg-card)] dark:text-slate-400"
           }`}
         >
           <ToggleLeft size={12} />
@@ -573,7 +703,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
       ) : inputMode === "image" && isStringOrEmpty ? (
         strVal && (strVal.startsWith("http") || strVal.startsWith("/")) ? (
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shrink-0">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-[var(--bg-card)] shrink-0">
               <img src={strVal.startsWith("http") ? strVal : `${backendUrl}${strVal}`} alt="" className="w-full h-full object-cover" />
               <button
                 type="button"
@@ -595,7 +725,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
           <div className="flex-1 flex items-center gap-2 min-w-0">
             <div
               onClick={handleImageClick}
-              className="flex-1 h-9 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-accent bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center cursor-pointer transition-colors"
+              className="flex-1 h-9 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-accent bg-slate-50 dark:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer transition-colors"
             >
               {uploading ? (
                 <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">

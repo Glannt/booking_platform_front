@@ -48,6 +48,7 @@ interface ServiceDetailsModalProps {
   backendUrl: string;
   onSaveSuccess: () => void;
   showToast: (msg: string, type: "success" | "error") => void;
+  defaultEditMode?: boolean;
 }
 
 const TimelineEditor = ({
@@ -173,9 +174,16 @@ export default function ServiceDetailsModal({
   language,
   backendUrl,
   onSaveSuccess,
-  showToast
+  showToast,
+  defaultEditMode
 }: ServiceDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && defaultEditMode) {
+      setIsEditing(true);
+    }
+  }, [isOpen, defaultEditMode]);
   const [activeFormLocale, setActiveFormLocale] = useState<string>("vi");
   const [activeOptionsLocale, setActiveOptionsLocale] = useState<string>("vi");
   const [activeItinLocale, setActiveItinLocale] = useState<string>("vi");
@@ -905,7 +913,7 @@ export default function ServiceDetailsModal({
                     </div>
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Translation tabs selector */}
                   <div className="space-y-4">
@@ -920,7 +928,7 @@ export default function ServiceDetailsModal({
                             type="button"
                             onClick={() => setActiveFormLocale(loc)}
                             className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${activeFormLocale === loc
-                              ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                              ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                               }`}
                           >
@@ -974,7 +982,7 @@ export default function ServiceDetailsModal({
                     </div>
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Dynamic pricing options edit */}
                   <div className="space-y-4">
@@ -991,7 +999,7 @@ export default function ServiceDetailsModal({
                         variant="ghost"
                         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-colors ${formData.serviceOptionTypeId
                           ? "text-primary hover:text-primary-600 bg-primary/10 dark:bg-primary/5"
-                          : "text-slate-400 bg-slate-100 dark:bg-slate-800"
+                          : "text-slate-400 bg-slate-100 dark:bg-[var(--bg-card)]"
                           }`}
                       >
                         <PlusCircle size={14} />
@@ -1114,7 +1122,7 @@ export default function ServiceDetailsModal({
                                           onClick={() => setActiveOptionsLocale(loc)}
                                           className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                             activeOptionsLocale === loc
-                                              ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                              ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                           }`}
                                         >
@@ -1186,7 +1194,7 @@ export default function ServiceDetailsModal({
                                             onClick={() => setActiveOptionsLocale(loc)}
                                             className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                               activeOptionsLocale === loc
-                                                ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                                ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                                 : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                             }`}
                                           >
@@ -1233,7 +1241,7 @@ export default function ServiceDetailsModal({
                     )}
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Dynamic itineraries edit */}
                   <div className="space-y-4">
@@ -1287,7 +1295,7 @@ export default function ServiceDetailsModal({
                                     onClick={() => setActiveItinLocale(loc)}
                                     className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                       activeItinLocale === loc
-                                        ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                        ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                         : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                     }`}
                                   >
@@ -1328,7 +1336,7 @@ export default function ServiceDetailsModal({
                     )}
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Service FAQs */}
                   <div className="space-y-4">
@@ -1385,7 +1393,7 @@ export default function ServiceDetailsModal({
                                     onClick={() => setActiveFaqLocale(loc)}
                                     className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                       activeFaqLocale === loc
-                                        ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                        ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                         : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                     }`}
                                   >
@@ -1431,7 +1439,7 @@ export default function ServiceDetailsModal({
                 <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex items-center justify-end gap-3 flex-shrink-0">
                   <Button
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                     onClick={() => setIsEditing(false)}
                     isDisabled={loading}
                   >
@@ -1492,7 +1500,7 @@ export default function ServiceDetailsModal({
                         <div className="bg-slate-50 dark:bg-black/40 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex items-center gap-3">
                           <div className={`p-2.5 rounded-xl ${service.applyVehiclePricing
                             ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                            : "bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500 dark:text-slate-400"
                             }`}>
                             <Car size={18} />
                           </div>
@@ -1546,7 +1554,7 @@ export default function ServiceDetailsModal({
                     </div>
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Options details list */}
                   <div className="space-y-3">
@@ -1606,7 +1614,7 @@ export default function ServiceDetailsModal({
                     )}
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* Itinerary daily schedule details */}
                   <div className="space-y-4">
@@ -1624,7 +1632,7 @@ export default function ServiceDetailsModal({
                           return (
                             <div key={idx} className="relative space-y-1.5">
                               {/* Dot marker */}
-                              <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-indigo-600 ring-4 ring-white dark:ring-slate-900 flex-shrink-0" />
+                              <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-indigo-600 ring-4 ring-white dark:ring-[var(--bg-surface)] flex-shrink-0" />
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                                 <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
                                   {language === "vi" ? `NGÀY ${itin.dayNumber}` : `DAY ${itin.dayNumber}`}
@@ -1691,7 +1699,7 @@ export default function ServiceDetailsModal({
                     )}
                   </div>
 
-                  <Separator className="bg-slate-100 dark:bg-slate-800" />
+                  <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                   {/* FAQs Read-Only Display */}
                   <div className="space-y-4">
@@ -1727,7 +1735,7 @@ export default function ServiceDetailsModal({
                 <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex items-center justify-between flex-shrink-0">
                   <Button
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                     onClick={onClose}
                   >
                     {language === "vi" ? "Đóng lại" : "Close"}

@@ -14,8 +14,7 @@ export default function TourSuccessPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resolvedParams = use(params);
-  const { language } = useI18n();
-  const isVi = language === "vi";
+  const { language, t } = useI18n();
 
   const bookingCode = searchParams.get("bookingCode") || "BK-SUCCESS";
 
@@ -31,19 +30,17 @@ export default function TourSuccessPage({ params }: PageProps) {
 
         <div className="space-y-2">
           <h1 className="text-xl md:text-2xl font-black text-slate-950 dark:text-white uppercase tracking-tight">
-            {isVi ? "Đặt Tour Thành Công!" : "Booking Successful!"}
+            {t.tours.confirmSuccessTitle}
           </h1>
           <p className="text-xs text-slate-400 dark:text-slate-400 font-semibold leading-relaxed">
-            {isVi
-              ? "Cảm ơn bạn đã lựa chọn Minh Khoa Travel. Yêu cầu đặt tour của bạn đã được tiếp nhận và xử lý."
-              : "Thank you for choosing Minh Khoa Travel. Your sightseeing request has been successfully submitted."}
+            {t.tours.successMessage}
           </p>
         </div>
 
         {/* Booking Code Card */}
         <div className="bg-slate-50 dark:bg-black border border-slate-100 dark:border-slate-850 rounded-2xl p-4 space-y-1">
           <span className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider block">
-            {isVi ? "Mã đơn đặt chỗ" : "Confirmation Code"}
+            {t.tours.successBookingCode}
           </span>
           <span className="text-lg font-black text-accent tracking-widest">
             {bookingCode}
@@ -52,9 +49,7 @@ export default function TourSuccessPage({ params }: PageProps) {
 
         {/* Secondary Info */}
         <p className="text-[11px] text-slate-400 leading-normal font-medium">
-          {isVi
-            ? "Chúng tôi đã gửi tin nhắn xác nhận kèm thông tin hành trình đến Zalo của bạn. Vui lòng phản hồi tin nhắn để hoàn tất thủ tục."
-            : "A confirmation message with itinerary details has been dispatched to Zalo. Please confirm details to finalize."}
+          {t.tours.successNote}
         </p>
 
         {/* Actions */}
@@ -64,24 +59,24 @@ export default function TourSuccessPage({ params }: PageProps) {
             className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1.5"
           >
             <CalendarDays size={14} />
-            {isVi ? "Tiếp Tục Đặt Tour" : "Book Another Tour"}
+            {t.tours.bookAnother}
           </Button>
 
           <div className="grid grid-cols-2 gap-2.5">
             <Button
               onClick={() => router.push(`/${language}/dashboard/my-bookings`)}
-              className="h-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1"
+              className="h-10 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1"
             >
               <History size={13} />
-              {isVi ? "Lịch sử đặt" : "History"}
+              {t.tours.viewHistory}
             </Button>
 
             <Button
               onClick={() => router.push(`/${language}`)}
-              className="h-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1"
+              className="h-10 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1"
             >
               <Home size={13} />
-              {isVi ? "Trang chủ" : "Home"}
+              {t.tours.backToHome}
             </Button>
           </div>
         </div>

@@ -81,7 +81,13 @@ export default function BookingsManagementPage() {
 
     const bStatusMatch = bookingStatusFilter === "all" || b.bookingStatus === bookingStatusFilter;
 
-    return queryMatch && bStatusMatch;
+    // Exclude bookings where ALL items are rental (intercity/self-drive)
+    // These are shown on dedicated pages
+    const hasOnlyRentalItems = b.items && b.items.length > 0 && b.items.every(
+      item => item.intercityBookingDetailId || item.selfDriveBookingDetailId
+    );
+
+    return queryMatch && bStatusMatch && !hasOnlyRentalItems;
   });
 
   // Reset pagination on search/filter changes
@@ -185,7 +191,7 @@ export default function BookingsManagementPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button
             variant="outline"
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
             onClick={fetchBookings}
           >
             <RefreshCw size={16} className="mr-1.5" />
@@ -199,7 +205,7 @@ export default function BookingsManagementPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">Đang tải danh sách đơn đặt...</p>
+            <p className="text-sm font-bold text-slate-500">Đang tải danh sách đơn đặt tour...</p>
           </div>
         ) : filteredBookings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
@@ -208,7 +214,7 @@ export default function BookingsManagementPage() {
               Không tìm thấy đơn đặt nào
             </h3>
             <p className="text-sm text-slate-500 max-w-sm">
-              Không có đơn đặt du lịch nào khớp với bộ lọc tìm kiếm hiện tại.
+              Không có đơn đặt tour nào khớp với bộ lọc tìm kiếm hiện tại.
             </p>
           </div>
         ) : (
@@ -229,7 +235,7 @@ export default function BookingsManagementPage() {
                       return (
                         <Table.Row
                           key={b.id}
-                          className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors duration-150"
+                          className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
                         >
                           <Table.Cell className="px-6 py-4 font-mono text-xs text-slate-900 dark:text-slate-100 font-bold">
                             {b.bookingCode}
@@ -252,7 +258,7 @@ export default function BookingsManagementPage() {
                           <Table.Cell className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => {
                                   setSelectedBooking(b);
                                   setDetailsModalOpen(true);
@@ -262,7 +268,7 @@ export default function BookingsManagementPage() {
                                 <Eye size={16} />
                               </button>
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => {
                                   setSelectedBooking(b);
                                   setEditModalOpen(true);
@@ -272,7 +278,7 @@ export default function BookingsManagementPage() {
                                 <Edit3 size={16} />
                               </button>
                               <button
-                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
                                 onClick={() => {
                                   setSelectedBooking(b);
                                   setDeleteModalOpen(true);
@@ -340,6 +346,10 @@ export default function BookingsManagementPage() {
         }}
         booking={selectedBooking}
         language="vi"
+        onEdit={() => {
+          setDetailsModalOpen(false);
+          setEditModalOpen(true);
+        }}
       />
 
       {/* Edit Modal */}

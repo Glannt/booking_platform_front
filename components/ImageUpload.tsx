@@ -123,7 +123,7 @@ export default function ImageUpload({ value, onChange, label }: ImageUploadProps
           "relative h-44 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all duration-300",
           dragOver
             ? "border-primary bg-primary/5 scale-[0.99]"
-            : "border-slate-200 hover:border-primary/50 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-950/20",
+            : "border-slate-200 hover:border-primary/50 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20",
           previewUrl ? "border-solid" : ""
         )}
       >

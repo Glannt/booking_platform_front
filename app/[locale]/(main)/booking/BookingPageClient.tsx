@@ -9,7 +9,7 @@ import { getServiceOptionTypes, ServiceOptionTypeDto } from "@/lib/api/serviceOp
 import { getMediaDetails } from "@/lib/api/media";
 import { backendUrl } from "@/lib/api/client";
 import { useI18n } from "@/context/LanguageContext";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
 
 const CATEGORY_NAMES: Record<number, { vi: string; en: string; ko: string; ru: string }> = {
   1: { vi: "Đón Tiễn Sân Bay", en: "Airport Transfer", ko: "공항 픽업/샌딩", ru: "Трансфер в Аэропорт" },

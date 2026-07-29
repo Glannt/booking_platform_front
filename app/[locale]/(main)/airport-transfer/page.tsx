@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { translations } from "@/config/translations";
 import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
@@ -26,5 +27,9 @@ export default async function AirportTransferPage({ params }: { params: { locale
   } catch {
     sections = [];
   }
-  return <AirportTransferClient sections={sections} />;
+  return (
+    <Suspense fallback={null}>
+      <AirportTransferClient sections={sections} />
+    </Suspense>
+  );
 }

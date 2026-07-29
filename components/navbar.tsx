@@ -152,7 +152,8 @@ export const Navbar = () => {
                   <li key={item.label}>
                     <Dropdown>
                       <Dropdown.Trigger
-                        className={`flex items-center gap-1.5 text-sm font-semibold transition-colors cursor-pointer outline-none bg-transparent border-none ${showTransparent
+                        aria-label={item.label}
+                        className={`flex items-center gap-1.5 mt-0.5 px-0 py-0 min-h-0 h-auto text-sm font-semibold transition-colors cursor-pointer outline-none bg-transparent border-none ${showTransparent
                           ? "text-white/95 hover:text-white"
                           : "text-foreground-600 hover:text-accent"
                           }`}
@@ -160,16 +161,11 @@ export const Navbar = () => {
                         {item.label}
                         <ChevronDown size={14} className="opacity-70" />
                       </Dropdown.Trigger>
-                      <Dropdown.Popover className="min-w-[200px]">
-                        <Dropdown.Menu aria-label="Tour options">
+                      <Dropdown.Popover className="min-w-[200px] backdrop-blur-xl bg-white/80 dark:bg-black/80 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+                        <Dropdown.Menu aria-label="Tour options" onAction={(key) => router.push(key as string)}>
                           {item.items?.map((subItem: any) => (
                             <Dropdown.Item key={subItem.href} id={subItem.href} textValue={subItem.label}>
-                              <NextLink
-                                className="block w-full text-foreground text-sm no-underline"
-                                href={subItem.href}
-                              >
-                                <Label>{subItem.label}</Label>
-                              </NextLink>
+                              <Label className="font-semibold">{subItem.label}</Label>
                             </Dropdown.Item>
                           ))}
                         </Dropdown.Menu>
@@ -218,8 +214,8 @@ export const Navbar = () => {
                 </div>
               </Dropdown.Trigger>
               <Dropdown.Popover className="min-w-[200px]">
-                <Dropdown.Menu aria-label="User actions">
-                  <Dropdown.Item key="profile" textValue={user.email}>
+                <Dropdown.Menu aria-label="User actions" onAction={(key) => { if (key === "logout") handleLogout(); else if (key === "profile") router.push(`/${language}/dashboard/profile`); else router.push(key as string); }}>
+                  <Dropdown.Item id="profile" key="profile" textValue={user.email}>
                     <div className="flex flex-col">
                       <span className="font-semibold text-foreground text-sm">{user.fullname}</span>
                       <span className="text-xs text-muted-foreground">{user.email}</span>
@@ -229,39 +225,13 @@ export const Navbar = () => {
                     </div>
                   </Dropdown.Item>
                   {(user.role === "ADMIN" || user.role === "STAFF") ? (
-                    <Dropdown.Item key="admin" textValue="Admin Dashboard">
-                      <NextLink
-                        className="block w-full text-foreground text-sm no-underline font-medium"
-                        href={user.role === "ADMIN" ? `/${language}/admin/services` : `/${language}/admin/bookings`}
-                      >
-                        <Label>{user.role === "ADMIN" ? "Admin Dashboard" : "Staff Dashboard"}</Label>
-                      </NextLink>
+                    <Dropdown.Item id={user.role === "ADMIN" ? `/${language}/admin/services` : `/${language}/admin/bookings`} key={user.role === "ADMIN" ? `/${language}/admin/services` : `/${language}/admin/bookings`} textValue="Admin Dashboard">
+                      <Label>{user.role === "ADMIN" ? "Admin Dashboard" : "Staff Dashboard"}</Label>
                     </Dropdown.Item>
                   ) : (
                     <>
-                      <Dropdown.Item key="dashboard" textValue="Dashboard">
-                        <NextLink
-                          className="block w-full text-foreground text-sm no-underline font-medium"
-                          href="/dashboard"
-                        >
-                          <Label>{t.nav?.home || "Dashboard"}</Label>
-                        </NextLink>
-                      </Dropdown.Item>
-                      <Dropdown.Item key="my-bookings" textValue="My Bookings">
-                        <NextLink
-                          className="block w-full text-foreground text-sm no-underline font-medium"
-                          href="/dashboard/my-bookings"
-                        >
-                          <Label>{t.nav?.myBookings || "My Bookings"}</Label>
-                        </NextLink>
-                      </Dropdown.Item>
-                      <Dropdown.Item key="profile" textValue="My Profile">
-                        <NextLink
-                          className="block w-full text-foreground text-sm no-underline font-medium"
-                          href="/dashboard/profile"
-                        >
-                          <Label>{t.nav?.myProfile || "My Profile"}</Label>
-                        </NextLink>
+                      <Dropdown.Item id={`/${language}/dashboard/my-bookings`} key={`/${language}/dashboard/my-bookings`} textValue="Booking History">
+                        <Label>{t.nav?.bookingHistory || "Booking History"}</Label>
                       </Dropdown.Item>
                     </>
                   )}
@@ -269,7 +239,6 @@ export const Navbar = () => {
                     key="logout"
                     className="text-danger cursor-pointer"
                     textValue="Logout"
-                    onClick={handleLogout}
                   >
                     <div className="flex items-center gap-2">
                       <LogOut size={14} />
@@ -283,9 +252,8 @@ export const Navbar = () => {
             <div className="flex items-center gap-2">
               <NextLink
                 href={`/${language}/login`}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-default-100 transition-colors no-underline ${
-                  showTransparent ? "text-white hover:bg-white/10" : "text-foreground"
-                }`}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-default-100 transition-colors no-underline ${showTransparent ? "text-white hover:bg-white/10" : "text-foreground"
+                  }`}
               >
                 {t.auth.login}
               </NextLink>
@@ -385,35 +353,15 @@ export const Navbar = () => {
                   </li>
                 )}
                 {user.role !== "ADMIN" && user.role !== "STAFF" && (
-                  <>
-                    <li>
-                      <NextLink
-                        className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
-                        href="/dashboard"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {t.nav?.home || "Dashboard"}
-                      </NextLink>
-                    </li>
-                    <li>
-                      <NextLink
-                        className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
-                        href="/dashboard/my-bookings"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {t.nav?.myBookings || "My Bookings"}
-                      </NextLink>
-                    </li>
-                    <li>
-                      <NextLink
-                        className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
-                        href="/dashboard/profile"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {t.nav?.myProfile || "My Profile"}
-                      </NextLink>
-                    </li>
-                  </>
+                  <li>
+                    <NextLink
+                      className="block py-2.5 px-3 rounded-xl text-base text-foreground hover:bg-default-50 no-underline font-semibold"
+                      href={`/${language}/dashboard/my-bookings`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {t.nav?.bookingHistory || "Booking History"}
+                    </NextLink>
+                  </li>
                 )}
                 <li>
                   <button

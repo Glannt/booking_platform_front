@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import {
@@ -60,7 +60,7 @@ export function BookingProcessSection({ section, locale = "vi" }: BookingProcess
   const translation = section.translations?.find((t) => t.locale === locale) || section.translations?.[0];
 
   return (
-    <div className="w-full bg-white dark:bg-slate-950 rounded-2xl border border-slate-200/50 dark:border-slate-800 p-5 sm:p-8">
+    <div className="w-full bg-white dark:bg-[var(--bg-page)] rounded-2xl border border-slate-200/50 dark:border-slate-800 p-5 sm:p-8">
       <div className="mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
           {translation?.title || (vi ? "Quy trình đặt xe" : "Booking Process")}
@@ -82,7 +82,7 @@ export function BookingProcessSection({ section, locale = "vi" }: BookingProcess
                   <Icon size={20} />
                 </div>
                 {!isLast && (
-                  <div className="w-px flex-1 bg-slate-200 dark:bg-slate-800 my-2" />
+                  <div className="w-px flex-1 bg-slate-200 dark:bg-[var(--bg-card)] my-2" />
                 )}
               </div>
               <div className={`flex-1 ${isLast ? "" : "pb-6 sm:pb-8"}`}>
@@ -99,7 +99,7 @@ export function BookingProcessSection({ section, locale = "vi" }: BookingProcess
       </div>
 
       {data.notes && (
-        <div className="mt-8 sm:mt-10 p-4 sm:p-5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-800">
+        <div className="mt-8 sm:mt-10 p-4 sm:p-5 bg-slate-50 dark:bg-[var(--bg-surface)] rounded-xl border border-slate-200/50 dark:border-slate-800">
           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3">
             {vi ? data.notes.title.vi : data.notes.title.en}
           </h4>

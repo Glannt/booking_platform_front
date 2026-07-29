@@ -8,7 +8,8 @@ import {
   Plane,
   Route,
   DollarSign,
-  Eye
+  Eye,
+  Edit3
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
 import { Button, Chip, Pagination, SearchField, Spinner, Table, Tabs, toast } from "@heroui/react";
@@ -49,6 +50,7 @@ export default function AirportTransferManagementPage() {
 
   const [airportModalOpen, setAirportModalOpen] = useState(false);
   const [selectedAirport, setSelectedAirport] = useState<AirportDto | null>(null);
+  const [airportDefaultEditMode, setAirportDefaultEditMode] = useState(false);
 
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<AirportRouteDto | null>(null);
@@ -371,7 +373,7 @@ export default function AirportTransferManagementPage() {
                     {paginatedAirports.map((a) => (
                       <Table.Row key={a.id} id={String(a.id)}>
                         <Table.Cell>#{a.id}</Table.Cell>
-                        <Table.Cell><span className="font-mono text-sm bg-slate-100 dark:bg-slate-950 px-2 py-0.5 rounded font-bold">{a.code}</span></Table.Cell>
+                        <Table.Cell><span className="font-mono text-sm bg-slate-100 dark:bg-[var(--bg-page)] px-2 py-0.5 rounded font-bold">{a.code}</span></Table.Cell>
                         <Table.Cell className="font-bold">{a.name}</Table.Cell>
                         <Table.Cell>{a.location || "N/A"}</Table.Cell>
                         <Table.Cell>
@@ -379,8 +381,11 @@ export default function AirportTransferManagementPage() {
                         </Table.Cell>
                         <Table.Cell>
                           <div className="flex gap-2">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedAirport(a); setAirportModalOpen(true); }}>
+                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(false); setAirportModalOpen(true); }}>
                               <Eye size={16} />
+                            </Button>
+                            <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(true); setAirportModalOpen(true); }}>
+                              <Edit3 size={16} />
                             </Button>
                             <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteAirport(a.id!)}>
                               <Trash2 size={16} />
@@ -455,6 +460,9 @@ export default function AirportTransferManagementPage() {
                           <div className="flex gap-2">
                             <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedRoute(r); setRouteModalOpen(true); }}>
                               <Eye size={16} />
+                            </Button>
+                            <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedRoute(r); setRouteModalOpen(true); }}>
+                              <Edit3 size={16} />
                             </Button>
                             <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteRoute(r.id!)}>
                               <Trash2 size={16} />
@@ -537,6 +545,9 @@ export default function AirportTransferManagementPage() {
                               <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedTransfer(t); setTransferModalOpen(true); }}>
                                 <Eye size={16} />
                               </Button>
+                              <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedTransfer(t); setTransferModalOpen(true); }}>
+                                <Edit3 size={16} />
+                              </Button>
                               <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteTransfer(t.id!)}>
                                 <Trash2 size={16} />
                               </Button>
@@ -577,7 +588,7 @@ export default function AirportTransferManagementPage() {
         )}
       </div>
 
-      <AirportModal isOpen={airportModalOpen} onClose={() => { setAirportModalOpen(false); setSelectedAirport(null); }} airport={selectedAirport} onSaveSuccess={fetchData} showToast={showToast} />
+      <AirportModal isOpen={airportModalOpen} onClose={() => { setAirportModalOpen(false); setSelectedAirport(null); setAirportDefaultEditMode(false); }} airport={selectedAirport} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={airportDefaultEditMode} />
       <AirportRouteModal isOpen={routeModalOpen} onClose={() => { setRouteModalOpen(false); setSelectedRoute(null); }} route={selectedRoute} airports={airports} onSaveSuccess={fetchData} showToast={showToast} />
       <AirportTransferModal isOpen={transferModalOpen} onClose={() => { setTransferModalOpen(false); setSelectedTransfer(null); }} transfer={selectedTransfer} routes={routes} categories={categories} onSaveSuccess={fetchData} showToast={showToast} />
     </div>

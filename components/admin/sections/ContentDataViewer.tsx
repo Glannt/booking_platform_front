@@ -68,7 +68,7 @@ function SlideCardViewer({ data }: { data: Record<string, unknown> }) {
       )}
       <div className="grid grid-cols-1 gap-2">
         {cards.map((card, idx) => (
-          <div key={idx} className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+          <div key={idx} className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50">
             {typeof card.imageUrl === "string" && card.imageUrl && (
               <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
                 <img src={card.imageUrl} alt="" className="w-full h-full object-cover" />
@@ -114,7 +114,7 @@ function SlideReviewViewer({ data }: { data: Record<string, unknown> }) {
       )}
       <div className="grid grid-cols-1 gap-2">
         {reviews.map((review, idx) => (
-          <div key={idx} className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+          <div key={idx} className="p-2.5 rounded-lg bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50">
             <div className="flex items-center gap-2 mb-1">
               <div className="flex text-amber-500 gap-0.5">
                 {Array.from({ length: typeof review.rating === "number" ? review.rating : 5 }).map((_, i) => (
@@ -142,7 +142,7 @@ function InspirationViewer({ data }: { data: Record<string, unknown> }) {
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
         {items.map((item, idx) => (
-          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50">
             {typeof item.imageUrl === "string" && item.imageUrl && (
               <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
                 <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
@@ -162,6 +162,45 @@ function InspirationViewer({ data }: { data: Record<string, unknown> }) {
           <span className="text-[10px] font-bold text-accent">Instagram: {String(data.instagramHandle || "@minhkhoatravel_vn")}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function HeroBannerViewer({ data }: { data: Record<string, unknown> }) {
+  const badges = Array.isArray(data.badges) ? (data.badges as Array<Record<string, unknown>>) : [];
+  if (badges.length === 0) return <GenericViewer data={data} />;
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        {badges.map((badge, idx) => (
+          <div key={idx} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50">
+            {typeof badge.iconUrl === "string" && badge.iconUrl && (
+              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
+                <img src={badge.iconUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                {getLocalized(badge.text)}
+              </p>
+              <div className="flex items-center gap-2">
+                {typeof badge.textColor === "string" && badge.textColor && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full border border-slate-200" style={{ backgroundColor: badge.textColor }} />
+                    <span className="text-[9px] font-mono text-slate-400">{badge.textColor}</span>
+                  </div>
+                )}
+                {typeof badge.bgColor === "string" && badge.bgColor && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full border border-slate-200" style={{ backgroundColor: badge.bgColor }} />
+                    <span className="text-[9px] font-mono text-slate-400">{badge.bgColor}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -191,13 +230,15 @@ export function ContentDataViewer({ contentData, sectionType }: ContentDataViewe
 
   if (!data) {
     return (
-      <pre className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs font-mono overflow-x-auto max-h-40 text-slate-500">
+      <pre className="p-3 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-lg text-xs font-mono overflow-x-auto max-h-40 text-slate-500">
         {contentData || "—"}
       </pre>
     );
   }
 
   switch (sectionType) {
+    case "HERO_BANNER":
+      return <HeroBannerViewer data={data} />;
     case "SLIDE_CARD":
       return <SlideCardViewer data={data} />;
     case "SLIDE_REVIEW":

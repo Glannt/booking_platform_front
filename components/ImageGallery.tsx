@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { Maximize2 } from "lucide-react";
@@ -20,7 +20,7 @@ export function ImageGallery({ images, thumbnailId, className }: ImageGalleryPro
 
   if (!images || images.length === 0) {
     return (
-      <div className={`bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 ${className || "h-64"}`}>
+      <div className={`bg-slate-100 dark:bg-[var(--bg-card)] rounded-xl flex items-center justify-center text-slate-400 ${className || "h-64"}`}>
         <span className="text-sm">Không có ảnh</span>
       </div>
     );

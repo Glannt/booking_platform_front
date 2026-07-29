@@ -113,7 +113,22 @@ function filterTranslations(data: any, targetLocale: string): any {
   for (const key of Object.keys(data)) {
     const value = data[key];
     if (key === "translations" && Array.isArray(value)) {
-      result[key] = value.filter((t: any) => t && t.locale === targetLocale);
+      const matched = value.filter((t: any) => t && t.locale === targetLocale);
+      if (matched.length > 0) {
+        result[key] = matched;
+      } else {
+        const enMatch = value.filter((t: any) => t && t.locale === "en");
+        if (enMatch.length > 0) {
+          result[key] = enMatch;
+        } else {
+          const viMatch = value.filter((t: any) => t && t.locale === "vi");
+          if (viMatch.length > 0) {
+            result[key] = viMatch;
+          } else {
+            result[key] = value;
+          }
+        }
+      }
     } else {
       result[key] = filterTranslations(value, targetLocale);
     }

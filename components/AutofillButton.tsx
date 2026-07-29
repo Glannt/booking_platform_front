@@ -7,6 +7,8 @@ interface AutofillData {
   fullname: string;
   phone: string;
   email: string;
+  zaloId?: string;
+  kakaoTalkId?: string;
 }
 
 interface AutofillButtonProps {
@@ -27,6 +29,8 @@ export function AutofillButton({ onFill, label }: AutofillButtonProps) {
           fullname: user.fullname ?? "",
           phone: user.phone ?? "",
           email: user.email ?? "",
+          zaloId: user.zaloId ?? "",
+          kakaoTalkId: user.kakaoTalkId ?? "",
         })
       }
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-accent bg-accent/5 hover:bg-accent/10 border border-accent/20 rounded-xl transition-colors cursor-pointer"

@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
 
 export interface SummaryItem {
   label: string;
@@ -88,7 +88,7 @@ export default function BookingConfirmationModal({
             <ModalFooter className="p-0 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
               <Button
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-none px-4 py-2"
+                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-250 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200 border-none px-4 py-2"
                 onClick={onClose}
                 isDisabled={submitting}
               >

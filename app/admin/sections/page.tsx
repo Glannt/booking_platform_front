@@ -189,7 +189,7 @@ export default function SectionsManagementPage() {
             }}
             className="w-56"
           >
-            <Select.Trigger className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-850 dark:text-slate-200 flex items-center justify-between cursor-pointer min-w-[200px]">
+            <Select.Trigger className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-card)] text-sm font-bold text-slate-850 dark:text-slate-200 flex items-center justify-between cursor-pointer min-w-[200px]">
               <Select.Value />
               <Select.Indicator />
             </Select.Trigger>
@@ -209,13 +209,13 @@ export default function SectionsManagementPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button
             variant="outline"
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
             onClick={fetchSections}
           >
             <RefreshCw size={16} className="mr-1.5" />
             Làm mới
           </Button>
-          {/* <Button
+          <Button
             className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-sm border border-transparent"
             onClick={() => {
               setSelectedSection(null);
@@ -224,7 +224,7 @@ export default function SectionsManagementPage() {
           >
             <Plus size={18} className="mr-1" />
             Thêm Section
-          </Button> */}
+          </Button>
         </div>
       </div>
 
@@ -278,13 +278,13 @@ export default function SectionsManagementPage() {
                       return (
                         <Table.Row
                           key={s.id}
-                          className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                          className="cursor-pointer hover:bg-slate-50 dark:hover:bg-[var(--bg-card)]/30"
                         >
                           <Table.Cell className="px-6 py-4 text-sm font-bold text-slate-500">
                             {s.id}
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300">
                               {getSectionTypeLabel(s.sectionType)}
                             </span>
                           </Table.Cell>

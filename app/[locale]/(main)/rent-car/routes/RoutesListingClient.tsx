@@ -14,7 +14,8 @@ import { Button, Skeleton, Input, Select, ListBox, Label, Pagination } from "@he
 import { useI18n } from "@/context/LanguageContext";
 import { getActiveIntercityRoutes, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/rental";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
-import { formatPrice as _formatPrice } from "@/lib/format";
+import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { backendUrl } from "@/lib/api/client";
 import type { SectionDto } from "@/lib/api/sections";
 
 type Direction = "all" | "one-way" | "round-trip";
@@ -192,18 +193,18 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
               placeholder={t.rentCar.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+              className="w-full pl-10 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 text-xs font-semibold"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+            <div className="flex bg-slate-100 dark:bg-[var(--bg-surface)] p-1 rounded-xl">
               {(["all", "one-way", "round-trip"] as Direction[]).map((d) => (
                 <button
                   key={d}
                   onClick={() => setDirection(d)}
                   className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer border-none ${direction === d
-                    ? "bg-white dark:bg-slate-800 text-accent shadow-sm"
+                    ? "bg-white dark:bg-[var(--bg-card)] text-accent shadow-sm"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
                     }`}
                 >
@@ -220,17 +221,17 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
                 className="w-26"
               >
                 <Label className="sr-only">{t.rentCar.sortPrice}</Label>
-                <Select.Trigger className="h-8 px-3 text-[10px] font-bold bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-lg border-none cursor-pointer">
+                <Select.Trigger className="h-8 px-3 text-[10px] font-bold bg-slate-100 dark:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 rounded-lg border-none cursor-pointer">
                   <Select.Value className={`text-xs`}>{t.rentCar.sortPrice}</Select.Value>
                   <Select.Indicator />
                 </Select.Trigger>
                 <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
                   <ListBox>
-                    <ListBox.Item key="asc" id="asc" textValue={t.rentCar.sortPriceAsc} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <ListBox.Item key="asc" id="asc" textValue={t.rentCar.sortPriceAsc} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                       {t.rentCar.sortPriceAsc}
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
-                    <ListBox.Item key="desc" id="desc" textValue={t.rentCar.sortPriceDesc} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <ListBox.Item key="desc" id="desc" textValue={t.rentCar.sortPriceDesc} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
                       {t.rentCar.sortPriceDesc}
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
@@ -282,72 +283,89 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {displayedRoutes.map((route) => (
-                <div
-                  key={route.id}
-                  className="group relative bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:border-accent hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col justify-between"
-                  onClick={() => router.push(prefixUrl(`/rent-car/${route.id}`))}
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                        <MapPin size={16} className="text-accent" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
-                          {getRouteName(route)}
+              {displayedRoutes.map((route) => {
+                const routeName = getRouteName(route);
+                const thumbUrl = route.thumbnailUrl
+                  ? (route.thumbnailUrl.startsWith("http") ? route.thumbnailUrl : `${backendUrl}${route.thumbnailUrl}`)
+                  : "";
+                return (
+                  <div
+                    key={route.id}
+                    className="group relative bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:border-accent hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col md:flex-row"
+                    onClick={() => router.push(prefixUrl(`/rent-car/${route.id}`))}
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative h-40 md:h-auto md:w-36 shrink-0 overflow-hidden">
+                      {thumbUrl ? (
+                        <img
+                          src={thumbUrl}
+                          alt={routeName}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-accent/10 flex items-center justify-center">
+                          <MapPin size={24} className="text-accent/40" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight truncate">
+                          {routeName}
                         </h3>
-                        <p className="text-[10px] text-slate-400 font-bold">
+                        <p className="text-[10px] text-slate-400 font-bold truncate">
                           {route.originCity} → {route.destinationCity}
                         </p>
+
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-slate-400">
+                          {route.distanceKm && <span>{route.distanceKm} km</span>}
+                          {route.estimatedHours && <span>~{route.estimatedHours}h</span>}
+                          {route.hasDepartureTimes && route.departureTimes?.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Clock size={10} />
+                              {route.departureTimes.length} {t.rentCar.tripsPerDay}
+                            </span>
+                          )}
+                        </div>
+
+                        {route.prices && route.prices.filter(p => p.active).length > 0 && (() => {
+                          const cheapest = getCheapestWithSeatInfo(route);
+                          if (!cheapest) return null;
+                          return (
+                            <div className="space-y-1.5 pt-1">
+                              <p className="text-sm font-black text-accent">
+                                {t.rentCar.priceFrom}{" "}
+                                {formatPrice(cheapest.price)}
+                                {cheapest.seatLabel && (
+                                  <span className="text-[10px] font-bold text-slate-400 ml-1">
+                                    {` / ${cheapest.seatLabel}-${t.rentCar.seater}`}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-semibold">
+                                {t.rentCar.otherVehiclesHint}
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-accent transition-colors">
+                          {t.rentCar.viewDetails}
+                        </span>
+                        {/* <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full group-hover:bg-accent group-hover:text-white transition-colors">
+                          {t.rentCar.viewRepresentativeVehicles}
+                        </span> */}
+                        <ArrowLeft size={14} className="text-slate-300 group-hover:text-accent group-hover:-translate-x-1 transition-all rotate-180" />
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-slate-400">
-                      {route.distanceKm && (
-                        <span>{route.distanceKm} km</span>
-                      )}
-                      {route.estimatedHours && (
-                        <span>~{route.estimatedHours}h</span>
-                      )}
-                      {route.hasDepartureTimes && route.departureTimes?.length > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Clock size={10} />
-                          {route.departureTimes.length} {t.rentCar.tripsPerDay}
-                        </span>
-                      )}
-                    </div>
-
-                    {route.prices && route.prices.filter(p => p.active).length > 0 && (() => {
-                      const cheapest = getCheapestWithSeatInfo(route);
-                      if (!cheapest) return null;
-                      return (
-                        <div className="space-y-1.5 pt-1">
-                          <p className="text-sm font-black text-accent">
-                            {t.rentCar.priceFrom}{" "}
-                            {formatPrice(cheapest.price)}
-                            {cheapest.seatLabel && (
-                              <span className="text-[10px] font-bold text-slate-400 ml-1">
-                                {` / ${cheapest.seatLabel}-${t.rentCar.seater}`}
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-semibold">
-                            {t.rentCar.otherVehiclesHint}
-                          </p>
-                        </div>
-                      );
-                    })()}
                   </div>
-
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
-                    <span className="text-[10px] font-bold text-slate-400 group-hover:text-accent transition-colors">
-                      {t.rentCar.viewDetails}
-                    </span>
-                    <ArrowLeft size={14} className="text-slate-300 group-hover:text-accent group-hover:-translate-x-1 transition-all rotate-180" />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {totalPages > 1 && (

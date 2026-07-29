@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   ModalBackdrop,
@@ -15,14 +15,15 @@ import {
   ListBox,
   Label,
 } from "@heroui/react";
-import { UserPlus, RefreshCw } from "lucide-react";
-import { createUser, AdminCreateUserRequest } from "@/lib/api/users";
+import { UserPlus, RefreshCw, Edit3 } from "lucide-react";
+import { createUser, updateUser, AdminUserDto, AdminCreateUserRequest } from "@/lib/api/users";
 
 interface UserCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveSuccess: () => void;
   showToast: (msg: string, type: "success" | "error") => void;
+  editingUser?: AdminUserDto | null;
 }
 
 export default function UserCreateModal({
@@ -30,6 +31,7 @@ export default function UserCreateModal({
   onClose,
   onSaveSuccess,
   showToast,
+  editingUser,
 }: UserCreateModalProps) {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -37,6 +39,7 @@ export default function UserCreateModal({
   const [fullname, setFullname] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("CUSTOMER");
+  const [status, setStatus] = useState("active");
 
   const resetForm = () => {
     setEmail("");
@@ -44,31 +47,55 @@ export default function UserCreateModal({
     setFullname("");
     setPhone("");
     setRole("CUSTOMER");
+    setStatus("active");
   };
 
-  const handleCreate = async () => {
-    if (!email || !password || !fullname || !role) {
+  useEffect(() => {
+    if (editingUser) {
+      setEmail(editingUser.email || "");
+      setPassword("");
+      setFullname(editingUser.fullname || "");
+      setPhone(editingUser.phone || "");
+      setRole(editingUser.role || "CUSTOMER");
+      setStatus(editingUser.status || "active");
+    } else {
+      resetForm();
+    }
+  }, [editingUser, isOpen]);
+
+  const handleSave = async () => {
+    if (!email || (!editingUser && !password) || !fullname || !role) {
       showToast("Vui lòng điền đầy đủ thông tin bắt buộc", "error");
       return;
     }
 
     setLoading(true);
     try {
-      const payload: AdminCreateUserRequest = {
-        email,
-        password,
-        fullname,
-        phone: phone || undefined,
-        role,
-      };
-      await createUser(payload);
-      showToast("Tạo user thành công!", "success");
+      if (editingUser) {
+        await updateUser(editingUser.id, {
+          fullname,
+          phone: phone || undefined,
+          role,
+          status,
+        });
+        showToast("Cập nhật user thành công!", "success");
+      } else {
+        const payload: AdminCreateUserRequest = {
+          email,
+          password,
+          fullname,
+          phone: phone || undefined,
+          role,
+        };
+        await createUser(payload);
+        showToast("Tạo user thành công!", "success");
+      }
       resetForm();
       onSaveSuccess();
       onClose();
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "Lỗi tạo user!", "error");
+      showToast(err.message || "Thao tác thất bại!", "error");
     } finally {
       setLoading(false);
     }
@@ -81,8 +108,17 @@ export default function UserCreateModal({
           <ModalDialog className="max-w-md bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
             <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
               <span id="user-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <UserPlus className="text-accent" size={20} />
-                Tạo User Mới
+                {editingUser ? (
+                  <>
+                    <Edit3 className="text-accent" size={20} />
+                    Chỉnh sửa User
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="text-accent" size={20} />
+                    Tạo User Mới
+                  </>
+                )}
               </span>
             </ModalHeader>
 
@@ -94,18 +130,21 @@ export default function UserCreateModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="user@example.com"
+                  disabled={!!editingUser}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider">Mật khẩu *</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Tối thiểu 6 ký tự"
-                />
-              </div>
+              {!editingUser && (
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider">Mật khẩu *</Label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Tối thiểu 6 ký tự"
+                  />
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[10px] font-bold uppercase tracking-wider">Họ và tên *</Label>
@@ -142,11 +181,30 @@ export default function UserCreateModal({
                   </Select.Popover>
                 </Select>
               </div>
+
+              {editingUser && (
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider">Trạng thái *</Label>
+                  <Select selectedKey={status} onSelectionChange={(key) => { if (key) setStatus(key as string); }}>
+                    <Select.Trigger className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-xs font-bold cursor-pointer">
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
+                      <ListBox>
+                        <ListBox.Item key="active" id="active" textValue="Active">Hoạt động<ListBox.ItemIndicator /></ListBox.Item>
+                        <ListBox.Item key="inactive" id="inactive" textValue="Inactive">Tạm khóa<ListBox.ItemIndicator /></ListBox.Item>
+                        <ListBox.Item key="blocked" id="blocked" textValue="Blocked">Khóa vĩnh viễn<ListBox.ItemIndicator /></ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
+              )}
             </ModalBody>
 
             <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 justify-end gap-2.5">
               <Button
-                className="rounded-xl font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
                 onClick={() => { resetForm(); onClose(); }}
                 isDisabled={loading}
               >
@@ -154,15 +212,17 @@ export default function UserCreateModal({
               </Button>
               <Button
                 className="rounded-xl font-bold bg-accent hover:bg-accent-hover text-white shadow-sm border border-transparent"
-                onClick={handleCreate}
+                onClick={handleSave}
                 isDisabled={loading}
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={16} />
+                ) : editingUser ? (
+                  <Edit3 size={16} className="mr-1.5" />
                 ) : (
                   <UserPlus size={16} className="mr-1.5" />
                 )}
-                Tạo User
+                {editingUser ? "Lưu" : "Tạo User"}
               </Button>
             </ModalFooter>
           </ModalDialog>

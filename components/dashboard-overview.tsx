@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useDashboard, Booking } from "./context";
+import { useDashboard, Booking } from "@/app/dashboard/context";
 import { useI18n } from "@/context/LanguageContext";
 import { Language } from "@/config/translations";
 import {
@@ -15,7 +15,7 @@ import {
 import { Button, Table } from "@heroui/react";
 import clsx from "clsx";
 
-export default function OverviewPage() {
+export default function DashboardOverview() {
   const { language, t } = useI18n();
   const { bookings, setSelectedBooking, setIsModalOpen, loading } = useDashboard();
   const [activeFilter, setActiveFilter] = useState<"all" | "confirmed" | "pending">("all");

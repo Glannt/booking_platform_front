@@ -601,7 +601,7 @@ export default function ServiceCreateModal({
                               {categories.map((c) => {
                                 const tr = c.translations.find((t) => t.locale === language) || c.translations[0];
                                 return (
-                                  <ListBox.Item key={c.id} id={String(c.id)} textValue={tr?.name} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                  <ListBox.Item key={c.id} id={String(c.id)} textValue={tr?.name} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                     {tr?.name}
                                     <ListBox.ItemIndicator />
                                   </ListBox.Item>
@@ -632,11 +632,11 @@ export default function ServiceCreateModal({
                           </Select.Trigger>
                           <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                             <ListBox>
-                              <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                              <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                 {language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
-                              <ListBox.Item id="draft" textValue={language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                              <ListBox.Item id="draft" textValue={language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                 {language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
@@ -702,7 +702,7 @@ export default function ServiceCreateModal({
                               {optionTypes.map((ot) => {
                                 const tr = ot.translations.find((t) => t.locale === language) || ot.translations[0];
                                 return (
-                                  <ListBox.Item key={ot.id} id={String(ot.id)} textValue={`${tr?.name} (${ot.code})`} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                  <ListBox.Item key={ot.id} id={String(ot.id)} textValue={`${tr?.name} (${ot.code})`} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                     {tr?.name} ({ot.code} - {ot.systemType === "VEHICLE" ? (language === "vi" ? "Theo xe" : "By Vehicle") : (language === "vi" ? "Theo người" : "By Person")})
                                     <ListBox.ItemIndicator />
                                   </ListBox.Item>
@@ -739,11 +739,11 @@ export default function ServiceCreateModal({
                                 </Select.Trigger>
                                 <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                                   <ListBox>
-                                    <ListBox.Item id="PERSON" textValue={language === "vi" ? "Theo đầu người (Person)" : "By Person"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                    <ListBox.Item id="PERSON" textValue={language === "vi" ? "Theo đầu người (Person)" : "By Person"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                       {language === "vi" ? "Theo đầu người (Person)" : "By Person"}
                                       <ListBox.ItemIndicator />
                                     </ListBox.Item>
-                                    <ListBox.Item id="VEHICLE" textValue={language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                    <ListBox.Item id="VEHICLE" textValue={language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                       {language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"}
                                       <ListBox.ItemIndicator />
                                     </ListBox.Item>
@@ -836,7 +836,7 @@ export default function ServiceCreateModal({
                   </div>
                 </div>
 
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                 {/* i18n Translation Tab Selector */}
                 <div className="space-y-4">
@@ -851,7 +851,7 @@ export default function ServiceCreateModal({
                           type="button"
                           onClick={() => setActiveFormLocale(loc)}
                           className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${activeFormLocale === loc
-                            ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                            ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                             : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                             }`}
                         >
@@ -911,7 +911,7 @@ export default function ServiceCreateModal({
                   </div>
                 </div>
 
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                 {/* Dynamic Pricing options */}
                 <div className="space-y-4">
@@ -933,7 +933,7 @@ export default function ServiceCreateModal({
                       variant="ghost"
                       className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold rounded-xl transition-colors ${formData.serviceOptionTypeId
                           ? "text-primary hover:text-primary-600 bg-primary/10 dark:bg-primary/5"
-                          : "text-slate-400 bg-slate-100 dark:bg-slate-800"
+                          : "text-slate-400 bg-slate-100 dark:bg-[var(--bg-card)]"
                         }`}
                     >
                       <PlusCircle size={14} />
@@ -1056,7 +1056,7 @@ export default function ServiceCreateModal({
                                         onClick={() => setActiveOptionsLocale(loc)}
                                         className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                           activeOptionsLocale === loc
-                                            ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                            ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                             : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                         }`}
                                       >
@@ -1128,7 +1128,7 @@ export default function ServiceCreateModal({
                                           onClick={() => setActiveOptionsLocale(loc)}
                                           className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                             activeOptionsLocale === loc
-                                              ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                              ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                           }`}
                                         >
@@ -1175,7 +1175,7 @@ export default function ServiceCreateModal({
                   )}
                 </div>
 
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                 {/* Dynamic Itinerary Days */}
                 <div className="space-y-4">
@@ -1233,7 +1233,7 @@ export default function ServiceCreateModal({
                                   onClick={() => setActiveItinLocale(loc)}
                                   className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                     activeItinLocale === loc
-                                      ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                      ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                   }`}
                                 >
@@ -1274,7 +1274,7 @@ export default function ServiceCreateModal({
                   )}
                 </div>
 
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                 {/* Service FAQs */}
                 <div className="space-y-4">
@@ -1332,7 +1332,7 @@ export default function ServiceCreateModal({
                                   onClick={() => setActiveFaqLocale(loc)}
                                   className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
                                     activeFaqLocale === loc
-                                      ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                                      ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                                   }`}
                                 >
@@ -1378,7 +1378,7 @@ export default function ServiceCreateModal({
               <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex items-center justify-end gap-3 flex-shrink-0">
                 <Button
                   variant="outline"
-                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
+                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
                   onClick={onClose}
                   isDisabled={loading}
                 >

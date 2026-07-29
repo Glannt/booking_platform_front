@@ -21,13 +21,15 @@ interface BookingDetailsModalProps {
   onClose: () => void;
   booking: BookingDto | null;
   language: string;
+  onEdit?: () => void;
 }
 
 export default function BookingDetailsModal({
   isOpen,
   onClose,
   booking,
-  language
+  language,
+  onEdit
 }: BookingDetailsModalProps) {
   if (!booking) return null;
 
@@ -104,13 +106,24 @@ export default function BookingDetailsModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={true}>
         <ModalContainer size="lg">
           <ModalDialog className="max-w-3xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
-            <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
-              <span id="booking-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                {language === "vi" ? "Chi tiết Đơn đặt" : "Booking Details"}
-              </span>
-              <span className="text-sm font-mono font-bold text-primary">
-                {booking.bookingCode}
-              </span>
+            <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-row items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span id="booking-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
+                  {language === "vi" ? "Chi tiết Đơn đặt" : "Booking Details"}
+                </span>
+                <span className="text-sm font-mono font-bold text-primary">
+                  {booking.bookingCode}
+                </span>
+              </div>
+              {onEdit && (
+                <Button
+                  size="sm"
+                  onClick={onEdit}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
+                >
+                  {language === "vi" ? "Chi tiết & Sửa" : "Details & Edit"}
+                </Button>
+              )}
             </ModalHeader>
 
             <ModalBody className="p-6 space-y-6 overflow-y-auto">
@@ -176,7 +189,7 @@ export default function BookingDetailsModal({
                           </div>
                         </div>
 
-                        <Separator className="bg-slate-100 dark:bg-slate-800" />
+                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                           {item.startDate && (
@@ -271,7 +284,7 @@ export default function BookingDetailsModal({
 
             <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 justify-end">
               <Button
-                className="rounded-xl font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
                 onClick={onClose}
               >
                 {language === "vi" ? "Đóng" : "Close"}

@@ -234,7 +234,7 @@ export default function SectionCreateModal({
     data: { title: string; subtitle: string; description: string; btnText: string; btnLink: string },
     setter: (d: any) => void
   ) => (
-    <div key={locale} className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+    <div key={locale} className="space-y-3 p-4 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-xl">
       <Label className="text-sm font-bold text-slate-700 dark:text-slate-200">
         Ngôn ngữ: {locale.toUpperCase()}
       </Label>
@@ -257,7 +257,7 @@ export default function SectionCreateModal({
         value={data.description}
         onChange={(e) => setter({ ...data, description: e.target.value })}
         rows={2}
-        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm resize-none"
+        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-sm resize-none"
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Input
@@ -307,14 +307,14 @@ export default function SectionCreateModal({
                       selectedKey={sectionType}
                       onSelectionChange={(key) => { if (key) setSectionType(String(key)); }}
                     >
-                      <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm h-[38px]">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-sm h-[38px]">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
                       <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
                           {SECTION_TYPES.map((t) => (
-                            <ListBox.Item key={t.value} id={t.value} textValue={t.label} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                            <ListBox.Item key={t.value} id={t.value} textValue={t.label} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                               {t.label}
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
@@ -329,11 +329,11 @@ export default function SectionCreateModal({
                   <div className="space-y-1.5 max-w-[120px]">
                     <Label className="text-sm font-bold">Thứ tự</Label>
                     <NumberField value={orderIndex} onChange={(val) => setOrderIndex(val || 0)} minValue={0}>
-                      <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
+                      <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
                         <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
                         <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-700">
-                          <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-700">▼</NumberField.DecrementButton>
+                          <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
+                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-700">▼</NumberField.DecrementButton>
                         </div>
                       </NumberField.Group>
                     </NumberField>

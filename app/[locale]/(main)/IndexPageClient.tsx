@@ -17,16 +17,16 @@ import {
   Plane,
   Compass,
   MapPin,
-  RefreshCw
 } from "lucide-react";
 import { Button, Separator, Select, Label, ListBox, SearchField, DatePicker, DateField, Calendar, FieldError, Autocomplete, EmptyState, useFilter } from "@heroui/react";
 import { useI18n } from "@/context/LanguageContext";
 import { getPublicServices, ServiceDto } from "@/lib/api/services";
-import { getVehicleCategories, VehicleCategoryDto, getActiveAirports, getActiveAirportRoutes, getAirportTransferPricesByRouteAndServiceType, type AirportDto } from "@/lib/api/fleet";
+import { getVehicleCategories, VehicleCategoryDto, getActiveAirports, type AirportDto } from "@/lib/api/fleet";
 import { getTours, type TourDto } from "@/lib/api/tours";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
+import { TimePicker, type TimeValue } from "@/components/time-picker";
 
 export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const { language, t, contacts } = useI18n();
@@ -37,13 +37,11 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [date, setDate] = useState<DateValue | null>(null);
+  const [time, setTime] = useState<TimeValue>({ hour: 8, minute: 0, period: "AM" });
   const [tripType, setTripType] = useState<"one-way" | "return">("one-way");
   const [passengers, setPassengers] = useState(1);
   const [luggage, setLuggage] = useState(0);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [showContactMenu, setShowContactMenu] = useState(false);
 
   // Active booking service tab
   const [activeServiceTab, setActiveServiceTab] = useState<"airport" | "rental" | "tour">("airport");
@@ -51,6 +49,8 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   // Car Rental Form state
   const [rentalType, setRentalType] = useState<"self" | "driver">("self");
   const [rentalPickup, setRentalPickup] = useState("");
+  const [rentalPickupSuggestions, setRentalPickupSuggestions] = useState<LocationSearchResult[]>([]);
+  const [showRentalPickupSug, setShowRentalPickupSug] = useState(false);
   const [rentalDate, setRentalDate] = useState<DateValue | null>(null);
   const [rentalDays, setRentalDays] = useState(1);
   const [rentalSeats, setRentalSeats] = useState<any>("4-seater");
@@ -78,13 +78,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const [showPickupSug, setShowPickupSug] = useState(false);
   const [showDropoffSug, setShowDropoffSug] = useState(false);
 
-  // Airport Transfer — vehicle loading
-  const [selectedRoute, setSelectedRoute] = useState<any>(null);
-  const [transferPrices, setTransferPrices] = useState<any[]>([]);
-  const [airportVehicleCategories, setAirportVehicleCategories] = useState<VehicleCategoryDto[]>([]);
-  const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
-  const [vehiclesLoading, setVehiclesLoading] = useState(false);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  // Airport Transfer
 
   // Sections from backend
   const [heroSections, setHeroSections] = useState<SectionDto[]>([]);
@@ -137,49 +131,12 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     }).catch(() => { });
   }, [language]);
 
-  // Load routes when airport changes
-  useEffect(() => {
-    if (!selectedAirport?.id) return;
-    getActiveAirportRoutes(selectedAirport.id)
-      .then(res => {
-        if (res?.data && res.data.length > 0) {
-          setSelectedRoute(res.data[0]);
-        }
-      })
-      .catch(() => {});
-  }, [selectedAirport?.id]);
-
-  // Load transfer prices when route + tripType changes
-  useEffect(() => {
-    if (!selectedRoute?.id) return;
-    const serviceType = tripType === "return" ? "ROUND_TRIP" : "ONE_WAY";
-    getAirportTransferPricesByRouteAndServiceType(selectedRoute.id, serviceType)
-      .then(res => {
-        if (res?.data) setTransferPrices(res.data);
-      })
-      .catch(() => {});
-  }, [selectedRoute?.id, tripType]);
-
-  // Auto-load vehicle categories when all fields are filled
+  // Check if basic form is complete
   const isAirportFormComplete = Boolean(
-    date && time && passengers > 0 &&
+    date && passengers > 0 &&
     ((direction === "to-nhatrang" && dropoffAddr.length > 0) ||
      (direction === "to-airport" && pickupAddr.length > 0))
   );
-
-  useEffect(() => {
-    if (!isAirportFormComplete || vehiclesLoaded || vehiclesLoading) return;
-    setVehiclesLoading(true);
-    getVehicleCategories({ active: true })
-      .then(res => {
-        if (res?.data?.content) {
-          setAirportVehicleCategories(res.data.content);
-          setVehiclesLoaded(true);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setVehiclesLoading(false));
-  }, [isAirportFormComplete, vehiclesLoaded, vehiclesLoading]);
 
   const getAirportName = (airport: AirportDto) => {
     const tr = airport.translations?.find(t => t.locale === language) || airport.translations?.[0];
@@ -187,19 +144,6 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   };
 
   const airportNameShort = selectedAirport ? getAirportName(selectedAirport) : t.homePage.airportName;
-
-  const fmtPrice = (amount: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(amount);
-
-  const airportVehicles = airportVehicleCategories.map(cat => {
-    const tr = cat.translations?.find(t => t.locale === language) || cat.translations?.[0];
-    const catName = tr?.name || cat.code;
-    const maxSeat = cat.maxSeat || 4;
-    const luggage = cat.maxLuggage || 2;
-    const priceEntry = transferPrices.find(p => p.vehicleCategoryId === cat.id);
-    const apiPrice = priceEntry ? Number(priceEntry.amount) : 0;
-    const price = tripType === "one-way" ? apiPrice : Math.round(apiPrice / 1.85);
-    return { id: cat.code, catId: cat.id, name: catName, seats: maxSeat, luggage, price };
-  });
 
   const handleAddressSearch = async (
     query: string,
@@ -232,17 +176,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     handleTourKeywordSearch(tourSearchQuery);
   }, [tourSearchQuery]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   const activeLang = language;
 
@@ -262,7 +196,9 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     e.preventDefault();
     const pickupVal = direction === "to-nhatrang" ? airportNameShort : pickupAddr;
     const destVal = direction === "to-airport" ? airportNameShort : dropoffAddr;
-    router.push(`/${language}/airport-transfer/search?pickup=${encodeURIComponent(pickupVal)}&destination=${encodeURIComponent(destVal)}&date=${date}&time=${time}&tripType=${tripType}&passengers=${passengers}&luggage=${luggage}&direction=${direction === "to-nhatrang" ? "FROM_AIRPORT" : "TO_AIRPORT"}`);
+    const dateStr = date ? date.toString() : "";
+    const timeStr = `${String(time.hour).padStart(2, "0")}:${String(time.minute).padStart(2, "0")}`;
+    router.push(`/${language}/airport-transfer?pickup=${encodeURIComponent(pickupVal)}&destination=${encodeURIComponent(destVal)}&date=${dateStr}&time=${timeStr}&tripType=${tripType}&direction=${direction === "to-nhatrang" ? "FROM_AIRPORT" : "TO_AIRPORT"}`);
   };
 
   const handleRentalSearch = (e: React.FormEvent) => {
@@ -361,15 +297,15 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                   <h2 className="w-full bg-white dark:bg-black text-black dark:text-white flex justify-center items-center font-extrabold text-base">
                     {t.homePage.airportTransfer}
                   </h2>
-                  <Separator className="bg-slate-200 dark:bg-slate-800" />
+                  <Separator className="bg-slate-200 dark:bg-[var(--bg-card)]" />
 
                   {/* Trip Type Selector */}
-                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full flex gap-1">
+                  <div className="bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-full flex gap-1">
                     <button
                       type="button"
                       onClick={() => setTripType("one-way")}
                       className={`flex-1 py-2 text-xs font-extrabold rounded-full transition-all cursor-pointer border-none ${tripType === "one-way"
-                        ? "bg-white dark:bg-slate-700 text-accent dark:text-white shadow-sm"
+                        ? "bg-white dark:bg-[var(--bg-elevated)] text-accent dark:text-white shadow-sm"
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                         }`}
                     >
@@ -379,7 +315,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       type="button"
                       onClick={() => setTripType("return")}
                       className={`flex-1 py-2 text-xs font-extrabold rounded-full transition-all cursor-pointer border-none ${tripType === "return"
-                        ? "bg-white dark:bg-slate-700 text-accent dark:text-white shadow-sm"
+                        ? "bg-white dark:bg-[var(--bg-elevated)] text-accent dark:text-white shadow-sm"
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                         }`}
                     >
@@ -389,12 +325,12 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
                   <form onSubmit={handleAirportSearch} className="flex flex-col gap-4">
                     {/* Direction Selector — compact */}
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg gap-0.5">
+                    <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg gap-0.5">
                       <button
                         type="button"
                         onClick={() => { setDirection("to-nhatrang"); setDropoffAddr(""); }}
                         className={`flex-1 py-1.5 px-1.5 rounded-md text-[10px] font-black transition-all cursor-pointer border-none ${direction === "to-nhatrang"
-                          ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                          ? "bg-white dark:bg-[var(--bg-elevated)] text-blue-600 dark:text-blue-400 shadow-sm"
                           : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                           }`}
                       >
@@ -404,7 +340,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         type="button"
                         onClick={() => { setDirection("to-airport"); setPickupAddr(""); }}
                         className={`flex-1 py-1.5 px-1.5 rounded-md text-[10px] font-black transition-all cursor-pointer border-none ${direction === "to-airport"
-                          ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                          ? "bg-white dark:bg-[var(--bg-elevated)] text-blue-600 dark:text-blue-400 shadow-sm"
                           : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                           }`}
                       >
@@ -452,7 +388,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                       <div
                                         key={idx}
                                         onClick={() => { setPickupAddr(item.address || item.name); setShowPickupSug(false); }}
-                                        className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-slate-850 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                                        className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
                                       >
                                         <MapPin size={12} className="text-blue-500 shrink-0" />
                                         <div className="min-w-0">
@@ -506,7 +442,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                       <div
                                         key={idx}
                                         onClick={() => { setDropoffAddr(item.address || item.name); setShowDropoffSug(false); }}
-                                        className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-slate-850 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                                        className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
                                       >
                                         <MapPin size={12} className="text-emerald-500 shrink-0" />
                                         <div className="min-w-0">
@@ -531,24 +467,60 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                             <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                               {t.homePage.dateLabel}
                             </label>
-                            <input
-                              type="date"
+                            <DatePicker
                               value={date}
-                              onChange={(e) => setDate(e.target.value)}
-                              className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none mt-0.5 [color-scheme:light] dark:[color-scheme:dark]"
-                              required
-                            />
+                              onChange={setDate}
+                              minValue={today(getLocalTimeZone())}
+                              className="w-full border-none shadow-none"
+                              aria-label="Date Picker"
+                            >
+                              <DateField.Group variant="secondary" className="bg-transparent border-none flex items-center justify-between p-0 h-auto w-full">
+                                <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none p-0 focus:ring-0 text-slate-800 dark:text-slate-100 w-full flex-grow">
+                                  {(segment) => <DateField.Segment segment={segment} />}
+                                </DateField.Input>
+                                <DateField.Suffix className="ml-auto">
+                                  <DatePicker.Trigger className="cursor-pointer bg-transparent border-none p-0 min-w-0 h-auto">
+                                    <DatePicker.TriggerIndicator className="text-slate-400 dark:text-slate-500" />
+                                  </DatePicker.Trigger>
+                                </DateField.Suffix>
+                              </DateField.Group>
+                              <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                                <Calendar aria-label="Travel date">
+                                  <Calendar.Header className="flex items-center justify-between mb-2">
+                                    <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
+                                      <Calendar.YearPickerTriggerHeading />
+                                      <Calendar.YearPickerTriggerIndicator />
+                                    </Calendar.YearPickerTrigger>
+                                    <div className="flex gap-1">
+                                      <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                      <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                    </div>
+                                  </Calendar.Header>
+                                  <Calendar.Grid className="w-full">
+                                    <Calendar.GridHeader className="text-slate-400 text-[10px] font-bold">
+                                      {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
+                                    </Calendar.GridHeader>
+                                    <Calendar.GridBody>
+                                      {(d) => (
+                                        <Calendar.Cell
+                                          date={d}
+                                          className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
+                                        />
+                                      )}
+                                    </Calendar.GridBody>
+                                  </Calendar.Grid>
+                                </Calendar>
+                              </DatePicker.Popover>
+                            </DatePicker>
                           </div>
                           <div className="col-span-5 border-l border-slate-200 dark:border-slate-800 pl-2 flex flex-col justify-center">
                             <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                               {t.homePage.time}
                             </label>
-                            <input
-                              type="time"
+                            <TimePicker
                               value={time}
-                              onChange={(e) => setTime(e.target.value)}
-                              className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none mt-0.5 [color-scheme:light] dark:[color-scheme:dark]"
-                              required
+                              onChange={setTime}
+                              language={language}
                             />
                           </div>
                         </div>
@@ -565,7 +537,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <button
                             type="button"
                             onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
                           >
                             <Minus size={14} />
                           </button>
@@ -575,7 +547,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <button
                             type="button"
                             onClick={() => setPassengers(passengers + 1)}
-                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
                           >
                             <Plus size={14} />
                           </button>
@@ -591,7 +563,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <button
                             type="button"
                             onClick={() => setLuggage(Math.max(0, luggage - 1))}
-                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
                           >
                             <Minus size={14} />
                           </button>
@@ -601,7 +573,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <button
                             type="button"
                             onClick={() => setLuggage(luggage + 1)}
-                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
                           >
                             <Plus size={14} />
                           </button>
@@ -609,44 +581,9 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       </div>
                     </div>
 
-                    {/* Vehicle Categories — auto-loaded when form is complete */}
-                    {isAirportFormComplete && (
-                      <div className="space-y-2">
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          Chọn dòng xe
-                        </span>
-                        {vehiclesLoading && !vehiclesLoaded && (
-                          <div className="flex items-center justify-center py-4">
-                            <RefreshCw className="animate-spin text-accent" size={20} />
-                            <span className="ml-2 text-xs font-bold text-slate-500">Đang tải xe...</span>
-                          </div>
-                        )}
-                        {vehiclesLoaded && airportVehicles.length > 0 && (
-                          <div className="grid grid-cols-1 gap-2">
-                            {airportVehicles.map(v => {
-                              const isSelected = selectedVehicleId === v.id;
-                              return (
-                                <div
-                                  key={v.id}
-                                  onClick={() => setSelectedVehicleId(v.id)}
-                                  className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex justify-between items-center ${isSelected ? "border-accent bg-accent/5" : "border-slate-200 dark:border-slate-800 hover:border-slate-300"}`}
-                                >
-                                  <div>
-                                    <span className="text-xs font-black text-slate-800 dark:text-white">{v.name}</span>
-                                    <p className="text-[10px] text-slate-400">{v.seats} khách · {v.luggage} hành lý</p>
-                                  </div>
-                                  <span className="text-sm font-black text-accent">{v.price > 0 ? fmtPrice(v.price) : "—"}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     <Button
                       type="submit"
-                      isDisabled={!selectedVehicleId}
+                      isDisabled={!isAirportFormComplete}
                       className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer mt-1"
                     >
                       {t.homePage.searchBtn}
@@ -661,15 +598,15 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                   <h2 className="w-full bg-white dark:bg-black text-black dark:text-white flex justify-center items-center font-extrabold text-base">
                     {t.homePage.rentalSection}
                   </h2>
-                  <Separator className="bg-slate-200 dark:bg-slate-800" />
+                  <Separator className="bg-slate-200 dark:bg-[var(--bg-card)]" />
 
                   {/* Rental Type Selector */}
-                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full flex gap-1">
+                  <div className="bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-full flex gap-1">
                     <button
                       type="button"
                       onClick={() => setRentalType("self")}
                       className={`flex-1 py-2 text-xs font-extrabold rounded-full transition-all cursor-pointer border-none ${rentalType === "self"
-                        ? "bg-white dark:bg-slate-700 text-accent dark:text-white shadow-sm"
+                        ? "bg-white dark:bg-[var(--bg-elevated)] text-accent dark:text-white shadow-sm"
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                         }`}
                     >
@@ -679,7 +616,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       type="button"
                       onClick={() => setRentalType("driver")}
                       className={`flex-1 py-2 text-xs font-extrabold rounded-full transition-all cursor-pointer border-none ${rentalType === "driver"
-                        ? "bg-white dark:bg-slate-700 text-accent dark:text-white shadow-sm"
+                        ? "bg-white dark:bg-[var(--bg-elevated)] text-accent dark:text-white shadow-sm"
                         : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                         }`}
                     >
@@ -691,22 +628,49 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-800 bg-slate-50/50 dark:bg-black/20 relative">
 
                       {/* Pickup location / Destination */}
-                      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
-                        <MapPin className="text-accent shrink-0" size={20} />
-                        <div className="w-full text-left">
-                          <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                            {t.homePage.pickupLocation}
-                          </label>
-                          <input
-                            type="text"
-                            value={rentalPickup}
-                            onChange={(e) => setRentalPickup(e.target.value)}
-                            placeholder={t.homePage.rentalPickupPlaceholder}
-                            className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
-                            required
-                          />
+                      {rentalType === "driver" && (
+                        <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+                          <MapPin className="text-accent shrink-0" size={20} />
+                          <div className="w-full text-left relative">
+                            <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                              {t.homePage.pickupLocation}
+                            </label>
+                            <input
+                              type="text"
+                              value={rentalPickup}
+                              onChange={(e) => {
+                                setRentalPickup(e.target.value);
+                                setShowRentalPickupSug(true);
+                                handleAddressSearch(e.target.value, setRentalPickupSuggestions);
+                              }}
+                              onFocus={() => setShowRentalPickupSug(true)}
+                              placeholder={t.homePage.rentalPickupPlaceholder}
+                              className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
+                              required
+                            />
+                            {showRentalPickupSug && rentalPickupSuggestions.length > 0 && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowRentalPickupSug(false)} />
+                                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                  {rentalPickupSuggestions.map((item, idx) => (
+                                    <div
+                                      key={idx}
+                                      onClick={() => { setRentalPickup(item.address || item.name); setShowRentalPickupSug(false); }}
+                                      className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                                    >
+                                      <MapPin size={12} className="text-blue-500 shrink-0" />
+                                      <div className="min-w-0">
+                                        <span className="block truncate font-semibold">{item.name}</span>
+                                        <span className="block truncate text-[10px] text-slate-400">{item.address}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Date & Days */}
                       <div className="flex items-center gap-3 px-4 py-3">
@@ -741,8 +705,8 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                       <Calendar.YearPickerTriggerIndicator />
                                     </Calendar.YearPickerTrigger>
                                     <div className="flex gap-1">
-                                      <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                                      <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                                      <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                      <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                                     </div>
                                   </Calendar.Header>
                                   <Calendar.Grid className="w-full">
@@ -793,7 +757,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           if (key) setRentalSeats(key as any);
                         }}
                       >
-                        <Select.Trigger className="h-11 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 flex justify-between items-center text-xs font-semibold text-slate-800 dark:text-slate-100 w-full outline-none">
+                        <Select.Trigger className="h-11 bg-slate-100 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl px-3 flex justify-between items-center text-xs font-semibold text-slate-800 dark:text-slate-100 w-full outline-none">
                           <Select.Value className="text-xs font-semibold text-slate-800 dark:text-slate-100" />
                           <Select.Indicator className="text-slate-400" />
                         </Select.Trigger>
@@ -808,7 +772,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                     id={c.code}
                                     key={c.code}
                                     textValue={trans?.name || c.code}
-                                    className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between"
+                                    className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between"
                                   >
                                     <span>{trans?.name || c.code}</span>
                                     <ListBox.ItemIndicator />
@@ -818,15 +782,15 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                             ) : (
                               // Fallback to static options if categories API fails or is empty
                               <>
-                                <ListBox.Item id="4-seater" textValue={t.homePage.vehicle4SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                <ListBox.Item id="4-seater" textValue={t.homePage.vehicle4SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
                                   <span>{t.homePage.vehicle4Seats}</span>
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="7-seater" textValue={t.homePage.vehicle7SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                <ListBox.Item id="7-seater" textValue={t.homePage.vehicle7SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
                                   <span>{t.homePage.vehicle7Seats}</span>
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="16-seater" textValue={t.homePage.vehicle16SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                <ListBox.Item id="16-seater" textValue={t.homePage.vehicle16SeatsName} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
                                   <span>{t.homePage.vehicle16Seats}</span>
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
@@ -853,7 +817,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                   <h2 className="w-full bg-white dark:bg-black text-black dark:text-white flex justify-center items-center font-extrabold text-base">
                     {t.homePage.tourSection}
                   </h2>
-                  <Separator className="bg-slate-200 dark:bg-slate-800" />
+                  <Separator className="bg-slate-200 dark:bg-[var(--bg-card)]" />
 
                   <form onSubmit={handleTourSearch} className="flex flex-col gap-4">
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-800 bg-slate-50/50 dark:bg-black/20 relative">
@@ -926,7 +890,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                       key={String(item.id)}
                                       id={String(item.id)}
                                       textValue={getTourName(item)}
-                                      className="p-2.5 hover:bg-amber-50/50 dark:hover:bg-slate-800 cursor-pointer rounded-lg transition-colors flex items-center gap-2"
+                                      className="p-2.5 hover:bg-amber-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer rounded-lg transition-colors flex items-center gap-2"
                                     >
                                       <div className="flex items-center gap-2 w-full">
                                         <Compass size={12} className="text-accent shrink-0" />
@@ -977,8 +941,8 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                     <Calendar.YearPickerTriggerIndicator />
                                   </Calendar.YearPickerTrigger>
                                   <div className="flex gap-1">
-                                    <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
-                                    <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" />
+                                    <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                    <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                                   </div>
                                 </Calendar.Header>
                                 <Calendar.Grid className="w-full">
@@ -1020,7 +984,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         <button
                           type="button"
                           onClick={() => setTourGuests(Math.max(1, tourGuests - 1))}
-                          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
                         >
                           <Minus size={14} />
                         </button>
@@ -1030,7 +994,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         <button
                           type="button"
                           onClick={() => setTourGuests(tourGuests + 1)}
-                          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                          className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
                         >
                           <Plus size={14} />
                         </button>
@@ -1057,7 +1021,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
       <section className="w-full py-16 bg-slate-50/50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-900">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Feature 1 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
+          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
             <div className="p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
               <ShieldCheck size={24} />
             </div>
@@ -1067,7 +1031,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
             </div>
           </div>
           {/* Feature 2 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
+          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
             <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0">
               <UserCheck size={24} />
             </div>
@@ -1077,7 +1041,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
             </div>
           </div>
           {/* Feature 3 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
+          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
             <div className="p-3 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-2xl shrink-0">
               <Car size={24} />
             </div>
@@ -1087,7 +1051,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
             </div>
           </div>
           {/* Feature 4 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
+          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
             <div className="p-3 bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 rounded-2xl shrink-0">
               <Headset size={24} />
             </div>
@@ -1127,74 +1091,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
         </div>
       </section>
 
-      {/* Contact & Back to Top Buttons in bottom-right corner */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {/* Contact Menu Popup */}
-        {showContactMenu && (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 w-40 flex flex-col gap-1.5 animate-fade-in-up">
-            <a
-              href={`tel:${contacts.phone}`}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline"
-            >
-              <Phone size={14} className="text-accent" />
-              <span>{t.common.callNow}</span>
-            </a>
-            <a
-              href={contacts.zalo.startsWith("http") ? contacts.zalo : `https://zalo.me/${contacts.zalo}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50"
-            >
-              <MessageCircle size={14} className="text-accent" />
-              <span>Zalo</span>
-            </a>
-            {contacts.kakaotalk && (
-              <a
-                href={contacts.kakaotalk.startsWith("http") ? contacts.kakaotalk : `https://pf.kakao.com/${contacts.kakaotalk}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50"
-              >
-                <span className="text-accent">💛</span>
-                <span>KakaoTalk</span>
-              </a>
-            )}
-            {contacts.whatsapp && (
-              <a
-                href={contacts.whatsapp.startsWith("http") ? contacts.whatsapp : `https://wa.me/${contacts.whatsapp}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-accent/10 hover:text-accent transition-colors no-underline border-t border-slate-100 dark:border-slate-700/50"
-              >
-                <span className="text-accent">💚</span>
-                <span>WhatsApp</span>
-              </a>
-            )}
-          </div>
-        )}
-
-        <button
-          onClick={() => setShowContactMenu(!showContactMenu)}
-          className={`p-4 rounded-full border shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer flex items-center justify-center ${showContactMenu
-            ? "bg-accent border-accent text-white"
-            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-accent dark:text-white"
-            }`}
-          aria-label="Contact Support"
-        >
-          <Headset size={22} />
-        </button>
-
-        {/* Back to Top Button in bottom-right corner below Contact Support */}
-        {showScrollTop && (
-          <button
-            onClick={scrollToTop}
-            className="p-4 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-accent dark:text-white shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer animate-bounce-subtle flex items-center justify-center"
-            aria-label="Back to Top"
-          >
-            <ChevronUp size={22} />
-          </button>
-        )}
-      </div>
+      
     </div>
   );
 }

@@ -62,6 +62,8 @@ export interface CreateBookingRequest {
   idempotencyKey?: string;
   contactChannel?: string;
   contactId?: string;
+  zaloId?: string;
+  kakaoTalkId?: string;
   items: CreateBookingItemRequest[];
 }
 
@@ -106,8 +108,50 @@ export async function getBookingByCode(code: string): Promise<ApiResponse<Bookin
   return apiFetch<ApiResponse<BookingDto>>(`/api/v1/bookings/code/${code}`);
 }
 
-export async function trackFlight(flightNumber: string): Promise<ApiResponse<any>> {
-  return apiFetch<ApiResponse<any>>(`/api/v1/flights/track/${flightNumber}`);
+export interface FlightTracking {
+  id: number;
+  flightNumber: string;
+  airlineName: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  scheduledDeparture: string;
+  scheduledArrival: string;
+  actualDeparture: string | null;
+  actualArrival: string | null;
+  status: string;
+  lastCheckedAt: string;
+}
+
+export interface OpenSkyFlightState {
+  icao24: string;
+  callsign: string;
+  originCountry: string;
+  timePosition: number | null;
+  lastContact: number;
+  longitude: number | null;
+  latitude: number | null;
+  barometricAltitude: number | null;
+  onGround: boolean;
+  velocity: number | null;
+  trueTrack: number | null;
+  verticalRate: number | null;
+}
+
+export async function trackFlight(flightNumber: string): Promise<FlightTracking> {
+  const res = await apiFetch<ApiResponse<FlightTracking>>(`/api/v1/flights/track/${flightNumber}`);
+  if (!res || !res.data) throw new Error(res?.message || "Không tìm thấy thông tin chuyến bay");
+  return res.data;
+}
+
+export async function trackFlightOpenSky(callsign: string): Promise<OpenSkyFlightState[]> {
+  const res = await apiFetch<ApiResponse<OpenSkyFlightState[]>>(`/api/v1/flights/opensky/track?callsign=${encodeURIComponent(callsign)}`);
+  if (!res || !res.data) throw new Error(res?.message || "Không tìm thấy chuyến bay");
+  return res.data;
+}
+
+export async function getFlightTrackingHistory(): Promise<FlightTracking[]> {
+  const res = await apiFetch<ApiResponse<FlightTracking[]>>("/api/v1/flights/history");
+  return res.data ?? [];
 }
 
 export async function getMyBookings(): Promise<BookingDto[]> {

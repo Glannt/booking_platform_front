@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/context/LanguageContext";
@@ -149,7 +149,7 @@ export default function RootPage() {
                 )}
               >
                 {/* Flag Icon */}
-                <div className="w-12 h-12 bg-slate-800 dark:bg-slate-850 rounded-xl flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-slate-800 dark:bg-[var(--bg-card)] rounded-xl flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-300">
                   {lang.flag}
                 </div>
 

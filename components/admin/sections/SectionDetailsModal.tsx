@@ -45,7 +45,7 @@ export default function SectionDetailsModal({
           <Button
             variant="outline"
             onClick={onClose}
-            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none px-4 py-2 h-9 text-xs"
+            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none px-4 py-2 h-9 text-xs"
           >
             Đóng
           </Button>
@@ -153,7 +153,7 @@ export default function SectionDetailsModal({
           ) : (
             <div className="space-y-3">
               {section.translations.map((t) => (
-                <div key={t.locale} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2">
+                <div key={t.locale} className="p-3 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-xl space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-md uppercase">
                       {t.locale}
