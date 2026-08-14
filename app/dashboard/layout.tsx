@@ -39,92 +39,7 @@ import { apiFetch } from "@/lib/api/client";
 import AuthGuard from "@/components/auth-guard";
 import clsx from "clsx";
 
-const myBookingsTranslations = {
-  vi: {
-    title: "Đơn đặt của tôi",
-    subtitle: "Xem, tìm kiếm và quản lý tất cả các chuyến đi của bạn.",
-    bookingType: "Loại đơn",
-    customerName: "Người đặt",
-    guestsCount: "Hành khách",
-    baggage: "Hành lý",
-    carSeats: "Số chỗ ngồi",
-    pickup: "Điểm đón",
-    dropoff: "Điểm trả",
-    pickupTime: "Thời gian đón",
-    flightDetails: "Chi tiết chuyến bay",
-    flightNumber: "Số hiệu chuyến bay",
-    estDeparture: "Giờ cất cánh dự kiến",
-    estLanding: "Giờ hạ cánh dự kiến",
-    airportTransfer: "Trung chuyển sân bay",
-    interProvincial: "Thuê xe đi tỉnh",
-    cancelledStatus: "Đã hủy",
-    reqCancelledStatus: "Chờ hủy",
-    close: "Đóng",
-  },
-  en: {
-    title: "My Bookings",
-    subtitle: "View, search, and manage all your scheduled trips.",
-    bookingType: "Booking Type",
-    customerName: "Customer Name",
-    guestsCount: "Passengers",
-    baggage: "Baggage",
-    carSeats: "Seat Capacity",
-    pickup: "Pickup Location",
-    dropoff: "Dropoff Location",
-    pickupTime: "Pickup Time",
-    flightDetails: "Flight Details",
-    flightNumber: "Flight Number",
-    estDeparture: "Est. Departure Time",
-    estLanding: "Est. Landing Time",
-    airportTransfer: "Airport Transfer",
-    interProvincial: "Inter-provincial Rent",
-    cancelledStatus: "Cancelled",
-    reqCancelledStatus: "Cancellation Requested",
-    close: "Close",
-  },
-  ko: {
-    title: "내 예약 내역",
-    subtitle: "모든 예정된 여행을 보고 검색하고 관리하세요.",
-    bookingType: "예약 유형",
-    customerName: "예약자 이름",
-    guestsCount: "탑승객 수",
-    baggage: "수하물",
-    carSeats: "좌석 수",
-    pickup: "출발지",
-    dropoff: "목적지",
-    pickupTime: "출발 시간",
-    flightDetails: "항공편 상세 정보",
-    flightNumber: "항공편 명",
-    estDeparture: "예정 출발 시간",
-    estLanding: "예정 도착 시간",
-    airportTransfer: "공항 픽업/샌딩",
-    interProvincial: "시외 차 렌트",
-    cancelledStatus: "취소됨",
-    reqCancelledStatus: "취소 요청 중",
-    close: "닫기",
-  },
-  ru: {
-    title: "Мои бронирования",
-    subtitle: "Просмотр, поиск и управление всеми вашими поездками.",
-    bookingType: "Тип бронирования",
-    customerName: "Имя клиента",
-    guestsCount: "Пассажиры",
-    baggage: "Багаж",
-    carSeats: "Кол-во мест",
-    pickup: "Место посадки",
-    dropoff: "Место высадки",
-    pickupTime: "Время посадки",
-    flightDetails: "Информация о рейсе",
-    flightNumber: "Номер рейса",
-    estDeparture: "Ожидаемое время вылета",
-    estLanding: "Ожидаемое время посадки",
-    airportTransfer: "Трансфер из аэропорта",
-    interProvincial: "Междугородний прокат",
-    cancelledStatus: "Отменено",
-    reqCancelledStatus: "Запрошена отмена",
-    close: "Закрыть",
-  }
-};
+
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -258,9 +173,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const getLocalizedBookingType = (type: string) => {
     if (type === "Airport Transfer") {
-      return myBookingsTranslations[language as Language]?.airportTransfer || "Airport Transfer";
+      return t.myBookings?.airportTransfer || "Airport Transfer";
     }
-    return myBookingsTranslations[language as Language]?.interProvincial || "Inter-provincial Rent";
+    return t.myBookings?.interProvincial || "Inter-provincial Rent";
   };
 
   const getLocalizedStatus = (status: string) => {
@@ -268,8 +183,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       case "confirmed": return t.dashboard.confirmed;
       case "completed": return t.dashboard.completed;
       case "pending": return t.dashboard.pending;
-      case "cancelled": return myBookingsTranslations[language as Language]?.cancelledStatus || "Cancelled";
-      case "cancellation_requested": return myBookingsTranslations[language as Language]?.reqCancelledStatus || "Cancellation Requested";
+      case "cancelled": return t.myBookings?.cancelledStatus || "Cancelled";
+      case "cancellation_requested": return t.myBookings?.reqCancelledStatus || "Cancellation Requested";
       default: return status;
     }
   };
@@ -301,6 +216,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           groups={sidebarGroups}
           user={userProfile}
           brandName="Minh Khoa Travel"
+          isAdmin={false}
           logo={<LayoutDashboard className="text-primary" size={24} />}
           onLogout={handleLogout}
           onSettingsClick={() => router.push("/dashboard/profile")}
@@ -333,6 +249,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           groups={sidebarGroups}
                           user={userProfile}
                           brandName="Minh Khoa Travel"
+                          isAdmin={false}
                           logo={<LayoutDashboard className="text-primary" size={24} />}
                           onLogout={() => { mobileDrawerState.close(); handleLogout(); }}
                           onSettingsClick={() => { mobileDrawerState.close(); router.push("/dashboard/profile"); }}
@@ -348,10 +265,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {isMyBookings ? (
                   <>
                     <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                      {myBookingsTranslations[language as Language]?.title || myBookingsTranslations.en.title}
+                      {t.myBookings?.title || "My Bookings"}
                     </h1>
                     <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                      {myBookingsTranslations[language as Language]?.subtitle || myBookingsTranslations.en.subtitle}
+                      {t.myBookings?.subtitle || "View, search, and manage all your scheduled trips."}
                     </p>
                   </>
                 ) : (
@@ -499,28 +416,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {/* Customer */}
                       <div className="col-span-2 sm:col-span-2 bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {myBookingsTranslations[language as Language]?.customerName || "Customer"}
+                          {t.myBookings?.customerName || "Customer"}
                         </span>
                         <p className="text-sm font-bold text-foreground">{selectedBooking.customerName}</p>
                       </div>
                       {/* Pickup Time */}
                       <div className="col-span-2 sm:col-span-2 bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {myBookingsTranslations[language as Language]?.pickupTime || "Pickup Time"}
+                          {t.myBookings?.pickupTime || "Pickup Time"}
                         </span>
                         <p className="text-sm font-bold text-foreground">{selectedBooking.pickupTime}</p>
                       </div>
                       {/* Passengers */}
                       <div className="bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {myBookingsTranslations[language as Language]?.guestsCount || "Passengers"}
+                          {t.myBookings?.guestsCount || "Passengers"}
                         </span>
                         <p className="text-sm font-bold text-foreground">{selectedBooking.guests} <span className="text-xs font-medium text-slate-400">{t.dashboard.guests}</span></p>
                       </div>
                       {/* Baggage */}
                       <div className="bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {myBookingsTranslations[language as Language]?.baggage || "Baggage"}
+                          {t.myBookings?.baggage || "Baggage"}
                         </span>
                         <p className="text-sm font-bold text-foreground">{selectedBooking.baggageWeight} <span className="text-xs font-medium text-slate-400">kg</span></p>
                       </div>
@@ -537,13 +454,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="flex-grow space-y-2">
                           <div>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                              {myBookingsTranslations[language as Language]?.pickup || "Pickup"}
+                              {t.myBookings?.pickup || "Pickup"}
                             </span>
                             <p className="text-sm font-semibold text-foreground">{selectedBooking.pickupLocation}</p>
                           </div>
                           <div>
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                              {myBookingsTranslations[language as Language]?.dropoff || "Dropoff"}
+                              {t.myBookings?.dropoff || "Dropoff"}
                             </span>
                             <p className="text-sm font-semibold text-foreground">{selectedBooking.dropoffLocation}</p>
                           </div>
@@ -559,24 +476,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <>
                       <div className="px-6 pt-4 pb-4">
                         <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
-                          <span className="inline-flex items-center gap-1"><Plane size={11} />{myBookingsTranslations[language as Language]?.flightDetails || "Flight Details"}</span>
+                          <span className="inline-flex items-center gap-1"><Plane size={11} />{t.myBookings?.flightDetails || "Flight Details"}</span>
                         </p>
                         <div className="bg-accent/5 dark:bg-accent/10 border border-blue-100 dark:border-blue-900/40 rounded-xl grid grid-cols-3 divide-x divide-blue-100 dark:divide-blue-900/40">
                           <div className="p-3 space-y-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
-                              {myBookingsTranslations[language as Language]?.flightNumber || "Flight No."}
+                              {t.myBookings?.flightNumber || "Flight No."}
                             </span>
                             <p className="text-sm font-extrabold text-accent">{selectedBooking.flightNumber}</p>
                           </div>
                           <div className="p-3 space-y-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
-                              {myBookingsTranslations[language as Language]?.estDeparture || "Departure"}
+                              {t.myBookings?.estDeparture || "Departure"}
                             </span>
                             <p className="text-sm font-bold text-foreground">{selectedBooking.estDepartureTime}</p>
                           </div>
                           <div className="p-3 space-y-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
-                              {myBookingsTranslations[language as Language]?.estLanding || "Landing"}
+                              {t.myBookings?.estLanding || "Landing"}
                             </span>
                             <p className="text-sm font-bold text-foreground">{selectedBooking.landingTime}</p>
                           </div>
@@ -615,7 +532,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <Users size={14} className="mx-auto text-slate-400" />
                           <p className="text-sm font-extrabold text-foreground">{selectedBooking.carSeats}</p>
                           <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                            {myBookingsTranslations[language as Language]?.carSeats || "Seats"}
+                            {t.myBookings?.carSeats || "Seats"}
                           </span>
                         </div>
                         <Separator className="absolute left-1/3 bottom-1/4 h-1/2 w-[1px] bg-divider" orientation="vertical" />
@@ -631,7 +548,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <Luggage size={14} className="mx-auto text-slate-400" />
                           <p className="text-sm font-extrabold text-foreground">{selectedBooking.baggageWeight}<span className="text-xs font-medium"> kg</span></p>
                           <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                            {myBookingsTranslations[language as Language]?.baggage || "Baggage"}
+                            {t.myBookings?.baggage || "Baggage"}
                           </span>
                         </div>
                       </div>

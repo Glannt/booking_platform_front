@@ -1,5 +1,6 @@
 export const nav = {
   home: "Главная",
+  services: "Услуги",
   rentCarMenu: "Аренда авто",
   rentCar: "Аренда авто с водителем",
   selfDrive: "Аренда авто (без водителя)",

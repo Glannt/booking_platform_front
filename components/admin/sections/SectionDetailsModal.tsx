@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Modal, Button, Label, Switch } from "@heroui/react";
+import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, Button, Label, Switch } from "@heroui/react";
 import { SectionDto } from "@/lib/api/sections";
 import { StatusChip } from "@/components/StatusChip";
 import { Pencil, Trash2, ImageOff } from "lucide-react";
@@ -39,26 +39,29 @@ export default function SectionDetailsModal({
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="section-details-title">
-      <Modal.Header className="flex flex-row items-center justify-between px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
-        <span id="section-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">Chi tiết Section</span>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none px-4 py-2 h-9 text-xs"
-          >
-            Đóng
-          </Button>
-          <Button
-            className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8912a] text-white flex items-center gap-1.5 h-9 px-4 py-2 text-xs shadow-md border-none"
-            onClick={onEdit}
-          >
-            <Pencil size={14} />
-            Chỉnh sửa
-          </Button>
-        </div>
-      </Modal.Header>
-      <Modal.Body className="space-y-6 max-h-[65vh] overflow-y-auto p-6">
+      <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
+        <ModalContainer className="max-w-4xl w-full">
+          <ModalDialog className="bg-white dark:bg-black rounded-md border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
+            <ModalHeader className="flex flex-row items-center justify-between px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
+              <span id="section-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">Chi tiết Section</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="rounded-md font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none px-4 py-2 h-9 text-xs"
+                >
+                  Đóng
+                </Button>
+                <Button
+                  className="rounded-md font-bold bg-[#C9A227] hover:bg-[#b8912a] text-white flex items-center gap-1.5 h-9 px-4 py-2 text-xs shadow-md border-none"
+                  onClick={onEdit}
+                >
+                  <Pencil size={14} />
+                  Chỉnh sửa
+                </Button>
+              </div>
+            </ModalHeader>
+            <ModalBody className="space-y-6 max-h-[75vh] overflow-y-auto p-6">
         {/* Basic Info */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -190,7 +193,10 @@ export default function SectionDetailsModal({
             </div>
           )}
         </div>
-      </Modal.Body>
+      </ModalBody>
+          </ModalDialog>
+        </ModalContainer>
+      </ModalBackdrop>
     </Modal>
   );
 }

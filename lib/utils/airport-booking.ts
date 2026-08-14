@@ -35,6 +35,8 @@ export interface BuildAirportPayloadInput {
   returnTimeValue: TimeValue;
   returnFlightNumber: string;
   selectedVehicle: VehicleOption;
+  routeId?: number;
+  actualKm?: number;
   fullName: string;
   phone: string;
   email: string;
@@ -96,13 +98,19 @@ export function buildAirportPayload(input: BuildAirportPayloadInput) {
       : outboundDropoff;
 
   const dateText = input.dateValue ? input.dateValue.toString() : "";
+  let outboundHr = input.timeValue.hour;
+  if (input.timeValue.period === "PM" && outboundHr < 12) outboundHr += 12;
+  if (input.timeValue.period === "AM" && outboundHr === 12) outboundHr = 0;
   const startDateFormatted = dateText
-    ? `${dateText}T${pad2(input.timeValue.hour)}:${pad2(input.timeValue.minute)}:00`
+    ? `${dateText}T${pad2(outboundHr)}:${pad2(input.timeValue.minute)}:00`
     : undefined;
 
   let endDateFormatted: string | undefined = undefined;
   if (input.tripType === "return" && input.returnDateValue) {
-    endDateFormatted = `${input.returnDateValue.toString()}T${pad2(input.returnTimeValue.hour)}:${pad2(input.returnTimeValue.minute)}:00`;
+    let returnHr = input.returnTimeValue.hour;
+    if (input.returnTimeValue.period === "PM" && returnHr < 12) returnHr += 12;
+    if (input.returnTimeValue.period === "AM" && returnHr === 12) returnHr = 0;
+    endDateFormatted = `${input.returnDateValue.toString()}T${pad2(returnHr)}:${pad2(input.returnTimeValue.minute)}:00`;
   }
 
   const outboundPrice = input.selectedVehicle.priceOneWay;
@@ -135,6 +143,8 @@ export function buildAirportPayload(input: BuildAirportPayloadInput) {
     returnDropoffAddress:
       input.tripType === "return" ? returnDropoff : null,
     vehicleCategoryId: input.selectedVehicle.categoryId || null,
+    routeId: input.routeId ?? null,
+    actualKm: input.actualKm ?? null,
     basePrice: outboundPrice,
     totalPrice: unitPrice,
     currency: "VND" as const,

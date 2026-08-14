@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, SidebarGroup, UserProfile } from "@/components/sidebar";
 import { useI18n } from "@/context/LanguageContext";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -23,6 +23,7 @@ import {
   Milestone,
   Coins,
   Search,
+  Percent,
 } from "lucide-react";
 import {
   Drawer,
@@ -32,13 +33,28 @@ import {
   Button,
 } from "@heroui/react";
 import { useAuthStore } from "@/lib/store/authStore";
+import { apiFetch } from "@/lib/api/client";
 import AuthGuard from "@/components/auth-guard";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { language, setLanguage, t, supportedLanguages } = useI18n();
   const mobileDrawerState = useOverlayState();
   const authUser = useAuthStore((s) => s.user);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
+  const refreshToken = useAuthStore((s) => s.refreshToken);
+
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/v1/auth/logout", {
+        method: "POST",
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch { }
+    clearAuth();
+    router.push("/admin/login");
+  };
 
   const sidebarGroups: SidebarGroup[] = [
     {
@@ -89,6 +105,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           label: "Tuyến xe Liên tỉnh",
           path: "/admin/intercity",
           icon: <Milestone size={20} />,
+        },
+        {
+          key: "surcharges-mgmt",
+          label: "Quản lý Phụ thu",
+          path: "/admin/surcharges",
+          icon: <Percent size={20} />,
         },
         {
           key: "flights-mgmt",
@@ -181,6 +203,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isContactsMgmt = pathname?.startsWith("/admin/contacts");
   const isRentalBookings = pathname?.startsWith("/admin/rental-bookings");
   const isIntercityMgmt = pathname?.startsWith("/admin/intercity");
+  const isSurchargesMgmt = pathname?.startsWith("/admin/surcharges");
   const isCurrenciesMgmt = pathname?.startsWith("/admin/currencies");
   const isFlightsMgmt = pathname?.startsWith("/admin/flights");
 
@@ -199,6 +222,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     if (isIntercityMgmt) {
       return "Quản lý Tuyến xe Liên tỉnh";
+    }
+    if (isSurchargesMgmt) {
+      return "Quản lý Phụ thu";
     }
     if (isContactsMgmt) {
       return "Cấu hình Liên hệ";
@@ -305,9 +331,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             groups={sidebarGroups}
             user={userProfile}
             brandName="Minh Khoa Travel"
+            isAdmin={true}
             logo={<LayoutDashboard className="text-primary" size={24} />}
-            onLogout={() => console.log("Admin logout")}
-            onSettingsClick={() => console.log("Admin settings click")}
+            onLogout={handleLogout}
+            onSettingsClick={() => router.push("/admin/settings")}
+            onProfileClick={() => router.push("/admin/settings")}
           />
         </div>
 
@@ -338,9 +366,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             groups={sidebarGroups}
                             user={userProfile}
                             brandName="Minh Khoa Travel"
+                            isAdmin={true}
                             logo={<LayoutDashboard className="text-primary" size={24} />}
-                            onLogout={() => { mobileDrawerState.close(); }}
-                            onSettingsClick={() => { mobileDrawerState.close(); }}
+                            onLogout={() => {
+                              mobileDrawerState.close();
+                              handleLogout();
+                            }}
+                            onSettingsClick={() => {
+                              mobileDrawerState.close();
+                              router.push("/admin/settings");
+                            }}
+                            onProfileClick={() => {
+                              mobileDrawerState.close();
+                              router.push("/admin/settings");
+                            }}
                           />
                         </Drawer.Body>
                       </Drawer.Dialog>

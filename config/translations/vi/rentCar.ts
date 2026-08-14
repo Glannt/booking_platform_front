@@ -105,6 +105,7 @@ export const rentCar = {
   emailPlaceholder: "Nhập email",
   zaloId: "Zalo ID",
   kakaoTalkId: "KakaoTalk ID",
+  whatsapp: "WhatsApp",
   noVehiclesForRoute: "Không có xe nào khả dụng cho tuyến này",
   vehicleExamples: "Đại diện:",
   showing: "Đang hiển thị",
@@ -115,6 +116,6 @@ export const rentCar = {
   confirmSuccessTitle: "Đặt xe thành công!",
   successBookingCode: "Mã đặt xe",
   successMessage: "Cảm ơn bạn đã chọn Minh Khoa Travel. Yêu cầu đặt xe của bạn đã được tiếp nhận.",
-  successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến Zalo của bạn. Vui lòng phản hồi để hoàn tất.",
+  successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến email của bạn và sẽ liên hệ qua các kênh liên hệ phụ của bạn. Vui lòng phản hồi để hoàn tất.",
   redirecting: "Đang chuyển hướng...",
 };

@@ -3,6 +3,7 @@ export type Language = "vi" | "en" | "ko" | "ru";
 export interface TranslationDictionary {
   nav: {
     home: string;
+    services: string;
     rentCarMenu: string;
     rentCar: string;
     selfDrive: string;
@@ -120,6 +121,27 @@ export interface TranslationDictionary {
     rebook: string;
     cancel: string;
   };
+  myBookings: {
+    title: string;
+    subtitle: string;
+    bookingType: string;
+    customerName: string;
+    guestsCount: string;
+    baggage: string;
+    carSeats: string;
+    pickup: string;
+    dropoff: string;
+    pickupTime: string;
+    flightDetails: string;
+    flightNumber: string;
+    estDeparture: string;
+    estLanding: string;
+    airportTransfer: string;
+    interProvincial: string;
+    cancelledStatus: string;
+    reqCancelledStatus: string;
+    close: string;
+  };
   profile: {
     title: string;
     subtitle: string;
@@ -138,6 +160,8 @@ export interface TranslationDictionary {
     kakaoTalkPlaceholder: string;
     zaloId: string;
     zaloIdPlaceholder: string;
+    whatsapp: string;
+    whatsappPlaceholder: string;
   };
   booking: {
     title: string;
@@ -522,7 +546,23 @@ export interface TranslationDictionary {
     airConditioning: string;
     bookAnother: string;
     backToHome: string;
-  };
+    surchargeNoticeTitle: string;
+    surchargeNote: string;
+    surchargeShort: string;
+    priceSchemaInfoFixed: string;
+priceSchemaInfoKm: string;
+      fixedRoutePriceNote: string;
+      estimatedPrice: string;
+      suggestedRoutes: string;
+      popularRoutes: string;
+      hideRoutes: string;
+      showRoutes: string;
+      surchargeApplied: string;
+      passengers: string;
+      baggageCount: string;
+      baggageWeight: string;
+      capacityWarning: string;
+    };
   rentCar: {
     title: string;
     subtitle: string;
@@ -630,6 +670,7 @@ export interface TranslationDictionary {
     emailPlaceholder: string;
     zaloId: string;
     kakaoTalkId: string;
+    whatsapp: string;
     noVehiclesForRoute: string;
     vehicleExamples: string;
     showing: string;
@@ -918,5 +959,60 @@ export interface TranslationDictionary {
     phoneInvalid: string;
     fullnameRequired: string;
     maximumItems: string;
+  };
+  surchargeEngine: {
+    title: string;
+    description: string;
+    rulesTab: string;
+    mappingsTab: string;
+    createRule: string;
+    editRule: string;
+    ruleDetail: string;
+    assignModule: string;
+    editMapping: string;
+    code: string;
+    name: string;
+    descriptionLabel: string;
+    calcType: string;
+    calcBase: string;
+    value: string;
+    conditionType: string;
+    effectiveDates: string;
+    priority: string;
+    active: string;
+    inactive: string;
+    status: string;
+    actions: string;
+    moduleCode: string;
+    applyOrder: string;
+    isOptional: string;
+    confirmDeleteRule: string;
+    confirmDeleteMapping: string;
+    saveSuccess: string;
+    deleteSuccess: string;
+    allModules: string;
+    condition: string;
+    conditionJson: string;
+    filterByCode: string;
+    filterByModule: string;
+    fixed: string;
+    percent: string;
+    basePrice: string;
+    runningTotal: string;
+    timeRange: string;
+    dateRange: string;
+    dayOfWeek: string;
+    zone: string;
+    compositeAnd: string;
+    compositeOr: string;
+    fromTime: string;
+    toTime: string;
+    fromDate: string;
+    toDate: string;
+    days: string;
+    assignedModules: string;
+    noModulesAssigned: string;
+    refresh: string;
+    search: string;
   };
 }

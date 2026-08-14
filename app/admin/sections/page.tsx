@@ -74,9 +74,17 @@ export default function SectionsManagementPage() {
     try {
       const data = await getSectionsByPagePath(filterPagePath);
       setSections(data);
+      if (selectedSection) {
+        const fresh = data.find((s) => s.id === selectedSection.id);
+        if (fresh) {
+          setSelectedSection(fresh);
+        }
+      }
+      return data;
     } catch (error) {
       console.error("Error loading sections:", error);
       showToast("Không thể tải danh sách sections.", "error");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -374,10 +382,18 @@ export default function SectionsManagementPage() {
       {/* Modals */}
       <SectionCreateModal
         isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => {
+        onClose={() => {
           setCreateModalOpen(false);
-          fetchSections();
+          if (selectedSection) {
+            setDetailsModalOpen(true);
+          }
+        }}
+        onSuccess={async () => {
+          setCreateModalOpen(false);
+          await fetchSections();
+          if (selectedSection) {
+            setDetailsModalOpen(true);
+          }
         }}
         pagePath={filterPagePath}
         initialData={selectedSection}

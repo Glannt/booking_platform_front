@@ -5,10 +5,6 @@ import type { DateValue } from "@internationalized/date";
 import { getLocalTimeZone, today } from "@internationalized/date";
 import {
   Calendar as CalendarIcon,
-  ShieldCheck,
-  UserCheck,
-  Car,
-  Headset,
   ChevronUp,
   Minus,
   Plus,
@@ -18,6 +14,7 @@ import {
   Compass,
   MapPin,
 } from "lucide-react";
+import { ShieldCheck, UserCheck, Car, Headset } from "@/components/icons";
 import { Button, Separator, Select, Label, ListBox, SearchField, DatePicker, DateField, Calendar, FieldError, Autocomplete, EmptyState, useFilter } from "@heroui/react";
 import { useI18n } from "@/context/LanguageContext";
 import { getPublicServices, ServiceDto } from "@/lib/api/services";
@@ -135,7 +132,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const isAirportFormComplete = Boolean(
     date && passengers > 0 &&
     ((direction === "to-nhatrang" && dropoffAddr.length > 0) ||
-     (direction === "to-airport" && pickupAddr.length > 0))
+      (direction === "to-airport" && pickupAddr.length > 0))
   );
 
   const getAirportName = (airport: AirportDto) => {
@@ -180,15 +177,25 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
   const activeLang = language;
 
-  const heroTitle = heroSections.length > 0
-    ? heroSections[0].translations?.find(tr => tr.locale === language)?.title || t.homePage.heroTitle
+  const activeHeroSection = heroSections[0] || null;
+  const heroImages = (activeHeroSection?.imageUrls || []).filter(Boolean);
+  const isMultiImage = heroImages.length > 1;
+  const [currentHeroImage, setCurrentHeroImage] = useState(0);
+
+  useEffect(() => {
+    if (!isMultiImage) return;
+    const interval = setInterval(() => {
+      setCurrentHeroImage((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isMultiImage, heroImages.length]);
+
+  const heroTitle = activeHeroSection
+    ? activeHeroSection.translations?.find(tr => tr.locale === language)?.title || t.homePage.heroTitle
     : t.homePage.heroTitle;
-  const heroSubtitle = heroSections.length > 0
-    ? heroSections[0].translations?.find(tr => tr.locale === language)?.description || t.homePage.heroSubtitle
+  const heroSubtitle = activeHeroSection
+    ? activeHeroSection.translations?.find(tr => tr.locale === language)?.description || t.homePage.heroSubtitle
     : t.homePage.heroSubtitle;
-  const heroBgImage = heroSections.length > 0 && heroSections[0].imageUrls?.[0]
-    ? heroSections[0].imageUrls[0]
-    : '';
 
   const faqTitle = t.homePage.faqTitle;
 
@@ -221,17 +228,50 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   return (
     <div className="relative flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
 
-      {/* Hero Section */}
-      <section className="relative w-full min-h-[680px] lg:h-[740px] flex items-center justify-center pt-20 pb-12">
-        {/* Background Image with overlay */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('${heroBgImage}')`
-          }}
-        >
-          <div className="absolute inset-0 bg-black/55 dark:bg-black/65 backdrop-blur-[2px]" />
-        </div>
+      {/* Hero Section: 1 image => static HeroBanner, >1 image => dynamic Carousel Slideshow */}
+      <section className="relative w-full min-h-[680px] lg:h-[740px] flex items-center justify-center pt-20 pb-12 overflow-hidden">
+        {/* Background Images */}
+        {isMultiImage ? (
+          <div className="absolute inset-0">
+            {heroImages.map((url, idx) => (
+              <div
+                key={url + idx}
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out"
+                style={{
+                  backgroundImage: `url('${url}')`,
+                  opacity: idx === currentHeroImage ? 1 : 0,
+                }}
+              />
+            ))}
+            <div className="absolute inset-0 bg-black/40" />
+
+            {/* Carousel navigation dots */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+              {heroImages.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentHeroImage(idx)}
+                  aria-label={`Slide ${idx + 1}`}
+                  className={`h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
+                    idx === currentHeroImage
+                      ? "w-6 bg-white shadow-md"
+                      : "w-2 bg-white/50 hover:bg-white/80"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: heroImages.length === 1 ? `url('${heroImages[0]}')` : undefined,
+            }}
+          >
+            <div className="absolute inset-0 bg-black/35 dark:bg-black/35" />
+          </div>
+        )}
 
         {/* Hero Content Grid */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center h-full">
@@ -352,7 +392,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       <div className="absolute left-7 top-[34px] h-[48px] w-px border-l border-dashed border-slate-300 dark:border-slate-600 hidden sm:block z-0 pointer-events-none" />
 
                       {/* Pickup */}
-                      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+                      <div className={`flex items-center gap-3 px-4 py-3 relative ${showPickupSug ? "z-20" : "z-10"}`}>
                         <div className="w-6 h-6 rounded-full border-2 border-accent flex items-center justify-center bg-white dark:bg-black shrink-0">
                           <div className="w-2 h-2 rounded-full bg-accent" />
                         </div>
@@ -406,7 +446,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       </div>
 
                       {/* Destination */}
-                      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+                      <div className={`flex items-center gap-3 px-4 py-3 relative ${showDropoffSug ? "z-20" : "z-10"}`}>
                         <div className="w-6 h-6 rounded-full border-2 border-emerald-500 flex items-center justify-center bg-white dark:bg-black shrink-0">
                           <div className="w-2 h-2 rounded-full bg-emerald-500" />
                         </div>
@@ -629,7 +669,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
                       {/* Pickup location / Destination */}
                       {rentalType === "driver" && (
-                        <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+                        <div className={`flex items-center gap-3 px-4 py-3 relative ${showRentalPickupSug ? "z-20" : "z-10"}`}>
                           <MapPin className="text-accent shrink-0" size={20} />
                           <div className="w-full text-left relative">
                             <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -1018,50 +1058,54 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
       </section>
 
       {/* Features Row */}
-      <section className="w-full py-16 bg-slate-50/50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-900">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Feature 1 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
-              <ShieldCheck size={24} />
+      {featureSections.length > 0 ? (
+        <SectionRenderer sections={featureSections} locale={language} />
+      ) : (
+        <section className="w-full py-16 bg-slate-50/50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-900">
+          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Feature 1 */}
+            <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature1Title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature1Desc}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature1Title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature1Desc}</p>
+            {/* Feature 2 */}
+            <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0">
+                <UserCheck size={24} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature2Title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature2Desc}</p>
+              </div>
+            </div>
+            {/* Feature 3 */}
+            <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-2xl shrink-0">
+                <Car size={24} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature3Title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature3Desc}</p>
+              </div>
+            </div>
+            {/* Feature 4 */}
+            <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 rounded-2xl shrink-0">
+                <Headset size={24} />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature4Title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature4Desc}</p>
+              </div>
             </div>
           </div>
-          {/* Feature 2 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl shrink-0">
-              <UserCheck size={24} />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature2Title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature2Desc}</p>
-            </div>
-          </div>
-          {/* Feature 3 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-2xl shrink-0">
-              <Car size={24} />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature3Title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature3Desc}</p>
-            </div>
-          </div>
-          {/* Feature 4 */}
-          <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
-            <div className="p-3 bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 rounded-2xl shrink-0">
-              <Headset size={24} />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">{t.homePage.feature4Title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">{t.homePage.feature4Desc}</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Dynamic Sections from Backend (CTA, Promo, Banner) */}
       {ctaSections.length > 0 && (
@@ -1091,7 +1135,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
         </div>
       </section>
 
-      
+
     </div>
   );
 }

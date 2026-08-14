@@ -7,12 +7,15 @@ interface PickupMapProps {
   lat: number;
   lng: number;
   label: string;
+  onPick?: (lat: number, lng: number) => void;
 }
 
-export function PickupMap({ lat, lng, label }: PickupMapProps) {
+export function PickupMap({ lat, lng, label, onPick }: PickupMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -44,6 +47,13 @@ export function PickupMap({ lat, lng, label }: PickupMapProps) {
 
     markerRef.current = marker;
     mapRef.current = map;
+
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      if (!onPickRef.current) return;
+      const { lat: lat2, lng: lng2 } = e.latlng;
+      markerRef.current?.setLatLng([lat2, lng2]);
+      onPickRef.current(lat2, lng2);
+    });
 
     // Force map relayout to handle container rendering delays
     setTimeout(() => {
@@ -82,6 +92,11 @@ export function PickupMap({ lat, lng, label }: PickupMapProps) {
   return (
     <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800/80 h-64 z-10 w-full mt-3">
       <div ref={mapContainerRef} className="w-full h-full" />
+      {onPick && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full bg-black/70 text-white text-[10px] font-bold shadow pointer-events-none">
+          Click vào bản đồ để chọn vị trí
+        </div>
+      )}
     </div>
   );
 }

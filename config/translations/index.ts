@@ -21,6 +21,7 @@ import { pricing as pricingVi } from "./vi/pricing";
 import { status as statusVi } from "./vi/status";
 import { profile as profileVi } from "./vi/profile";
 import { errors as errorsVi } from "./vi/errors";
+import { myBookings as myBookingsVi } from "./vi/myBookings";
 
 import { nav as navEn } from "./en/nav";
 import { aboutPage as aboutPageEn } from "./en/about";
@@ -41,6 +42,7 @@ import { pricing as pricingEn } from "./en/pricing";
 import { status as statusEn } from "./en/status";
 import { profile as profileEn } from "./en/profile";
 import { errors as errorsEn } from "./en/errors";
+import { myBookings as myBookingsEn } from "./en/myBookings";
 
 import { nav as navKo } from "./ko/nav";
 import { aboutPage as aboutPageKo } from "./ko/about";
@@ -61,6 +63,7 @@ import { pricing as pricingKo } from "./ko/pricing";
 import { status as statusKo } from "./ko/status";
 import { profile as profileKo } from "./ko/profile";
 import { errors as errorsKo } from "./ko/errors";
+import { myBookings as myBookingsKo } from "./ko/myBookings";
 
 import { nav as navRu } from "./ru/nav";
 import { aboutPage as aboutPageRu } from "./ru/about";
@@ -81,6 +84,12 @@ import { pricing as pricingRu } from "./ru/pricing";
 import { status as statusRu } from "./ru/status";
 import { profile as profileRu } from "./ru/profile";
 import { errors as errorsRu } from "./ru/errors";
+import { myBookings as myBookingsRu } from "./ru/myBookings";
+
+import { surchargeEngine as surchargeEngineVi } from "./vi/surchargeEngine";
+import { surchargeEngine as surchargeEngineEn } from "./en/surchargeEngine";
+import { surchargeEngine as surchargeEngineKo } from "./ko/surchargeEngine";
+import { surchargeEngine as surchargeEngineRu } from "./ru/surchargeEngine";
 
 const vi: TranslationDictionary = {
   nav: navVi,
@@ -102,6 +111,8 @@ const vi: TranslationDictionary = {
   tours: toursVi,
   pricing: pricingVi,
   errors: errorsVi,
+  myBookings: myBookingsVi,
+  surchargeEngine: surchargeEngineVi,
 };
 
 const en: TranslationDictionary = {
@@ -124,6 +135,8 @@ const en: TranslationDictionary = {
   tours: toursEn,
   pricing: pricingEn,
   errors: errorsEn,
+  myBookings: myBookingsEn,
+  surchargeEngine: surchargeEngineEn,
 };
 
 const ko: TranslationDictionary = {
@@ -146,6 +159,8 @@ const ko: TranslationDictionary = {
   tours: toursKo,
   pricing: pricingKo,
   errors: errorsKo,
+  myBookings: myBookingsKo,
+  surchargeEngine: surchargeEngineKo,
 };
 
 const ru: TranslationDictionary = {
@@ -168,6 +183,8 @@ const ru: TranslationDictionary = {
   tours: toursRu,
   pricing: pricingRu,
   errors: errorsRu,
+  myBookings: myBookingsRu,
+  surchargeEngine: surchargeEngineRu,
 };
 
 export const translations: Record<Language, TranslationDictionary> = { vi, en, ko, ru };

@@ -185,3 +185,26 @@ export const SearchIcon = (props: IconSvgProps) => (
     />
   </svg>
 );
+
+import {
+  ShieldCheck as LucideShieldCheck,
+  UserCheck as LucideUserCheck,
+  Car as LucideCar,
+  Headset as LucideHeadset,
+} from "lucide-react";
+
+export const ShieldCheck: React.FC<IconSvgProps> = ({ size = 24, ...props }) => (
+  <LucideShieldCheck size={size} {...props} />
+);
+
+export const UserCheck: React.FC<IconSvgProps> = ({ size = 24, ...props }) => (
+  <LucideUserCheck size={size} {...props} />
+);
+
+export const Car: React.FC<IconSvgProps> = ({ size = 24, ...props }) => (
+  <LucideCar size={size} {...props} />
+);
+
+export const Headset: React.FC<IconSvgProps> = ({ size = 24, ...props }) => (
+  <LucideHeadset size={size} {...props} />
+);

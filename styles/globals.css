@@ -5,25 +5,25 @@
 
 /* ponytail: override HeroUI accent to yellow (light) / brown-gold (dark) */
 :root {
-  --accent: oklch(0.82 0.17 85);
-  --accent-foreground: oklch(0.18 0.02 70);
-  --accent-hover: oklch(0.75 0.18 85);
-  --bg-page: #fafafa;
-  --bg-surface: #ffffff;
-  --bg-card: #f4f4f5;
-  --bg-elevated: #e4e4e7;
-  --bg-muted: #f4f4f580;
+	--accent: oklch(0.82 0.17 85);
+	--accent-foreground: oklch(0.18 0.02 70);
+	--accent-hover: oklch(0.75 0.18 85);
+	--bg-page: #fafafa;
+	--bg-surface: #ffffff;
+	--bg-card: #f4f4f5;
+	--bg-elevated: #e4e4e7;
+	--bg-muted: #f4f4f580;
 }
 
 .dark {
-  --accent: oklch(0.65 0.15 75);
-  --accent-foreground: oklch(0.97 0.01 80);
-  --accent-hover: oklch(0.58 0.16 75);
-  --bg-page: #09090b;
-  --bg-surface: #18181b;
-  --bg-card: #27272a;
-  --bg-elevated: #3f3f46;
-  --bg-muted: #27272a80;
+	--accent: oklch(0.65 0.15 75);
+	--accent-foreground: oklch(0.97 0.01 80);
+	--accent-hover: oklch(0.58 0.16 75);
+	--bg-page: #09090b;
+	--bg-surface: #18181b;
+	--bg-card: #27272a;
+	--bg-elevated: #3f3f46;
+	--bg-muted: #27272a80;
 }
 
 @theme {
@@ -35,83 +35,133 @@
 	.accordion {
 		@apply rounded-xl bg-gray-50 dark:bg-[var(--bg-surface)];
 	}
+
 	.accordion__trigger {
 		@apply font-semibold text-lg;
 	}
+
 	.accordion--outline {
 		@apply shadow-lg border-2 border-slate-200 dark:border-slate-700;
 	}
+
 	.accordion__body {
 		@apply text-sm text-slate-600 dark:text-slate-400 leading-relaxed;
 	}
+
 	.accordion__item {
 		@apply border-b border-slate-200/60 dark:border-slate-700/60 last:border-0;
 	}
 }
 
 @keyframes bounce-subtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-4px);
+	}
 }
+
 .animate-bounce-subtle {
-  animation: bounce-subtle 2s infinite ease-in-out;
+	animation: bounce-subtle 2s infinite ease-in-out;
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
+
 .animate-fade-in-up {
-  animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+	animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+	display: none;
 }
+
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+	-ms-overflow-style: none;
+	scrollbar-width: none;
 }
 
 @keyframes modal-fade-in {
-  0% { opacity: 0; transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1); }
+	0% {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
+
 @keyframes loader-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
 }
+
 @keyframes draw-checkmark {
-  0% { stroke-dashoffset: 48; }
-  100% { stroke-dashoffset: 0; }
+	0% {
+		stroke-dashoffset: 48;
+	}
+
+	100% {
+		stroke-dashoffset: 0;
+	}
 }
+
 @keyframes draw-circle {
-  0% { stroke-dashoffset: 166; }
-  100% { stroke-dashoffset: 0; }
+	0% {
+		stroke-dashoffset: 166;
+	}
+
+	100% {
+		stroke-dashoffset: 0;
+	}
 }
+
 .animate-modal-in {
-  animation: modal-fade-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+	animation: modal-fade-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
 .svg-loading-ring {
-  stroke: #3b82f6;
-  stroke-dasharray: 120;
-  stroke-dashoffset: 120;
-  animation: draw-circle 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  transform-origin: center;
-  animation-name: loader-spin;
-  animation-duration: 1.2s;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
+	stroke: #3b82f6;
+	stroke-dasharray: 120;
+	stroke-dashoffset: 120;
+	animation: draw-circle 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+	transform-origin: center;
+	animation-name: loader-spin;
+	animation-duration: 1.2s;
+	animation-iteration-count: infinite;
+	animation-timing-function: linear;
 }
+
 .svg-success-circle {
-  stroke-dasharray: 166;
-  stroke-dashoffset: 166;
-  animation: draw-circle 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+	stroke-dasharray: 166;
+	stroke-dashoffset: 166;
+	animation: draw-circle 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
+
 .svg-success-check {
-  stroke-dasharray: 48;
-  stroke-dashoffset: 48;
-  animation: draw-checkmark 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
+	stroke-dasharray: 48;
+	stroke-dashoffset: 48;
+	animation: draw-checkmark 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
 }
 
 /* ponytail: Style inputs, textareas, selects, and checkbox controls inside admin modals and pages for better visibility */
@@ -123,10 +173,13 @@ div[role="dialog"] .border-slate-200,
 div[role="dialog"] .border-slate-800,
 div[role="dialog"] [class*="border-slate-"],
 div[role="dialog"] .rounded-xl.border {
-  border-width: 2px !important;
-  border-color: #cbd5e1 !important; /* slate-300 */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
+	border-width: 2px !important;
+	border-color: #cbd5e1 !important;
+	/* slate-300 */
+	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+	/* shadow-sm */
 }
+
 .dark div[role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
 .dark div[role="dialog"] textarea,
 .dark div[role="dialog"] select,
@@ -134,45 +187,53 @@ div[role="dialog"] .rounded-xl.border {
 .dark div[role="dialog"] .border-slate-800,
 .dark div[role="dialog"] [class*="border-slate-"],
 .dark div[role="dialog"] .rounded-xl.border {
-  border-color: #3f3f46 !important; /* zinc-700 */
+	border-color: #3f3f46 !important;
+	/* zinc-700 */
 }
 
 /* Checkbox control box border, shadow and custom state styling */
 div[role="dialog"] [data-custom="bar"] div,
 div[role="dialog"] div[role="checkbox"] [role="presentation"],
 div[role="dialog"] span[role="checkbox"] [role="presentation"] {
-  border-width: 2px !important;
-  border-color: #94a3b8 !important; /* slate-400 */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
-  border-radius: 6px !important;
+	border-width: 2px !important;
+	border-color: #94a3b8 !important;
+	/* slate-400 */
+	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+	/* shadow-sm */
+	border-radius: 6px !important;
 }
+
 .dark div[role="dialog"] [data-custom="bar"] div,
 .dark div[role="dialog"] div[role="checkbox"] [role="presentation"],
 .dark div[role="dialog"] span[role="checkbox"] [role="presentation"] {
-  border-color: #4b5563 !important; /* slate-600 */
+	border-color: #4b5563 !important;
+	/* slate-600 */
 }
 
 /* Accent bg for selected checkboxes in modals */
 div[role="dialog"] [data-custom="bar"][data-selected="true"] div,
 div[role="dialog"] div[role="checkbox"][data-selected="true"] [role="presentation"],
 div[role="dialog"] span[role="checkbox"][data-selected="true"] [role="presentation"] {
-  background-color: var(--accent) !important;
-  border-color: var(--accent) !important;
+	background-color: var(--accent) !important;
+	border-color: var(--accent) !important;
 }
 
 /* Admin Page Search Fields */
-.admin-layout div[role="search"] > div,
+.admin-layout div[role="search"]>div,
 .admin-layout .admin-search-field-group,
 .admin-layout [class*="border-slate-250"],
 .admin-layout [class*="border-slate-200"],
 .admin-layout [class*="border-slate-850"] {
-  border-width: 2px !important;
-  border-color: #cbd5e1 !important; /* slate-300 */
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; /* shadow-sm */
-}
-.dark .admin-layout div[role="search"] > div,
-.dark .admin-layout .admin-search-field-group,
-.dark .admin-layout [class*="border-slate-800"] {
-  border-color: #3f3f46 !important; /* zinc-700 */
+	border-width: 2px !important;
+	border-color: #cbd5e1 !important;
+	/* slate-300 */
+	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+	/* shadow-sm */
 }
 
+.dark .admin-layout div[role="search"]>div,
+.dark .admin-layout .admin-search-field-group,
+.dark .admin-layout [class*="border-slate-800"] {
+	border-color: #3f3f46 !important;
+	/* zinc-700 */
+}

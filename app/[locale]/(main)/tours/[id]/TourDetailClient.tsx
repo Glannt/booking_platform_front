@@ -441,7 +441,7 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
 
                 <Button
                   onClick={handleProceedBooking}
-                  className="w-full h-11 bg-orange-500 hover:bg-orange-650 text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                  className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
                 >
                   {`${t.tours.continue} →`}
                 </Button>

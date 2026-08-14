@@ -141,7 +141,7 @@ export const selfDrive = {
   confirmSuccessTitle: "Booking Successful!",
   successBookingCode: "Booking Code",
   successMessage: "Thank you for choosing Minh Khoa Travel. Your self-drive booking has been successfully submitted.",
-  successNote: "We have sent a confirmation message to your Zalo. Please respond to confirm.",
+  successNote: "We have sent a confirmation message to your email and will contact you via your secondary contact channels. Please respond to finalize.",
   redirecting: "Redirecting...",
   backToHome: "Back to Home",
 };

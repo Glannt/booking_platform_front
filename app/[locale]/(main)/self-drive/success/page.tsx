@@ -49,7 +49,7 @@ export default function SelfDriveSuccessPage({ params }: PageProps) {
           {t.selfDrive.successNote}
         </p>
 
-        <div className="flex flex-col items-center gap-2.5 pt-2">
+        <div className="flex flex-col items-center gap-2.5 pt-2 w-full">
           <Button
             onClick={() => router.push(`/${language}/self-drive`)}
             className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer inline-flex items-center justify-center gap-1.5"
@@ -60,9 +60,9 @@ export default function SelfDriveSuccessPage({ params }: PageProps) {
 
           <Button
             onClick={() => router.push(`/${language}`)}
-            className="inline-flex w-auto px-4 h-9 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer items-center justify-center gap-1.5"
+            className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer inline-flex items-center justify-center gap-1.5"
           >
-            <Home size={10} />
+            <Home size={13} />
             {t.selfDrive.backToHome}
           </Button>
         </div>

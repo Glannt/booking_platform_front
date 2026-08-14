@@ -34,10 +34,17 @@ interface SelfDriveDetailClientProps {
   categoryId: number;
 }
 
+const backendUrl = process.env.NEXT_PUBLIC_IMAGE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
 export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriveDetailClientProps) {
   const router = useRouter();
   const { language, t, contacts } = useI18n();
   const vi = language === "vi";
+
+  const getImageUrl = (url: string | null | undefined) => {
+    if (!url) return "";
+    return url.startsWith("http") ? url : `${backendUrl}${url}`;
+  };
 
   const prefixUrl = (url: string) => {
     if (!url) return "";
@@ -108,10 +115,14 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
 
         if (active) setRentals(enrichedRentals);
 
-        try {
-          const vehiclesRes = await getRentableVehiclesByCategory(categoryId);
-          if (active) setVehicles((vehiclesRes?.data ?? []) as VehicleDto[]);
-        } catch {
+        if (categoryId && !isNaN(Number(categoryId)) && Number(categoryId) > 0) {
+          try {
+            const vehiclesRes = await getRentableVehiclesByCategory(categoryId);
+            if (active) setVehicles((vehiclesRes?.data ?? []) as VehicleDto[]);
+          } catch {
+            if (active) setVehicles([]);
+          }
+        } else {
           if (active) setVehicles([]);
         }
       } catch (err) {
@@ -261,31 +272,56 @@ export default function SelfDriveDetailClient({ sections, categoryId }: SelfDriv
 
           {/* Representative Vehicles */}
           {vehicles.length > 0 && (
-            <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
-                {t.selfDrive.representativeVehicles}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  {t.selfDrive.representativeVehicles}
+                </h2>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  {vehicles.length} {t.selfDrive.capacity || "xe"}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {vehicles.slice(0, 6).map((v) => (
-                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-[var(--bg-card)]">
+                  <div
+                    key={v.id}
+                    className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200/70 dark:border-slate-800 hover:border-accent/40 dark:hover:border-accent/40 transition-all shadow-sm hover:shadow-md group"
+                  >
+                    <div className="w-28 sm:w-32 h-20 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-white dark:bg-[var(--bg-card)] border border-slate-100 dark:border-slate-700/60 flex items-center justify-center">
                       {v.thumbnailUrl ? (
-                        <img src={v.thumbnailUrl} alt={`${v.brand} ${v.model}`} className="w-full h-full object-cover" />
+                        <img
+                          src={getImageUrl(v.thumbnailUrl)}
+                          alt={`${v.brand} ${v.model}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Car size={20} className="text-slate-300 dark:text-slate-600" />
+                          <Car size={28} className="text-slate-300 dark:text-slate-600" />
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{v.brand} {v.model}</p>
-                      <p className="text-[10px] text-slate-400">{v.year} · {v.fuelType}</p>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">
+                        {v.brand} {v.model}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        <span className="bg-slate-200/60 dark:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                          {v.year}
+                        </span>
+                        <span>·</span>
+                        <span className="truncate">{v.fuelType}</span>
+                      </div>
+                      {(v.luggage !== undefined && v.luggage > 0) && (
+                        <p className="text-[10px] font-medium text-slate-400 dark:text-slate-400">
+                          {v.luggage} {v.luggageUnit || "vali"}{v.luggageWeight ? ` (${v.luggageWeight}kg)` : ""}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
               {vehicles.length > 6 && (
-                <p className="text-[10px] text-slate-400 font-bold text-center">
+                <p className="text-[11px] text-slate-400 font-bold text-center pt-2">
                   +{vehicles.length - 6} {t.selfDrive.moreVehicles}
                 </p>
               )}

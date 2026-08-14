@@ -74,7 +74,7 @@ export const tours = {
   packageDesc: "Tour Package Includes",
   seats: "seats",
   successMessage: "Thank you for choosing Minh Khoa Travel. Your sightseeing request has been successfully submitted.",
-  successNote: "A confirmation message with itinerary details has been dispatched to Zalo. Please confirm details to finalize.",
+  successNote: "We have sent a confirmation message to your email and will contact you via your secondary contact channels. Please respond to finalize.",
   namePlaceholder: "John Doe",
   maxGuestsError: "Max {max} guests allowed",
   redirecting: "Redirecting...",

@@ -407,7 +407,7 @@ export default function TourConfirmClient({ tourId, sections }: TourConfirmClien
                             {showSuggestions && suggestions.length > 0 && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                    <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                    <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                         {suggestions.map((s) => (
                                             <div
                                                 key={s.id}
@@ -475,7 +475,6 @@ export default function TourConfirmClient({ tourId, sections }: TourConfirmClien
                 <SuccessOverlay
                     bookingCode={successBookingCode}
                     onComplete={() => {
-                        setShowSuccessModal(false);
                         if (successBookingCode) {
                             router.push(`/${language}/tours/success?bookingCode=${successBookingCode}`);
                         } else {

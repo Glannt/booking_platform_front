@@ -1,5 +1,6 @@
 export const nav = {
   home: "홈",
+  services: "서비스",
   rentCarMenu: "차량 렌트",
   rentCar: "시외 차 렌트",
   selfDrive: "렌터카",

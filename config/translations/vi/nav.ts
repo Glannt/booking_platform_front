@@ -1,5 +1,6 @@
 export const nav = {
   home: "Trang chủ",
+  services: "Dịch vụ",
   rentCarMenu: "Thuê xe",
   rentCar: "Thuê xe đi tỉnh",
   selfDrive: "Thuê xe tự lái",

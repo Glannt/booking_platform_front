@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { SectionDto, SectionTranslationDto } from "@/lib/api/sections";
@@ -6,6 +6,7 @@ import { Shield, DollarSign, Clock, Star, CheckCircle } from "lucide-react";
 import { SlideCardSection } from "./SlideCardSection";
 import { SlideReviewSection } from "./SlideReviewSection";
 import { TravelInspirationSection } from "./TravelInspirationSection";
+import * as Icons from "@/components/icons";
 
 interface SectionRendererProps {
   sections: SectionDto[];
@@ -25,7 +26,7 @@ function FeaturesSection({ section, locale }: { section: SectionDto; locale: str
     section.translations.find((t) => t.locale === locale) ||
     section.translations[0];
 
-  let features: { icon: string; key: string }[] = [];
+  let features: any[] = [];
   try {
     if (section.contentData) {
       const parsed = JSON.parse(section.contentData);
@@ -33,12 +34,76 @@ function FeaturesSection({ section, locale }: { section: SectionDto; locale: str
     }
   } catch {}
 
+  const getLocalizedText = (textObj: any) => {
+    if (!textObj) return "";
+    if (typeof textObj === "string") return textObj;
+    return textObj[locale] || textObj["vi"] || textObj["en"] || "";
+  };
+
   const featureLabels: Record<string, Record<string, string>> = {
     safety: { vi: "An toàn tuyệt đối", en: "Absolute Safety", ko: "완전한 안전", ru: "Безопасность" },
     price: { vi: "Giá tốt nhất", en: "Best Price", ko: "최저가", ru: "Лучшая цена" },
     support: { vi: "Hỗ trợ 24/7", en: "24/7 Support", ko: "24/7 지원", ru: "Поддержка 24/7" },
     quality: { vi: "Chất lượng hàng đầu", en: "Top Quality", ko: "최고 품질", ru: "Высокое качество" },
   };
+
+  const isHorizontalLayout = features.some((f) => f.title || f.description);
+
+  if (isHorizontalLayout) {
+    return (
+      <section className="w-full py-16 bg-slate-50/50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-900">
+        {trans?.title && (
+          <h2 className="text-2xl md:text-3xl font-extrabold text-center mb-10 text-slate-800 dark:text-slate-200">
+            {trans.title}
+          </h2>
+        )}
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {features.map((f, idx) => {
+            const IconComp = (Icons as any)[f.icon] || Icons.ShieldCheck;
+            
+            const styleProps = {
+              "--icon-bg-light": f.styles?.iconBg || "rgba(59, 130, 246, 0.1)",
+              "--icon-bg-dark": f.styles?.iconBgDark || "rgba(30, 58, 138, 0.3)",
+              "--icon-color-light": f.styles?.iconColor || "rgba(37, 99, 235, 1)",
+              "--icon-color-dark": f.styles?.iconColorDark || "rgba(96, 165, 250, 1)",
+              "--title-color-light": f.styles?.titleColor || "rgba(30, 41, 59, 1)",
+              "--title-color-dark": f.styles?.titleColorDark || "rgba(226, 232, 240, 1)",
+              "--desc-color-light": f.styles?.descColor || "rgba(100, 116, 139, 1)",
+              "--desc-color-dark": f.styles?.descColorDark || "rgba(148, 163, 184, 1)",
+            } as React.CSSProperties;
+
+            return (
+              <div
+                key={idx}
+                className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300"
+              >
+                <div
+                  style={styleProps}
+                  className="p-3 rounded-2xl shrink-0 bg-[var(--icon-bg-light)] dark:bg-[var(--icon-bg-dark)] text-[var(--icon-color-light)] dark:text-[var(--icon-color-dark)]"
+                >
+                  <IconComp size={24} />
+                </div>
+                <div>
+                  <h3
+                    style={styleProps}
+                    className="font-extrabold text-sm text-[var(--title-color-light)] dark:text-[var(--title-color-dark)]"
+                  >
+                    {getLocalizedText(f.title)}
+                  </h3>
+                  <p
+                    style={styleProps}
+                    className="text-xs mt-1 font-medium leading-relaxed text-[var(--desc-color-light)] dark:text-[var(--desc-color-dark)]"
+                  >
+                    {getLocalizedText(f.description)}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-12">
@@ -53,23 +118,27 @@ function FeaturesSection({ section, locale }: { section: SectionDto; locale: str
         </p>
       )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {features.map((f, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col items-center text-center p-6 rounded-2xl bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50 hover:shadow-md transition-shadow"
-          >
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              {ICONS[f.icon] || <CheckCircle size={32} className="text-primary" />}
+        {features.map((f, idx) => {
+          const IconComp = (Icons as any)[f.icon] || ICONS[f.icon] || <CheckCircle size={32} className="text-primary" />;
+          return (
+            <div
+              key={idx}
+              className="flex flex-col items-center text-center p-6 rounded-2xl bg-slate-50 dark:bg-[var(--bg-muted)] border border-slate-100 dark:border-slate-700/50 hover:shadow-md transition-shadow"
+            >
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                {typeof IconComp === "function" ? <IconComp size={32} className="text-primary" /> : IconComp}
+              </div>
+              <p className="font-bold text-slate-800 dark:text-white text-sm">
+                {featureLabels[f.key]?.[locale] || f.key}
+              </p>
             </div>
-            <p className="font-bold text-slate-800 dark:text-white text-sm">
-              {featureLabels[f.key]?.[locale] || f.key}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
 }
+
 
 function CtaSection({ section, locale }: { section: SectionDto; locale: string }) {
   const trans =

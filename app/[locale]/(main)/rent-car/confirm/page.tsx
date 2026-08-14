@@ -23,6 +23,7 @@ import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/rent
 import { getVehicleCategories, getRentableVehiclesByCategory, type VehicleCategoryDto, type VehicleDto } from "@/lib/api/fleet";
 import { createRentCarBooking } from "@/lib/api/rent-car/bookings";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { calcIntercityPrice } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
@@ -177,7 +178,7 @@ export default function RentCarConfirmPage() {
             const vehicles = (vehiclesRes?.data ?? []) as VehicleDto[];
             if (vehicles.length === 0) continue;
 
-            const price = editTripType === "one-way" ? priceEntry.oneWayAmount : priceEntry.roundTripAmount;
+            const price = calcIntercityPrice(route.distanceKm, priceEntry.perKmAmount, editTripType === "return");
             catsWithVehicles.push({ category: cat, vehicles, price });
           } catch {
             continue;
@@ -323,7 +324,6 @@ export default function RentCarConfirmPage() {
 
   if (bookingSuccess) {
     const onSuccessComplete = () => {
-      setBookingSuccess(false);
       router.push(`/${language}/rent-car/success?bookingCode=${createdCode}`);
     };
     return <SuccessOverlay bookingCode={createdCode} onComplete={onSuccessComplete} title={t.rentCar.confirmSuccessTitle} subtitle={t.rentCar.redirecting} />;
@@ -868,11 +868,13 @@ export default function RentCarConfirmPage() {
           { label: t.rentCar.date, value: editDate },
           { label: t.rentCar.time, value: editTime || "-" },
           { label: t.rentCar.vehicleTypes, value: selectedCategory?.category.translations?.find((tr) => tr.locale === language)?.name || selectedCategory?.category.code || "" },
-          { label: t.common.name, value: editName || "Guest" },
-          { label: t.common.phone, value: editPhone || "-" },
-          { label: t.common.email, value: editEmail || "-" },
           { label: t.common.notes, value: editNotes || "-" },
         ]}
+        contactInfo={{
+          fullName: editName || "Guest",
+          phone: editPhone || "-",
+          email: editEmail || "-",
+        }}
         totalAmount={selectedCategory?.price || 0}
         totalLabel={t.common.totalPrice}
         submitting={submitting}

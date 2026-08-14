@@ -17,6 +17,7 @@ export default function ProfileClient() {
   const [phone, setPhone] = useState("");
   const [zaloId, setZaloId] = useState("");
   const [kakaoTalkId, setKakaoTalkId] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [fullnameError, setFullnameError] = useState("");
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function ProfileClient() {
       setPhone(user.phone || "");
       setZaloId(user.zaloId || "");
       setKakaoTalkId(user.kakaoTalkId || "");
+      setWhatsapp(user.whatsapp || "");
     }
   }, [user]);
 
@@ -39,6 +41,7 @@ export default function ProfileClient() {
       setPhone(user.phone || "");
       setZaloId(user.zaloId || "");
       setKakaoTalkId(user.kakaoTalkId || "");
+      setWhatsapp(user.whatsapp || "");
     }
     setIsEditing(false);
     setFullnameError("");
@@ -57,6 +60,7 @@ export default function ProfileClient() {
         phone: phone.trim() || undefined,
         zaloId: zaloId.trim() || undefined,
         kakaoTalkId: kakaoTalkId.trim() || undefined,
+        whatsapp: whatsapp.trim() || undefined,
       });
       if (accessToken && refreshToken) {
         setAuth(updated, accessToken, refreshToken);
@@ -211,6 +215,26 @@ export default function ProfileClient() {
             ) : (
               <p className="text-sm text-foreground py-2.5 px-3 bg-default-50 rounded-xl border border-divider">
                 {user.kakaoTalkId || "\u2014"}
+              </p>
+            )}
+          </div>
+
+          {/* WhatsApp */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <MessageCircle size={14} className="text-muted-foreground" />
+              {tr.whatsapp}
+            </label>
+            {isEditing ? (
+              <Input
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder={tr.whatsappPlaceholder}
+                className="w-full bg-default-50"
+              />
+            ) : (
+              <p className="text-sm text-foreground py-2.5 px-3 bg-default-50 rounded-xl border border-divider">
+                {user.whatsapp || "\u2014"}
               </p>
             )}
           </div>

@@ -105,6 +105,7 @@ export const rentCar = {
   emailPlaceholder: "이메일을 입력하세요",
   zaloId: "Zalo ID",
   kakaoTalkId: "KakaoTalk ID",
+  whatsapp: "WhatsApp",
   noVehiclesForRoute: "이 노선에 사용 가능한 차량이 없습니다",
   vehicleExamples: "대표 차종:",
   showing: "표시 중",
@@ -115,6 +116,6 @@ export const rentCar = {
   confirmSuccessTitle: "예약 성공!",
   successBookingCode: "예약 코드",
   successMessage: "Minh Khoa Travel을 선택해 주셔서 감사합니다. 차량 예약 요청이 성공적으로 제출되었습니다.",
-  successNote: "Zalo로 확인 메시지를 보냈습니다. 확인을 위해 답장해 주세요.",
+  successNote: "이메일로 확인 메시지를 보냈으며, 추가 연락처 채널(있을 경우)로 연락드리겠습니다. 예약을 완료하기 위해 확인해 주세요.",
   redirecting: "이동 중...",
 };

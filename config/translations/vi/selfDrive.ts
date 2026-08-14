@@ -141,7 +141,7 @@ export const selfDrive = {
   confirmSuccessTitle: "Đặt xe thành công!",
   successBookingCode: "Mã đặt xe",
   successMessage: "Cảm ơn bạn đã chọn Minh Khoa Travel. Yêu cầu thuê xe tự lái của bạn đã được tiếp nhận.",
-  successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến Zalo của bạn. Vui lòng phản hồi để hoàn tất.",
+  successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến email của bạn và sẽ liên hệ qua các kênh liên hệ phụ của bạn. Vui lòng phản hồi để hoàn tất.",
   redirecting: "Đang chuyển hướng...",
   backToHome: "Về trang chủ",
 };

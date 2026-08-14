@@ -5,8 +5,9 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import AirportTransferClient from "./AirportTransferClient";
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const locale = (params.locale || "vi") as keyof typeof translations;
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = (rawLocale || "vi") as keyof typeof translations;
   const t = translations[locale] || translations.vi;
   return {
     title: `${t.airportTransfer.title} | Minh Khoa Travel`,
@@ -19,11 +20,12 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   };
 }
 
-export default async function AirportTransferPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale || "vi";
+export default async function AirportTransferPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const activeLocale = locale || "vi";
   let sections: SectionDto[] = [];
   try {
-    sections = await getActiveSectionsServer("/airport-transfer", locale);
+    sections = await getActiveSectionsServer("/airport-transfer", activeLocale);
   } catch {
     sections = [];
   }

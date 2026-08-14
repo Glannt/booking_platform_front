@@ -1,5 +1,6 @@
 export const nav = {
   home: "Home",
+  services: "Services",
   rentCarMenu: "Car Rental",
   rentCar: "Provincial Transfers",
   selfDrive: "Self-Drive Rental",

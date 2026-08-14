@@ -54,9 +54,11 @@ export default function AirportTransferManagementPage() {
 
   const [routeModalOpen, setRouteModalOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<AirportRouteDto | null>(null);
+  const [routeDefaultEditMode, setRouteDefaultEditMode] = useState(false);
 
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<AirportTransferPrice | null>(null);
+  const [transferDefaultEditMode, setTransferDefaultEditMode] = useState(false);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") toast.success(message);
@@ -130,9 +132,9 @@ export default function AirportTransferManagementPage() {
   };
 
   const handleAdd = () => {
-    if (activeTab === "airports") { setSelectedAirport(null); setAirportModalOpen(true); }
-    else if (activeTab === "routes") { setSelectedRoute(null); setRouteModalOpen(true); }
-    else { setSelectedTransfer(null); setTransferModalOpen(true); }
+    if (activeTab === "airports") { setSelectedAirport(null); setAirportDefaultEditMode(true); setAirportModalOpen(true); }
+    else if (activeTab === "routes") { setSelectedRoute(null); setRouteDefaultEditMode(true); setRouteModalOpen(true); }
+    else { setSelectedTransfer(null); setTransferDefaultEditMode(true); setTransferModalOpen(true); }
   };
 
   // ── Airports ──
@@ -186,6 +188,7 @@ export default function AirportTransferManagementPage() {
     { id: "id", label: "ID", sortable: true, isRowHeader: true },
     { id: "code", label: "Mã tuyến", sortable: true },
     { id: "airport", label: "Sân bay", sortable: false },
+    { id: "distanceKm", label: "Km", sortable: true },
     { id: "active", label: "Trạng thái", sortable: true },
     { id: "actions", label: "Thao tác", sortable: false },
   ];
@@ -203,6 +206,7 @@ export default function AirportTransferManagementPage() {
       switch (column) {
         case "id": cmp = (a.id ?? 0) - (b.id ?? 0); break;
         case "code": cmp = a.code.localeCompare(b.code); break;
+        case "distanceKm": cmp = (a.distanceKm ?? 0) - (b.distanceKm ?? 0); break;
         case "active": cmp = Number(a.active) - Number(b.active); break;
         default: cmp = 0;
       }
@@ -225,8 +229,9 @@ export default function AirportTransferManagementPage() {
     { id: "id", label: "ID", sortable: true, isRowHeader: true },
     { id: "route", label: "Tuyến", sortable: true },
     { id: "category", label: "Loại xe", sortable: true },
-    { id: "serviceType", label: "Loại chuyến", sortable: true },
-    { id: "amount", label: "Giá", sortable: true },
+    { id: "baseKm", label: "Km cơ bản", sortable: true },
+    { id: "baseAmount", label: "Giá trong km", sortable: true },
+    { id: "perKmAmount", label: "Giá / km thêm", sortable: true },
     { id: "active", label: "Trạng thái", sortable: true },
     { id: "actions", label: "Thao tác", sortable: false },
   ];
@@ -236,9 +241,9 @@ export default function AirportTransferManagementPage() {
     return transfers.filter(t => {
       const route = routes.find(r => r.id === t.airportRouteId);
       return (route?.code || "").toLowerCase().includes(kw)
-        || t.serviceType.toLowerCase().includes(kw);
+        || getCategoryName(categories.find(c => c.id === t.vehicleCategoryId)).toLowerCase().includes(kw);
     });
-  }, [transfers, routes, searchTerm]);
+  }, [transfers, routes, searchTerm, categories]);
 
   const sortedTransfers = useMemo(() => {
     const { column, direction } = transferSort;
@@ -259,8 +264,9 @@ export default function AirportTransferManagementPage() {
           cmp = getCategoryName(ca).localeCompare(getCategoryName(cb));
           break;
         }
-        case "serviceType": cmp = a.serviceType.localeCompare(b.serviceType); break;
-        case "amount": cmp = a.amount - b.amount; break;
+        case "baseKm": cmp = (a.baseKm ?? 0) - (b.baseKm ?? 0); break;
+        case "baseAmount": cmp = (a.baseAmount ?? 0) - (b.baseAmount ?? 0); break;
+        case "perKmAmount": cmp = (a.perKmAmount ?? 0) - (b.perKmAmount ?? 0); break;
         case "active": cmp = Number(a.active) - Number(b.active); break;
         default: cmp = 0;
       }
@@ -453,15 +459,16 @@ export default function AirportTransferManagementPage() {
                         <Table.Cell>#{r.id}</Table.Cell>
                         <Table.Cell className="font-bold">{r.code}</Table.Cell>
                         <Table.Cell>{r.airportName || "N/A"}</Table.Cell>
+                        <Table.Cell>{r.distanceKm ? `${r.distanceKm} km` : "—"}</Table.Cell>
                         <Table.Cell>
                           <StatusChip status={String(r.active)} type="active" />
                         </Table.Cell>
                         <Table.Cell>
                           <div className="flex gap-2">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedRoute(r); setRouteModalOpen(true); }}>
+                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(false); setRouteModalOpen(true); }}>
                               <Eye size={16} />
                             </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedRoute(r); setRouteModalOpen(true); }}>
+                            <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(true); setRouteModalOpen(true); }}>
                               <Edit3 size={16} />
                             </Button>
                             <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteRoute(r.id!)}>
@@ -535,17 +542,28 @@ export default function AirportTransferManagementPage() {
                           <Table.Cell>
                             <Chip size="sm" color="accent">{getCategoryName(cat)}</Chip>
                           </Table.Cell>
-                          <Table.Cell>{t.serviceType === "ROUND_TRIP" ? "Khứ hồi" : "Một chiều"}</Table.Cell>
-                          <Table.Cell className="font-black text-amber-500">{t.amount > 0 ? `${t.amount.toLocaleString()} ${t.currency}` : "—"}</Table.Cell>
+                          <Table.Cell>{t.baseKm != null ? `${t.baseKm.toLocaleString()} km` : "—"}</Table.Cell>
+                          <Table.Cell className="font-black text-amber-500">{t.baseAmount > 0 ? `${t.baseAmount.toLocaleString()} ${t.currency}` : "—"}</Table.Cell>
+                          <Table.Cell className="text-xs">
+                            {t.fixedOvercharge ? (
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                {`Cố định: ${t.feeOverchargeFixed?.toLocaleString() || "100.000"} ${t.currency}`}
+                              </span>
+                            ) : (
+                              <span className="font-bold text-amber-500">
+                                {`${t.perKmAmount?.toLocaleString() || "0"} ${t.currency}/km`}
+                              </span>
+                            )}
+                          </Table.Cell>
                           <Table.Cell>
                             <StatusChip status={String(t.active)} type="active" />
                           </Table.Cell>
                           <Table.Cell>
                             <div className="flex gap-2">
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedTransfer(t); setTransferModalOpen(true); }}>
+                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(false); setTransferModalOpen(true); }}>
                                 <Eye size={16} />
                               </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedTransfer(t); setTransferModalOpen(true); }}>
+                              <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(true); setTransferModalOpen(true); }}>
                                 <Edit3 size={16} />
                               </Button>
                               <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteTransfer(t.id!)}>
@@ -589,8 +607,8 @@ export default function AirportTransferManagementPage() {
       </div>
 
       <AirportModal isOpen={airportModalOpen} onClose={() => { setAirportModalOpen(false); setSelectedAirport(null); setAirportDefaultEditMode(false); }} airport={selectedAirport} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={airportDefaultEditMode} />
-      <AirportRouteModal isOpen={routeModalOpen} onClose={() => { setRouteModalOpen(false); setSelectedRoute(null); }} route={selectedRoute} airports={airports} onSaveSuccess={fetchData} showToast={showToast} />
-      <AirportTransferModal isOpen={transferModalOpen} onClose={() => { setTransferModalOpen(false); setSelectedTransfer(null); }} transfer={selectedTransfer} routes={routes} categories={categories} onSaveSuccess={fetchData} showToast={showToast} />
+      <AirportRouteModal isOpen={routeModalOpen} onClose={() => { setRouteModalOpen(false); setSelectedRoute(null); }} route={selectedRoute} airports={airports} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={routeDefaultEditMode} />
+      <AirportTransferModal isOpen={transferModalOpen} onClose={() => { setTransferModalOpen(false); setSelectedTransfer(null); }} transfer={selectedTransfer} routes={routes} categories={categories} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={transferDefaultEditMode} />
     </div>
   );
 }

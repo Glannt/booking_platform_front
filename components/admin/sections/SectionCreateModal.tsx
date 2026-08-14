@@ -234,7 +234,7 @@ export default function SectionCreateModal({
     data: { title: string; subtitle: string; description: string; btnText: string; btnLink: string },
     setter: (d: any) => void
   ) => (
-    <div key={locale} className="space-y-3 p-4 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-xl">
+    <div key={locale} className="space-y-3 p-4 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-md">
       <Label className="text-sm font-bold text-slate-700 dark:text-slate-200">
         Ngôn ngữ: {locale.toUpperCase()}
       </Label>
@@ -243,13 +243,13 @@ export default function SectionCreateModal({
           placeholder="Tiêu đề"
           value={data.title}
           onChange={(e) => setter({ ...data, title: e.target.value })}
-          className="w-full"
+          className="w-full rounded-md"
         />
         <Input
           placeholder="Tiêu đề phụ"
           value={data.subtitle}
           onChange={(e) => setter({ ...data, subtitle: e.target.value })}
-          className="w-full"
+          className="w-full rounded-md"
         />
       </div>
       <textarea
@@ -257,20 +257,20 @@ export default function SectionCreateModal({
         value={data.description}
         onChange={(e) => setter({ ...data, description: e.target.value })}
         rows={2}
-        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-sm resize-none"
+        className="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-sm resize-none"
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Input
           placeholder="Text nút"
           value={data.btnText}
           onChange={(e) => setter({ ...data, btnText: e.target.value })}
-          className="w-full"
+          className="w-full rounded-md"
         />
         <Input
           placeholder="Link nút"
           value={data.btnLink}
           onChange={(e) => setter({ ...data, btnLink: e.target.value })}
-          className="w-full"
+          className="w-full rounded-md"
         />
       </div>
     </div>
@@ -279,14 +279,14 @@ export default function SectionCreateModal({
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="section-create-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
-        <ModalContainer size="lg">
-          <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-3xl relative ">
+        <ModalContainer className="max-w-4xl w-full">
+          <ModalDialog className="bg-white dark:bg-black rounded-md border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
               <h2 id="section-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 {isEdit ? "Chỉnh sửa Section" : "Thêm Section mới"}
               </h2>
             </ModalHeader>
-            <ModalBody className="p-6 space-y-6 max-h-[65vh] overflow-y-auto">
+            <ModalBody className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
               {/* Basic Info */}
               <div className="space-y-4">
                 <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Thông tin cơ bản</h4>
@@ -432,13 +432,14 @@ export default function SectionCreateModal({
                   value={contentData}
                   onChange={setContentData}
                   sectionType={sectionType}
+                  pagePath={pagePath}
                 />
 
                 {/* Image Upload */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-bold">Hình ảnh</Label>
                   <div
-                    className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-4 cursor-pointer hover:border-[#C9A227] transition-colors"
+                    className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-md p-4 cursor-pointer hover:border-[#C9A227] transition-colors"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <input
@@ -463,7 +464,7 @@ export default function SectionCreateModal({
                   {images.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {images.map((img, idx) => (
-                        <div key={`${img.id}-${idx}`} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                        <div key={`${img.id}-${idx}`} className="relative group w-20 h-20 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700">
                           <img
                             src={img.url}
                             alt={img.fileName}
@@ -499,11 +500,11 @@ export default function SectionCreateModal({
               </div>
             </ModalBody>
             <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={onClose} className="rounded-xl">
+              <Button variant="outline" onClick={onClose} className="rounded-md">
                 Hủy
               </Button>
               <Button
-                className="rounded-xl font-bold bg-[#C9A227] text-white"
+                className="rounded-md font-bold bg-[#C9A227] text-white"
                 onClick={handleSubmit}
                 isDisabled={submitting}
               >

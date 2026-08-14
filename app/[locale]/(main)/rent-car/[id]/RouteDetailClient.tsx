@@ -23,6 +23,7 @@ import { getActiveIntercityRoutes, getIntercityRouteById, type IntercityRouteDto
 import { resolveImageUrls } from "@/lib/api/media";
 import { getVehicleCategories, getRentableVehiclesByCategory, type VehicleCategoryDto, type VehicleDto } from "@/lib/api/fleet";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { calcIntercityPrice } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 
 const RouteMap = dynamic(() => import("@/components/route-map"), { ssr: false });
@@ -146,7 +147,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
               const vehicles = (vehiclesRes?.data ?? []) as VehicleDto[];
               if (vehicles.length === 0) continue;
 
-              const price = priceEntry.oneWayAmount;
+              const price = calcIntercityPrice(foundRoute.distanceKm, priceEntry.perKmAmount, false);
               catsWithVehicles.push({ category: cat, vehicles, price });
             } catch {
               continue;
@@ -244,17 +245,18 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
 
       {/* Hero Banner */}
-      <section className="relative w-full h-[280px] md:h-[340px] bg-gradient-to-br from-accent/90 to-blue-600/80 overflow-hidden flex items-end">
+      <section className="relative w-full h-[300px] md:h-[360px] bg-slate-950 overflow-hidden flex items-end">
         {/* Floating Back Button at Top Left */}
         <div className="absolute top-4 left-4 md:top-6 md:left-6 z-30">
           <Button
             onClick={() => router.push(prefixUrl("/rent-car"))}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-200 hover:text-white bg-black/40 hover:bg-black/60 backdrop-blur-sm border-none rounded-full px-4 py-2 cursor-pointer transition-all"
+            className="flex items-center gap-2 text-xs font-bold text-white/90 hover:text-white bg-black/50 hover:bg-black/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 cursor-pointer transition-all shadow-lg"
           >
-            <ArrowLeft size={13} />
-            <span>{t.common.goBack}</span>
+            <ArrowLeft size={14} />
+            <span>{t.rentCar.allIntercityRoutes || "Tất cả tuyến xe đi tỉnh"}</span>
           </Button>
         </div>
+
         {/* Background images — layered with fade transition */}
         {displayHeroImages.length > 0 && (
           <div className="absolute inset-0">
@@ -264,26 +266,27 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                 className="absolute inset-0 transition-opacity duration-1000"
                 style={{ opacity: idx === heroImageIndex ? 1 : 0 }}
               >
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img src={url} alt="" className="w-full h-full object-cover brightness-[0.80]" />
               </div>
             ))}
           </div>
         )}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
+
+        {/* Balanced Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
 
         {/* Chevron arrows */}
         {isHeroCarousel && (
           <>
             <button
               onClick={prevHero}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm border border-white/15 flex items-center justify-center transition-colors cursor-pointer"
             >
               <ChevronLeft size={20} className="text-white" />
             </button>
             <button
               onClick={nextHero}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm border border-white/15 flex items-center justify-center transition-colors cursor-pointer"
             >
               <ChevronRight size={20} className="text-white" />
             </button>
@@ -298,8 +301,8 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                 key={idx}
                 onClick={() => setHeroImageIndex(idx)}
                 className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === heroImageIndex
-                  ? "bg-white scale-110"
-                  : "bg-white/40 hover:bg-white/60"
+                  ? "bg-[#C9A227] scale-125"
+                  : "bg-white/40 hover:bg-white/70"
                   }`}
               />
             ))}
@@ -307,41 +310,47 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
         )}
 
         <div className="max-w-7xl mx-auto w-full px-6 pb-8 relative z-10 text-white space-y-3">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-white/70 font-semibold">
-              <MapPin size={14} className="text-white" />
+          <div className="space-y-2.5">
+            <div className="inline-flex items-center gap-2 text-xs font-bold bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-white/90">
+              <MapPin size={13} className="text-[#C9A227]" />
               <span>{route.originCity}</span>
               <span className="text-white/40">→</span>
               <span>{route.destinationCity}</span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight">
+
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight text-white drop-shadow-md">
               {heroSection?.translations?.find((tr) => tr.locale === language)?.title
                 ?? getRouteName(route)}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-white/80 font-semibold">
+
+            <div className="flex flex-wrap items-center gap-2.5 text-xs font-bold pt-0.5">
               {route.distanceKm && (
-                <span className="flex items-center gap-1">
-                  <Info size={13} className="text-white/60" />
+                <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/15 text-white/95">
+                  <Info size={13} className="text-[#C9A227]" />
                   {route.distanceKm} km
                 </span>
               )}
               {route.estimatedHours && (
-                <span className="flex items-center gap-1">
-                  <Clock size={13} className="text-white/60" />
+                <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/15 text-white/95">
+                  <Clock size={13} className="text-[#C9A227]" />
                   ~{route.estimatedHours} {t.common.hours}
                 </span>
               )}
+              <span className="flex items-center gap-1.5 bg-[#C9A227] text-slate-950 px-3 py-1 rounded-full font-black shadow-md">
+                <Car size={13} />
+                {t.homePage?.withDriver ? `${t.homePage.withDriver} (100%)` : "Kèm tài xế riêng"}
+              </span>
               {departureTimes.length > 0 && (
-                <span className="flex items-center gap-1">
-                  <CalendarIcon size={13} className="text-white/60" />
+                <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/15 text-white/95">
+                  <CalendarIcon size={13} className="text-[#C9A227]" />
                   {departureTimes.length} {t.rentCar.tripsPerDay}
                 </span>
               )}
             </div>
+
             {departureTimes.length > 0 && (
-              <p className="text-[11px] text-white/60 font-semibold">
-                {t.rentCar.fixedSchedule}
-                {departureTimes.map(dt => dt.departureTime).join(" · ")}
+              <p className="text-[11px] text-white/70 font-semibold pt-1">
+                {t.rentCar.fixedSchedule}: {departureTimes.map(dt => dt.departureTime).join(" · ")}
               </p>
             )}
           </div>
@@ -353,48 +362,48 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
         {/* Left Column: Route Info */}
         <div className="lg:col-span-7 space-y-6">
           {/* Overview */}
-          <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+          <div className="bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
               {t.common.overview}
             </h2>
-            <p className="text-xs leading-relaxed font-semibold">
+            <p className="text-xs leading-relaxed font-semibold text-slate-600 dark:text-slate-300">
               {getRouteDescription(route) || t.rentCar.heroDesc}
             </p>
 
             {/* Route stats */}
             <div className="grid grid-cols-3 gap-3 pt-2">
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-accent dark:border-accent-foreground">
+              <div className="text-center p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700/60">
                 <MapPin size={18} className="text-accent mx-auto mb-1" />
-                <p className="text-lg font-black text-slate-800 dark:text-white">{route.distanceKm || "?"}</p>
-                <p className="text-[10px] font-bold uppercase">km</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white">{route.distanceKm || "?"}</p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">km</p>
               </div>
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-accent dark:border-accent-foreground">
+              <div className="text-center p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700/60">
                 <Clock size={18} className="text-accent mx-auto mb-1" />
-                <p className="text-lg font-black text-slate-800 dark:text-white">{route.estimatedHours || "?"}</p>
-                <p className="text-[10px] font-bold uppercase">{t.common.hours}</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white">{route.estimatedHours || "?"}</p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">{t.common.hours}</p>
               </div>
-              <div className="text-center p-3 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-accent dark:border-accent-foreground">
+              <div className="text-center p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700/60">
                 <Car size={18} className="text-accent mx-auto mb-1" />
-                <p className="text-lg font-black text-slate-800 dark:text-white">{categories.length}</p>
-                <p className="text-[10px] font-bold uppercase">{t.rentCar.vehicleTypes}</p>
+                <p className="text-lg font-black text-slate-900 dark:text-white">{categories.length}</p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">{t.rentCar.vehicleTypes}</p>
               </div>
             </div>
           </div>
 
           {/* Departure Times */}
           {departureTimes.length > 0 && (
-            <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div className="bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
                 {t.rentCar.fixedDepartureTimes}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {departureTimes.map((dt) => (
                   <div
                     key={dt.departureTime}
-                    className="text-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)]"
+                    className="text-center p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-slate-50 dark:bg-[var(--bg-surface)]"
                   >
                     <Clock size={16} className="text-accent mx-auto mb-1" />
-                    <p className="text-sm font-black text-slate-800 dark:text-white">{dt.departureTime}</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">{dt.departureTime}</p>
                   </div>
                 ))}
               </div>
@@ -402,14 +411,19 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
           )}
 
           {/* Price Table */}
-          <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
-              {t.rentCar.priceTableTitle}
-            </h2>
+          <div className="bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                {t.rentCar.priceTableTitle}
+              </h2>
+              <span className="text-[11px] font-bold text-[#C9A227] bg-[#C9A227]/10 dark:bg-[#C9A227]/20 px-2.5 py-0.5 rounded-full border border-[#C9A227]/30">
+                {t.homePage?.withDriver ? `${t.homePage.withDriver}` : "Trọn gói tài xế"}
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
+                  <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
                     <th className="text-left py-2 font-bold uppercase tracking-wider">{t.rentCar.vehicleType}</th>
                     <th className="text-center py-2 font-bold uppercase tracking-wider">{t.common.seats}</th>
                     <th className="text-right py-2 font-bold uppercase tracking-wider">{t.rentCar.oneWay}</th>
@@ -425,11 +439,11 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                     const catName = cat.translations?.find(tr => tr.locale === language)?.name || cat.code;
                     const hasVehicles = (catWithVehicles?.vehicles.length ?? 0) > 0;
                     return (
-                      <tr key={price.id} className="border-b border-slate-50 dark:border-slate-900">
-                        <td className="py-3 font-bold text-slate-800 dark:text-white">{catName}</td>
-                        <td className="py-3 text-center text-slate-500">{cat.minSeat}-{cat.maxSeat}</td>
-                        <td className="py-3 text-right font-black text-accent">{formatPrice(price.oneWayAmount)}</td>
-                        <td className="py-3 text-right font-bold text-slate-600 dark:text-slate-300">{formatPrice(price.roundTripAmount)}</td>
+                      <tr key={price.id} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-[var(--bg-surface)]/50 transition-colors">
+                        <td className="py-3 font-bold text-slate-900 dark:text-white">{catName}</td>
+                        <td className="py-3 text-center text-slate-600 dark:text-slate-400">{cat.minSeat}-{cat.maxSeat}</td>
+                        <td className="py-3 text-right font-black text-accent">{formatPrice(calcIntercityPrice(route.distanceKm, price.perKmAmount, false))}</td>
+                        <td className="py-3 text-right font-bold text-slate-700 dark:text-slate-300">{formatPrice(calcIntercityPrice(route.distanceKm, price.perKmAmount, true))}</td>
                         <td className="py-3 text-center">
                           {hasVehicles && (
                             <button
@@ -452,29 +466,49 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
 
         {/* Right Column: Booking Sidebar */}
         <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
-          <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-            <h3 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-wider">
-              {t.common.bookNow}
-            </h3>
+          <div className="bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                {t.common.bookNow}
+              </h3>
+              <span className="text-[10px] font-bold text-[#C9A227] bg-[#C9A227]/10 dark:bg-[#C9A227]/20 px-2 py-0.5 rounded-md border border-[#C9A227]/30">
+                100% Có tài xế
+              </span>
+            </div>
+
+            {/* Prominent Driver Included Notice */}
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#C9A227] text-slate-950 flex items-center justify-center shrink-0 mt-0.5 font-bold shadow-sm">
+                <Car size={14} />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-900 dark:text-white">
+                  {t.rentCar.benefit1Title || "Tài xế chuyên tuyến"}
+                </p>
+                <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 leading-snug">
+                  {t.rentCar.heroDesc || "Xe riêng đưa đón tận nơi kèm tài xế phục vụ chu đáo, an toàn suốt chuyến đi."}
+                </p>
+              </div>
+            </div>
 
             {/* Trip Type */}
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.tripType}</p>
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.rentCar.tripType}</p>
               <Select
                 selectedKey={tripType}
                 onSelectionChange={(key) => { if (key) setTripType(key as string); }}
               >
-                <Select.Trigger className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)]/50 text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer">
+                <Select.Trigger className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-900 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer">
                   <Select.Value />
                   <Select.Indicator />
                 </Select.Trigger>
-                <Select.Popover className="bg-white dark:bg-[var(--bg-surface)]/80 backdrop-blur-sm border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
+                <Select.Popover className="bg-white dark:bg-[var(--bg-surface)]/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 z-50">
                   <ListBox>
-                    <ListBox.Item key="one-way" id="one-way" textValue={t.rentCar.oneWay} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                    <ListBox.Item key="one-way" id="one-way" textValue={t.rentCar.oneWay} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)]">
                       {t.rentCar.oneWay}
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
-                    <ListBox.Item key="round-trip" id="round-trip" textValue={t.rentCar.roundTrip} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                    <ListBox.Item key="round-trip" id="round-trip" textValue={t.rentCar.roundTrip} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)]">
                       {t.rentCar.roundTrip}
                       <ListBox.ItemIndicator />
                     </ListBox.Item>
@@ -491,9 +525,9 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                 value={dateValue}
                 onChange={setDateValue}
               >
-                <Label className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.date}</Label>
-                <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)]/80 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
-                  <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
+                <Label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.rentCar.date}</Label>
+                <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 flex items-center justify-between">
+                  <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none text-slate-900 dark:text-slate-100">
                     {(segment) => <DateField.Segment segment={segment} />}
                   </DateField.Input>
                   <DateField.Suffix>
@@ -502,7 +536,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                     </DatePicker.Trigger>
                   </DateField.Suffix>
                 </DateField.Group>
-                <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                <DatePicker.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                   <Calendar aria-label="Pick date">
                     <Calendar.Header className="flex items-center justify-between mb-2">
                       <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
@@ -510,8 +544,8 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                         <Calendar.YearPickerTriggerIndicator />
                       </Calendar.YearPickerTrigger>
                       <div className="flex gap-1">
-                        <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
-                        <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                        <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                        <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
                       </div>
                     </Calendar.Header>
                     <Calendar.Grid className="w-full">
@@ -532,7 +566,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                         {({ year }) => (
                           <Calendar.YearPickerCell
                             year={year}
-                            className="text-xs font-semibold px-2 py-1 cursor-pointer hover:bg-slate-100 rounded"
+                            className="text-xs font-semibold px-2 py-1 cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] rounded"
                           />
                         )}
                       </Calendar.YearPickerGridBody>
@@ -545,7 +579,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
             <Button
               onClick={handleBooking}
               isDisabled={!selectedCategory}
-              className="w-full h-12 rounded-2xl font-black text-sm sm:text-base bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
+              className="w-full h-12 rounded-xl font-black text-sm sm:text-base bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
             >
               {t.common.bookNow}
             </Button>
@@ -553,8 +587,8 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
 
           {/* Route Map */}
           {route && (
-            <div className="bg-white dark:bg-black p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <h3 className="text-sm font-black text-slate-950 dark:text-white uppercase tracking-wider">
+            <div className="bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
                 {t.rentCar.routeMap}
               </h3>
               <RouteMap

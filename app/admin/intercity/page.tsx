@@ -15,9 +15,7 @@ import {
 import { RouteFormModal } from "@/components/admin/intercity/RouteFormModal";
 import { RouteDetailModal } from "@/components/admin/intercity/RouteDetailModal";
 import { PriceFormModal } from "@/components/admin/intercity/PriceFormModal";
-import { SurchargeFormModal } from "@/components/admin/intercity/SurchargeFormModal";
 import { PriceDetailModal } from "@/components/admin/intercity/PriceDetailModal";
-import { SurchargeDetailModal } from "@/components/admin/intercity/SurchargeDetailModal";
 import type { SortDescriptor } from "@heroui/react";
 import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Typography } from "@heroui/react";
 import clsx from "clsx";
@@ -32,19 +30,12 @@ import {
   createIntercityRoutePrice,
   updateIntercityRoutePrice,
   deleteIntercityRoutePrice,
-  getIntercitySurcharges,
-  createIntercitySurcharge,
-  updateIntercitySurcharge,
-  deleteIntercitySurcharge,
-  getSurchargesByRoute,
-  assignSurchargeToRoute,
-  unassignSurchargeFromRoute,
   IntercityRouteDto,
   IntercityRoutePriceDto,
-  IntercitySeasonalSurchargeDto,
 } from "@/lib/api/rental";
 
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
+import { calcIntercityPrice } from "@/lib/pricing";
 import MultiImageUpload from "@/components/MultiImageUpload";
 import { backendUrl } from "@/lib/api/client";
 import { IntercityDepartureTimeModal } from "@/components/admin/vehicles/IntercityDepartureTimeModal";
@@ -53,7 +44,7 @@ import { ColumnInterface } from "@/lib/interface/column.interface";
 
 const PAGE_SIZE = 8;
 
-type TabKey = "routes" | "prices" | "surcharges";
+type TabKey = "routes" | "prices";
 
 export default function IntercityManagementPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("routes");
@@ -63,8 +54,6 @@ export default function IntercityManagementPage() {
   const [routes, setRoutes] = useState<IntercityRouteDto[]>([]);
   const [totalRoutes, setTotalRoutes] = useState(0);
   const [allPrices, setAllPrices] = useState<IntercityRoutePriceDto[]>([]);
-  const [surcharges, setSurcharges] = useState<IntercitySeasonalSurchargeDto[]>([]);
-  const [totalSurcharges, setTotalSurcharges] = useState(0);
   const [categories, setCategories] = useState<VehicleCategoryDto[]>([]);
 
   // Route form modal state
@@ -80,21 +69,9 @@ export default function IntercityManagementPage() {
   const [editingPrice, setEditingPrice] = useState<IntercityRoutePriceDto | null>(null);
   const [priceRouteId, setPriceRouteId] = useState<number | null>(null);
 
-  // Surcharge form modal state
-  const [surchargeFormOpen, setSurchargeFormOpen] = useState(false);
-  const [editingSurcharge, setEditingSurcharge] = useState<IntercitySeasonalSurchargeDto | null>(null);
-
-  // Surcharge assign/unassign state
-  const [assignedSurcharges, setAssignedSurcharges] = useState<IntercitySeasonalSurchargeDto[]>([]);
-  const [unassignedSurcharges, setUnassignedSurcharges] = useState<IntercitySeasonalSurchargeDto[]>([]);
-
   // Price detail modal state
   const [detailPrice, setDetailPrice] = useState<IntercityRoutePriceDto | null>(null);
   const [detailPriceOpen, setDetailPriceOpen] = useState(false);
-
-  // Surcharge detail modal state
-  const [detailSurcharge, setDetailSurcharge] = useState<IntercitySeasonalSurchargeDto | null>(null);
-  const [detailSurchargeOpen, setDetailSurchargeOpen] = useState(false);
 
   // Departure time modal state
   const [departureTimeModalOpen, setDepartureTimeModalOpen] = useState(false);
@@ -131,26 +108,6 @@ export default function IntercityManagementPage() {
     }
   };
 
-  const fetchSurcharges = async (page = 0) => {
-    setLoading(true);
-    try {
-      const res = await getIntercitySurcharges(page, 200);
-      console.log("fetchSurcharges raw res:", res);
-      if (res.data?.content) {
-        console.log("fetchSurcharges content:", res.data.content);
-        setSurcharges(res.data.content);
-        setTotalSurcharges(res.data.totalElements || res.data.content.length);
-      } else {
-        console.log("fetchSurcharges: res.data?.content is falsy. res.data:", res.data);
-      }
-    } catch (err) {
-      console.error("fetchSurcharges error:", err);
-      showToast("Không thể tải phụ thu.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchPricesForRoute = async (routeId: number | null) => {
     setLoading(true);
     try {
@@ -168,34 +125,19 @@ export default function IntercityManagementPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      await Promise.allSettled([fetchRoutes(), fetchSurcharges(), fetchCategories()]);
+      await Promise.allSettled([fetchRoutes(), fetchCategories()]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { fetchAllData(); }, []);
-  useEffect(() => { setRoutePage(1); setSurchargePage(1); }, [searchTerm, activeTab]);
+  useEffect(() => { setRoutePage(1); }, [searchTerm, activeTab]);
   useEffect(() => {
     if (activeTab === "prices") {
       fetchPricesForRoute(selectedPriceRouteId);
     }
   }, [activeTab, selectedPriceRouteId]);
-
-  // Fetch assigned/unassigned surcharges when editingRoute changes
-  useEffect(() => {
-    if (editingRoute?.id) {
-      getSurchargesByRoute(editingRoute.id).then(res => {
-        const assigned = res.data || [];
-        setAssignedSurcharges(assigned);
-        const assignedIds = new Set(assigned.map(s => s.id));
-        setUnassignedSurcharges(surcharges.filter(s => !assignedIds.has(s.id)));
-      }).catch(() => {
-        setAssignedSurcharges([]);
-        setUnassignedSurcharges(surcharges);
-      });
-    }
-  }, [editingRoute?.id, surcharges]);
 
   // ── Routes CRUD ──
   const handleAddRoute = () => {
@@ -291,84 +233,9 @@ export default function IntercityManagementPage() {
     }
   };
 
-  // ── Surcharges CRUD ──
-  const handleAddSurcharge = (routeId?: number) => {
-    setEditingSurcharge(null);
-    setSurchargeFormOpen(true);
-  };
-
-  const handleEditSurcharge = (s: IntercitySeasonalSurchargeDto) => {
-    setEditingSurcharge(s);
-    setSurchargeFormOpen(true);
-  };
-
-  const handleOpenSurchargeDetail = (s: IntercitySeasonalSurchargeDto) => {
-    setDetailSurcharge(s);
-    setDetailSurchargeOpen(true);
-  };
-
-  const handleSaveSurcharge = async (payload: any) => {
-    try {
-      if (editingSurcharge?.id) {
-        await updateIntercitySurcharge(editingSurcharge.id, payload);
-        showToast("Đã cập nhật phụ thu!", "success");
-      } else {
-        await createIntercitySurcharge(payload);
-        showToast("Đã thêm phụ thu!", "success");
-      }
-      setSurchargeFormOpen(false);
-      fetchSurcharges();
-    } catch {
-      showToast("Thao tác thất bại.", "error");
-    }
-  };
-
-  const handleDeleteSurcharge = async (id: number) => {
-    if (!window.confirm("Xóa phụ thu này?")) return;
-    try {
-      await deleteIntercitySurcharge(id);
-      showToast("Đã xóa!", "success");
-      setSurcharges(prev => prev.filter(s => s.id !== id));
-    } catch {
-      showToast("Xóa thất bại.", "error");
-    }
-  };
-
-  // ── Surcharge Assign/Unassign ──
-  const handleAssignSurcharge = async (surchargeId: number) => {
-    if (!editingRoute?.id) return;
-    try {
-      await assignSurchargeToRoute(surchargeId, editingRoute.id);
-      showToast("Đã gán phụ thu!", "success");
-      const res = await getSurchargesByRoute(editingRoute.id);
-      const assigned = res.data || [];
-      setAssignedSurcharges(assigned);
-      const assignedIds = new Set(assigned.map(s => s.id));
-      setUnassignedSurcharges(surcharges.filter(s => !assignedIds.has(s.id)));
-    } catch {
-      showToast("Gán phụ thu thất bại.", "error");
-    }
-  };
-
-  const handleUnassignSurcharge = async (surchargeId: number) => {
-    if (!editingRoute?.id) return;
-    try {
-      await unassignSurchargeFromRoute(surchargeId, editingRoute.id);
-      showToast("Đã bỏ gán phụ thu!", "success");
-      const res = await getSurchargesByRoute(editingRoute.id);
-      const assigned = res.data || [];
-      setAssignedSurcharges(assigned);
-      const assignedIds = new Set(assigned.map(s => s.id));
-      setUnassignedSurcharges(surcharges.filter(s => !assignedIds.has(s.id)));
-    } catch {
-      showToast("Bỏ gán thất bại.", "error");
-    }
-  };
-
   const handleAdd = () => {
     if (activeTab === "routes") handleAddRoute();
-    else if (activeTab === "prices") handleAddPrice();
-    else handleAddSurcharge();
+    else handleAddPrice();
   };
 
   // ── Helpers ──
@@ -386,8 +253,7 @@ export default function IntercityManagementPage() {
 
   const getAddLabel = () => {
     if (activeTab === "routes") return "Thêm Tuyến Đường";
-    if (activeTab === "prices") return "Thêm Giá";
-    return "Thêm Phụ Thu";
+    return "Thêm Giá";
   };
 
 
@@ -445,8 +311,9 @@ export default function IntercityManagementPage() {
     { id: "id", label: "ID", sortable: true, isRowHeader: true },
     { id: "route", label: "Tuyến đường", sortable: false },
     { id: "category", label: "Loại xe", sortable: false },
-    { id: "oneWay", label: "Giá 1 chiều", sortable: true },
-    { id: "roundTrip", label: "Giá khứ hồi", sortable: true },
+    { id: "perKm", label: "Giá / km", sortable: true },
+    { id: "oneWay", label: "1 chiều", sortable: false },
+    { id: "roundTrip", label: "Khứ hồi", sortable: false },
     { id: "active", label: "Trạng thái", sortable: true },
     { id: "actions", label: "Thao tác", sortable: false },
   ];
@@ -470,8 +337,7 @@ export default function IntercityManagementPage() {
       let cmp = 0;
       switch (column) {
         case "id": cmp = (a.id ?? 0) - (b.id ?? 0); break;
-        case "oneWay": cmp = a.oneWayAmount - b.oneWayAmount; break;
-        case "roundTrip": cmp = a.roundTripAmount - b.roundTripAmount; break;
+        case "perKm": case "oneWay": case "roundTrip": cmp = (a.perKmAmount ?? 0) - (b.perKmAmount ?? 0); break;
         case "active": cmp = Number(a.active) - Number(b.active); break;
         default: cmp = 0;
       }
@@ -486,52 +352,7 @@ export default function IntercityManagementPage() {
   const priceEnd = Math.min(pricePage * PAGE_SIZE, sortedPrices.length);
   useEffect(() => { if (pricePage > pricePageCount) setPricePage(pricePageCount); }, [pricePage, pricePageCount]);
 
-  // ── Surcharges tab: pagination + sort ──
-  const [surchargeSort, setSurchargeSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
-  const [surchargePage, setSurchargePage] = useState(1);
-
-  const surchargeColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "season", label: "Tên mùa", sortable: true },
-    { id: "startDate", label: "Ngày bắt đầu", sortable: true },
-    { id: "endDate", label: "Ngày kết thúc", sortable: true },
-    { id: "percent", label: "Phụ thu (%)", sortable: true },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
-
-  const filteredSurcharges = useMemo(() => {
-    const kw = searchTerm.toLowerCase();
-    console.log("filtering surcharges. surcharges state:", surcharges, "kw:", kw);
-    const result = surcharges.filter(s => (s.seasonName || "").toLowerCase().includes(kw));
-    console.log("filtering surcharges result:", result);
-    return result;
-  }, [surcharges, searchTerm]);
-
-  const sortedSurcharges = useMemo(() => {
-    const { column, direction } = surchargeSort;
-    const dir = direction === "descending" ? -1 : 1;
-    return [...filteredSurcharges].sort((a, b) => {
-      let cmp = 0;
-      switch (column) {
-        case "id": cmp = (a.id ?? 0) - (b.id ?? 0); break;
-        case "season": cmp = a.seasonName.localeCompare(b.seasonName); break;
-        case "startDate": cmp = a.startDate.localeCompare(b.startDate); break;
-        case "endDate": cmp = a.endDate.localeCompare(b.endDate); break;
-        case "percent": cmp = a.surchargePercent - b.surchargePercent; break;
-        case "active": cmp = Number(a.active) - Number(b.active); break;
-        default: cmp = 0;
-      }
-      return cmp * dir;
-    });
-  }, [filteredSurcharges, surchargeSort]);
-
-  const surchargePageCount = Math.max(1, Math.ceil(sortedSurcharges.length / PAGE_SIZE));
-  const paginatedSurcharges = useMemo(() => sortedSurcharges.slice((surchargePage - 1) * PAGE_SIZE, surchargePage * PAGE_SIZE), [sortedSurcharges, surchargePage]);
-  const surchargePages = Array.from({ length: surchargePageCount }, (_, i) => i + 1);
-  const surchargeStart = sortedSurcharges.length === 0 ? 0 : (surchargePage - 1) * PAGE_SIZE + 1;
-  const surchargeEnd = Math.min(surchargePage * PAGE_SIZE, sortedSurcharges.length);
-  useEffect(() => { if (surchargePage > surchargePageCount) setSurchargePage(surchargePageCount); }, [surchargePage, surchargePageCount]);
+  // Surcharges removed
 
   const renderTableFooter = (pages: number[], page: number, setPage: (v: number) => void, pageCount: number, start: number, end: number, total: number) => (
     <Table.Footer>
@@ -574,7 +395,7 @@ export default function IntercityManagementPage() {
         <Tabs
           className="w-full"
           selectedKey={activeTab}
-          onSelectionChange={(key) => { setActiveTab(key as TabKey); setSearchTerm(""); setRouteFormOpen(false); setPriceFormOpen(false); setSurchargeFormOpen(false); }}
+          onSelectionChange={(key) => { setActiveTab(key as TabKey); setSearchTerm(""); setRouteFormOpen(false); setPriceFormOpen(false); }}
         >
           <Tabs.ListContainer>
             <Tabs.List aria-label="Intercity tabs" className="dark:bg-black/10 border">
@@ -592,13 +413,7 @@ export default function IntercityManagementPage() {
                 </span>
                 <Tabs.Indicator className="bg-[#ffcc00a4]" />
               </Tabs.Tab>
-              <Tabs.Tab id="surcharges">
-                <span className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  Phụ thu theo mùa
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
+              {/* Surcharges tab removed */}
             </Tabs.List>
           </Tabs.ListContainer>
         </Tabs>
@@ -766,8 +581,9 @@ export default function IntercityManagementPage() {
                             <Table.Cell>
                               <Chip size="sm" color="accent">{getCategoryName(cat)}</Chip>
                             </Table.Cell>
-                            <Table.Cell className="font-black text-amber-500">{p.oneWayAmount > 0 ? `${p.oneWayAmount.toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
-                            <Table.Cell className="font-black text-amber-500">{p.roundTripAmount > 0 ? `${p.roundTripAmount.toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
+                            <Table.Cell className="font-black text-amber-500">{p.perKmAmount > 0 ? `${p.perKmAmount.toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
+                            <Table.Cell className="font-black text-amber-500">{p.perKmAmount > 0 ? `${calcIntercityPrice(routes.find(r => r.id === p.routeId)?.distanceKm, p.perKmAmount, false).toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
+                            <Table.Cell className="font-black text-amber-500">{p.perKmAmount > 0 ? `${calcIntercityPrice(routes.find(r => r.id === p.routeId)?.distanceKm, p.perKmAmount, true).toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
                             <Table.Cell>
                               <Chip size="sm" color={p.active ? "success" : "warning"}>
                                 {p.active ? "Hoạt động" : "Ngưng"}
@@ -796,65 +612,7 @@ export default function IntercityManagementPage() {
               </Table>
             )}
           </>
-        ) : (
-          <>
-            
-            {filteredSurcharges.length === 0 ? (
-              renderEmptyState(<Calendar className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Không tìm thấy kết quả")
-            ) : (
-              <Table>
-                <Table.ScrollContainer>
-                  <Table.Content
-                    aria-label="Surcharges table"
-                    className="min-w-[800px]"
-                    sortDescriptor={surchargeSort}
-                    onSortChange={setSurchargeSort}
-                  >
-                    <Table.Header>
-                      {surchargeColumns.map((col) => (
-                        <Table.Column key={col.id} id={col.id} allowsSorting={col.sortable} isRowHeader={col.isRowHeader}>
-                          {col.sortable
-                            ? ({ sortDirection }) => (<Table.SortableColumnHeader sortDirection={sortDirection}>{col.label}</Table.SortableColumnHeader>)
-                            : col.label}
-                        </Table.Column>
-                      ))}
-                    </Table.Header>
-                    <Table.Body>
-                      {paginatedSurcharges.map((s) => (
-                        <Table.Row key={s.id} id={String(s.id)}>
-                          <Table.Cell>#{s.id}</Table.Cell>
-                          <Table.Cell className="font-bold">{s.seasonName}</Table.Cell>
-                          <Table.Cell>{s.startDate?.substring(0, 10)}</Table.Cell>
-                          <Table.Cell>{s.endDate?.substring(0, 10)}</Table.Cell>
-                          <Table.Cell className="font-black text-amber-500">{s.surchargePercent}%</Table.Cell>
-                          <Table.Cell>
-                            <Chip size="sm" color={s.active ? "success" : "warning"}>
-                              {s.active ? "Hoạt động" : "Ngưng"}
-                            </Chip>
-                          </Table.Cell>
-                          <Table.Cell>
-                            <div className="flex gap-2">
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleOpenSurchargeDetail(s)}>
-                                <Eye size={16} />
-                              </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditSurcharge(s)}>
-                                <Edit3 size={16} />
-                              </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteSurcharge(s.id!)}>
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Content>
-                </Table.ScrollContainer>
-                {renderTableFooter(surchargePages, surchargePage, setSurchargePage, surchargePageCount, surchargeStart, surchargeEnd, sortedSurcharges.length)}
-              </Table>
-            )}
-          </>
-        )}
+        ) : null}
       </div>
 
       {/* Route Form Modal */}
@@ -866,17 +624,9 @@ export default function IntercityManagementPage() {
           onSave={handleSaveRoute}
           categories={categories}
           prices={allPrices}
-          surcharges={surcharges}
           onAddPrice={handleAddPrice}
           onEditPrice={handleEditPrice}
           onDeletePrice={handleDeletePrice}
-          onAddSurcharge={handleAddSurcharge}
-          onEditSurcharge={handleEditSurcharge}
-          onDeleteSurcharge={handleDeleteSurcharge}
-          assignedSurcharges={assignedSurcharges}
-          unassignedSurcharges={unassignedSurcharges}
-          onAssignSurcharge={handleAssignSurcharge}
-          onUnassignSurcharge={handleUnassignSurcharge}
         />
       )}
 
@@ -890,7 +640,6 @@ export default function IntercityManagementPage() {
           }}
           route={detailRoute}
           prices={allPrices}
-          surcharges={surcharges}
           categories={categories}
           onEditRoute={() => {
             setDetailRouteOpen(false);
@@ -930,33 +679,7 @@ export default function IntercityManagementPage() {
         />
       )}
 
-      {/* Surcharge Form Modal */}
-      {surchargeFormOpen && (
-        <SurchargeFormModal
-          isOpen={surchargeFormOpen}
-          onClose={() => setSurchargeFormOpen(false)}
-          editingSurcharge={editingSurcharge}
-          routes={routes}
-          onSave={handleSaveSurcharge}
-        />
-      )}
-
-      {/* Surcharge Detail Modal */}
-      {detailSurchargeOpen && (
-        <SurchargeDetailModal
-          isOpen={detailSurchargeOpen}
-          onClose={() => {
-            setDetailSurchargeOpen(false);
-            setDetailSurcharge(null);
-          }}
-          surcharge={detailSurcharge}
-          routes={routes}
-          onEdit={() => {
-            setDetailSurchargeOpen(false);
-            handleEditSurcharge(detailSurcharge!);
-          }}
-        />
-      )}
+      {/* Surcharges modals removed */}
 
       {/* Departure Time Modal */}
       {departureTimeRouteId && (

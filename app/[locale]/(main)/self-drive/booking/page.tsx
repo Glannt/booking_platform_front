@@ -292,7 +292,7 @@ export default function SelfDriveBookingPage() {
             {bookingSuccess ? (
               <SuccessOverlay
                 bookingCode={bookingSuccess}
-                onComplete={() => { setBookingSuccess(null); router.push(`/${language}/self-drive/success?bookingCode=${bookingSuccess}`); }}
+                onComplete={() => { router.push(`/${language}/self-drive/success?bookingCode=${bookingSuccess}`); }}
                 title={t.selfDrive.confirmSuccessTitle}
                 subtitle={t.selfDrive.redirecting}
               />
@@ -634,11 +634,13 @@ export default function SelfDriveBookingPage() {
           { label: t.selfDrive.confirmTime, value: `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}` },
           { label: t.selfDrive.duration, value: `${rentalDays} ${vi ? "ngày" : "days"}` },
           { label: t.selfDrive.pickupLocationLabel, value: pickupLocation || "-" },
-          { label: t.common.name, value: customerName },
-          { label: t.common.phone, value: customerPhone },
-          { label: t.selfDrive.email, value: customerEmail || "-" },
           { label: t.selfDrive.confirmNotes, value: notes || "-" },
         ]}
+        contactInfo={{
+          fullName: customerName,
+          phone: customerPhone,
+          email: customerEmail || "-",
+        }}
         totalAmount={price}
         totalLabel={t.selfDrive.estimatedTotal}
         submitting={isSubmitting}

@@ -15,6 +15,7 @@ import {
 } from "@heroui/react";
 import type { IntercityRoutePriceDto, IntercityRouteDto } from "@/lib/api/rental";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
+import { calcIntercityPrice } from "@/lib/pricing";
 
 interface PriceDetailModalProps {
   isOpen: boolean;
@@ -91,23 +92,33 @@ export function PriceDetailModal({
                 </div>
 
                 {/* Amounts detail */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Giá một chiều</p>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Giá / km</p>
                     <div className="flex items-center gap-2">
                       <DollarSign size={16} className="text-emerald-500" />
                       <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                        {price.oneWayAmount > 0 ? `${price.oneWayAmount.toLocaleString()} ${price.currency}` : "—"}
+                        {price.perKmAmount > 0 ? `${price.perKmAmount.toLocaleString()} ${price.currency}` : "—"}
                       </span>
                     </div>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Giá khứ hồi</p>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Một chiều</p>
                     <div className="flex items-center gap-2">
                       <DollarSign size={16} className="text-emerald-500" />
                       <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                        {price.roundTripAmount > 0 ? `${price.roundTripAmount.toLocaleString()} ${price.currency}` : "—"}
+                        {routeObj?.distanceKm ? `${calcIntercityPrice(routeObj.distanceKm, price.perKmAmount, false).toLocaleString()} ${price.currency}` : "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Khứ hồi</p>
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={16} className="text-emerald-500" />
+                      <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                        {routeObj?.distanceKm ? `${calcIntercityPrice(routeObj.distanceKm, price.perKmAmount, true).toLocaleString()} ${price.currency}` : "—"}
                       </span>
                     </div>
                   </div>

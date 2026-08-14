@@ -16,4 +16,6 @@ export const profile = {
   kakaoTalkPlaceholder: "Nhập KakaoTalk ID",
   zaloId: "Zalo ID",
   zaloIdPlaceholder: "Nhập Zalo ID",
+  whatsapp: "WhatsApp",
+  whatsappPlaceholder: "Nhập số WhatsApp",
 };

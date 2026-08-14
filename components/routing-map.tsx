@@ -9,13 +9,27 @@ interface RoutingMapProps {
   nhaTrangAddress: string;
   direction: "to-nhatrang" | "to-airport";
   onRouteCalculated?: (durationMin: number, distanceKm: number) => void;
+  originLat?: number | null;
+  originLng?: number | null;
+  destinationLat?: number | null;
+  destinationLng?: number | null;
+  airportLabel?: string;
 }
 
 // Coordinates
-const CAM_RANH_AIRPORT: [number, number] = [11.9984, 109.2195]; // [lat, lng]
+const CAM_RANH_AIRPORT: [number, number] = [12.0104, 109.2171]; // [lat, lng]
 const NHA_TRANG_CENTER: [number, number] = [12.2388, 109.1967]; // [lat, lng]
 
-export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: RoutingMapProps) {
+export function RoutingMap({
+  nhaTrangAddress,
+  direction,
+  onRouteCalculated,
+  originLat,
+  originLng,
+  destinationLat,
+  destinationLng,
+  airportLabel
+}: RoutingMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
@@ -24,12 +38,42 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
 
   const [isLoading, setIsLoading] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: number } | null>(null);
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 150);
+    }
+  }, [isMaximized]);
+
+  // Listen for ESC key to exit full screen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsMaximized(false);
+      }
+    };
+    if (isMaximized) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMaximized]);
 
   // Debounced search coordinates
   const [targetCoords, setTargetCoords] = useState<[number, number]>(NHA_TRANG_CENTER);
 
   // Geocode address when it changes
   useEffect(() => {
+    if (destinationLat && destinationLng) {
+      setTargetCoords([destinationLat, destinationLng]);
+      setIsLoading(false);
+      return;
+    }
+
     if (!nhaTrangAddress.trim()) {
       setTargetCoords(NHA_TRANG_CENTER);
       return;
@@ -56,7 +100,7 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
     }, 1000); // 1s debounce
 
     return () => clearTimeout(timer);
-  }, [nhaTrangAddress]);
+  }, [nhaTrangAddress, originLat, originLng, destinationLat, destinationLng]);
 
   // Initializing map
   useEffect(() => {
@@ -106,23 +150,44 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
     if (!map) return;
 
     const fetchRoute = async () => {
+      const airportCoords: [number, number] = originLat && originLng
+        ? [originLat, originLng]
+        : CAM_RANH_AIRPORT;
+
       // If going to Nha Trang: Start is Airport, End is Nha Trang.
       // If going to Cam Ranh: Start is Nha Trang, End is Airport.
-      const start = direction === "to-nhatrang" ? CAM_RANH_AIRPORT : targetCoords;
-      const end = direction === "to-nhatrang" ? targetCoords : CAM_RANH_AIRPORT;
+      const start = direction === "to-nhatrang" ? airportCoords : targetCoords;
+      const end = direction === "to-nhatrang" ? targetCoords : airportCoords;
 
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const servers = [
+          "https://router.project-osrm.org",
+          "https://routing.openstreetmap.de/routed-car",
+        ];
+
+        let data: any = null;
+        for (const base of servers) {
+          const url = `${base}/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson&alternatives=true`;
+          try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const json = await res.json();
+            if (json.code === "Ok" && json.routes && json.routes.length > 0) {
+              data = json;
+              break;
+            }
+          } catch {
+            // try next OSRM source
+          }
+        }
 
         // Safety checks before updating the DOM or Leaflet internals
         if (!isMounted || !mapRef.current || mapRef.current !== map) return;
         const activeMap = mapRef.current;
         if (!(activeMap as any)._loaded || !(activeMap as any)._container) return;
 
-        if (data.routes && data.routes.length > 0) {
-          const route = data.routes[0];
+        if (data && data.routes && data.routes.length > 0) {
+          const route = [...data.routes].sort((a, b) => a.distance - b.distance)[0];
           const geometry = route.geometry;
           const durationSec = route.duration; // seconds
           const distanceMeters = route.distance; // meters
@@ -188,11 +253,11 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
           }
 
           // Add markers with correct start/end labels depending on direction
-          const airportLabel = "Sân bay Cam Ranh (CXR)";
+          const airportLabelText = airportLabel || "Sân bay";
           const nhaTrangLabel = nhaTrangAddress || "Trung tâm Nha Trang";
 
-          const startLabel = direction === "to-nhatrang" ? airportLabel : nhaTrangLabel;
-          const endLabel = direction === "to-nhatrang" ? nhaTrangLabel : airportLabel;
+          const startLabel = direction === "to-nhatrang" ? airportLabelText : nhaTrangLabel;
+          const endLabel = direction === "to-nhatrang" ? nhaTrangLabel : airportLabelText;
 
           const startMarker = L.marker(start, { icon: startIcon })
             .addTo(activeMap)
@@ -222,7 +287,10 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
   }, [targetCoords, direction, onRouteCalculated, nhaTrangAddress]);
 
   return (
-    <div className="bg-white dark:bg-black rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+    <div className={isMaximized
+      ? "fixed inset-0 z-[9999] bg-white dark:bg-black flex flex-col p-6 md:p-10 space-y-4 overflow-hidden"
+      : "bg-white dark:bg-black rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4"
+    }>
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping inline-block" />
@@ -230,15 +298,41 @@ export function RoutingMap({ nhaTrangAddress, direction, onRouteCalculated }: Ro
             ? "Bản đồ di chuyển: Sân bay ➔ Nha Trang"
             : "Bản đồ di chuyển: Nha Trang ➔ Sân bay"}
         </h4>
-        {routeInfo && (
-          <span className="text-[11px] font-extrabold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full">
-            📍 {routeInfo.distance} ~ {routeInfo.duration} phút
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {routeInfo && (
+            <span className="text-[11px] font-extrabold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full">
+              📍 {routeInfo.distance} ~ {routeInfo.duration} phút
+            </span>
+          )}
+          {isMaximized && (
+            <button
+              type="button"
+              onClick={() => setIsMaximized(false)}
+              className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-350 rounded-lg text-xs font-bold border-none cursor-pointer"
+            >
+              Đóng (ESC)
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="relative rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 h-56 sm:h-64 md:h-72 z-10">
+      <div className={isMaximized
+        ? "relative rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 flex-grow z-10"
+        : "relative rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800/80 h-56 sm:h-64 md:h-72 z-10"
+      }>
         <div ref={mapContainerRef} className="w-full h-full" />
+        <button
+          type="button"
+          onClick={() => setIsMaximized(!isMaximized)}
+          className="absolute top-3 right-3 z-[1000] p-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-850 rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer text-slate-700 dark:text-slate-200 flex items-center justify-center"
+          title={isMaximized ? "Thu nhỏ" : "Phóng to"}
+        >
+          {isMaximized ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          )}
+        </button>
         {isLoading && (
           <div className="absolute inset-0 bg-white/70 dark:bg-black/70 flex items-center justify-center z-20">
             <div className="flex flex-col items-center gap-2">

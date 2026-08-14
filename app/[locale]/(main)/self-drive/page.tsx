@@ -79,7 +79,9 @@ export default function SelfDrivePage() {
   );
 
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [sections, setSections] = useState<SectionDto[]>([]);
   const [heroSection, setHeroSection] = useState<SectionDto | null>(null);
+  const [introSection, setIntroSection] = useState<SectionDto | null>(null);
 
   const [formVehicleId, setFormVehicleId] = useState<string>("");
   const [formDate, setFormDate] = useState<string>("");
@@ -107,9 +109,12 @@ export default function SelfDrivePage() {
   };
 
   useEffect(() => {
-    getActiveSections("/self-drive", language).then(sections => {
-      const hero = sections.find(s => s.sectionType === "HERO_BANNER");
+    getActiveSections("/self-drive", language).then(secList => {
+      setSections(secList);
+      const hero = secList.find(s => s.sectionType === "HERO_BANNER");
       if (hero) setHeroSection(hero);
+      const intro = secList.find(s => s.sectionType === "FEATURES" || s.sectionType === "INTRO" || s.sectionType === "TEXT_CONTENT");
+      if (intro) setIntroSection(intro);
     }).catch(() => { });
   }, [language]);
 
@@ -605,27 +610,26 @@ export default function SelfDrivePage() {
       </section>
 
       {/* Main Layout Area */}
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left column: Catalog & Details */}
-        <div className="lg:col-span-8 space-y-8">
+      <main className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 flex-1 space-y-8">
+        <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/80 leading-relaxed font-semibold text-xs md:text-sm text-slate-600 dark:text-slate-300">
+          <p>
+            {introSection?.translations?.find(t => t.locale === language)?.description
+              || introSection?.translations?.[0]?.description
+              || t.selfDrive.introDescription}
+          </p>
+        </div>
 
-          <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/80 leading-relaxed font-semibold text-xs md:text-sm text-slate-600 dark:text-slate-355">
-            <p>
-              {t.selfDrive.introDescription}
-            </p>
-          </div>
+        {/* Catalog & Car list */}
+        <div className="space-y-4">
+          <Typography type="h2" className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <span className="bg-accent w-2.5 h-5 rounded-full inline-block" />
+            {t.selfDrive.vehicleList}
+          </Typography>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider pl-1">
+            {t.selfDrive.vehicleListSubtitle}
+          </p>
 
-          {/* Catalog & Car list */}
-          <div className="space-y-4">
-            <Typography type="h2" className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              <span className="bg-accent w-2.5 h-5 rounded-full inline-block" />
-              {t.selfDrive.vehicleList}
-            </Typography>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider pl-1">
-              {t.selfDrive.vehicleListSubtitle}
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {vehiclesLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="flex flex-col rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-black">
@@ -937,62 +941,6 @@ export default function SelfDrivePage() {
               );
             })}
           </div>
-
-        </div>
-
-        {/* Right column: Sticky Summary */}
-        <div className="lg:col-span-4 lg:sticky lg:top-20 space-y-4">
-          <div className="bg-white dark:bg-black rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-5">
-            <div className="space-y-1 pb-3 border-b border-slate-100 dark:border-slate-850">
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-wider text-accent">
-                {t.selfDrive.stickyQuickLabel}
-              </span>
-              <Typography type="h3" className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                {t.selfDrive.stickyTitle}
-              </Typography>
-            </div>
-
-            {selectedVehicle && (
-              <div className="space-y-3">
-                <div className="relative h-40 rounded-2xl overflow-hidden">
-                  <img
-                    src={selectedVehicle.imgUrl}
-                    alt={language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-white text-xs font-black">{language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn}</p>
-                    {selectedVehicle.pricePerDay > 0 && (
-                      <p className="text-white/80 text-[11px] font-bold mt-0.5">
-                        {selectedVehicle.pricePerDay.toLocaleString("vi-VN")}đ/{t.selfDrive.perTrip}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {selectedVehicle.deposit > 0 && (
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">{t.selfDrive.stickyDepositLabel}</span>
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-200">{selectedVehicle.deposit.toLocaleString("vi-VN")}đ</span>
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => router.push(`/${language}/self-drive/booking?vehicleId=${selectedVehicle.id}`)}
-                  className="w-full py-3 bg-gradient-to-r from-accent to-accent-soft-foreground bg-[length:200%_100%] bg-[position:0%_0%] hover:bg-[position:100%_0%] text-white rounded-2xl text-xs font-black transition-all duration-200 hover:text-white shadow-md flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-95 border-none"
-                >
-                  <span>{t.selfDrive.bookNowBtn}</span>
-                </button>
-              </div>
-            )}
-
-            <p className="text-[10px] text-center text-slate-450 dark:text-slate-500 font-medium">
-              {t.selfDrive.stickyGuarantee}
-            </p>
-          </div>
-        </div>
       </main>
 
 

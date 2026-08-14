@@ -38,6 +38,7 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { getActiveIntercityRoutes, getActiveDepartureTimes, type IntercityRouteDto, type IntercityDepartureTimeDto } from "@/lib/api/rental";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { calcIntercityPrice } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 import { HeroBanner } from "@/components/sections/HeroBanner";
 import { BookingProcessSection } from "@/components/sections/BookingProcessSection";
@@ -477,7 +478,7 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
                         {route.prices && route.prices.length > 0 && (
                           <p className="text-xs font-black text-accent">
                             {t.rentCar.priceFrom}{" "}
-                            {formatPrice(Math.min(...route.prices.filter(p => p.active).map(p => p.oneWayAmount)))}
+                            {formatPrice(Math.min(...route.prices.filter(p => p.active).map(p => calcIntercityPrice(route.distanceKm, p.perKmAmount, false))))}
                           </p>
                         )}
                       </div>

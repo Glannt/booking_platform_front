@@ -74,7 +74,7 @@ export const tours = {
   packageDesc: "투어 패키지 포함",
   seats: "좌석",
   successMessage: "Minh Khoa Travel을 선택해 주셔서 감사합니다. 투어 예약 요청이 성공적으로 접수되었습니다.",
-  successNote: "여정 세부 정보가 포함된 확인 메시지가 Zalo로 전송되었습니다. 확인 후 예약을 완료해 주세요.",
+  successNote: "이메일로 확인 메시지를 보냈으며, 추가 연락처 채널(있을 경우)로 연락드리겠습니다. 예약을 완료하기 위해 확인해 주세요.",
   namePlaceholder: "홍길동",
   maxGuestsError: "최대 {max}명까지 가능합니다",
   redirecting: "페이지 이동 중...",

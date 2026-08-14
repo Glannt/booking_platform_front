@@ -33,10 +33,10 @@ import {
   type IntercityRouteDto,
   type IntercityDepartureTimeDto,
   type IntercityRoutePriceDto,
-  type IntercitySeasonalSurchargeDto
 } from "@/lib/api/rental";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
+import { calcIntercityPrice } from "@/lib/pricing";
 
 interface RouteFormModalProps {
   isOpen: boolean;
@@ -44,22 +44,12 @@ interface RouteFormModalProps {
   editingRoute: IntercityRouteDto | null;
   onSave: (payload: any) => Promise<void>;
 
-  // Pricing & Surcharge management props
+  // Pricing props
   categories: VehicleCategoryDto[];
   prices: IntercityRoutePriceDto[];
-  surcharges: IntercitySeasonalSurchargeDto[];
   onAddPrice: (routeId: number) => void;
   onEditPrice: (price: IntercityRoutePriceDto) => void;
   onDeletePrice: (priceId: number) => void;
-  onAddSurcharge: (routeId: number) => void;
-  onEditSurcharge: (surcharge: IntercitySeasonalSurchargeDto) => void;
-  onDeleteSurcharge: (surchargeId: number) => void;
-
-  // Surcharge assign/unassign props
-  assignedSurcharges: IntercitySeasonalSurchargeDto[];
-  unassignedSurcharges: IntercitySeasonalSurchargeDto[];
-  onAssignSurcharge: (surchargeId: number) => Promise<void>;
-  onUnassignSurcharge: (surchargeId: number) => Promise<void>;
 }
 
 export function RouteFormModal({
@@ -69,17 +59,9 @@ export function RouteFormModal({
   onSave,
   categories,
   prices,
-  surcharges,
   onAddPrice,
   onEditPrice,
   onDeletePrice,
-  onAddSurcharge,
-  onEditSurcharge,
-  onDeleteSurcharge,
-  assignedSurcharges,
-  unassignedSurcharges,
-  onAssignSurcharge,
-  onUnassignSurcharge,
 }: RouteFormModalProps) {
   const [routeForm, setRouteForm] = useState({
     originCity: "",
@@ -97,7 +79,7 @@ export function RouteFormModal({
     hasDepartureTimes: false
   });
 
-  const [activeSubTab, setActiveSubTab] = useState<"general" | "prices" | "surcharges">("general");
+  const [activeSubTab, setActiveSubTab] = useState<"general" | "prices">("general");
   const [departureTimes, setDepartureTimes] = useState<IntercityDepartureTimeDto[]>([]);
   const [timesLoading, setTimesLoading] = useState(false);
   const [newTime, setNewTime] = useState("");
@@ -290,7 +272,6 @@ export function RouteFormModal({
                       <Tabs.List aria-label="Route edit tabs" className="dark:bg-black/10">
                         <Tabs.Tab id="general">Thông tin tuyến</Tabs.Tab>
                         <Tabs.Tab id="prices">Bảng giá xe ({routePrices.length})</Tabs.Tab>
-                        <Tabs.Tab id="surcharges">Phụ thu theo mùa ({assignedSurcharges.length})</Tabs.Tab>
                       </Tabs.List>
                     </Tabs.ListContainer>
                   </Tabs>
@@ -574,8 +555,9 @@ export function RouteFormModal({
                         <Table.Content>
                           <Table.Header>
                             <Table.Column isRowHeader>DÒNG XE</Table.Column>
-                            <Table.Column>GIÁ 1 CHIỀU</Table.Column>
-                            <Table.Column>GIÁ KHỨ HỒI</Table.Column>
+                            <Table.Column>GIÁ / KM</Table.Column>
+                            <Table.Column>1 CHIỀU</Table.Column>
+                            <Table.Column>KHỨ HỒI</Table.Column>
                             <Table.Column>TRẠNG THÁI</Table.Column>
                             <Table.Column className="text-center">HÀNH ĐỘNG</Table.Column>
                           </Table.Header>
@@ -586,10 +568,13 @@ export function RouteFormModal({
                                   {getCategoryName(p.vehicleCategoryId)}
                                 </Table.Cell>
                                 <Table.Cell className="font-extrabold text-amber-500">
-                                  {p.oneWayAmount > 0 ? `${p.oneWayAmount.toLocaleString()} ${p.currency}` : "—"}
+                                  {p.perKmAmount > 0 ? `${p.perKmAmount.toLocaleString()} ${p.currency}` : "—"}
                                 </Table.Cell>
                                 <Table.Cell className="font-extrabold text-amber-500">
-                                  {p.roundTripAmount > 0 ? `${p.roundTripAmount.toLocaleString()} ${p.currency}` : "—"}
+                                  {editingRoute.distanceKm ? `${calcIntercityPrice(editingRoute.distanceKm, p.perKmAmount, false).toLocaleString()} ${p.currency}` : "—"}
+                                </Table.Cell>
+                                <Table.Cell className="font-extrabold text-amber-500">
+                                  {editingRoute.distanceKm ? `${calcIntercityPrice(editingRoute.distanceKm, p.perKmAmount, true).toLocaleString()} ${p.currency}` : "—"}
                                 </Table.Cell>
                                 <Table.Cell>
                                   <Chip size="sm" color={p.active ? "success" : "warning"} className="text-[10px] font-bold">
@@ -619,124 +604,6 @@ export function RouteFormModal({
                       </Table.ScrollContainer>
                     </Table>
                   )}
-                  <div className="flex gap-2 justify-end border-t border-slate-100 dark:border-slate-800 pt-4 mt-2">
-                    <Button size="sm" variant="ghost" onClick={onClose}>Đóng</Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab 3: Seasonal Surcharges Configuration */}
-              {editingRoute && activeSubTab === "surcharges" && (
-                <div className="space-y-4">
-                  {/* Assign new surcharge */}
-                  <div className="flex justify-between items-center">
-                    <Typography type="h4" className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                      Gán phụ thu theo mùa
-                    </Typography>
-                    <Button
-                      size="sm"
-                      onClick={() => onAddSurcharge(editingRoute.id!)}
-                      className="bg-accent text-white font-bold text-xs rounded-xl cursor-pointer hover:bg-accent-hover flex items-center gap-1.5"
-                    >
-                      <Plus size={14} /> Tạo mới
-                    </Button>
-                  </div>
-
-                  {unassignedSurcharges.length > 0 && (
-                    <div className="flex items-end gap-3 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800">
-                      <Select
-                        fullWidth
-                        placeholder="Chọn phụ thu cần gán"
-                        selectedKey={surchargeToAssign}
-                        onSelectionChange={(key) => setSurchargeToAssign(key)}
-                      >
-                        <Select.Trigger className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[40px]">
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
-                          <ListBox>
-                            {unassignedSurcharges.map(s => (
-                              <ListBox.Item key={s.id} id={String(s.id)} textValue={s.seasonName} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                                {s.seasonName} (+{s.surchargePercent}%)
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
-                      <Button
-                        size="sm"
-                        isDisabled={!surchargeToAssign}
-                        onClick={async () => {
-                          if (surchargeToAssign) {
-                            await onAssignSurcharge(Number(surchargeToAssign));
-                            setSurchargeToAssign(null);
-                          }
-                        }}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5 h-[40px] px-4"
-                      >
-                        <Plus size={14} /> Gán
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Assigned surcharges list */}
-                  <Typography type="h4" className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Phụ thu đã gán ({assignedSurcharges.length})
-                  </Typography>
-
-                  {assignedSurcharges.length === 0 ? (
-                    <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                      <p className="text-xs text-slate-400 italic">Chưa gán phụ thu nào cho tuyến đường này.</p>
-                    </div>
-                  ) : (
-                    <Table className="w-full text-xs">
-                      <Table.ScrollContainer>
-                        <Table.Content>
-                          <Table.Header>
-                            <Table.Column isRowHeader>TÊN MÙA</Table.Column>
-                            <Table.Column>NGÀY BẮT ĐẦU</Table.Column>
-                            <Table.Column>NGÀY KẾT THÚC</Table.Column>
-                            <Table.Column>PHỤ THU (%)</Table.Column>
-                            <Table.Column className="text-center">HÀNH ĐỘNG</Table.Column>
-                          </Table.Header>
-                          <Table.Body>
-                            {assignedSurcharges.map((s) => (
-                              <Table.Row key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                                <Table.Cell className="font-bold text-slate-700 dark:text-slate-200">
-                                  {s.seasonName}
-                                </Table.Cell>
-                                <Table.Cell>{s.startDate?.substring(0, 10)}</Table.Cell>
-                                <Table.Cell>{s.endDate?.substring(0, 10)}</Table.Cell>
-                                <Table.Cell className="font-extrabold text-amber-500">
-                                  +{s.surchargePercent}%
-                                </Table.Cell>
-                                <Table.Cell>
-                                  <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={() => onEditSurcharge(s)}
-                                      className="text-blue-500 hover:text-blue-750 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/20 cursor-pointer border-none bg-transparent"
-                                    >
-                                      <Edit3 size={14} />
-                                    </button>
-                                    <button
-                                      onClick={() => onUnassignSurcharge(s.id!)}
-                                      className="text-orange-500 hover:text-orange-700 p-1 rounded hover:bg-orange-50 dark:hover:bg-orange-950/20 cursor-pointer border-none bg-transparent"
-                                      title="Bỏ gán"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </Table.Cell>
-                              </Table.Row>
-                            ))}
-                          </Table.Body>
-                        </Table.Content>
-                      </Table.ScrollContainer>
-                    </Table>
-                  )}
-
                   <div className="flex gap-2 justify-end border-t border-slate-100 dark:border-slate-800 pt-4 mt-2">
                     <Button size="sm" variant="ghost" onClick={onClose}>Đóng</Button>
                   </div>

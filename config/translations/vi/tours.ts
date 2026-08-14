@@ -74,7 +74,7 @@ export const tours = {
   packageDesc: "Gói tour bao gồm",
   seats: "chỗ ngồi",
   successMessage: "Cảm ơn bạn đã lựa chọn Minh Khoa Travel. Yêu cầu đặt tour của bạn đã được tiếp nhận và xử lý.",
-  successNote: "Chúng tôi đã gửi tin nhắn xác nhận kèm thông tin hành trình đến Zalo của bạn. Vui lòng phản hồi tin nhắn để hoàn tất thủ tục.",
+  successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến email của bạn và sẽ liên hệ qua các kênh liên hệ phụ của bạn. Vui lòng phản hồi để hoàn tất.",
   namePlaceholder: "Nguyễn Văn A",
   maxGuestsError: "Số khách tối đa là {max} chỗ",
   redirecting: "Đang chuyển trang...",

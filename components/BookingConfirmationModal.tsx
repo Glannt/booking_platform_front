@@ -1,10 +1,19 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+
+export interface ContactInfo {
+  fullName: string;
+  phone: string;
+  email: string;
+  zaloId?: string;
+  kakaoTalkId?: string;
+  whatsapp?: string;
+}
 
 export interface SummaryItem {
   label: string;
@@ -17,11 +26,12 @@ interface BookingConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title?: string;
-  serviceType: string;
+  serviceType?: string;
   summaryItems: SummaryItem[];
-  totalAmount: number;
+  totalAmount: number | string;
   totalLabel?: string;
   submitting: boolean;
+  contactInfo?: ContactInfo;
 }
 
 export default function BookingConfirmationModal({
@@ -34,6 +44,7 @@ export default function BookingConfirmationModal({
   totalAmount,
   totalLabel,
   submitting,
+  contactInfo,
 }: BookingConfirmationModalProps) {
   const { language, t } = useI18n();
 
@@ -43,7 +54,7 @@ export default function BookingConfirmationModal({
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="booking-confirm-title">
-      <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
+      <ModalBackdrop className="backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden w-full max-w-md relative p-6 space-y-4">
             <ModalHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -54,24 +65,64 @@ export default function BookingConfirmationModal({
             </ModalHeader>
 
             <ModalBody className="p-0 py-2 space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-200">
-              <p className="text-slate-500 font-normal leading-relaxed">
+              <p className="font-normal leading-relaxed">
                 {t.common.reviewBeforeConfirm}
               </p>
 
               <div className="bg-slate-50 dark:bg-black p-4 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-2.5">
-                <div className="flex justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-400 font-normal">{t.common.serviceType}:</span>
-                  <span className="text-slate-950 dark:text-white font-bold">{serviceType}</span>
-                </div>
+                {serviceType && (
+                  <div className="flex items-start justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <span className="font-normal shrink-0">{t.common.serviceType}:</span>
+                    <span className="font-bold text-right break-words max-w-[70%]">{serviceType}</span>
+                  </div>
+                )}
                 {summaryItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between">
-                    <span className="text-slate-400 font-normal">{item.label}:</span>
-                    <span className={`text-right max-w-[65%] line-clamp-2 ${item.highlight ? "text-accent font-bold" : "text-slate-900 dark:text-white"}`}>
+                  <div key={idx} className="flex items-start justify-between gap-4">
+                    <span className="font-normal shrink-0">{item.label}:</span>
+                    <span className={`text-right break-words max-w-[70%] ${item.highlight ? "text-accent font-bold" : "text-slate-900 dark:text-white"}`}>
                       {item.value || "-"}
                     </span>
                   </div>
                 ))}
               </div>
+
+              {contactInfo && (
+                <div className="bg-slate-50 dark:bg-black p-4 rounded-2xl border border-slate-100 dark:border-zinc-800 space-y-2.5">
+                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1 border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    {t.airportTransfer.contactInfo}
+                  </h4>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="font-normal shrink-0">{t.airportTransfer.fullName}:</span>
+                    <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.fullName}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="font-normal shrink-0">{t.airportTransfer.phone}:</span>
+                    <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.phone}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="font-normal shrink-0">Email:</span>
+                    <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.email}</span>
+                  </div>
+                  {contactInfo.zaloId && (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="font-normal shrink-0">Zalo:</span>
+                      <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.zaloId}</span>
+                    </div>
+                  )}
+                  {contactInfo.kakaoTalkId && (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="font-normal shrink-0">KakaoTalk:</span>
+                      <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.kakaoTalkId}</span>
+                    </div>
+                  )}
+                  {contactInfo.whatsapp && (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="font-normal shrink-0">WhatsApp:</span>
+                      <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.whatsapp}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-between items-end bg-accent/5 dark:bg-black border border-accent/10 rounded-2xl p-4">
                 <div>
@@ -80,7 +131,7 @@ export default function BookingConfirmationModal({
                   </span>
                 </div>
                 <span className="text-lg font-black text-amber-500">
-                  {formatPrice(totalAmount)}
+                  {typeof totalAmount === "number" ? formatPrice(totalAmount) : totalAmount}
                 </span>
               </div>
             </ModalBody>

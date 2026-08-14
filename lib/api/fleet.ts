@@ -21,6 +21,7 @@ export interface VehicleCategoryDto {
   default: boolean;
   thumbnailId?: number;
   thumbnailUrl?: string;
+  luggageWeight?: number;
 }
 
 export interface VehicleDto {
@@ -145,6 +146,9 @@ export async function deleteVehicle(id: number): Promise<void> {
 }
 
 export async function getRentableVehiclesByCategory(categoryId: number): Promise<ApiResponse<VehicleDto[]>> {
+  if (!categoryId || isNaN(Number(categoryId)) || Number(categoryId) <= 0) {
+    return { data: [], status: "200", message: "Invalid category ID" };
+  }
   return apiFetch<ApiResponse<VehicleDto[]>>(`/api/v1/vehicles/by-category/${categoryId}/rentable`);
 }
 
@@ -161,7 +165,10 @@ export interface AirportDto {
   code: string;
   name: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   active: boolean;
+  isDefault?: boolean;
   translations?: AirportTranslationDto[];
 }
 
@@ -200,6 +207,13 @@ export interface AirportRouteDto {
   airportId?: number;
   name?: string;
   airportName?: string;
+  distanceKm?: number;
+  originName?: string;
+  destinationName?: string;
+  originLat?: number;
+  originLng?: number;
+  destinationLat?: number;
+  destinationLng?: number;
   active: boolean;
 }
 
@@ -236,9 +250,12 @@ export interface AirportTransferPrice {
   id?: number;
   airportRouteId: number;
   vehicleCategoryId: number;
-  serviceType: string; // "ONE_WAY" | "ROUND_TRIP"
+  baseKm: number;
+  baseAmount: number;
+  perKmAmount: number;
+  fixedOvercharge: boolean;
+  feeOverchargeFixed?: number;
   currency: string;
-  amount: number;
   active: boolean;
 }
 
@@ -282,14 +299,6 @@ export async function deleteSurchargeRule(id: number): Promise<void> {
   return apiFetch<void>(`/api/v1/surcharge-rules/${id}`, {
     method: "DELETE",
   });
-}
-
-export async function getAirportTransferPricesByRouteAndServiceType(
-  routeId: number, serviceType: string
-): Promise<ApiResponse<AirportTransferPrice[]>> {
-  return apiFetch<ApiResponse<AirportTransferPrice[]>>(
-    `/api/v1/airport-transfers/by-route/${routeId}/service-type/${serviceType}`
-  );
 }
 
 export async function getAirportTransfers(): Promise<ApiResponse<PaginatedResponse<AirportTransferPrice>>> {

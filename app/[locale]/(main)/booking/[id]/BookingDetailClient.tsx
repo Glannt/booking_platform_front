@@ -724,11 +724,13 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
             { label: isVi ? "Số ngày thuê" : "Rental days", value: `${rentalDays} ${isVi ? "ngày" : "days"}` },
             { label: isVi ? "Điểm giao xe" : "Pickup", value: pickup || "-" },
           ] : []),
-          { label: isVi ? "Họ tên" : "Name", value: fullName },
-          { label: isVi ? "Điện thoại" : "Phone", value: phone },
-          { label: isVi ? "Email" : "Email", value: email },
           { label: isVi ? "Ghi chú" : "Notes", value: notes || "-" },
         ]}
+        contactInfo={{
+          fullName,
+          phone,
+          email,
+        }}
         totalAmount={totalPrice}
         totalLabel={isVi ? "Tổng tiền" : "Total amount"}
         submitting={modalState === "submitting"}

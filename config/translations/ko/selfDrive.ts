@@ -141,7 +141,7 @@ export const selfDrive = {
   confirmSuccessTitle: "예약 성공!",
   successBookingCode: "예약 코드",
   successMessage: "Minh Khoa Travel을 선택해 주셔서 감사합니다. 자차 예약 요청이 성공적으로 제출되었습니다.",
-  successNote: "Zalo로 확인 메시지를 보냈습니다. 확인을 위해 답장해 주세요.",
+  successNote: "이메일로 확인 메시지를 보냈으며, 추가 연락처 채널(있을 경우)로 연락드리겠습니다. 예약을 완료하기 위해 확인해 주세요.",
   redirecting: "이동 중...",
   backToHome: "홈으로",
 };

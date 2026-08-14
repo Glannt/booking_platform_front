@@ -10,8 +10,11 @@ export interface CreateAirportTransferBookingDto {
   contactId?: string;
   zaloId?: string;
   kakaoTalkId?: string;
+  whatsapp?: string;
 
   vehicleCategoryId: number;
+  routeId?: number;
+  actualKm?: number;
   tripType: string;
   outboundDirection: string;
   outboundDate: string;
@@ -29,6 +32,9 @@ export interface CreateAirportTransferBookingDto {
 
   basePrice?: number;
   totalPrice: number;
+
+  passengerCount?: number;
+  luggageWeight?: number;
 }
 
 export async function createAirportTransferBooking(dto: CreateAirportTransferBookingDto): Promise<ApiResponse<BookingDto>> {

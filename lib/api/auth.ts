@@ -10,7 +10,7 @@ export async function getWhoAmI(): Promise<UserDto | null> {
   }
 }
 
-export async function updateProfile(data: { fullname?: string; phone?: string; kakaoTalkId?: string; zaloId?: string }): Promise<UserDto> {
+export async function updateProfile(data: { fullname?: string; phone?: string; kakaoTalkId?: string; zaloId?: string; whatsapp?: string }): Promise<UserDto> {
   const res = await apiFetch<ApiResponse<UserDto>>("/api/v1/auth/profile", {
     method: "PUT",
     body: JSON.stringify(data),

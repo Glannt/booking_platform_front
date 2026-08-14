@@ -347,7 +347,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
                     </div>
                     <Button
                       onClick={() => router.push(`/${language}/tours/${tour.id}`)}
-                      className="bg-orange-500 hover:bg-orange-650 text-white font-extrabold text-[11px] uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm border-none cursor-pointer"
+                      className="bg-accent hover:bg-accent-hover text-white font-extrabold text-[11px] uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm border-none cursor-pointer"
                     >
                       {t.tours.bookNow} →
                     </Button>

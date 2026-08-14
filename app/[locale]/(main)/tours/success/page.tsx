@@ -65,7 +65,7 @@ export default function TourSuccessPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-2.5">
             <Button
               onClick={() => router.push(`/${language}/dashboard/my-bookings`)}
-              className="h-10 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1"
+              className="h-11 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1.5"
             >
               <History size={13} />
               {t.tours.viewHistory}
@@ -73,7 +73,7 @@ export default function TourSuccessPage({ params }: PageProps) {
 
             <Button
               onClick={() => router.push(`/${language}`)}
-              className="h-10 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-250 font-extrabold text-[11px] uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1"
+              className="h-11 bg-accent hover:bg-accent-hover text-white font-black text-xs uppercase tracking-wider rounded-2xl border-none cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Home size={13} />
               {t.tours.backToHome}

@@ -12,8 +12,7 @@ export interface IntercityRoutePriceDto {
   id?: number;
   routeId?: number;
   vehicleCategoryId: number;
-  oneWayAmount: number;
-  roundTripAmount: number;
+  perKmAmount: number;
   currency: string;
   active: boolean;
 }
@@ -47,13 +46,20 @@ export interface IntercityRouteDto {
 }
 
 export interface IntercitySeasonalSurchargeDto {
-  id: number;
+  id?: number;
   routeId?: number;
   routeIds?: number[];
+  tourIds?: number[];
+  airportTransferIds?: number[];
   seasonName: string;
-  startDate: string;
-  endDate: string;
-  surchargePercent: number;
+  startDate?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  surchargeType: "PERCENT" | "FIXED";
+  surchargeValue: number;
+  currency?: string;
+  priority?: number;
   active: boolean;
 }
 
@@ -167,50 +173,30 @@ export async function getIntercitySurcharges(page = 0, size = 50): Promise<ApiRe
   return apiFetch(`/api/v1/intercity-surcharges?page=${page}&size=${size}`, { skipTranslationFilter: true });
 }
 
-export async function getActiveSurcharges(routeId: number, date: string): Promise<ApiResponse<IntercitySeasonalSurchargeDto[]>> {
-  return apiFetch(`/api/v1/intercity-surcharges/active?routeId=${routeId}&date=${date}`, { skipTranslationFilter: true });
+export async function getPublicSurcharges(): Promise<ApiResponse<IntercitySeasonalSurchargeDto[]>> {
+  return apiFetch("/api/v1/surcharges/public", { skipTranslationFilter: true });
 }
 
-export async function createIntercitySurcharge(dto: Partial<IntercitySeasonalSurchargeDto>): Promise<ApiResponse<IntercitySeasonalSurchargeDto>> {
-  return apiFetch("/api/v1/intercity-surcharges", {
-    method: "POST",
-    body: JSON.stringify(dto),
-    skipTranslationFilter: true,
-  });
+export async function getActiveSurcharges(
+  routeIdOrParams: number | { routeId?: number; tourId?: number; airportRouteId?: number; date: string; time?: string },
+  date?: string,
+  time?: string
+): Promise<ApiResponse<IntercitySeasonalSurchargeDto[]>> {
+  if (typeof routeIdOrParams === "object") {
+    const q = new URLSearchParams();
+    if (routeIdOrParams.routeId !== undefined) q.append("routeId", String(routeIdOrParams.routeId));
+    if (routeIdOrParams.tourId !== undefined) q.append("tourId", String(routeIdOrParams.tourId));
+    if (routeIdOrParams.airportRouteId !== undefined) q.append("airportRouteId", String(routeIdOrParams.airportRouteId));
+    q.append("date", routeIdOrParams.date);
+    if (routeIdOrParams.time) q.append("time", routeIdOrParams.time);
+    return apiFetch(`/api/v1/surcharges/public/active?${q.toString()}`, { skipTranslationFilter: true });
+  }
+
+  const timeQuery = time ? `&time=${time}` : "";
+  return apiFetch(`/api/v1/surcharges/public/active?routeId=${routeIdOrParams}&date=${date}${timeQuery}`, { skipTranslationFilter: true });
 }
 
-export async function updateIntercitySurcharge(id: number, dto: Partial<IntercitySeasonalSurchargeDto>): Promise<ApiResponse<IntercitySeasonalSurchargeDto>> {
-  return apiFetch(`/api/v1/intercity-surcharges/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(dto),
-    skipTranslationFilter: true,
-  });
-}
-
-export async function deleteIntercitySurcharge(id: number): Promise<ApiResponse<void>> {
-  return apiFetch(`/api/v1/intercity-surcharges/${id}`, {
-    method: "DELETE",
-    skipTranslationFilter: true,
-  });
-}
-
-export async function getSurchargesByRoute(routeId: number): Promise<ApiResponse<IntercitySeasonalSurchargeDto[]>> {
-  return apiFetch(`/api/v1/intercity-surcharges/by-route/${routeId}`, { skipTranslationFilter: true });
-}
-
-export async function assignSurchargeToRoute(surchargeId: number, routeId: number): Promise<ApiResponse<void>> {
-  return apiFetch(`/api/v1/intercity-surcharges/${surchargeId}/routes/${routeId}`, {
-    method: "POST",
-    skipTranslationFilter: true,
-  });
-}
-
-export async function unassignSurchargeFromRoute(surchargeId: number, routeId: number): Promise<ApiResponse<void>> {
-  return apiFetch(`/api/v1/intercity-surcharges/${surchargeId}/routes/${routeId}`, {
-    method: "DELETE",
-    skipTranslationFilter: true,
-  });
-}
+// Surcharge functions have been centralized to @/lib/api/surcharge
 
 // === Intercity Departure Times ===
 

@@ -16,4 +16,6 @@ export const profile = {
   kakaoTalkPlaceholder: "KakaoTalk ID 입력",
   zaloId: "Zalo ID",
   zaloIdPlaceholder: "Zalo ID 입력",
+  whatsapp: "WhatsApp",
+  whatsappPlaceholder: "WhatsApp 번호 입력",
 };

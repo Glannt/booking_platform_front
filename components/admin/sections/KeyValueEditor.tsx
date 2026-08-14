@@ -1,7 +1,28 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Button, Input, Label, toast } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Label,
+  toast,
+  Autocomplete,
+  SearchField,
+  ListBox,
+  EmptyState,
+  useFilter,
+  Select,
+  ColorPicker,
+  ColorSwatch,
+  ColorArea,
+  ColorSlider,
+  ColorField,
+  parseColor,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@heroui/react";
+import * as Icons from "@/lib/utils/icons";
 import {
   Plus,
   X,
@@ -19,24 +40,36 @@ import {
   FileText,
   Upload,
   Loader2,
+  Sparkles,
+  Maximize2,
+  ExternalLink,
 } from "lucide-react";
 import { uploadMedia } from "@/lib/api/media";
 import { backendUrl } from "@/lib/api/client";
+import {
+  SECTION_HINTS,
+  ITEM_SCHEMA_FACTORIES,
+  ROOT_SCHEMA_FACTORIES,
+  PAGE_SECTION_RECOMMENDATIONS,
+  createEmptyText2,
+  createEmptyText4,
+  createEmptySlideCardItem,
+  createEmptyFeatureItem,
+  createEmptySlideReviewItem,
+  createEmptyInspirationItem,
+  createEmptyHeroBadge,
+  createEmptyBookingStepItem,
+  createEmptyPromoContent,
+  createEmptyCTAContent,
+  type TemplatePreset,
+} from "@/lib/api/section-templates";
 
 interface KeyValueEditorProps {
   value: string;
   onChange: (json: string) => void;
   sectionType?: string;
+  pagePath?: string;
 }
-
-// ── Hints per section type ──────────────────────────────────────
-const SECTION_HINTS: Record<string, { keys: string[]; description: string }> = {
-  FEATURES: { keys: ["features"], description: "Mảng features với icon và key" },
-  SLIDE_CARD: { keys: ["badgeTitle", "cards"], description: "badgeTitle (đa ngôn ngữ) và cards (mảng card)" },
-  SLIDE_REVIEW: { keys: ["ratingSummary", "reviews"], description: "ratingSummary (string) và reviews (mảng đánh giá)" },
-  INSPIRATION: { keys: ["items", "showInstagram", "instagramHandle"], description: "items (mảng), showInstagram (boolean), instagramHandle (string)" },
-  HERO_BANNER: { keys: ["badges"], description: "Mảng badges với text, textColor, bgColor, iconUrl" },
-};
 
 // ── Helpers ─────────────────────────────────────────────────────
 function parseJsonSafe(json: string): unknown {
@@ -52,30 +85,155 @@ function prettyJson(json: string): string {
   try { return JSON.stringify(JSON.parse(json), null, 2); } catch { return json; }
 }
 
-function getValueType(val: unknown): "string" | "number" | "boolean" | "object" | "array" | "empty" {
-  if (val === undefined || val === null) return "empty";
+function safeParseColor(colorStr?: string, defaultHex: string = "#ffffff") {
+  try {
+    return parseColor(colorStr || defaultHex);
+  } catch {
+    return parseColor(defaultHex);
+  }
+}
+
+const COLOR_KEY_LABELS: Record<string, string> = {
+  iconBg: "Nền icon (Sáng)",
+  iconBgDark: "Nền icon (Tối)",
+  iconColor: "Màu icon (Sáng)",
+  iconColorDark: "Màu icon (Tối)",
+  titleColor: "Màu tiêu đề (Sáng)",
+  titleColorDark: "Màu tiêu đề (Tối)",
+  descColor: "Màu mô tả (Sáng)",
+  descColorDark: "Màu mô tả (Tối)",
+};
+
+function isImageKey(nodeKey?: string): boolean {
+  if (!nodeKey) return false;
+  const k = nodeKey.toLowerCase();
+  return k.includes("image") || k.includes("img") || k.includes("avatar") || k.includes("banner") || k.includes("iconurl") || k.includes("logo");
+}
+
+function isImageField(val: unknown, nodeKey?: string): boolean {
+  if (isImageKey(nodeKey)) return true;
+  if (typeof val !== "string") return false;
+  const s = val.trim();
+  if (
+    (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("/")) &&
+    (/\.(jpg|jpeg|png|webp|gif|svg|avif)(\?.*)?$/i.test(s) ||
+      s.includes("images.unsplash.com") ||
+      s.includes("res.cloudinary.com") ||
+      s.includes("/uploads/"))
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function getValueType(val: unknown, nodeKey?: string): "string" | "number" | "boolean" | "image" | "object" | "array" | "empty" {
+  if (val === undefined || val === null) {
+    return isImageKey(nodeKey) ? "image" : "empty";
+  }
   if (Array.isArray(val)) return "array";
   const t = typeof val;
-  if (t === "string" || t === "number" || t === "boolean" || t === "object") return t as "string" | "number" | "boolean" | "object";
+  if (t === "number" || t === "boolean" || t === "object") return t as "number" | "boolean" | "object";
+  if (t === "string") {
+    if (isImageField(val, nodeKey)) return "image";
+    return "string";
+  }
   return "string";
 }
 
+interface DebouncedInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  className?: string;
+  placeholder?: string;
+}
+
+function DebouncedInput({ value, onChange, className, placeholder }: DebouncedInputProps) {
+  const [localVal, setLocalVal] = useState(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (localVal === value) return;
+    const timer = setTimeout(() => {
+      onChange(localVal);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [localVal, onChange, value]);
+
+  const handleBlur = () => {
+    if (localVal !== value) {
+      onChange(localVal);
+    }
+  };
+
+  return (
+    <Input
+      value={localVal}
+      onChange={(e) => setLocalVal(e.target.value)}
+      onBlur={handleBlur}
+      className={className}
+      placeholder={placeholder}
+    />
+  );
+}
+
+interface DebouncedTextareaProps {
+  value: string;
+  onChange: (val: string) => void;
+  rows?: number;
+  className?: string;
+}
+
+function DebouncedTextarea({ value, onChange, rows, className }: DebouncedTextareaProps) {
+  const [localVal, setLocalVal] = useState(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (localVal === value) return;
+    const timer = setTimeout(() => {
+      onChange(localVal);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localVal, onChange, value]);
+
+  const handleBlur = () => {
+    if (localVal !== value) {
+      onChange(localVal);
+    }
+  };
+
+  return (
+    <textarea
+      value={localVal}
+      onChange={(e) => setLocalVal(e.target.value)}
+      onBlur={handleBlur}
+      rows={rows}
+      className={className}
+    />
+  );
+}
+
 // ── Main editor ─────────────────────────────────────────────────
-export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorProps) {
+export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyValueEditorProps) {
   const [mode, setMode] = useState<"tree" | "json">("tree");
   const [treeData, setTreeData] = useState<Record<string, unknown>>({});
-  const [rawJson, setRawJson] = useState("");
+  const [rawJson, setRawJson] = useState(value ? prettyJson(value) : "");
   const [jsonError, setJsonError] = useState("");
-  const [copied, setCopied] = useState(false);
   const [showAddKey, setShowAddKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const hints = sectionType ? SECTION_HINTS[sectionType] : undefined;
 
-  // Parse value → treeData on mount / external change
+  // Sync parent → local
   useEffect(() => {
-    const parsed = parseJsonSafe(value);
     if (mode === "tree") {
+      const parsed = parseJsonSafe(value);
       if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
         setTreeData(parsed as Record<string, unknown>);
       } else {
@@ -121,6 +279,18 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
     syncTree(rest);
   };
 
+  const addKeyWithTemplate = (key: string) => {
+    if (treeData[key] !== undefined) {
+      toast.danger("Key đã tồn tại!");
+      return;
+    }
+    const factory = ROOT_SCHEMA_FACTORIES[key];
+    const defaultVal = factory ? factory() : "";
+    syncTree({ ...treeData, [key]: defaultVal });
+    setNewKeyName("");
+    setShowAddKey(false);
+  };
+
   const addKey = (key?: string) => {
     const newKey = key || newKeyName.trim();
     if (!newKey) return;
@@ -128,7 +298,9 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
       toast.danger("Key đã tồn tại!");
       return;
     }
-    syncTree({ ...treeData, [newKey]: "" });
+    const factory = ROOT_SCHEMA_FACTORIES[newKey];
+    const defaultVal = factory ? factory() : "";
+    syncTree({ ...treeData, [newKey]: defaultVal });
     setNewKeyName("");
     setShowAddKey(false);
   };
@@ -174,7 +346,7 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
     <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-bold">Content Data</Label>
+        <Label className="text-sm font-bold">Content Data (Dữ liệu nội dung)</Label>
         <div className="flex items-center gap-1">
           {mode === "json" && (
             <>
@@ -209,7 +381,7 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
 
       {/* Tree mode */}
       {mode === "tree" && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {keys.map((key) => (
             <TreeNode
               key={key}
@@ -223,23 +395,23 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
           ))}
 
           {unusedHints.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pl-1">
-              <span className="text-[10px] text-slate-400 font-bold self-center">Thêm:</span>
+            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50 dark:bg-[var(--bg-card)]/50 rounded-md border border-slate-200 dark:border-zinc-700">
+              <span className="text-[10px] text-slate-400 font-bold self-center">Gợi ý schema chuẩn:</span>
               {unusedHints.map((k) => (
                 <button
                   key={k}
                   type="button"
-                  onClick={() => addKey(k)}
-                  className="text-[10px] font-bold text-accent bg-accent/10 hover:bg-accent/20 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                  onClick={() => addKeyWithTemplate(k)}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-accent/10 hover:bg-accent hover:text-white px-2.5 py-1 rounded-md transition-all cursor-pointer border border-accent/20"
                 >
-                  + {k}
+                  <Sparkles size={11} /> + {k} (Schema)
                 </button>
               ))}
             </div>
           )}
 
           {showAddKey ? (
-            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-xl border border-divider">
+            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-md border border-divider">
               <Input
                 placeholder="Tên key mới..."
                 value={newKeyName}
@@ -249,11 +421,11 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
                   if (e.key === "Escape") { setShowAddKey(false); setNewKeyName(""); }
                 }}
                 autoFocus
-                className="flex-1"
+                className="flex-1 rounded-md"
               />
               <Button
                 size="sm"
-                className="bg-[#C9A227] hover:bg-[#B8911F] text-white font-bold text-xs"
+                className="bg-[#C9A227] hover:bg-[#B8911F] text-white font-bold text-xs rounded-md"
                 onClick={() => addKey()}
               >
                 Thêm
@@ -261,7 +433,7 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-xs"
+                className="text-xs rounded-md"
                 onClick={() => { setShowAddKey(false); setNewKeyName(""); }}
               >
                 Hủy
@@ -271,9 +443,9 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
             <button
               type="button"
               onClick={() => setShowAddKey(true)}
-              className="flex items-center gap-1.5 w-full justify-center py-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors cursor-pointer bg-transparent"
+              className="flex items-center gap-1.5 w-full justify-center py-2 rounded-md border border-dashed border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors cursor-pointer bg-transparent"
             >
-              <Plus size={14} /> Thêm Key
+              <Plus size={14} /> Thêm Key tùy chỉnh
             </button>
           )}
         </div>
@@ -287,7 +459,7 @@ export function KeyValueEditor({ value, onChange, sectionType }: KeyValueEditorP
             onChange={(e) => handleJsonChange(e.target.value)}
             rows={12}
             placeholder='{ "key": "value" }'
-            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-xs font-mono resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-xs font-mono resize-y focus:outline-none focus:ring-1 focus:ring-accent"
           />
           {jsonError && (
             <p className="text-[10px] font-bold text-red-500 flex items-center gap-1">
@@ -307,22 +479,9 @@ interface TypeSelectorProps {
 }
 
 function TypeSelector({ value, onChange, className = "" }: TypeSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen]);
-
   const types = [
     { value: "string", label: "Text", color: "text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400" },
+    { value: "image", label: "Ảnh", color: "text-rose-600 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400" },
     { value: "number", label: "Số", color: "text-purple-600 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400" },
     { value: "boolean", label: "Boolean", color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400" },
     { value: "object", label: "Object", color: "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400" },
@@ -332,42 +491,38 @@ function TypeSelector({ value, onChange, className = "" }: TypeSelectorProps) {
   const current = types.find((t) => t.value === value) || types[0];
 
   return (
-    <div className={`relative shrink-0 ${className}`} ref={ref}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`text-[9px] font-black px-2.5 py-1 rounded-full cursor-pointer border-none flex items-center gap-1 transition-all ${current.color} hover:opacity-85 select-none`}
-      >
-        {current.label}
-        <span className="text-[6px] opacity-70">▼</span>
-      </button>
-
-      {isOpen && (
-        <div className="absolute left-0 mt-1 w-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-30 flex flex-col gap-0.5 animate-scale-up">
+    <Popover>
+      <PopoverTrigger>
+        <button
+          type="button"
+          className={`text-[9px] font-black px-2 py-0.5 rounded-md cursor-pointer border-none flex items-center gap-1 transition-all ${current.color} hover:opacity-85 select-none`}
+        >
+          {current.label.toUpperCase()}
+          <span className="text-[6px] opacity-70">▼</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="p-1 w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-xl">
+        <div className="flex flex-col gap-0.5">
           {types.map((t) => (
             <button
               key={t.value}
               type="button"
-              onClick={() => {
-                onChange(t.value);
-                setIsOpen(false);
-              }}
-              className={`text-[9px] font-bold px-2.5 py-1 border-none cursor-pointer text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 w-full ${
-                t.value === value
-                  ? "text-[#C9A227] bg-[#C9A227]/5 font-black"
-                  : "text-slate-600 dark:text-slate-350"
-              }`}
+              onClick={() => onChange(t.value)}
+              className={`text-[10px] font-bold px-2 py-1 rounded text-left transition-colors cursor-pointer border-none ${value === t.value
+                  ? `${t.color} font-black`
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                }`}
             >
               {t.label}
             </button>
           ))}
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
-// ── Recursive TreeNode ──────────────────────────────────────────
+// ── Tree node (recursive) ──────────────────────────────────────
 interface TreeNodeProps {
   nodeKey: string;
   value: unknown;
@@ -378,21 +533,11 @@ interface TreeNodeProps {
 }
 
 function TreeNode({ nodeKey, value, onChange, onRename, onRemove, depth }: TreeNodeProps) {
-  const vType = getValueType(value);
+  const [explicitType, setExplicitType] = useState<string | null>(null);
+  const detectedType = getValueType(value, nodeKey);
+  const vType = explicitType || detectedType;
   const isExpandable = vType === "object" || vType === "array";
-  const [expanded, setExpanded] = useState(depth < 1);
-
-  // Expand when value changes from empty to non-empty
-  useEffect(() => {
-    if (isExpandable && !expanded) {
-      if (vType === "object" && typeof value === "object" && value !== null && Object.keys(value as Record<string, unknown>).length > 0) {
-        setExpanded(true);
-      }
-      if (vType === "array" && Array.isArray(value) && value.length > 0) {
-        setExpanded(true);
-      }
-    }
-  }, [value]);
+  const [expanded, setExpanded] = useState(true);
 
   const depthColors = [
     "border-accent/30",
@@ -403,13 +548,29 @@ function TreeNode({ nodeKey, value, onChange, onRename, onRemove, depth }: TreeN
   ];
   const borderColor = depthColors[depth % depthColors.length];
 
+  const handleTypeChange = (newType: string) => {
+    setExplicitType(newType);
+    if (newType === "string" || newType === "image") {
+      onChange(typeof value === "string" ? value : String(value ?? ""));
+    } else if (newType === "number") {
+      const num = Number(value);
+      onChange(!isNaN(num) ? num : 0);
+    } else if (newType === "boolean") {
+      onChange(Boolean(value));
+    } else if (newType === "object") {
+      onChange(typeof value === "object" && value !== null && !Array.isArray(value) ? value : {});
+    } else if (newType === "array") {
+      onChange(Array.isArray(value) ? value : []);
+    }
+  };
+
   return (
     <div className={`${depth > 0 ? `ml-3 pl-3 border-l-2 ${borderColor}` : ""}`}>
       {isExpandable ? (
         <ExpandableNode
           nodeKey={nodeKey}
           value={value}
-          vType={vType}
+          vType={vType as "object" | "array"}
           expanded={expanded}
           onToggle={() => setExpanded(!expanded)}
           onChange={onChange}
@@ -421,10 +582,11 @@ function TreeNode({ nodeKey, value, onChange, onRename, onRemove, depth }: TreeN
         <LeafNode
           nodeKey={nodeKey}
           value={value}
-          vType={vType}
+          vType={vType as "string" | "number" | "boolean" | "image" | "empty"}
           onChange={onChange}
           onRename={onRename}
           onRemove={onRemove}
+          onTypeChange={handleTypeChange}
           depth={depth}
         />
       )}
@@ -451,6 +613,8 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
     : [];
   const arrItems = vType === "array" && Array.isArray(value) ? value : [];
 
+  const itemPresets = ITEM_SCHEMA_FACTORIES[nodeKey] || [];
+
   const addChild = () => {
     if (vType === "object") {
       const obj = (typeof value === "object" && value !== null ? value : {}) as Record<string, unknown>;
@@ -458,8 +622,25 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
       onChange({ ...obj, [newKey]: "" });
     } else {
       const arr = Array.isArray(value) ? value : [];
-      onChange([...arr, ""]);
+      let newItem: any = "";
+      if (itemPresets.length > 0) {
+        newItem = itemPresets[0].factory();
+      }
+      onChange([...arr, newItem]);
     }
+    if (!expanded) onToggle();
+  };
+
+  const addPresetItem = (factory: () => any) => {
+    const arr = Array.isArray(value) ? value : [];
+    onChange([...arr, factory()]);
+    if (!expanded) onToggle();
+  };
+
+  const addPresetKey = (newKey: string, defaultValue: any) => {
+    const obj = (typeof value === "object" && value !== null ? value : {}) as Record<string, unknown>;
+    const copy = typeof defaultValue === "object" && defaultValue !== null ? JSON.parse(JSON.stringify(defaultValue)) : defaultValue;
+    onChange({ ...obj, [newKey]: copy });
     if (!expanded) onToggle();
   };
 
@@ -503,7 +684,7 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
   const childCount = vType === "object" ? entries.length : arrItems.length;
 
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[var(--bg-card)]/30 overflow-hidden">
+    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[var(--bg-card)]/30 overflow-hidden">
       {/* Header row */}
       <div className="flex items-center gap-2 px-2.5 py-2">
         <button
@@ -517,13 +698,13 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
         <Input
           value={nodeKey}
           onChange={(e) => onRename(e.target.value)}
-          className="flex-1 max-w-[160px] text-xs font-mono font-bold"
+          className="flex-1 max-w-[160px] text-xs font-mono font-bold rounded-md"
         />
 
         <TypeSelector
           value={vType}
           onChange={(t) => {
-            if (t === "string") onChange("");
+            if (t === "string" || t === "image") onChange("");
             else if (t === "number") onChange(0);
             else if (t === "boolean") onChange(true);
             else if (t === "object") onChange({});
@@ -531,7 +712,7 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
           }}
         />
 
-        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${vType === "array" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"}`}>
+        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${vType === "array" ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"}`}>
           {vType === "array" ? `mảng[${childCount}]` : `obj{${childCount}}`}
         </span>
 
@@ -546,80 +727,148 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
 
       {/* Children */}
       {expanded && (
-        <div className="px-2.5 pb-2.5 space-y-1">
+        <div className="px-2.5 pb-2.5 space-y-1.5">
           {vType === "object"
             ? entries.map(([k, v]) => (
-                <TreeNode
-                  key={k}
-                  nodeKey={k}
-                  value={v}
-                  onChange={(val) => updateChild(k, val)}
-                  onRename={(newKey) => renameChild(k, newKey)}
-                  onRemove={() => removeChild(k)}
-                  depth={depth + 1}
-                />
-              ))
+              <TreeNode
+                key={k}
+                nodeKey={k}
+                value={v}
+                onChange={(val) => updateChild(k, val)}
+                onRename={(newKey) => renameChild(k, newKey)}
+                onRemove={() => removeChild(k)}
+                depth={depth + 1}
+              />
+            ))
             : arrItems.map((item, idx) => (
-                <TreeNode
-                  key={idx}
-                  nodeKey={String(idx)}
-                  value={item}
-                  onChange={(val) => updateChild(String(idx), val)}
-                  onRename={() => {}}
-                  onRemove={() => removeChild(String(idx))}
-                  depth={depth + 1}
-                />
-              ))}
+              <TreeNode
+                key={idx}
+                nodeKey={String(idx)}
+                value={item}
+                onChange={(val) => updateChild(String(idx), val)}
+                onRename={() => { }}
+                onRemove={() => removeChild(String(idx))}
+                depth={depth + 1}
+              />
+            ))}
 
-          <button
-            type="button"
-            onClick={addChild}
-            className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-accent transition-colors cursor-pointer py-1"
-          >
-            <Plus size={11} />
-            {vType === "array" ? "Thêm item" : "Thêm key"}
-          </button>
+          {/* Template Badges & Add buttons */}
+          {vType === "array" ? (
+            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] font-bold text-slate-400">Gợi ý schema:</span>
+                {itemPresets.map((preset, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => addPresetItem(preset.factory)}
+                    title={preset.description}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-accent/10 text-accent hover:bg-accent hover:text-white transition-all cursor-pointer border border-accent/20"
+                  >
+                    <Sparkles size={10} />
+                    + {preset.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => addPresetItem(createEmptyText2)}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all cursor-pointer border border-blue-200 dark:border-blue-800"
+                >
+                  + Đa ngữ (VI/EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addPresetItem(createEmptyText4)}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
+                >
+                  + Đa ngữ (4 ngôn ngữ)
+                </button>
+                <button
+                  type="button"
+                  onClick={addChild}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-300 hover:bg-slate-200 transition-all cursor-pointer"
+                >
+                  <Plus size={10} /> Item trống
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    let defaultVal: any = "";
+                    addPresetKey("vi", defaultVal);
+                    addPresetKey("en", defaultVal);
+                  }}
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border border-emerald-200 dark:border-emerald-800"
+                >
+                  + Đa ngữ (VI/EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    let defaultVal: any = "";
+                    ["vi", "en", "ko", "ru"].forEach(lang => addPresetKey(lang, defaultVal));
+                  }}
+                  className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
+                >
+                  + Đa ngữ (4 thứ tiếng)
+                </button>
+                <button
+                  type="button"
+                  onClick={addChild}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-300 hover:bg-slate-200 transition-all cursor-pointer"
+                >
+                  <Plus size={10} /> Thêm key
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// ── Leaf node (string / number / boolean / empty) ──────────────
+// ── Leaf node (string / number / boolean / image / empty) ──────
 interface LeafNodeProps {
   nodeKey: string;
   value: unknown;
-  vType: "string" | "number" | "boolean" | "empty";
+  vType: "string" | "number" | "boolean" | "image" | "empty";
   onChange: (val: unknown) => void;
   onRename: (newKey: string) => void;
   onRemove: () => void;
+  onTypeChange: (newType: string) => void;
   depth: number;
 }
 
-function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafNodeProps) {
-  const strVal = value === undefined || value === null ? "" : String(value);
-  const isMultiline = strVal.length > 60 || strVal.includes("\n");
-  const rows = isMultiline ? Math.min(Math.max(2, Math.ceil(strVal.length / 50)), 6) : 1;
-
-  const isProbablyImageUrl = typeof value === "string" && (
-    value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")
-  ) && (
-    value.toLowerCase().includes("image") ||
-    value.toLowerCase().includes("img") ||
-    /\.(jpg|jpeg|png|webp|gif|svg|avif)(\?.*)?$/i.test(value) ||
-    value.includes("images.unsplash.com") ||
-    value.includes("res.cloudinary.com") ||
-    nodeKey.toLowerCase().includes("image") ||
-    nodeKey.toLowerCase().includes("img")
-  );
-
-  const [inputMode, setInputMode] = useState<"text" | "image">(
-    isProbablyImageUrl ? "image" : "text"
-  );
+function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeChange }: LeafNodeProps) {
+  const { contains } = useFilter({ sensitivity: "base" });
+  const rawStr = value === undefined || value === null ? "" : String(value);
+  const [tmpVal, setTmpVal] = useState<string>(rawStr);
   const [uploading, setUploading] = useState(false);
+  const [previewZoomOpen, setPreviewZoomOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const isStringOrEmpty = vType === "string" || vType === "empty";
+  // Sync external value when changed outside
+  useEffect(() => {
+    setTmpVal(value === undefined || value === null ? "" : String(value));
+  }, [value]);
+
+  const commitValue = (valToCommit?: string) => {
+    const val = valToCommit !== undefined ? valToCommit : tmpVal;
+    if (vType === "number") {
+      const num = Number(val);
+      onChange(isNaN(num) ? 0 : num);
+    } else {
+      onChange(val);
+    }
+  };
+
+  const isMultiline = tmpVal.length > 60 || tmpVal.includes("\n");
+  const rows = isMultiline ? Math.min(Math.max(2, Math.ceil(tmpVal.length / 50)), 6) : 1;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -631,7 +880,9 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
         const filePath = mediaObj?.filePath;
         if (filePath) {
           const url = filePath.startsWith("http") ? filePath : `${backendUrl}${filePath}`;
-          onChange(url);
+          setTmpVal(url);
+          commitValue(url);
+          toast.success("Tải ảnh lên thành công");
         } else {
           toast.danger("Tải lên thất bại");
         }
@@ -644,140 +895,282 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove }: LeafN
     }
   };
 
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const typeIcon = vType === "number" ? <Hash size={10} className="text-blue-400" />
+  const isColorKey = !!COLOR_KEY_LABELS[nodeKey];
+  const typeIcon = vType === "number" ? <Hash size={10} className="text-purple-400" />
     : vType === "boolean" ? <ToggleLeft size={10} className="text-emerald-400" />
-    : null;
+      : vType === "image" ? <ImageIcon size={10} className="text-rose-400" />
+        : null;
+
+  const fullImageUrl = tmpVal.startsWith("http") ? tmpVal : `${backendUrl}${tmpVal}`;
 
   return (
-    <div className="flex items-start gap-1.5 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[var(--bg-surface)]/50 group">
-      {typeIcon && <span className="mt-2 shrink-0">{typeIcon}</span>}
+    <div className="flex items-start gap-1.5 p-2 rounded-md border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-[var(--bg-surface)]/50 group">
+      {typeIcon && !isColorKey && <span className="mt-2 shrink-0">{typeIcon}</span>}
 
-      <Input
-        value={nodeKey}
-        onChange={(e) => onRename(e.target.value)}
-        className="max-w-[120px] text-xs font-mono font-bold shrink-0"
-      />
+      {isColorKey ? (
+        <span className="text-xs font-bold text-slate-700 dark:text-slate-350 min-w-[120px] shrink-0 mt-2 select-none">
+          {COLOR_KEY_LABELS[nodeKey]}
+        </span>
+      ) : (
+        <DebouncedInput
+          value={nodeKey}
+          onChange={onRename}
+          className="max-w-[120px] text-xs font-mono font-bold shrink-0 rounded-md"
+        />
+      )}
 
-      <TypeSelector
-        value={vType}
-        onChange={(t) => {
-          if (t === "string") onChange("");
-          else if (t === "number") onChange(0);
-          else if (t === "boolean") onChange(true);
-          else if (t === "object") onChange({});
-          else if (t === "array") onChange([]);
-        }}
-        className="mt-1"
-      />
+      {!isColorKey && (
+        <TypeSelector
+          value={vType}
+          onChange={onTypeChange}
+          className="mt-1"
+        />
+      )}
 
       <span className="text-slate-300 dark:text-slate-600 mt-2 shrink-0">:</span>
 
-      {isStringOrEmpty && (
+      {isColorKey ? (
+        <div className="flex-grow max-w-[200px] mt-0.5">
+          <ColorPicker
+            value={safeParseColor(tmpVal, "#ffffff")}
+            onChange={(color) => {
+              const hex = color.toString("css");
+              setTmpVal(hex);
+              commitValue(hex);
+            }}
+          >
+            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 h-7 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+              <div className="flex items-center gap-1.5">
+                <ColorSwatch size="xs" color={safeParseColor(tmpVal, "#ffffff")} />
+                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{tmpVal || "#ffffff"}</span>
+              </div>
+            </ColorPicker.Trigger>
+            <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-md z-50">
+              <ColorArea aria-label="Vùng chọn màu" className="max-w-full h-32 rounded-md" colorSpace="hsb" xChannel="saturation" yChannel="brightness">
+                <ColorArea.Thumb />
+              </ColorArea>
+              <ColorSlider aria-label="Tông màu (Hue)" channel="hue" className="w-full" colorSpace="hsb">
+                <Label className="text-[10px] font-bold text-slate-450 dark:text-slate-400">Tông màu (Hue)</Label>
+                <ColorSlider.Track>
+                  <ColorSlider.Thumb />
+                </ColorSlider.Track>
+              </ColorSlider>
+              <ColorSlider aria-label="Độ mờ (Opacity)" channel="alpha" className="w-full">
+                <Label className="text-[10px] font-bold text-slate-450 dark:text-slate-400">Độ mờ (Opacity)</Label>
+                <ColorSlider.Track>
+                  <ColorSlider.Thumb />
+                </ColorSlider.Track>
+              </ColorSlider>
+              <ColorField aria-label="Trực tiếp" className="w-full">
+                <ColorField.Group variant="secondary">
+                  <ColorField.Prefix>
+                    <ColorSwatch size="xs" />
+                  </ColorField.Prefix>
+                  <ColorField.Input className="text-xs rounded-md" />
+                </ColorField.Group>
+              </ColorField>
+            </ColorPicker.Popover>
+          </ColorPicker>
+        </div>
+      ) : vType === "boolean" ? (
         <button
           type="button"
-          onClick={() => setInputMode(inputMode === "text" ? "image" : "text")}
-          className="p-1.5 rounded text-slate-400 hover:text-accent hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors mt-0.5 shrink-0"
-          title={inputMode === "text" ? "Chuyển sang chọn ảnh" : "Chuyển sang nhập chữ"}
-        >
-          {inputMode === "text" ? <ImageIcon size={12} /> : <FileText size={12} />}
-        </button>
-      )}
-
-      {vType === "boolean" ? (
-        <button
-          type="button"
-          onClick={() => onChange(!value)}
-          className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer mt-0.5 ${
-            value
+          onClick={() => {
+            const next = !value;
+            onChange(next);
+          }}
+          className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md transition-colors cursor-pointer mt-0.5 ${value
               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
               : "bg-slate-100 text-slate-500 dark:bg-[var(--bg-card)] dark:text-slate-400"
-          }`}
+            }`}
         >
           <ToggleLeft size={12} />
           {value ? "Có" : "Không"}
         </button>
-      ) : inputMode === "image" && isStringOrEmpty ? (
-        strVal && (strVal.startsWith("http") || strVal.startsWith("/")) ? (
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-[var(--bg-card)] shrink-0">
-              <img src={strVal.startsWith("http") ? strVal : `${backendUrl}${strVal}`} alt="" className="w-full h-full object-cover" />
+      ) : nodeKey === "icon" && (vType === "string" || vType === "empty") ? (
+        <Autocomplete
+          className="flex-1 min-w-[200px]"
+          placeholder="Chọn icon..."
+          selectionMode="single"
+          value={tmpVal}
+          onChange={(val) => {
+            setTmpVal(String(val ?? ""));
+            commitValue(String(val ?? ""));
+          }}
+          aria-label="Chọn icon"
+        >
+          <Label className="sr-only">Icon</Label>
+          <Autocomplete.Trigger>
+            <Autocomplete.Value className="text-xs font-semibold" />
+            <Autocomplete.ClearButton />
+            <Autocomplete.Indicator />
+          </Autocomplete.Trigger>
+          <Autocomplete.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-md p-3 shadow-xl z-50">
+            <Autocomplete.Filter filter={contains}>
+              <SearchField autoFocus name="search" variant="secondary">
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="Tìm kiếm icon..." />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+              <ListBox
+                className="max-h-[200px] overflow-y-auto"
+                renderEmptyState={() => <EmptyState>Không tìm thấy icon nào</EmptyState>}
+              >
+                {Object.keys(Icons).map((name) => {
+                  const IconComp = (Icons as any)[name];
+                  return (
+                    <ListBox.Item key={name} id={name} textValue={name}>
+                      <div className="flex items-center gap-2 py-1">
+                        {IconComp && <IconComp size={16} className="text-slate-600 dark:text-slate-400" />}
+                        <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{name}</span>
+                      </div>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  );
+                })}
+              </ListBox>
+            </Autocomplete.Filter>
+          </Autocomplete.Popover>
+        </Autocomplete>
+      ) : vType === "image" ? (
+        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {tmpVal && (tmpVal.startsWith("http") || tmpVal.startsWith("/")) ? (
+              <div className="relative group/thumb shrink-0">
+                <div
+                  onClick={() => setPreviewZoomOpen(true)}
+                  className="w-12 h-12 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-[var(--bg-card)] cursor-zoom-in relative"
+                  title="Nhấn để phóng to hình ảnh"
+                >
+                  <img src={fullImageUrl} alt={nodeKey} className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-200" />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
+                    <Maximize2 size={12} className="text-white drop-shadow" />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTmpVal("");
+                    commitValue("");
+                  }}
+                  className="absolute -top-1 -right-1 p-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md transition-colors"
+                  title="Xóa ảnh"
+                >
+                  <X size={8} />
+                </button>
+              </div>
+            ) : null}
+
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <Input
+                value={tmpVal}
+                onChange={(e) => setTmpVal(e.target.value)}
+                onBlur={() => commitValue()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitValue();
+                }}
+                className="flex-1 text-xs font-mono min-w-0 rounded-md"
+                placeholder="Dán URL hình ảnh..."
+              />
+
               <button
                 type="button"
-                onClick={() => onChange("")}
-                className="absolute top-0.5 right-0.5 p-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md transition-colors"
-                title="Xóa ảnh"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-2.5 h-8 rounded-md bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent hover:text-white dark:hover:bg-accent text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+                title="Tải ảnh từ máy tính"
               >
-                <X size={8} />
+                {uploading ? <Loader2 size={12} className="animate-spin text-accent" /> : <Upload size={12} />}
+                <span>{uploading ? "Tải lên..." : "Tải ảnh"}</span>
               </button>
-            </div>
-            <Input
-              value={strVal}
-              onChange={(e) => onChange(e.target.value)}
-              className="flex-1 text-xs font-mono min-w-0"
-              placeholder="URL hình ảnh"
-            />
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <div
-              onClick={handleImageClick}
-              className="flex-1 h-9 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-accent bg-slate-50 dark:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer transition-colors"
-            >
-              {uploading ? (
-                <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
-                  <Loader2 size={12} className="animate-spin text-accent" />
-                  Đang tải lên...
-                </span>
-              ) : (
-                <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
-                  <Upload size={12} />
-                  Chọn / Tải ảnh lên
-                </span>
-              )}
-            </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
-            />
-            {strVal && (
-              <Input
-                value={strVal}
-                onChange={(e) => onChange(e.target.value)}
-                className="flex-1 text-xs font-mono min-w-0"
-                placeholder="Nhập thủ công"
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
               />
-            )}
+            </div>
           </div>
-        )
+
+          {/* Lightbox Modal phóng to ảnh */}
+          {previewZoomOpen && (
+            <div
+              className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setPreviewZoomOpen(false)}
+            >
+              <div
+                className="relative max-w-4xl max-h-[90vh] bg-zinc-900 border border-zinc-700 rounded-md overflow-hidden shadow-2xl flex flex-col items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="w-full flex items-center justify-between px-4 py-2.5 border-b border-zinc-800 bg-zinc-950 text-white">
+                  <div className="flex items-center gap-2 truncate max-w-[600px]">
+                    <ImageIcon size={14} className="text-rose-400 shrink-0" />
+                    <span className="text-xs font-mono font-bold truncate">{nodeKey}: {fullImageUrl}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={fullImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                      title="Mở tab mới"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewZoomOpen(false)}
+                      className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                      title="Đóng"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4 max-h-[75vh] overflow-auto flex items-center justify-center bg-black/40">
+                  <img
+                    src={fullImageUrl}
+                    alt={nodeKey}
+                    className="max-w-full max-h-[70vh] object-contain rounded-md shadow-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       ) : isMultiline ? (
         <textarea
-          value={strVal}
-          onChange={(e) => onChange(e.target.value)}
+          value={tmpVal}
+          onChange={(e) => setTmpVal(e.target.value)}
+          onBlur={() => commitValue()}
           rows={rows}
           className="flex-1 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-transparent text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-accent min-w-0"
         />
       ) : (
         <Input
-          value={strVal}
-          onChange={(e) => onChange(vType === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)}
-          className="flex-1 text-xs font-mono min-w-0"
+          value={tmpVal}
+          onChange={(e) => setTmpVal(e.target.value)}
+          onBlur={() => commitValue()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitValue();
+          }}
+          className="flex-1 text-xs font-mono min-w-0 rounded-md"
         />
       )}
 
-      <button
-        type="button"
-        onClick={onRemove}
-        className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
-      >
-        <Trash2 size={11} />
-      </button>
+      {!isColorKey && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="p-1 rounded-md text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shrink-0"
+        >
+          <Trash2 size={11} />
+        </button>
+      )}
     </div>
   );
 }

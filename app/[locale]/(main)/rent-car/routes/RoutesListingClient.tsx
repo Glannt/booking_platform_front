@@ -15,6 +15,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { getActiveIntercityRoutes, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/rental";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { calcIntercityPrice } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 import type { SectionDto } from "@/lib/api/sections";
 
@@ -81,23 +82,23 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
   const getLowestOneWay = (r: IntercityRouteDto) => {
     const active = r.prices?.filter((p) => p.active) ?? [];
     if (active.length === 0) return Infinity;
-    return Math.min(...active.map((p) => p.oneWayAmount));
+    return Math.min(...active.map((p) => calcIntercityPrice(r.distanceKm, p.perKmAmount, false)));
   };
 
   const getLowestRoundTrip = (r: IntercityRouteDto) => {
     const active = r.prices?.filter((p) => p.active) ?? [];
     if (active.length === 0) return Infinity;
-    return Math.min(...active.map((p) => p.roundTripAmount));
+    return Math.min(...active.map((p) => calcIntercityPrice(r.distanceKm, p.perKmAmount, true)));
   };
 
   const getCheapestWithSeatInfo = (r: IntercityRouteDto) => {
     const active = r.prices?.filter((p) => p.active) ?? [];
     if (active.length === 0) return null;
-    const sorted = [...active].sort((a, b) => a.oneWayAmount - b.oneWayAmount);
+    const sorted = [...active].sort((a, b) => calcIntercityPrice(r.distanceKm, a.perKmAmount, false) - calcIntercityPrice(r.distanceKm, b.perKmAmount, false));
     const cheapest = sorted[0];
     const cat = catMap.get(cheapest.vehicleCategoryId);
     const seatLabel = cat ? `${cat.minSeat}-${cat.maxSeat}` : null;
-    return { price: cheapest.oneWayAmount, seatLabel, categoryId: cheapest.vehicleCategoryId };
+    return { price: calcIntercityPrice(r.distanceKm, cheapest.perKmAmount, false), seatLabel, categoryId: cheapest.vehicleCategoryId };
   };
 
   const filteredRoutes = useMemo(() => {
@@ -118,12 +119,12 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
     if (direction === "one-way") {
       result = result.filter((r) => {
         const prices = r.prices?.filter((p) => p.active) ?? [];
-        return prices.some((p) => p.oneWayAmount > 0);
+        return prices.some((p) => p.perKmAmount > 0);
       });
     } else if (direction === "round-trip") {
       result = result.filter((r) => {
         const prices = r.prices?.filter((p) => p.active) ?? [];
-        return prices.some((p) => p.roundTripAmount > 0);
+        return prices.some((p) => p.perKmAmount > 0);
       });
     }
 

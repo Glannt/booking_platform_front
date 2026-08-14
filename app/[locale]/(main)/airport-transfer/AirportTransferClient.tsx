@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   DatePicker,
   DateField,
@@ -9,23 +9,13 @@ import {
   Label,
   FieldError,
   Button,
-  Input,
-  TextField,
-  Modal,
-  ModalBackdrop,
-  ModalContainer,
-  ModalDialog,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Autocomplete,
   EmptyState,
   ListBox,
   SearchField as HeroSearchField,
-  TextArea
+  NumberField
 } from "@heroui/react";
 import { trackFlight } from "@/lib/api/bookings";
-import { createAirportTransferBooking } from "@/lib/api/airport-transfer/bookings";
 import { searchLocations, LocationSearchResult } from "@/lib/api/locations";
 import {
   getVehicleCategories,
@@ -34,24 +24,25 @@ import {
   VehicleDto,
   getActiveAirports,
   getActiveAirportRoutes,
-  getAirportTransferPricesByRouteAndServiceType,
+  getAirportTransferPricesByRoute,
   AirportDto,
   AirportRouteDto,
-  AirportTransferPrice
+  AirportTransferPrice,
 } from "@/lib/api/fleet";
+import { getPublicModuleSurchargeRules, SurchargeRuleDto } from "@/lib/api/surcharge";
 import type { DateValue } from "@internationalized/date";
 import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import {
   Plane,
   MapPin,
   Phone,
-  MessageCircle,
   Sparkles,
-  User,
-  Briefcase,
   CheckCircle,
-  Search,
-  Car
+  Car,
+  Briefcase,
+  Scale,
+  Users,
+  AlertTriangle
 } from "lucide-react";
 
 import dynamic from "next/dynamic";
@@ -62,10 +53,8 @@ const RoutingMap = dynamic(
 import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { AutofillButton } from "@/components/AutofillButton";
-import BookingConfirmationModal from "@/components/BookingConfirmationModal";
-import SuccessOverlay from "@/components/SuccessOverlay";
-import ErrorOverlay from "@/components/ErrorOverlay";
+import { calcAirportPrice } from "@/lib/pricing";
+import { saveBookingDraft, loadBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import type { SectionDto } from "@/lib/api/sections";
 
 // Build vehicle list from API data (VehicleCategory + Vehicle)
@@ -83,6 +72,13 @@ interface VehicleOption {
   priceReturn: number;
   categoryId?: number;
   thumbnailUrl?: string;
+  schemaText?: string;
+  minSeat?: number;
+  maxSeat?: number;
+  minLuggage?: number;
+  maxLuggage?: number;
+  unitLuggage?: string;
+  luggageWeight?: number;
 }
 
 interface AirportTransferClientProps {
@@ -95,11 +91,106 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   const { language, t } = useI18n();
   const vi = language === "vi";
 
+  // Format currency (defined at top to avoid ReferenceError in getVehiclesList)
+  const formatPrice = (p: number) => _formatPrice(p, language);
+
+  // Helper: get airport display name by locale
+  const getAirportName = (airport: AirportDto) => {
+    const tr = airport.translations?.find(t => t.locale === language) || airport.translations?.[0];
+    return tr?.name || airport.name || airport.code;
+  };
+
+  const renderAirportSelector = (label: string, desc?: string) => (
+    <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3 w-full">
+      <Plane className="text-accent mt-1 shrink-0" size={18} />
+      <div className="w-full flex-1">
+        <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</p>
+        <div className="relative w-full">
+          <HeroSearchField
+            isRequired
+            name="airport-select"
+            value={airportSearchText}
+            onChange={(val) => {
+              setAirportSearchText(val);
+              setShowAirportSuggestions(true);
+            }}
+          >
+            <HeroSearchField.Group className="mt-1.5 flex items-center border border-accent dark:border-accent rounded-xl px-3 h-10 focus-within:border-accent-hover transition-colors w-full shadow-xs shadow-accent-soft-foreground bg-white dark:bg-zinc-950">
+              <HeroSearchField.Input
+                placeholder={t.airportTransfer.selectAirport}
+                className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
+                onFocus={() => setShowAirportSuggestions(true)}
+              />
+              <HeroSearchField.ClearButton
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto"
+                onPress={() => {
+                  setAirportSearchText("");
+                  setSelectedAirport(null);
+                }}
+              />
+            </HeroSearchField.Group>
+          </HeroSearchField>
+          {showAirportSuggestions && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowAirportSuggestions(false)} />
+              <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredAirports.length > 0 ? (
+                  filteredAirports.map((airport) => (
+                    <div
+                      key={airport.id}
+                      onClick={() => {
+                        setSelectedAirport(airport);
+                        setAirportSearchText(`${getAirportName(airport)} (${airport.code})`);
+                        setShowAirportSuggestions(false);
+                      }}
+                      className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+                    >
+                      <div className="flex flex-col min-w-0">
+                        <span>{getAirportName(airport)} ({airport.code})</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-xs text-slate-400 dark:text-slate-500">
+                    {t.common.noResults}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+        {desc && (
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 leading-snug">{desc}</p>
+        )}
+      </div>
+    </div>
+  );
+
   const heroSection = sections.find(s => s.sectionType === "HERO_BANNER") || null;
 
   // Airport & Route data from API
   const [airports, setAirports] = useState<AirportDto[]>([]);
   const [selectedAirport, setSelectedAirport] = useState<AirportDto | null>(null);
+  const [airportSearchText, setAirportSearchText] = useState("");
+  const [showAirportSuggestions, setShowAirportSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (selectedAirport) {
+      setAirportSearchText(`${getAirportName(selectedAirport)} (${selectedAirport.code})`);
+    } else {
+      setAirportSearchText("");
+    }
+  }, [selectedAirport, language]);
+
+  const filteredAirports = useMemo(() => {
+    if (!airportSearchText) return airports;
+    const query = airportSearchText.toLowerCase();
+    return airports.filter(a => {
+      const name = getAirportName(a).toLowerCase();
+      const code = a.code.toLowerCase();
+      return name.includes(query) || code.includes(query);
+    });
+  }, [airports, airportSearchText, language]);
   const [routes, setRoutes] = useState<AirportRouteDto[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<AirportRouteDto | null>(null);
   const [transferPrices, setTransferPrices] = useState<AirportTransferPrice[]>([]);
@@ -114,6 +205,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   const [nhaTrangAddress, setNhaTrangAddress] = useState("");
   const [nhaTrangReturnAddress, setNhaTrangReturnAddress] = useState("");
   const [isReturnAddressCustom, setIsReturnAddressCustom] = useState(false);
+  const [searchPickLat, setSearchPickLat] = useState<number | null>(null);
+  const [searchPickLng, setSearchPickLng] = useState<number | null>(null);
 
   const [dateValue, setDateValue] = useState<DateValue | null>(null);
   const [timeValue, setTimeValue] = useState<TimeValue>({ hour: 12, minute: 0, period: "PM" });
@@ -125,11 +218,16 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
 
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [isCalculating, setIsCalculating] = useState(false);
+  const [passengerCount, setPassengerCount] = useState<number>(1);
+  const [baggageCount, setBaggageCount] = useState<number>(0);
+  const [luggageWeight, setLuggageWeight] = useState<number>(0);
 
   const [estimatedDuration, setEstimatedDuration] = useState<number | null>(null);
   const [estimatedDistance, setEstimatedDistance] = useState<number | null>(null);
 
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [allSurcharges, setAllSurcharges] = useState<SurchargeRuleDto[]>([]);
+  const [showRouteBadges, setShowRouteBadges] = useState(true);
+  const [isCustomAddress, setIsCustomAddress] = useState(true);
 
   // Vehicle data from API
   const [vehicleCategories, setVehicleCategories] = useState<VehicleCategoryDto[]>([]);
@@ -143,16 +241,10 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   const [email, setEmail] = useState("");
   const [zaloId, setZaloId] = useState("");
   const [kakaoTalkId, setKakaoTalkId] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [notes, setNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [createdCode, setCreatedCode] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [checkingFlight, setCheckingFlight] = useState(false);
   const [flightData, setFlightData] = useState<any>(null);
-
-  // Confirm modal
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
 
   // Autocomplete suggestions
@@ -189,17 +281,26 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       .then(res => {
         if (res && res.data) {
           setAirports(res.data);
-          // Default to CXR (Cam Ranh)
-          const cxr = res.data.find(a => a.code === "CXR");
-          if (cxr) {
-            setSelectedAirport(cxr);
-          } else if (res.data.length > 0) {
-            setSelectedAirport(res.data[0]);
+          // Default to the one marked as isDefault, fallback to CXR, then first one
+          const defaultAirport = res.data.find(a => a.isDefault) || res.data.find(a => a.code === "CXR") || res.data[0];
+          if (defaultAirport) {
+            setSelectedAirport(defaultAirport);
           }
         }
       })
       .catch(err => console.error("Error loading airports:", err))
       .finally(() => setAirportsLoading(false));
+  }, []);
+
+  // Fetch all surcharges for AIRPORT_TRANSFER on mount
+  useEffect(() => {
+    getPublicModuleSurchargeRules("AIRPORT_TRANSFER")
+      .then(res => {
+        if (res && res.data) {
+          setAllSurcharges(res.data);
+        }
+      })
+      .catch(err => console.error("Error loading surcharges list:", err));
   }, []);
 
   // Fetch routes when airport changes
@@ -222,29 +323,163 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       .finally(() => setRoutesLoading(false));
   }, [selectedAirport?.id]);
 
-  // Fetch transfer prices when route + tripType changes
+  // Fetch transfer prices when route changes
   useEffect(() => {
     if (!selectedRoute?.id) return;
-    const serviceType = tripType === "return" ? "ROUND_TRIP" : "ONE_WAY";
-    getAirportTransferPricesByRouteAndServiceType(selectedRoute.id, serviceType)
+    getAirportTransferPricesByRoute(selectedRoute.id)
       .then(res => {
         if (res && res.data) {
           setTransferPrices(res.data);
         }
       })
       .catch(err => console.error("Error loading transfer prices:", err));
-  }, [selectedRoute?.id, tripType]);
+  }, [selectedRoute?.id]);
+
+  // Helper to evaluate if a rule matches the current context
+  const evaluateRule = (
+    rule: SurchargeRuleDto,
+    context: { dateStr: string; timeStr: string; routeId?: number }
+  ): boolean => {
+    if (!rule.active) return false;
+    if (rule.effectiveFrom && context.dateStr < rule.effectiveFrom) return false;
+    if (rule.effectiveTo && context.dateStr > rule.effectiveTo) return false;
+
+    const cond = rule.condition as any;
+    if (!cond || !cond.type) return true;
+
+    const evalCond = (c: any): boolean => {
+      if (!c || !c.type) return true;
+      switch (c.type) {
+        case "time_range": {
+          const { from, to } = c;
+          if (!from || !to || !context.timeStr) return false;
+          if (from <= to) {
+            return context.timeStr >= from && context.timeStr <= to;
+          } else {
+            return context.timeStr >= from || context.timeStr <= to;
+          }
+        }
+        case "date_range":
+        case "seasonal": {
+          const { from, to } = c;
+          if (!from || !to || !context.dateStr) return false;
+          if (from.length === 5 && to.length === 5) {
+            const mmdd = context.dateStr.slice(5);
+            if (from <= to) {
+              return mmdd >= from && mmdd <= to;
+            } else {
+              return mmdd >= from || mmdd <= to;
+            }
+          }
+          return context.dateStr >= from && context.dateStr <= to;
+        }
+        case "day_of_week": {
+          const dateObj = new Date(context.dateStr);
+          const dayNames = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+          const dayName = dayNames[dateObj.getDay()];
+          return (c.days || []).includes(dayName);
+        }
+        case "route": {
+          if (!context.routeId) return false;
+          return (c.ids || []).includes(context.routeId);
+        }
+        case "and": {
+          return (c.conditions || []).every((sub: any) => evalCond(sub));
+        }
+        case "or": {
+          return (c.conditions || []).some((sub: any) => evalCond(sub));
+        }
+        default:
+          return true;
+      }
+    };
+
+    return evalCond(cond);
+  };
+
+  const appliedSurcharges = useMemo(() => {
+    if (!dateValue || allSurcharges.length === 0) return [];
+    const dateStr = dateValue.toString();
+    let hr = timeValue.hour;
+    if (timeValue.period === "PM" && hr < 12) hr += 12;
+    if (timeValue.period === "AM" && hr === 12) hr = 0;
+    const timeStr = `${String(hr).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}`;
+
+    return allSurcharges.filter((rule) =>
+      evaluateRule(rule, {
+        dateStr,
+        timeStr,
+        routeId: selectedRoute?.id,
+      })
+    );
+  }, [allSurcharges, dateValue, timeValue, selectedRoute?.id]);
+
+  const formatSurchargeRuleDescription = (rule: SurchargeRuleDto) => {
+    const cond = rule.condition as any;
+    const valText = rule.calculationType === "PERCENT" ? `${rule.value}%` : formatPrice(rule.value);
+    if (cond?.type === "time_range" && cond.from && cond.to) {
+      return `${rule.name} (khung giờ từ ${cond.from} đến ${cond.to}): +${valText}`;
+    }
+    if ((cond?.type === "date_range" || cond?.type === "seasonal") && cond.from && cond.to) {
+      return `${rule.name} (giai đoạn từ ${cond.from} đến ${cond.to}): +${valText}`;
+    }
+    if (cond?.type === "day_of_week" && cond.days?.length) {
+      return `${rule.name} (các ngày ${cond.days.join(", ")}): +${valText}`;
+    }
+    return `${rule.name}: +${valText}`;
+  };
+
+  const handleRouteBadgeClick = (route: AirportRouteDto) => {
+    setSelectedRoute(route);
+    const r = route as any;
+    const translation = r.translations?.find((t: any) => t.locale === language) || r.translations?.[0];
+    const defaultAddress = translation?.name
+      || r.name
+      || (r.originName && r.destinationName ? `${r.originName} ⇌ ${r.destinationName}` : null)
+      || r.airportName
+      || `${r.originCity || ""} → ${r.destinationCity || ""}`.replace(/ → $/, "").replace(/^ → /, "")
+      || r.code;
+
+    // We want to extract the Nha Trang (non-airport) address to set into the custom input field.
+    // In the route, one side is the airport and the other is the city address.
+    const isOriginAirport = r.originName?.toLowerCase().includes("sân bay")
+      || r.originName?.toLowerCase().includes("airport")
+      || r.code?.toLowerCase().startsWith("cxr");
+
+    const savedAddress = isOriginAirport ? r.destinationName : r.originName;
+
+    // Extract destination name if it contains ⇌ or other arrows (fallback)
+    const cleanAddress = savedAddress || (() => {
+      if (!defaultAddress) return "";
+      const parts = defaultAddress.split(/[⇌➔→\->]/).map((p: string) => p.trim());
+      if (parts.length > 1) {
+        const nonAirport = parts.find((p: string) => !p.toLowerCase().includes("sân bay") && !p.toLowerCase().includes("airport"));
+        return nonAirport || parts[1];
+      }
+      return defaultAddress;
+    })();
+
+    setNhaTrangAddress(cleanAddress);
+    setSearchPickLat(null);
+    setSearchPickLng(null);
+    setIsCustomAddress(false);
+  };
+
+  const formatSurchargeTime = (timeStr?: string) => {
+    if (!timeStr) return "";
+    const parts = timeStr.split(":");
+    return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : timeStr;
+  };
 
   const isFormComplete = Boolean(
     dateValue && nhaTrangAddress.length > 0 &&
     (tripType === "one-way" || (tripType === "return" && returnDateValue))
   );
 
-  // Auto-load vehicle categories when form is complete
+  // Pre-load vehicles on mount
   useEffect(() => {
-    if (!isFormComplete || vehiclesLoaded || vehiclesLoading) return;
     handleSearchVehicles();
-  }, [isFormComplete, vehiclesLoaded, vehiclesLoading]);
+  }, []);
 
   // Pre-fill form from searchParams when airports are loaded
   useEffect(() => {
@@ -281,7 +516,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     }
 
     if (dateStr) {
-      try { setDateValue(parseDate(dateStr)); } catch {}
+      try { setDateValue(parseDate(dateStr)); } catch { }
     }
 
     if (timeStr) {
@@ -302,19 +537,108 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     if (trip === "return") setTripType("return");
   }, [searchParams, airports, airportsLoading, language]);
 
-  // Helper: get airport display name by locale
-  const getAirportName = (airport: AirportDto) => {
-    const tr = airport.translations?.find(t => t.locale === language) || airport.translations?.[0];
-    return tr?.name || airport.name || airport.code;
-  };
+  // Restore booking form from checkout draft (back-navigation preservation)
+  useEffect(() => {
+    const draft = loadBookingDraft();
+    if (!draft) return;
+    const b = draft.booking;
+    setSelectedAirport(b.selectedAirport);
+    setSelectedRoute(b.selectedRoute);
+    setDirection(b.direction);
+    setTripType(b.tripType);
+    setOutboundStartsFrom(b.outboundStartsFrom);
+    setNhaTrangAddress(b.nhaTrangAddress);
+    setNhaTrangReturnAddress(b.nhaTrangReturnAddress);
+    setIsReturnAddressCustom(b.isReturnAddressCustom);
+    setIsCustomAddress(b.isCustomAddress);
+    setSearchPickLat(b.searchPickLat);
+    setSearchPickLng(b.searchPickLng);
+    setDateValue(b.dateValue ? parseDate(b.dateValue) : null);
+    setTimeValue(b.timeValue);
+    setFlightNumber(b.flightNumber);
+    setReturnDateValue(b.returnDateValue ? parseDate(b.returnDateValue) : null);
+    setReturnTimeValue(b.returnTimeValue);
+    setReturnFlightNumber(b.returnFlightNumber);
+    setSelectedVehicleId(b.selectedVehicleId);
+    setEstimatedDistance(b.estimatedDistance);
+    setEstimatedDuration(b.estimatedDuration);
+    if (b.passengerCount !== undefined) setPassengerCount(b.passengerCount);
+    if (b.baggageCount !== undefined) setBaggageCount(b.baggageCount);
+    if (b.luggageWeight !== undefined) setLuggageWeight(b.luggageWeight);
+    setFullName(draft.contact.fullName);
+    setPhone(draft.contact.phone);
+    setEmail(draft.contact.email);
+    setZaloId(draft.contact.zaloId);
+    setKakaoTalkId(draft.contact.kakaoTalkId);
+    setWhatsapp(draft.contact.whatsapp);
+    setNotes(draft.contact.notes);
+  }, []);
+
 
   // Computed airport display name with code
   const airportDisplayName = selectedAirport
     ? `${getAirportName(selectedAirport)} (${selectedAirport.code})`
-    : t.airportTransfer.camRanhAirport;
+    : "";
   const airportNameShort = selectedAirport
     ? getAirportName(selectedAirport)
-    : t.airportTransfer.camRanhAirport;
+    : "";
+
+  // Haversine distance in kilometers between two GPS coordinates
+  const getGeoDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Check if destination is within fixed route zone (e.g. within 1.2km radius or 1.2km distance tolerance)
+  const isWithinFixedRouteZone = useMemo(() => {
+    // If user explicitly clicked the fixed route badge
+    if (!isCustomAddress) return true;
+
+    // If destination coordinates are known, check distance to selectedRoute destination or any route destination
+    if (searchPickLat != null && searchPickLng != null) {
+      if (selectedRoute?.destinationLat != null && selectedRoute?.destinationLng != null) {
+        const dist = getGeoDistanceKm(searchPickLat, searchPickLng, selectedRoute.destinationLat, selectedRoute.destinationLng);
+        if (dist <= 1.2) return true; // within 1.2km radius
+      }
+
+      for (const r of routes) {
+        if (r.destinationLat != null && r.destinationLng != null) {
+          const dist = getGeoDistanceKm(searchPickLat, searchPickLng, r.destinationLat, r.destinationLng);
+          if (dist <= 1.2) return true;
+        }
+      }
+    }
+
+    // If estimated distance from map is within 1.2 km of route's base distance
+    if (selectedRoute && estimatedDistance != null) {
+      const baseKm = (selectedRoute as any).baseKm || selectedRoute.distanceKm;
+      if (baseKm != null && Math.abs(estimatedDistance - baseKm) <= 1.2) {
+        return true;
+      }
+    }
+
+    // If address text matches route landmark (e.g., "Trần Phú") and distance is within reasonable base limit
+    if (selectedRoute && nhaTrangAddress) {
+      const addrLower = nhaTrangAddress.toLowerCase();
+      const r = selectedRoute as any;
+      const rName = (r.translations?.[0]?.name || "").toLowerCase();
+      if (rName.includes("trần phú") && addrLower.includes("trần phú")) {
+        const baseKm = (selectedRoute as any).baseKm || selectedRoute.distanceKm || 35;
+        if (estimatedDistance == null || estimatedDistance <= baseKm + 1.5) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }, [isCustomAddress, selectedRoute, routes, searchPickLat, searchPickLng, estimatedDistance, nhaTrangAddress]);
 
   // Build vehicle list from API data
   const getVehiclesList = (): VehicleOption[] => {
@@ -325,11 +649,40 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       const catDesc = tr?.description || "";
       const minSeat = cat.minSeat || cat.maxSeat || 4;
       const maxSeat = cat.maxSeat || 4;
-      const capacityText = `${maxSeat} ${t.common.passengers}`;
-      const luggageText = `${cat.maxLuggage || 2} ${t.common.baggage}`;
-      // Get prices from API transfer prices
+      const capacityText = `${minSeat}-${maxSeat} ${t.common.seats}`;
+      const luggageText = cat.minLuggage > 0
+        ? `${cat.minLuggage}-${cat.maxLuggage} ${cat.unitLuggage || "kiện"} (Tối đa ${(cat.maxLuggage || 2) * 20} kg)`
+        : `${cat.maxLuggage || 2} ${t.common.baggage} (Tối đa ${(cat.maxLuggage || 2) * 20} kg)`;
+
+      // Get prices from API transfer prices (km-based)
       const priceEntry = transferPrices.find(p => p.vehicleCategoryId === cat.id);
-      const apiPrice = priceEntry ? Number(priceEntry.amount) : 0;
+      // Fixed routes (badge or within 1km fixed route zone) use base price only — no per-km overcharge
+      const pricingKm = isWithinFixedRouteZone ? undefined : (estimatedDistance ?? undefined);
+      const { oneWay, roundTrip } = calcAirportPrice(priceEntry, pricingKm);
+
+      let schemaText = "";
+
+      if (priceEntry) {
+        const baseAmtText = formatPrice(priceEntry.baseAmount);
+        if (priceEntry.fixedOvercharge) {
+          const fixedFeeText = formatPrice(priceEntry.feeOverchargeFixed ?? 100000);
+          schemaText = t.airportTransfer.priceSchemaInfoFixed
+            .replace("{baseAmount}", baseAmtText)
+            .replace("{baseKm}", String(priceEntry.baseKm))
+            .replace("{fixedFee}", fixedFeeText);
+        } else {
+          const perKmText = formatPrice(priceEntry.perKmAmount);
+          schemaText = t.airportTransfer.priceSchemaInfoKm
+            .replace("{baseAmount}", baseAmtText)
+            .replace("{baseKm}", String(priceEntry.baseKm))
+            .replace("{perKmAmount}", perKmText);
+        }
+
+        if (isWithinFixedRouteZone) {
+          schemaText += ` · ${t.airportTransfer.fixedRoutePriceNote}`;
+        }
+      }
+
       return {
         id: cat.code,
         nameVi: catName,
@@ -340,10 +693,17 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         luggage: luggageText,
         featuresVi: [t.airportTransfer.cleanVehicle, t.airportTransfer.airConditioning],
         featuresEn: ["Clean vehicle", "Air Conditioning"],
-        priceOneWay: tripType === "one-way" ? apiPrice : Math.round(apiPrice / 1.85),
-        priceReturn: apiPrice,
+        priceOneWay: oneWay,
+        priceReturn: roundTrip,
         categoryId: cat.id,
         thumbnailUrl: cat.thumbnailUrl,
+        schemaText,
+        minSeat,
+        maxSeat,
+        minLuggage: cat.minLuggage || 1,
+        maxLuggage: cat.maxLuggage || 2,
+        unitLuggage: cat.unitLuggage || "kiện",
+        luggageWeight: cat.luggageWeight
       };
     });
   };
@@ -356,6 +716,30 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     if (pb === 0) return -1;
     return pa - pb;
   });
+
+  const getVehicleSurcharge = (v: VehicleOption) => {
+    const priceEntry = transferPrices.find(p => p.vehicleCategoryId === v.categoryId);
+    const basePrice = priceEntry ? (tripType === "one-way" ? priceEntry.baseAmount : priceEntry.baseAmount * 2) : 0;
+    let runningTotal = basePrice;
+    let totalSurcharge = 0;
+    for (const s of appliedSurcharges) {
+      const base = s.calculationBase === "RUNNING_TOTAL" ? runningTotal : basePrice;
+      let amt = 0;
+      if (s.calculationType === "PERCENT") {
+        amt = Math.round(base * (Number(s.value) / 100));
+      } else {
+        amt = Number(s.value);
+      }
+      runningTotal += amt;
+      totalSurcharge += amt;
+    }
+    return totalSurcharge;
+  };
+
+  const getVehicleSurchargeNames = () => {
+    if (appliedSurcharges.length === 0) return "";
+    return appliedSurcharges.map(s => s.name).join(" + ");
+  };
 
   // Location search effect for Outbound Address
   useEffect(() => {
@@ -395,12 +779,28 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     return () => clearTimeout(delayDebounce);
   }, [nhaTrangReturnAddress, language]);
 
-  // Sync outbound and return addresses
+  // Manual typing: unknown address, clear picked coordinates, geocode via map
   const handleNhaTrangAddressChange = (val: string) => {
     setNhaTrangAddress(val);
     if (!isReturnAddressCustom) {
       setNhaTrangReturnAddress(val);
     }
+    setSearchPickLat(null);
+    setSearchPickLng(null);
+    setIsCustomAddress(true);
+  };
+
+  // Suggestion pick: use the picked coordinates directly (bypass geocoding)
+  const handleNhaTrangSuggestionPick = (item: LocationSearchResult) => {
+    const addr = item.address || item.name;
+    setNhaTrangAddress(addr);
+    if (!isReturnAddressCustom) {
+      setNhaTrangReturnAddress(addr);
+    }
+    setSearchPickLat(item.latitude);
+    setSearchPickLng(item.longitude);
+    setIsCustomAddress(true);
+    setShowRouteBadges(false);
   };
 
   const handleNhaTrangReturnAddressChange = (val: string) => {
@@ -430,22 +830,35 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     }
   };
 
-  const selectedVehicle = activeVehicles.find((v) => v.id === selectedVehicleId) || activeVehicles[0];
+  const handleRouteCalculated = useCallback((durationMin: number, distanceKm: number) => {
+    setEstimatedDuration(durationMin);
+    setEstimatedDistance(distanceKm);
+  }, []);
+
+  const selectedVehicle = isFormComplete
+    ? (activeVehicles.find((v) => v.id === selectedVehicleId) || activeVehicles[0] || null)
+    : (selectedVehicleId ? (activeVehicles.find((v) => v.id === selectedVehicleId) || null) : null);
   const outboundPrice = selectedVehicle?.priceOneWay || 0;
-  const returnPrice = tripType === "return" ? (selectedVehicle?.priceReturn || 0) - (selectedVehicle?.priceOneWay || 0) : 0;
-  const unitPrice = tripType === "one-way" ? (selectedVehicle?.priceOneWay || 0) : (selectedVehicle?.priceReturn || 0);
+  const unitPrice = selectedVehicle
+    ? (tripType === "one-way" ? (selectedVehicle.priceOneWay || 0) : (selectedVehicle.priceReturn || 0))
+    : 0;
 
-  // Format currency
-  const formatPrice = (p: number) => _formatPrice(p, language);
+  const surchargeAmount = useMemo(() => {
+    if (!selectedVehicle) return 0;
+    return getVehicleSurcharge(selectedVehicle);
+  }, [appliedSurcharges, selectedVehicle, transferPrices, tripType]);
 
-  const submitBooking = async () => {
-    if (!selectedVehicle) return;
+  const finalPrice = unitPrice + surchargeAmount;
 
-    setSubmitting(true);
+  const finalPriceDisplay = useMemo(() => {
+    if (!isFormComplete || !selectedVehicle) return "—";
+    return formatPrice(finalPrice);
+  }, [finalPrice, isFormComplete, selectedVehicle, language]);
 
-    // Use API-driven vehicle category ID
-    const serviceId = selectedVehicle?.categoryId || 101;
-    const serviceOptionId = selectedVehicle?.categoryId || 11;
+  const buildBookingDraft = (): BookingDraft | null => {
+    if (!selectedVehicle) return null;
+
+    const bookingKm = estimatedDistance ?? selectedRoute?.distanceKm ?? undefined;
 
     const activeAddress = nhaTrangAddress || "Trung tâm Nha Trang";
     const activeReturnAddress = nhaTrangReturnAddress || activeAddress;
@@ -486,59 +899,28 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       }
     }
 
-    const pickupLoc = tripType === "return"
-      ? `${outboundPickup} ➔ ${outboundDropoff}`
-      : outboundPickup;
-    const dropoffLoc = tripType === "return"
-      ? `${returnPickup} ➔ ${returnDropoff}`
-      : outboundDropoff;
-
-    const timeText = `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")} ${timeValue.period}`;
     const dateText = dateValue ? dateValue.toString() : "";
-    const startDateFormatted = dateText ? `${dateText}T${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}:00` : undefined;
+    let outboundHr = timeValue.hour;
+    if (timeValue.period === "PM" && outboundHr < 12) outboundHr += 12;
+    if (timeValue.period === "AM" && outboundHr === 12) outboundHr = 0;
+    const startDateFormatted = dateText ? `${dateText}T${String(outboundHr).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}:00` : "";
 
     let endDateFormatted: string | undefined = undefined;
     if (tripType === "return" && returnDateValue) {
-      endDateFormatted = `${returnDateValue.toString()}T${String(returnTimeValue.hour).padStart(2, "0")}:${String(returnTimeValue.minute).padStart(2, "0")}:00`;
+      let returnHr = returnTimeValue.hour;
+      if (returnTimeValue.period === "PM" && returnHr < 12) returnHr += 12;
+      if (returnTimeValue.period === "AM" && returnHr === 12) returnHr = 0;
+      endDateFormatted = `${returnDateValue.toString()}T${String(returnHr).padStart(2, "0")}:${String(returnTimeValue.minute).padStart(2, "0")}:00`;
     }
 
-    const airportDetails = {
-      tripType: tripType === "return" ? "ROUND_TRIP" : "ONE_WAY",
-      airportId: selectedAirport?.id || null,
-      airportCode: selectedAirport?.code || "CXR",
-      routeId: selectedRoute?.id || null,
-      routeCode: selectedRoute?.code || null,
-      outboundDirection,
-      outboundDate: dateText || null,
-      outboundPickupTime: startDateFormatted || null,
-      outboundFlightNumber: flightNumber || null,
-      outboundPickupAddress: outboundPickup,
-      outboundDropoffAddress: outboundDropoff,
-      returnDirection: tripType === "return" ? returnDirection : null,
-      returnDate: tripType === "return" && returnDateValue ? returnDateValue.toString() : null,
-      returnPickupTime: endDateFormatted || null,
-      returnFlightNumber: tripType === "return" ? (returnFlightNumber || null) : null,
-      returnPickupAddress: tripType === "return" ? returnPickup : null,
-      returnDropoffAddress: tripType === "return" ? returnDropoff : null,
-      vehicleCategoryId: selectedVehicle.categoryId || 0,
-      basePrice: outboundPrice,
-      totalPrice: unitPrice,
-    };
-
     const payload = {
-      customerName: fullName,
-      customerEmail: email || `${phone}@traveler.com`,
-      customerPhone: phone,
-      customerNotes: `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes}`,
-      zaloId: zaloId || undefined,
-      kakaoTalkId: kakaoTalkId || undefined,
-      contactChannel: zaloId ? "zalo" : kakaoTalkId ? "kakaotalk" : undefined,
-      contactId: zaloId || kakaoTalkId || undefined,
       vehicleCategoryId: selectedVehicle.categoryId || 0,
+      routeId: selectedRoute?.id || undefined,
+      actualKm: bookingKm,
       tripType: tripType === "return" ? "ROUND_TRIP" : "ONE_WAY",
       outboundDirection,
       outboundDate: dateText || "",
-      outboundPickupTime: startDateFormatted || "",
+      outboundPickupTime: startDateFormatted,
       outboundFlightNumber: flightNumber || undefined,
       outboundPickupAddress: outboundPickup,
       outboundDropoffAddress: outboundDropoff,
@@ -549,31 +931,69 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       returnPickupAddress: tripType === "return" ? returnPickup : undefined,
       returnDropoffAddress: tripType === "return" ? returnDropoff : undefined,
       basePrice: outboundPrice,
-      totalPrice: unitPrice,
+      totalPrice: finalPrice,
+      passengerCount,
+      luggageWeight,
     };
 
-    try {
-      const res = await createAirportTransferBooking(payload);
-      if (res && res.data) {
-        setCreatedCode(res.data.bookingCode || "BK-SUCCESS");
-      }
-      setBookingSuccess(true);
+    const summaryItems = [
+      { label: t.rentCar.tripType, value: tripType === "one-way" ? t.airportTransfer.oneWay : t.airportTransfer.roundTrip },
+      { label: t.airportTransfer.airport, value: airportDisplayName },
+      { label: t.airportTransfer.vehicle, value: selectedVehicle ? (language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn) : "" },
+      ...(dateValue ? [{ label: t.airportTransfer.dateTime, value: `${dateValue.toString()} ${timeValue.hour}:${String(timeValue.minute).padStart(2, "0")} ${timeValue.period}` }] : []),
+      ...(tripType === "return" && returnDateValue ? [{ label: t.airportTransfer.returnDate, value: `${returnDateValue.toString()} ${returnTimeValue.hour}:${String(returnTimeValue.minute).padStart(2, "0")} ${returnTimeValue.period}` }] : []),
+      ...(nhaTrangAddress ? [{ label: t.airportTransfer.address, value: nhaTrangAddress }] : []),
+    ];
 
-    } catch (err) {
-      console.error("Booking API error:", err);
-      setErrorMessage(err instanceof Error ? err.message : t.errors.bookingFailed);
-    } finally {
-      setSubmitting(false);
-      setShowConfirmModal(false);
-    }
+    return {
+      booking: {
+        selectedAirport: selectedAirport || null,
+        selectedRoute: selectedRoute || null,
+        direction,
+        tripType,
+        outboundStartsFrom,
+        nhaTrangAddress,
+        nhaTrangReturnAddress,
+        isReturnAddressCustom,
+        isCustomAddress,
+        searchPickLat,
+        searchPickLng,
+        dateValue: dateValue ? dateValue.toString() : null,
+        timeValue,
+        flightNumber,
+        returnDateValue: returnDateValue ? returnDateValue.toString() : null,
+        returnTimeValue,
+        returnFlightNumber,
+        selectedVehicleId,
+        estimatedDistance,
+        estimatedDuration,
+        passengerCount,
+        baggageCount,
+        luggageWeight,
+      },
+      summaryItems,
+      totalAmount: finalPrice,
+      payload,
+      contact: { fullName, phone, email, zaloId, kakaoTalkId, whatsapp, notes },
+    };
   };
 
   const handleBooking = () => {
-    setShowConfirmModal(true);
-  };
+    const activeVehiclesList = getVehiclesList();
+    const activeVehicle = activeVehiclesList.find((v) => v.id === selectedVehicleId) || activeVehiclesList[0];
+    if (activeVehicle) {
+      const maxSeat = activeVehicle.maxSeat ?? 4;
+      const maxLuggageKg = (activeVehicle.maxLuggage ?? 2) * 20;
+      if (passengerCount > maxSeat || luggageWeight > maxLuggageKg) {
+        alert(t.airportTransfer.capacityWarning);
+        return;
+      }
+    }
 
-  const handleConfirmBooking = () => {
-    submitBooking();
+    const draft = buildBookingDraft();
+    if (!draft) return;
+    saveBookingDraft(draft);
+    router.push(`/${language}/airport-transfer/checkout`);
   };
 
   return (
@@ -623,8 +1043,63 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         {/* Left Column: Form & Car Choices */}
         <div className="lg:col-span-8 space-y-6">
 
+          {/* Fixed Route Badges */}
+          {routes.length > 0 && (
+            <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {t.airportTransfer.popularRoutes}
+                </h3>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowRouteBadges(!showRouteBadges)}
+                  className="text-xs font-bold text-accent hover:text-accent-hover"
+                >
+                  {showRouteBadges ? t.airportTransfer.hideRoutes : t.airportTransfer.showRoutes}
+                </Button>
+              </div>
+              {showRouteBadges && (
+                <div className="flex flex-wrap gap-2">
+                  {routes.map((route) => {
+                    const isSelected = selectedRoute?.id === route.id;
+                    const r = route as any;
+                    const translation = r.translations?.find((t: any) => t.locale === language) || r.translations?.[0];
+                    const routeName = translation?.name
+                      || r.name
+                      || (r.originName && r.destinationName ? `${r.originName} ⇌ ${r.destinationName}` : null)
+                      || r.airportName
+                      || `${r.originCity || ""} → ${r.destinationCity || ""}`.replace(/ → $/, "").replace(/^ → /, "")
+                      || r.code;
+                    const distance = r.distanceKm ? `~${r.distanceKm}km` : "";
+
+                    return (
+                      <button
+                        key={route.id}
+                        onClick={() => handleRouteBadgeClick(route)}
+                        className={`
+                          flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold
+                          transition-all cursor-pointer whitespace-nowrap
+                          ${isSelected
+                            ? "border-accent bg-accent/10 text-accent dark:bg-accent/20"
+                            : "border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-slate-300 hover:border-accent/50 hover:bg-accent/5"
+                          }
+                        `}
+                      >
+                        <MapPin size={12} className={isSelected ? "text-accent" : "text-slate-450"} />
+                        <span className="max-w-[120px] truncate">{routeName}</span>
+                        {distance && <span className="text-[10px] text-slate-400 dark:text-slate-500">{distance}</span>}
+                        {isSelected && <CheckCircle size={12} className="text-accent" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Form Card */}
-          <div className=" rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+          <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
             {/* Direction & Trip Type Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex bg-slate-100 dark:bg-[var(--bg-elevated)]/80 p-1.5 rounded-2xl gap-1 shrink-0 self-start sm:self-auto">
@@ -632,8 +1107,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   type="button"
                   onClick={() => setTripType("one-way")}
                   className={`py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${tripType === "one-way"
-                    ? "bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    ? "bg-white dark:bg-black text-accent shadow-sm"
+                    : " hover:text-slate-800 dark:hover:text-slate-200 hover:bg-zinc-200"
                     }`}
                 >
                   {t.airportTransfer.oneWay}
@@ -642,8 +1117,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   type="button"
                   onClick={() => setTripType("return")}
                   className={`py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${tripType === "return"
-                    ? "bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    ? "bg-white dark:bg-black text-accent shadow-sm"
+                    : "hover:text-slate-800 dark:hover:text-slate-200 hover:bg-zinc-200"
                     }`}
                 >
                   {t.airportTransfer.roundTrip}
@@ -656,8 +1131,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     type="button"
                     onClick={() => setDirection("to-nhatrang")}
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${direction === "to-nhatrang"
-                      ? "bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                      ? "bg-white dark:bg-black text-accent shadow-sm"
+                      : "hover:text-slate-800 dark:hover:text-slate-200 hover:bg-zinc-200"
                       }`}
                   >
                     {t.airportTransfer.toNhaTrang}
@@ -666,8 +1141,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     type="button"
                     onClick={() => setDirection("to-airport")}
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${direction === "to-airport"
-                      ? "bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                      ? "bg-white dark:bg-black text-accent shadow-sm"
+                      : "hover:text-slate-800 dark:hover:text-slate-200 hover:bg-zinc-200"
                       }`}
                   >
                     {t.airportTransfer.toAirport}
@@ -682,7 +1157,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     type="button"
                     onClick={() => setOutboundStartsFrom("airport")}
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${outboundStartsFrom === "airport"
-                      ? "bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-sm"
+                      ? "bg-white dark:bg-black text-accent shadow-sm"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                       }`}
                   >
@@ -692,7 +1167,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     type="button"
                     onClick={() => setOutboundStartsFrom("nhatrang")}
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${outboundStartsFrom === "nhatrang"
-                      ? "bg-white dark:bg-black text-blue-600 dark:text-blue-400 shadow-sm"
+                      ? "bg-white dark:bg-black text-accent shadow-sm"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                       }`}
                   >
@@ -702,55 +1177,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
               )}
             </div>
 
-            {/* Airport Selector */}
-            {airports.length > 1 && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white pl-1">
-                  {t.airportTransfer.airport}
-                </label>
-                <Autocomplete
-                  className="w-full"
-                  placeholder={t.airportTransfer.selectAirport}
-                  selectionMode="single"
-                  value={selectedAirport?.id ? String(selectedAirport.id) : null}
-                  onChange={(key) => {
-                    const airport = airports.find(a => a.id === Number(key));
-                    if (airport) setSelectedAirport(airport);
-                  }}
-                >
-                  <Autocomplete.Trigger>
-                    <div className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
-                      <Plane size={16} className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
-                      <Autocomplete.Value className="text-xs font-semibold text-slate-800 dark:text-slate-100" />
-                      <Autocomplete.ClearButton className="ml-auto" />
-                      <Autocomplete.Indicator />
-                    </div>
-                  </Autocomplete.Trigger>
-                  <Autocomplete.Popover>
-                    <Autocomplete.Filter filter={() => true}>
-                      <HeroSearchField autoFocus name="search" variant="secondary">
-                        <HeroSearchField.Group>
-                          <HeroSearchField.SearchIcon />
-                          <HeroSearchField.Input placeholder={t.airportTransfer.searchAirports} />
-                          <HeroSearchField.ClearButton />
-                        </HeroSearchField.Group>
-                      </HeroSearchField>
-                      <ListBox className="max-h-[200px] overflow-y-auto" renderEmptyState={() => <EmptyState>{t.common.noResults}</EmptyState>}>
-                        {airports.map((airport) => (
-                          <ListBox.Item key={String(airport.id)} id={String(airport.id)} textValue={getAirportName(airport)}>
-                            <div className="flex items-center gap-2 py-0.5">
-                              <Plane size={14} className="text-blue-500" />
-                              <span className="text-xs font-bold">{getAirportName(airport)} ({airport.code})</span>
-                            </div>
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Autocomplete.Filter>
-                  </Autocomplete.Popover>
-                </Autocomplete>
-              </div>
-            )}
+
 
             {/* ONE-WAY TRIP FORM */}
             {tripType === "one-way" && (
@@ -758,18 +1185,11 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {direction === "to-nhatrang" ? (
                     <>
-                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
-                        <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
-                        <div>
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.pickup}</p>
-                          <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{airportNameShort}</p>
-                          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug">{t.airportTransfer.driverMeetDesc}</p>
-                        </div>
-                      </div>
-                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                      {renderAirportSelector(t.airportTransfer.pickup, t.airportTransfer.driverMeetDesc)}
+                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3 w-full">
                         <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                         <div className="w-full flex-1">
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.dropoff}</p>
+                          <p className="text-[10px] font-extrabold uppercase tracking-widest">{t.airportTransfer.dropoff}</p>
                           <div className="relative w-full">
                             <HeroSearchField
                               isRequired
@@ -778,13 +1198,13 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                               value={nhaTrangAddress}
                               onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
                             >
-                              <HeroSearchField.Group className="mt-1.5 flex items-center border border-accent dark:border-accent rounded-xl px-3 h-10 focus-within:border-blue-500/50 transition-colors w-full shadow-xs shadow-accent-soft-foreground">
+                              <HeroSearchField.Group className="mt-1.5 flex items-center border border-accent dark:border-accent rounded-xl px-3 h-10 focus-within:border-accent-hover transition-colors w-full shadow-xs shadow-accent-soft-foreground">
                                 <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                                 <HeroSearchField.Input
                                   placeholder={t.airportTransfer.addressPlaceholder}
                                   className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400"
                                 />
-                                <HeroSearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto" />
+                                <HeroSearchField.ClearButton className="text-slate-400 dark:text-slate-500 hover:text-slate-600 ml-auto cursor-default" />
                               </HeroSearchField.Group>
                               {formTouched && nhaTrangAddress.length === 0 && (
                                 <FieldError className="text-[9px] text-red-500 mt-1 pl-1">Vui lòng nhập địa điểm</FieldError>
@@ -793,11 +1213,11 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                             {showSuggestions && suggestions.length > 0 && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                <div className="absolute left-0 right-0 mt-1 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                   {suggestions.map((item, idx) => (
                                     <div
                                       key={idx}
-                                      onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }}
+                                      onClick={() => { handleNhaTrangSuggestionPick(item); setShowSuggestions(false); }}
                                       className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2"
                                     >
                                       <MapPin size={14} className="text-blue-500 shrink-0" />
@@ -817,10 +1237,10 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     </>
                   ) : (
                     <>
-                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3 w-full">
                         <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                         <div className="w-full flex-1">
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.pickupLocationNT}</p>
+                          <p className="text-[10px] font-extrabold uppercase tracking-widest">{t.airportTransfer.pickupLocationNT}</p>
                           <div className="relative w-full">
                             <HeroSearchField
                               isRequired
@@ -844,11 +1264,11 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                             {showSuggestions && suggestions.length > 0 && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                <div className="absolute left-0 right-0 mt-1  border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                   {suggestions.map((item, idx) => (
                                     <div
                                       key={idx}
-                                      onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }}
+                                      onClick={() => { handleNhaTrangSuggestionPick(item); setShowSuggestions(false); }}
                                       className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-355 transition-colors flex items-center gap-2"
                                     >
                                       <MapPin size={14} className="text-blue-500 shrink-0" />
@@ -865,14 +1285,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 leading-snug">{t.airportTransfer.accommodationTypes}</p>
                         </div>
                       </div>
-                      <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
-                        <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
-                        <div>
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{t.airportTransfer.dropoffLocation}</p>
-                          <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{airportNameShort}</p>
-                          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug">{t.airportTransfer.driverDropoffDesc}</p>
-                        </div>
-                      </div>
+                      {renderAirportSelector(t.airportTransfer.dropoffLocation, t.airportTransfer.driverDropoffDesc)}
                     </>
                   )}
                 </div>
@@ -953,7 +1366,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   <div className="flex flex-col w-full">
                     <Label className="text-[11px] font-extrabold uppercase tracking-wider mb-1.5">{t.airportTransfer.flightNumber}</Label>
                     <HeroSearchField>
-                      <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
+                      <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-accent transition-colors">
                         <Plane size={16} className="mr-2 shrink-0" />
                         <HeroSearchField.Input
                           placeholder="VN123, QH456..."
@@ -984,15 +1397,8 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {outboundStartsFrom === "airport" ? (
                       <>
-                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
-                          <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.pickup}`}</p>
-                            <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{airportNameShort}</p>
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug">{t.airportTransfer.driverMeetDesc}</p>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                        {renderAirportSelector(`${t.airportTransfer.outbound} ${t.airportTransfer.pickup}`, t.airportTransfer.driverMeetDesc)}
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3 w-full">
                           <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                           <div className="w-full flex-1">
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.dropoff}`}</p>
@@ -1004,7 +1410,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                                 value={nhaTrangAddress}
                                 onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
                               >
-                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-blue-500/50 transition-colors w-full">
+                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-accent transition-colors w-full">
                                   <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                                   <HeroSearchField.Input
                                     placeholder={t.airportTransfer.addressPlaceholder}
@@ -1019,9 +1425,9 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                               {showSuggestions && suggestions.length > 0 && (
                                 <>
                                   <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)} />
-                                  <div className="absolute left-0 right-0 mt-1  border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                  <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                                     {suggestions.map((item, idx) => (
-                                      <div key={idx} onClick={() => { handleNhaTrangAddressChange(item.address || item.name); setShowSuggestions(false); }} className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2">
+                                      <div key={idx} onClick={() => { handleNhaTrangSuggestionPick(item); setShowSuggestions(false); }} className="p-3 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-350 transition-colors flex items-center gap-2">
                                         <MapPin size={14} className="text-blue-500 shrink-0" />
                                         <div className="flex flex-col min-w-0">
                                           <span className="truncate font-semibold">{item.name}</span>
@@ -1038,7 +1444,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                       </>
                     ) : (
                       <>
-                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3 w-full">
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3 w-full">
                           <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
                           <div className="w-full flex-1">
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.pickupLocationNT}`}</p>
@@ -1050,7 +1456,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                                 value={nhaTrangAddress}
                                 onChange={(val) => { handleNhaTrangAddressChange(val); setShowSuggestions(true); }}
                               >
-                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-blue-500/50 transition-colors w-full">
+                                <HeroSearchField.Group className="mt-1.5 flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10  focus-within:border-accent transition-colors w-full">
                                   <HeroSearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 shrink-0" />
                                   <HeroSearchField.Input
                                     placeholder={t.airportTransfer.addressPlaceholder}
@@ -1065,13 +1471,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                             </div>
                           </div>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
-                          <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.outbound} ${t.airportTransfer.dropoffLocation}`}</p>
-                            <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{airportNameShort}</p>
-                          </div>
-                        </div>
+                        {renderAirportSelector(`${t.airportTransfer.outbound} ${t.airportTransfer.dropoffLocation}`, t.airportTransfer.driverDropoffDesc)}
                       </>
                     )}
                   </div>
@@ -1141,20 +1541,29 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     <div className="flex-1 h-[1px] bg-slate-100 dark:bg-[var(--bg-elevated)]/80" />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
-                      <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.returnLeg} ${t.airportTransfer.pickup}`}</p>
-                        <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{nhaTrangReturnAddress || nhaTrangAddress || "Trung tâm Nha Trang"}</p>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex items-start gap-3">
-                      <MapPin className="text-blue-600 dark:text-blue-400 mt-1 shrink-0" size={18} />
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.returnLeg} ${t.airportTransfer.dropoff}`}</p>
-                        <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{airportNameShort}</p>
-                      </div>
-                    </div>
+                    {outboundStartsFrom === "airport" ? (
+                      <>
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3">
+                          <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
+                          <div className="w-full flex-1">
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.returnLeg} ${t.airportTransfer.pickup}`}</p>
+                            <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{nhaTrangReturnAddress || nhaTrangAddress || "Trung tâm Nha Trang"}</p>
+                          </div>
+                        </div>
+                        {renderAirportSelector(`${t.airportTransfer.returnLeg} ${t.airportTransfer.dropoff}`, t.airportTransfer.driverDropoffDesc)}
+                      </>
+                    ) : (
+                      <>
+                        {renderAirportSelector(`${t.airportTransfer.returnLeg} ${t.airportTransfer.pickup}`, t.airportTransfer.driverMeetDesc)}
+                        <div className="p-4 bg-slate-50 dark:bg-[var(--bg-card)]/60 rounded-2xl border border-slate-100 dark:border-zinc-300 flex items-start gap-3">
+                          <MapPin className="text-green-600 dark:text-green-400 mt-1 shrink-0" size={18} />
+                          <div className="w-full flex-1">
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{`${t.airportTransfer.returnLeg} ${t.airportTransfer.dropoff}`}</p>
+                            <p className="text-xs font-black text-slate-800 dark:text-slate-200 mt-1">{nhaTrangReturnAddress || nhaTrangAddress || "Trung tâm Nha Trang"}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                     <div className="flex flex-col w-full">
@@ -1197,7 +1606,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                     <div className="flex flex-col w-full">
                       <Label className="text-[11px] font-extrabold uppercase tracking-wider mb-1.5">{t.airportTransfer.flightNumber}</Label>
                       <HeroSearchField>
-                        <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-blue-500/50 transition-colors">
+                        <HeroSearchField.Group className="flex items-center h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 hover:border-accent transition-colors">
                           <Plane size={16} className="mr-2 shrink-0" />
                           <HeroSearchField.Input
                             placeholder="VN456..."
@@ -1216,24 +1625,164 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                 </div>
               </div>
             )}
+
+            {/* Passengers & Luggage Form Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-zinc-300">
+              {/* Số hành khách */}
+              <NumberField
+                isRequired
+                className="w-full"
+                value={passengerCount}
+                onChange={(val) => { if (val !== null && !isNaN(val)) setPassengerCount(val); }}
+                minValue={1}
+                maxValue={selectedVehicle?.maxSeat ?? 16}
+                isInvalid={selectedVehicle ? passengerCount > (selectedVehicle.maxSeat ?? 4) : false}
+                name="passengers"
+              >
+                <Label isRequired className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1 block">
+                  {t.airportTransfer.passengers}
+                </Label>
+                <NumberField.Group className="flex items-center w-full h-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-accent hover:border-accent transition-all">
+                  <Users size={16} className="text-slate-400 dark:text-slate-500 ml-3 shrink-0" />
+                  <NumberField.Input
+                    className="flex-1 bg-transparent px-3 text-xs font-semibold outline-none border-none h-full w-full text-slate-800 dark:text-slate-100"
+                  />
+                  <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                    <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent">
+                      <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg" className="text-slate-400 dark:text-slate-500">
+                        <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
+                      </svg>
+                    </NumberField.IncrementButton>
+                    <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                      <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg" className="text-slate-400 dark:text-slate-500">
+                        <path clipRule="evenodd" d="M3.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
+                      </svg>
+                    </NumberField.DecrementButton>
+                  </div>
+                </NumberField.Group>
+                <FieldError className="text-[9px] text-red-500 mt-1 pl-1 block">{t.airportTransfer.capacityWarning}</FieldError>
+              </NumberField>
+
+              {/* Số kiện hành lý */}
+              <NumberField
+                className="w-full"
+                value={baggageCount}
+                onChange={(val) => { if (val !== null && !isNaN(val)) setBaggageCount(val); }}
+                minValue={0}
+                maxValue={selectedVehicle?.maxLuggage ?? 20}
+                isInvalid={selectedVehicle ? baggageCount > (selectedVehicle.maxLuggage ?? 2) : false}
+                name="baggageCount"
+              >
+                <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1 block">
+                  {t.airportTransfer.baggageCount}
+                </Label>
+                <NumberField.Group className="flex items-center w-full h-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-accent hover:border-accent transition-all">
+                  <Briefcase size={16} className="text-slate-400 dark:text-slate-500 ml-3 shrink-0" />
+                  <NumberField.Input
+                    className="flex-1 bg-transparent px-3 text-xs font-semibold outline-none border-none h-full w-full text-slate-800 dark:text-slate-100"
+                  />
+                  <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                    <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent">
+                      <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg" className="text-slate-400 dark:text-slate-500">
+                        <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
+                      </svg>
+                    </NumberField.IncrementButton>
+                    <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                      <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg" className="text-slate-400 dark:text-slate-500">
+                        <path clipRule="evenodd" d="M3.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
+                      </svg>
+                    </NumberField.DecrementButton>
+                  </div>
+                </NumberField.Group>
+                <FieldError className="text-[9px] text-red-500 mt-1 pl-1 block">{t.airportTransfer.capacityWarning}</FieldError>
+              </NumberField>
+
+              {/* Số kg hành lý */}
+              <NumberField
+                className="w-full"
+                value={luggageWeight}
+                onChange={(val) => { if (val !== null && !isNaN(val)) setLuggageWeight(val); }}
+                minValue={0}
+                maxValue={selectedVehicle?.luggageWeight ?? ((selectedVehicle?.maxLuggage ?? 2) * 20)}
+                isInvalid={selectedVehicle ? luggageWeight > (selectedVehicle.luggageWeight ?? ((selectedVehicle.maxLuggage ?? 2) * 20)) : false}
+                name="luggageWeight"
+              >
+                <Label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white mb-1.5 pl-1 block">
+                  {t.airportTransfer.baggageWeight}
+                </Label>
+                <NumberField.Group className="flex items-center w-full h-10 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-accent hover:border-accent transition-all">
+                  <Scale size={16} className="text-slate-400 dark:text-slate-500 ml-3 shrink-0" />
+                  <NumberField.Input
+                    className="flex-1 bg-transparent px-3 text-xs font-semibold outline-none border-none h-full w-full text-slate-800 dark:text-slate-100"
+                  />
+                  <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                    <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent">
+                      <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg" className="text-slate-400 dark:text-slate-500">
+                        <path clipRule="evenodd" d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06" fill="currentColor" fillRule="evenodd" />
+                      </svg>
+                    </NumberField.IncrementButton>
+                    <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                      <svg aria-hidden="true" height="8" viewBox="0 0 16 16" width="8" xmlns="http://www.w3.org/2000/svg" className="text-slate-400 dark:text-slate-500">
+                        <path clipRule="evenodd" d="M3.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fillRule="evenodd" />
+                      </svg>
+                    </NumberField.DecrementButton>
+                  </div>
+                </NumberField.Group>
+                <FieldError className="text-[9px] text-red-500 mt-1 pl-1 block">{t.airportTransfer.capacityWarning}</FieldError>
+              </NumberField>
+            </div>
+
+            {/* Surcharge notices from Surcharge Engine */}
+            {allSurcharges.length > 0 && (
+              <div className="p-4 bg-red-50/50 dark:bg-[var(--bg-muted)] border border-red-200 dark:border-red-900/50 rounded-2xl text-xs font-semibold text-red-800 dark:text-red-300">
+                <p className="font-extrabold uppercase mb-1.5 text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                  <AlertTriangle size={14} className="text-red-500 shrink-0" />
+                  {t.airportTransfer.surchargeNoticeTitle || "LƯU Ý PHỤ THU"}
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {allSurcharges.map((s, idx) => (
+                    <li key={s.id || idx}>
+                      {formatSurchargeRuleDescription(s)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Applied surcharges banner when matched */}
+            {appliedSurcharges.length > 0 && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+                <p className="font-bold mb-1 text-amber-800 dark:text-amber-300">
+                  {t.airportTransfer.surchargeApplied || "Phụ thu áp dụng cho chuyến đi của bạn:"}
+                </p>
+                <ul className="list-disc pl-5 space-y-1 font-medium">
+                  {appliedSurcharges.map((s, idx) => {
+                    const valText = s.calculationType === "PERCENT" ? `+${s.value}%` : `+${formatPrice(s.value)}`;
+                    return (
+                      <li key={s.id || idx}>
+                        <span className="font-bold">{s.name}</span>: {valText}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Vehicle Selection */}
-          <div className=" rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t.airportTransfer.selectVehicle}</h3>
+          <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+            <h3 className="text-sm font-extrabold uppercase tracking-wider">{t.airportTransfer.selectVehicle}</h3>
             {!isFormComplete ? (
               <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">{t.airportTransfer.pleaseFillInfo}</p>
-            ) : vehiclesLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ) : vehiclesLoading || (isCustomAddress && estimatedDistance == null) ? (
+              <div className="grid grid-cols-1 gap-4">
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800">
-                    <div className="flex justify-between items-center gap-3">
-                      <div className="flex items-center gap-3">
-                        <Skeleton className="w-14 h-14 rounded-xl shrink-0" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-24 rounded" />
-                          <Skeleton className="h-3 w-16 rounded" />
-                        </div>
+                  <div key={i} className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 space-y-3">
+                    <Skeleton className="w-full h-36 rounded-xl" />
+                    <div className="flex justify-between items-center gap-3 pt-1">
+                      <div className="space-y-1.5 flex-1">
+                        <Skeleton className="h-4 w-2/3 rounded" />
+                        <Skeleton className="h-3 w-1/2 rounded" />
                       </div>
                       <Skeleton className="h-5 w-20 rounded shrink-0" />
                     </div>
@@ -1241,31 +1790,67 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 max-h-[650px] overflow-y-auto pr-1.5">
                 {activeVehicles.map((v) => {
                   const isSelected = selectedVehicleId === v.id || (!selectedVehicleId && v.id === activeVehicles[0]?.id);
                   const price = tripType === "one-way" ? v.priceOneWay : v.priceReturn;
+
+                  const priceDisplay = isCustomAddress
+                    ? t.airportTransfer.estimatedPrice.replace("{price}", formatPrice(price))
+                    : formatPrice(price);
+
                   return (
                     <div
                       key={v.id}
                       onClick={() => setSelectedVehicleId(v.id)}
-                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${isSelected ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300"}`}
+                      className={`rounded-2xl border-2 transition-all transition-300 cursor-pointer flex flex-col sm:flex-row overflow-hidden  ${isSelected ? "border-accent bg-blue-50/50 dark:bg-black/20 shadow-md dark:shadow-accent-foreground/20 dark:backdrop-blur-md shadow-accent-foreground/20 backdrop-blur-md" : "border-slate-200 dark:border-zinc-300 hover:border-slate-350 hover:shadow-xs"}`}
                     >
-                      <div className="flex justify-between items-center gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100 dark:bg-[var(--bg-card)] flex items-center justify-center border border-slate-200/50 dark:border-slate-800">
-                            {v.thumbnailUrl ? (
-                              <img src={v.thumbnailUrl} alt={language === "vi" ? v.nameVi : v.nameEn} className="w-full h-full object-cover" />
-                            ) : (
-                              <Car size={24} className="text-slate-400 dark:text-slate-650" />
-                            )}
+                      {/* Image on left */}
+                      <div className="relative w-full sm:w-40 h-40 sm:h-auto shrink-0 bg-slate-100 dark:bg-[var(--bg-card)] flex items-center justify-center border-b sm:border-b-0 sm:border-r border-slate-200/50 dark:border-slate-800/60 overflow-hidden">
+                        {v.thumbnailUrl ? (
+                          <img src={v.thumbnailUrl} alt={language === "vi" ? v.nameVi : v.nameEn} className="w-full h-full object-cover" />
+                        ) : (
+                          <Car size={32} className="text-slate-400 dark:text-slate-650" />
+                        )}
+                      </div>
+
+                      {/* Content on right */}
+                      <div className="flex-grow p-4 flex flex-col justify-between min-w-0">
+                        <div>
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-black text-slate-850 dark:text-white truncate">{language === "vi" ? v.nameVi : v.nameEn}</h4>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{v.capacity} · {v.luggage}</p>
+                            </div>
+                            <div className="flex flex-col items-end text-right shrink-0">
+                              <span className="text-sm font-black text-accent">{priceDisplay}</span>
+                              {getVehicleSurcharge(v) > 0 && (
+                                <div className="flex flex-col items-end">
+                                  <span className="text-[10px] font-extrabold text-red-500 mt-0.5">
+                                    +{formatPrice(getVehicleSurcharge(v))} {t.airportTransfer.surchargeShort}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 font-bold leading-none mt-0.5 max-w-[120px] truncate">
+                                    ({getVehicleSurchargeNames()})
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{language === "vi" ? v.nameVi : v.nameEn}</h4>
-                            <p className="text-[10px] text-slate-400 mt-0.5">{v.capacity} · {v.luggage}</p>
-                          </div>
+
+                          {/* Capacity warning validation message */}
+                          {(passengerCount > (v.maxSeat ?? 4) || luggageWeight > ((v.maxLuggage ?? 2) * 20)) && (
+                            <div className="mt-3 flex items-start gap-1.5 p-2 bg-red-50/50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/40 rounded-xl text-[10px] font-semibold text-red-800 dark:text-red-300">
+                              <AlertTriangle size={12} className="text-red-500 shrink-0 mt-0.5" />
+                              <span>{t.airportTransfer.capacityWarning}</span>
+                            </div>
+                          )}
                         </div>
-                        <span className="text-base font-black text-accent shrink-0">{formatPrice(price)}</span>
+
+                        {v.schemaText && (
+                          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-300 text-[10px] text-slate-500 dark:text-slate-400 leading-normal font-semibold">
+                            {v.schemaText}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -1277,47 +1862,42 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
 
         {/* Right Column: Summary & Info */}
         <div className="lg:col-span-4 space-y-6">
-          <div className=" rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4 sticky top-24">
+          <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
             <h3 className="text-sm font-extrabold uppercase tracking-wider">{t.airportTransfer.summary}</h3>
             <div className="space-y-3 text-xs">
               <div className="flex justify-between"><span className="font-extrabold">{t.rentCar.tripType}</span><span className="font-bold">{tripType === "one-way" ? t.airportTransfer.oneWay : t.airportTransfer.roundTrip}</span></div>
               <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.airport}</span><span className="font-bold">{airportNameShort}</span></div>
-              {dateValue && <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.date}</span><span className="font-bold">{dateValue.toString()}</span></div>}
-              {selectedVehicle && <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.vehicle}</span><span className="font-bold">{language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn}</span></div>}
+              <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.date}</span><span className="font-bold">{dateValue ? dateValue.toString() : "—"}</span></div>
+              <div className="flex justify-between"><span className="font-extrabold">{t.airportTransfer.vehicle}</span><span className="font-bold">{selectedVehicle ? (language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn) : "—"}</span></div>
             </div>
 
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-              <div className="flex justify-end">
-                <AutofillButton
-                  onFill={(d) => { setFullName(d.fullname); setPhone(d.phone); setEmail(d.email); setZaloId(d.zaloId ?? ""); setKakaoTalkId(d.kakaoTalkId ?? ""); }}
-                  label={t.common.autoFill}
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <TextField isRequired><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.fullName}</Label><Input placeholder="Nguyễn Văn A" value={fullName} onChange={(e) => setFullName(e.target.value)} /></TextField>
-                <TextField isRequired><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.phone}</Label><Input placeholder="0987654321" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} /></TextField>
-                <TextField><Label className="text-[10px] font-bold uppercase tracking-wider" isRequired>Email</Label><Input placeholder="email@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></TextField>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <TextField><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.zaloId}</Label><Input className="border-1 border-accent shadow-md shadow-accent/40" value={zaloId} onChange={(e) => setZaloId(e.target.value)} placeholder="Zalo ID" /></TextField>
-                <TextField><Label className="text-[10px] font-bold uppercase tracking-wider">{t.airportTransfer.kakaoTalkId}</Label><Input className="border-1 border-accent shadow-md shadow-accent/40" value={kakaoTalkId} onChange={(e) => setKakaoTalkId(e.target.value)} placeholder="KakaoTalk ID" /></TextField>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.notes}</Label>
-                <TextArea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.airportTransfer.notesPlaceholder} className="w-full h-16 p-3 border border-accent shadow-md shadow-accent/40 rounded-xl text-xs font-semibold outline-none resize-none" />
-              </div>
-            </div>
-
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2">
+              {isFormComplete && selectedVehicle && appliedSurcharges.length > 0 && (
+                <>
+                  <div className="flex justify-between text-xs text-slate-500 font-semibold">
+                    <span>Tạm tính (Giá gốc):</span>
+                    <span>{formatPrice(unitPrice)}</span>
+                  </div>
+                  {appliedSurcharges.map((s, idx) => {
+                    const amt = s.calculationType === "PERCENT" ? Math.round(unitPrice * (Number(s.value) / 100)) : Number(s.value);
+                    return (
+                      <div key={s.id || idx} className="flex justify-between text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                        <span>{s.name}:</span>
+                        <span>+{formatPrice(amt)}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
               <div className="flex justify-between items-end">
                 <span className="text-sm font-bold text-slate-500">{t.common.total}</span>
-                <span className="text-xl font-black text-accent">{formatPrice(unitPrice)}</span>
+                <span className="text-xl font-black text-accent">{finalPriceDisplay}</span>
               </div>
             </div>
 
             <Button
               onClick={handleBooking}
-              isDisabled={!selectedVehicle || !dateValue}
+              isDisabled={!isFormComplete || !selectedVehicle || (isCustomAddress && estimatedDistance == null)}
               className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-2xs gap-2 border-none cursor-pointer"
             >
               {t.airportTransfer.bookNow}
@@ -1330,42 +1910,24 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
               direction={tripType === "return"
                 ? (outboundStartsFrom === "airport" ? "to-nhatrang" : "to-airport")
                 : direction}
+              originLat={!isCustomAddress || (searchPickLat != null && searchPickLng != null)
+                ? (selectedRoute?.originLat ?? selectedAirport?.latitude ?? null)
+                : null}
+              originLng={!isCustomAddress || (searchPickLat != null && searchPickLng != null)
+                ? (selectedRoute?.originLng ?? selectedAirport?.longitude ?? null)
+                : null}
+              destinationLat={!isCustomAddress || (searchPickLat != null && searchPickLng != null)
+                ? (searchPickLat ?? selectedRoute?.destinationLat ?? null)
+                : null}
+              destinationLng={!isCustomAddress || (searchPickLat != null && searchPickLng != null)
+                ? (searchPickLng ?? selectedRoute?.destinationLng ?? null)
+                : null}
+              airportLabel={airportDisplayName}
+              onRouteCalculated={handleRouteCalculated}
             />
           )}
         </div>
       </main>
-
-      {/* BookingConfirmationModal */}
-      <BookingConfirmationModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={handleConfirmBooking}
-        serviceType="AIRPORT_TRANSFER"
-        summaryItems={[
-          { label: t.rentCar.tripType, value: tripType === "one-way" ? t.airportTransfer.oneWay : t.airportTransfer.roundTrip },
-          { label: t.airportTransfer.airport, value: airportDisplayName },
-          { label: t.airportTransfer.vehicle, value: selectedVehicle ? (language === "vi" ? selectedVehicle.nameVi : selectedVehicle.nameEn) : "" },
-          ...(dateValue ? [{ label: t.airportTransfer.dateTime, value: `${dateValue.toString()} ${timeValue.hour}:${String(timeValue.minute).padStart(2, "0")} ${timeValue.period}` }] : []),
-          ...(tripType === "return" && returnDateValue ? [{ label: t.airportTransfer.returnDate, value: `${returnDateValue.toString()} ${returnTimeValue.hour}:${String(returnTimeValue.minute).padStart(2, "0")} ${returnTimeValue.period}` }] : []),
-          ...(nhaTrangAddress ? [{ label: t.airportTransfer.address, value: nhaTrangAddress }] : []),
-        ]}
-        totalAmount={unitPrice}
-        totalLabel={t.common.total}
-        submitting={submitting}
-      />
-
-      {/* Success Overlay */}
-      {bookingSuccess && (
-        <SuccessOverlay
-          bookingCode={createdCode}
-          onComplete={() => { setBookingSuccess(false); router.push(`/${language}/airport-transfer/success?bookingCode=${createdCode}`); }}
-          title={t.airportTransfer.confirmSuccessTitle}
-          subtitle={t.airportTransfer.redirecting}
-        />
-      )}
-
-      {/* Error Overlay */}
-      {errorMessage && <ErrorOverlay message={errorMessage} onClose={() => setErrorMessage("")} />}
     </div>
   );
 }

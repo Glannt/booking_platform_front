@@ -12,6 +12,7 @@ interface RouteMapProps {
   destinationLat: number | null;
   destinationLng: number | null;
   destinationLabel: string;
+  onRouteCalculated?: (distanceKm: number | null) => void;
 }
 
 const getCityCoords = (cityName: string): { lat: number; lng: number } => {
@@ -32,6 +33,7 @@ export default function RouteMap({
   destinationLat,
   destinationLng,
   destinationLabel,
+  onRouteCalculated,
 }: RouteMapProps) {
   const { t } = useI18n();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -92,9 +94,26 @@ export default function RouteMap({
       setRouteInfo(null);
 
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${resolvedOrigin.lng},${resolvedOrigin.lat};${resolvedDestination.lng},${resolvedDestination.lat}?overview=full&geometries=geojson`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const servers = [
+          "https://router.project-osrm.org",
+          "https://routing.openstreetmap.de/routed-car",
+        ];
+
+        let data: any = null;
+        for (const base of servers) {
+          const url = `${base}/route/v1/driving/${resolvedOrigin.lng},${resolvedOrigin.lat};${resolvedDestination.lng},${resolvedDestination.lat}?overview=full&geometries=geojson&alternatives=true`;
+          try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const json = await res.json();
+            if (json.code === "Ok" && json.routes && json.routes.length > 0) {
+              data = json;
+              break;
+            }
+          } catch {
+            // try next OSRM source
+          }
+        }
 
         if (!isMounted || !mapRef.current || mapRef.current !== map) return;
         const activeMap = mapRef.current;
@@ -117,8 +136,8 @@ export default function RouteMap({
         const originPos: L.LatLngExpression = [resolvedOrigin.lat, resolvedOrigin.lng];
         const destPos: L.LatLngExpression = [resolvedDestination.lat, resolvedDestination.lng];
 
-        if (data.routes && data.routes.length > 0) {
-          const route = data.routes[0];
+        if (data && data.routes && data.routes.length > 0) {
+          const route = [...data.routes].sort((a, b) => a.distance - b.distance)[0];
           const geometry = route.geometry;
           const distanceKm = parseFloat((route.distance / 1000).toFixed(1));
           const hours = Math.floor(route.duration / 3600);
@@ -129,6 +148,7 @@ export default function RouteMap({
             distance: `${distanceKm} km`,
             duration: durationStr,
           });
+          onRouteCalculated?.(distanceKm);
 
           // Draw driving polyline
           const latLngs = geometry.coordinates.map(
@@ -180,6 +200,7 @@ export default function RouteMap({
         activeMap.fitBounds(bounds, { padding: [55, 55] });
       } catch (err) {
         console.error("OSRM routing error:", err);
+        onRouteCalculated?.(null);
       } finally {
         if (isMounted) setIsLoading(false);
       }

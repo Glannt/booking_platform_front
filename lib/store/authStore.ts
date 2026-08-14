@@ -10,6 +10,7 @@ export interface UserDto {
   status: string;
   kakaoTalkId?: string;
   zaloId?: string;
+  whatsapp?: string;
 }
 
 export interface LoginResponse {

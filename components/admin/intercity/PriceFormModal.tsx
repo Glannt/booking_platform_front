@@ -45,8 +45,7 @@ export function PriceFormModal({
   const [form, setForm] = useState({
     routeId: "",
     vehicleCategoryId: "",
-    oneWayAmount: "",
-    roundTripAmount: "",
+    perKmAmount: "",
     currency: "VND",
     active: true
   });
@@ -79,8 +78,7 @@ export function PriceFormModal({
       setForm({
         routeId: String(editingPrice.routeId ?? ""),
         vehicleCategoryId: String(editingPrice.vehicleCategoryId),
-        oneWayAmount: String(editingPrice.oneWayAmount),
-        roundTripAmount: String(editingPrice.roundTripAmount),
+        perKmAmount: String(editingPrice.perKmAmount),
         currency: editingPrice.currency || "VND",
         active: editingPrice.active ?? true
       });
@@ -88,8 +86,7 @@ export function PriceFormModal({
       setForm({
         routeId: routeId ? String(routeId) : "",
         vehicleCategoryId: "",
-        oneWayAmount: "",
-        roundTripAmount: "",
+        perKmAmount: "",
         currency: "VND",
         active: true
       });
@@ -116,8 +113,8 @@ export function PriceFormModal({
       toast.danger("Vui lòng chọn dòng xe.");
       return;
     }
-    if (!form.oneWayAmount.trim()) {
-      toast.danger("Vui lòng nhập giá 1 chiều.");
+    if (!form.perKmAmount.trim()) {
+      toast.danger("Vui lòng nhập giá theo km.");
       return;
     }
 
@@ -135,8 +132,7 @@ export function PriceFormModal({
     const payload = {
       routeId: finalRouteId,
       vehicleCategoryId: Number(form.vehicleCategoryId),
-      oneWayAmount: Number(form.oneWayAmount),
-      roundTripAmount: Number(form.roundTripAmount || 0),
+      perKmAmount: Number(form.perKmAmount),
       currency: form.currency,
       active: form.active
     };
@@ -166,6 +162,7 @@ export function PriceFormModal({
                 <div className="flex flex-col gap-1 w-full">
                   <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Tuyến đường</Label>
                   <Select
+                    isRequired
                     fullWidth
                     placeholder="Chọn tuyến đường"
                     selectedKey={form.routeId || undefined}
@@ -189,10 +186,11 @@ export function PriceFormModal({
                 </div>
               )}
 
-              <div className="flex flex-col gap-1 w-full">
+              <div className="flex flex-col gap-1 w-full mt-5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Dòng xe</Label>
                 <Select
                   fullWidth
+                  isRequired
                   placeholder="Chọn dòng xe"
                   selectedKey={form.vehicleCategoryId || undefined}
                   onSelectionChange={(key) => { if (key) setForm(f => ({ ...f, vehicleCategoryId: String(key) })); }}
@@ -214,10 +212,10 @@ export function PriceFormModal({
                 </Select>
               </div>
 
-              <NumberField value={form.oneWayAmount ? Number(form.oneWayAmount) : 0} onChange={val => setForm(f => ({ ...f, oneWayAmount: String(val || 0) }))} minValue={0} className="w-full mt-5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Giá 1 chiều (VND)</Label>
+              <NumberField value={form.perKmAmount ? Number(form.perKmAmount) : 0} onChange={val => setForm(f => ({ ...f, perKmAmount: String(val || 0) }))} minValue={0} className="w-full mt-5">
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Giá / km (VND)</Label>
                 <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
-                  <NumberField.Input placeholder="Ví dụ: 1500000" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
+                  <NumberField.Input placeholder="Ví dụ: 10000" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
                   <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
                     <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
                     <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
@@ -225,16 +223,17 @@ export function PriceFormModal({
                 </NumberField.Group>
               </NumberField>
 
-              <NumberField value={form.roundTripAmount ? Number(form.roundTripAmount) : 0} onChange={val => setForm(f => ({ ...f, roundTripAmount: String(val || 0) }))} minValue={0} className="w-full mt-5">
-                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Giá khứ hồi (VND)</Label>
-                <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
-                  <NumberField.Input placeholder="Ví dụ: 2500000" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-                  <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                    <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                    <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
+              {(() => {
+                const routeObj = routes.find(r => r.id === (routeId || Number(form.routeId)));
+                const perKm = Number(form.perKmAmount || 0);
+                if (!routeObj?.distanceKm || !perKm) return null;
+                const oneWay = perKm * routeObj.distanceKm;
+                return (
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl px-3 py-2">
+                    {`${routeObj.distanceKm} km × ${perKm.toLocaleString()} = ${Math.round(oneWay / 1000) * 1000}`}
                   </div>
-                </NumberField.Group>
-              </NumberField>
+                );
+              })()}
 
               <TextField className="w-full mt-5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Tiền tệ</Label>

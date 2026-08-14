@@ -15,10 +15,15 @@ import {
   TextField,
   Input,
   Tabs,
+  SearchField,
 } from "@heroui/react";
-import { Save, RefreshCw, Pencil, X } from "lucide-react";
+import { Save, RefreshCw, Pencil, X, MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
 
 import { createAirport, updateAirport, AirportDto, AirportTranslationDto } from "@/lib/api/fleet";
+import { searchLocations, reverseGeocode, LocationSearchResult } from "@/lib/api/locations";
+
+const PickupMap = dynamic(() => import("@/components/pickup-map").then((mod) => mod.PickupMap), { ssr: false });
 
 const LOCALES = ["vi", "en", "ko", "ru"] as const;
 const LOCALE_LABELS: Record<string, string> = { vi: "Tiếng Việt", en: "English", ko: "한국어", ru: "Русский" };
@@ -47,6 +52,11 @@ export default function AirportModal({
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [active, setActive] = useState(true);
   const [translations, setTranslations] = useState<Record<string, { name: string; description: string }>>({
     vi: { name: "", description: "" },
@@ -63,6 +73,9 @@ export default function AirportModal({
         setCode(airport.code || "");
         setName(airport.name || "");
         setLocation(airport.location || "");
+        setLatitude(airport.latitude ?? null);
+        setLongitude(airport.longitude ?? null);
+        setSearchQuery(airport.location || "");
         setActive(airport.active ?? true);
 
         const tMap: Record<string, { name: string; description: string }> = {
@@ -82,6 +95,11 @@ export default function AirportModal({
         setCode("");
         setName("");
         setLocation("");
+        setLatitude(null);
+        setLongitude(null);
+        setSearchQuery("");
+        setSearchResults([]);
+        setShowSearchDropdown(false);
         setActive(true);
         setTranslations({
           vi: { name: "", description: "" },
@@ -92,6 +110,24 @@ export default function AirportModal({
       }
     }
   }, [isOpen, airport]);
+
+  const handleSearchLocation = async (query: string) => {
+    if (query.length < 2) { setSearchResults([]); return; }
+    try {
+      const res = await searchLocations(query, "vi", 8);
+      setSearchResults(res?.data || []);
+    } catch { setSearchResults([]); }
+  };
+
+  const handleMapPick = async (lat: number, lng: number) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    const addr = await reverseGeocode(lat, lng, "vi");
+    if (addr) {
+      setLocation(addr);
+      setSearchQuery(addr);
+    }
+  };
 
   const handleTranslationChange = (locale: string, field: "name" | "description", value: string) => {
     setTranslations(prev => ({
@@ -121,6 +157,8 @@ export default function AirportModal({
       code: code.trim(),
       name: name.trim(),
       location: location.trim(),
+      latitude: latitude ?? undefined,
+      longitude: longitude ?? undefined,
       active,
       translations: translationPayload,
     };
@@ -215,6 +253,16 @@ export default function AirportModal({
                   </div>
 
                   <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Tọa Độ (Lat, Lng)"}</Label>
+                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                      {latitude != null && longitude != null ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` : "—"}
+                    </p>
+                    {latitude != null && longitude != null && (
+                      <PickupMap lat={latitude} lng={longitude} label={name || location || code || "Sân bay"} />
+                    )}
+                  </div>
+
+                  <div>
                     <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Tên Mặc Định"}</Label>
                     <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{name || "—"}</p>
                   </div>
@@ -289,12 +337,61 @@ export default function AirportModal({
                       </Label>
                       <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. CXR" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
                     </TextField>
-                    <TextField className="w-full">
-                      <Label className="text-xs font-bold uppercase tracking-wider">
+                    <div className="relative">
+                      <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
                         {"Vị Trí"}
                       </Label>
-                      <Input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Cam Ranh, Khánh Hòa" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
-                    </TextField>
+                      <SearchField
+                        value={searchQuery}
+                        onChange={(v) => {
+                          setSearchQuery(v);
+                          setLocation(v);
+                          setShowSearchDropdown(true);
+                          handleSearchLocation(v);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            setShowSearchDropdown(true);
+                            handleSearchLocation(searchQuery);
+                          }
+                        }}
+                      >
+                        <SearchField.Group>
+                          <SearchField.SearchIcon />
+                          <SearchField.Input placeholder="Nhập và chọn vị trí..." className="px-3 py-2 rounded-xl text-sm w-full" />
+                          <SearchField.ClearButton onClick={() => { setSearchResults([]); setShowSearchDropdown(false); }} />
+                        </SearchField.Group>
+                      </SearchField>
+                      {showSearchDropdown && searchResults.length > 0 && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setShowSearchDropdown(false)} />
+                          <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                            {searchResults.map((item) => (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  const addr = item.address || item.name;
+                                  setSearchQuery(addr);
+                                  setLocation(addr);
+                                  setLatitude(item.latitude);
+                                  setLongitude(item.longitude);
+                                  setSearchResults([]);
+                                  setShowSearchDropdown(false);
+                                }}
+                                className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                              >
+                                <MapPin size={12} className="text-blue-500 shrink-0" />
+                                <div className="min-w-0">
+                                  <span className="block truncate font-semibold">{item.name}</span>
+                                  <span className="block truncate text-[10px] text-slate-400">{item.address}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <TextField isRequired className="w-full">
@@ -303,6 +400,23 @@ export default function AirportModal({
                     </Label>
                     <Input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Cam Ranh International Airport" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
                   </TextField>
+
+                  <div className="relative">
+                    <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
+                      {"Vị Trí Trên Bản Đồ"}
+                    </Label>
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      {latitude != null && longitude != null
+                        ? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+                        : "Chưa chọn tọa độ — nhấp vào bản đồ để chọn vị trí"}
+                    </p>
+                    <PickupMap
+                      lat={latitude ?? 11.946457}
+                      lng={longitude ?? 109.159797}
+                      label={name || location || code || "Sân bay"}
+                      onPick={handleMapPick}
+                    />
+                  </div>
 
                   <div className="flex items-center gap-3 py-2">
                     <Checkbox

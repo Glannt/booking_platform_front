@@ -19,6 +19,7 @@ import {
   User,
 } from "lucide-react";
 import clsx from "clsx";
+import { useI18n } from "@/context/LanguageContext";
 
 export interface SidebarSubItem {
   key: string;
@@ -48,6 +49,12 @@ export interface UserProfile {
   role?: string;
 }
 
+export interface SidebarLabels {
+  profile?: string;
+  settings?: string;
+  logout?: string;
+}
+
 export interface SidebarProps {
   groups: SidebarGroup[];
   user?: UserProfile;
@@ -58,6 +65,8 @@ export interface SidebarProps {
   onProfileClick?: () => void;
   className?: string;
   isShowCollapsedBadge?: boolean;
+  isAdmin?: boolean;
+  labels?: SidebarLabels;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -70,8 +79,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onProfileClick,
   className,
   isShowCollapsedBadge = true,
+  isAdmin,
+  labels,
 }) => {
   const pathname = usePathname();
+  const { t } = useI18n();
+  const isAdminView = isAdmin ?? (pathname?.startsWith("/admin") || pathname?.startsWith("/staff"));
+
+  const profileLabel = labels?.profile || (isAdminView ? "Hồ sơ cá nhân" : (t.nav?.myProfile || t.profile?.title || "Hồ sơ cá nhân"));
+  const settingsLabel = labels?.settings || (isAdminView ? "Cài đặt tài khoản" : (t.profile?.title || "Cài đặt"));
+  const logoutLabel = labels?.logout || (isAdminView ? "Đăng xuất" : (t.auth?.logout || "Đăng xuất"));
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
 
@@ -284,29 +302,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Dropdown.Menu
                 aria-label="User Profile Actions"
                 onAction={(key) => {
-                  if (key === "logout" && onLogout) onLogout();
-                  if (key === "settings" && onSettingsClick) onSettingsClick();
-                  if (key === "profile" && onProfileClick) onProfileClick();
+                  const k = String(key);
+                  if (k === "logout" && onLogout) onLogout();
+                  if (k === "settings" && onSettingsClick) onSettingsClick();
+                  if (k === "profile" && onProfileClick) onProfileClick();
                 }}
               >
-                <Dropdown.Item id="profile" textValue="My Profile">
+                <Dropdown.Item
+                  id="profile"
+                  key="profile"
+                  textValue={profileLabel}
+                  onClick={() => onProfileClick && onProfileClick()}
+                >
                   <div className="flex items-center gap-2">
                     <User size={16} />
-                    <Label>My Profile</Label>
+                    <Label>{profileLabel}</Label>
                   </div>
                 </Dropdown.Item>
                 {onSettingsClick && (
-                  <Dropdown.Item id="settings" textValue="Settings">
+                  <Dropdown.Item
+                    id="settings"
+                    key="settings"
+                    textValue={settingsLabel}
+                    onClick={() => onSettingsClick && onSettingsClick()}
+                  >
                     <div className="flex items-center gap-2">
                       <Settings size={16} />
-                      <Label>Account Settings</Label>
+                      <Label>{settingsLabel}</Label>
                     </div>
                   </Dropdown.Item>
                 )}
-                <Dropdown.Item id="logout" textValue="Log Out" variant="danger" className="text-danger">
+                <Dropdown.Item
+                  id="logout"
+                  key="logout"
+                  textValue={logoutLabel}
+                  variant="danger"
+                  className="text-danger cursor-pointer"
+                  onClick={() => onLogout && onLogout()}
+                >
                   <div className="flex items-center gap-2">
                     <LogOut size={16} />
-                    <Label className="text-danger">Log Out</Label>
+                    <Label className="text-danger">{logoutLabel}</Label>
                   </div>
                 </Dropdown.Item>
               </Dropdown.Menu>
