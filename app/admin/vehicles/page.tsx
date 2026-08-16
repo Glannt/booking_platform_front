@@ -733,7 +733,7 @@ export default function VehiclesManagementPage() {
                     </p>
                   </div>
                 ) : (
-                  <Table>
+                  <Table aria-label="Bảng danh sách phương tiện">
                     <Table.ScrollContainer>
                       <Table.Content
                         aria-label="Vehicle table"
@@ -888,7 +888,7 @@ export default function VehiclesManagementPage() {
                   </div>
                 )
                   : (
-                    <Table>
+                    <Table aria-label="Bảng danh sách phân loại xe">
                       <Table.ScrollContainer>
                         <Table.Content
                           aria-label="Vehicle categories table"

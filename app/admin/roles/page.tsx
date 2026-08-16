@@ -111,7 +111,7 @@ export default function RolesPage() {
       <div className="flex items-center gap-3 mb-6">
         <Shield className="w-7 h-7 text-primary" />
         <h1 className="text-2xl font-bold">Quản lý Phân quyền</h1>
-        <Button isIconOnly variant="ghost" onPress={loadData} className="ml-auto">
+        <Button isIconOnly variant="ghost" aria-label="Tải lại dữ liệu" onPress={loadData} className="ml-auto">
           <RefreshCw className="w-5 h-5" />
         </Button>
       </div>

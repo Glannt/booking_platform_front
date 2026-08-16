@@ -65,6 +65,7 @@ export const homePage = {
   selectVehicleClass: "Выберите класс авто",
   airportName: "Аэропорт Камрань",
   rentalPickupPlaceholder: "Напр: Нячанг...",
+  rentalDropoffPlaceholder: "Напр: Отель, курорт, адрес высадки...",
   vehicle4Seats: "4-местный седан",
   vehicle4SeatsName: "4-местный седан/хэтчбек",
   vehicle7Seats: "7-местный SUV",

@@ -6,6 +6,8 @@ import { Shield, DollarSign, Clock, Star, CheckCircle } from "lucide-react";
 import { SlideCardSection } from "./SlideCardSection";
 import { SlideReviewSection } from "./SlideReviewSection";
 import { TravelInspirationSection } from "./TravelInspirationSection";
+import { FaqSection } from "./FaqSection";
+import { FormattedDescription } from "@/components/FormattedDescription";
 import * as Icons from "@/components/icons";
 
 interface SectionRendererProps {
@@ -157,7 +159,10 @@ function CtaSection({ section, locale }: { section: SectionDto; locale: string }
         <h2 className="text-3xl md:text-4xl font-extrabold mb-4">{trans.title}</h2>
       )}
       {trans?.description && (
-        <p className="text-lg opacity-90 max-w-xl mx-auto mb-8">{trans.description}</p>
+        <FormattedDescription
+          description={trans.description}
+          className="text-lg opacity-90 max-w-xl mx-auto mb-8 font-medium"
+        />
       )}
       {trans?.btnText && trans?.btnLink && (
         <a
@@ -197,9 +202,10 @@ function PromoSection({ section, locale }: { section: SectionDto; locale: string
             </h2>
           )}
           {trans?.description && (
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-              {trans.description}
-            </p>
+            <FormattedDescription
+              description={trans.description}
+              className="text-slate-600 dark:text-slate-300 font-medium"
+            />
           )}
           {trans?.btnText && trans?.btnLink && (
             <a
@@ -234,9 +240,10 @@ function BannerSection({ section, locale }: { section: SectionDto; locale: strin
           </h2>
         )}
         {trans?.description && (
-          <p className="text-white/90 text-lg max-w-xl mx-auto mb-6">
-            {trans.description}
-          </p>
+          <FormattedDescription
+            description={trans.description}
+            className="text-white/90 text-lg max-w-xl mx-auto mb-6 font-medium"
+          />
         )}
         {trans?.btnText && trans?.btnLink && (
           <a
@@ -272,6 +279,9 @@ export function SectionRenderer({ sections, locale }: SectionRendererProps) {
             return <SlideReviewSection key={section.id} section={section} locale={locale} />;
           case "INSPIRATION":
             return <TravelInspirationSection key={section.id} section={section} locale={locale} />;
+          case "FAQ":
+          case "FAQS":
+            return <FaqSection key={section.id} section={section} locale={locale} />;
           default:
             return null;
         }

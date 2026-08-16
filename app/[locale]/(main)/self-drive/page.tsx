@@ -40,6 +40,8 @@ import { backendUrl } from "@/lib/api/client";
 import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto, type RentalDto } from "@/lib/api/rental";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
+import { FormattedDescription } from "@/components/FormattedDescription";
+import { AutofillButton } from "@/components/AutofillButton";
 
 interface Vehicle {
   id: string;
@@ -374,10 +376,10 @@ export default function SelfDrivePage() {
             <Typography type="h1" className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
               {heroSection?.translations?.find(tr => tr.locale === language)?.title || t.selfDrive.title}
             </Typography>
-            <p className="text-sm md:text-base text-slate-200 leading-relaxed font-semibold max-w-2xl">
-              {heroSection?.translations?.find(tr => tr.locale === language)?.description
-                || t.selfDrive.heroDesc}
-            </p>
+            <FormattedDescription
+              description={heroSection?.translations?.find(tr => tr.locale === language)?.description || t.selfDrive.heroDesc}
+              className="text-sm md:text-base text-slate-200 font-semibold max-w-2xl"
+            />
 
             <div className="flex flex-wrap gap-3 pt-2">
               <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-2xl border border-white/15 backdrop-blur-sm shadow-sm">
@@ -558,6 +560,18 @@ export default function SelfDrivePage() {
                     {t.selfDrive.rentalDaysError}
                   </FieldError>
                 </NumberField>
+              </div>
+
+              {/* Customer Info Header with Autofill */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">{t.selfDrive.contactInfo}</span>
+                <AutofillButton
+                  onFill={(d) => {
+                    setFormName(d.fullname);
+                    setFormPhone(d.phone);
+                  }}
+                  label={t.common.autoFill}
+                />
               </div>
 
               {/* Name */}

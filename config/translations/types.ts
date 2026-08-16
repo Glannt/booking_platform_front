@@ -385,6 +385,7 @@ export interface TranslationDictionary {
     selectVehicleClass: string;
     airportName: string;
     rentalPickupPlaceholder: string;
+    rentalDropoffPlaceholder: string;
     vehicle4Seats: string;
     vehicle4SeatsName: string;
     vehicle7Seats: string;

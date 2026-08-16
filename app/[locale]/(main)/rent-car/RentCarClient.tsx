@@ -52,6 +52,7 @@ interface RentCarClientProps {
 export default function RentCarClient({ sections }: RentCarClientProps) {
   const { language, t, contacts } = useI18n();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const heroSection = sections.find(s => s.sectionType === "HERO_BANNER") || null;
   const processSection = sections.find(s => s.sectionType === "BOOKING_PROCESS") || null;
@@ -71,11 +72,45 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [pickupAddress, setPickupAddress] = useState("");
+  const [dropoffAddress, setDropoffAddress] = useState("");
+
+  useEffect(() => {
+    const tripTypeParam = searchParams.get("tripType");
+    if (tripTypeParam === "return" || tripTypeParam === "one-way") {
+      setTripType(tripTypeParam);
+    }
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      try {
+        setDateValue(parseDate(dateParam));
+      } catch {}
+    }
+    const routeIdParam = searchParams.get("routeId");
+    if (routeIdParam) {
+      setSelectedRouteId(Number(routeIdParam));
+    }
+    const pickupParam = searchParams.get("pickup") || searchParams.get("pickupAddress");
+    if (pickupParam) setPickupAddress(pickupParam);
+    const dropoffParam = searchParams.get("dropoff") || searchParams.get("dropoffAddress");
+    if (dropoffParam) setDropoffAddress(dropoffParam);
+  }, [searchParams]);
 
   const [routes, setRoutes] = useState<IntercityRouteDto[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [departureTimes, setDepartureTimes] = useState<IntercityDepartureTimeDto[]>([]);
   const [selectedDepartureTime, setSelectedDepartureTime] = useState<string>("");
+
+  const [fieldErrors, setFieldErrors] = useState<{
+    route?: string;
+    date?: string;
+    time?: string;
+    pickupAddress?: string;
+    dropoffAddress?: string;
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
+  }>({});
 
   const currentDate = today(getLocalTimeZone());
   const isDateInvalid = dateValue != null && dateValue.compare(currentDate) < 0;
@@ -139,22 +174,63 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isDateInvalid || !dateValue) return;
+
+    const errors: typeof fieldErrors = {};
 
     const route = routes.find((r) => r.id === selectedRouteId);
     if (!route) {
-      toast.danger(t.rentCar.selectRouteError);
+      errors.route = t.rentCar.selectRouteError || t.errors.routeRequired;
+    }
+
+    if (!dateValue || isDateInvalid) {
+      errors.date = t.rentCar.dateError || t.errors.dateRequired;
+    }
+
+    const useFixedTime = route?.hasDepartureTimes && selectedDepartureTime;
+    if (route?.hasDepartureTimes && !selectedDepartureTime) {
+      errors.time = t.errors.timeRequired;
+    }
+
+    if (!pickupAddress.trim()) {
+      errors.pickupAddress = t.errors.pickupAddressRequired;
+    }
+
+    if (!dropoffAddress.trim()) {
+      errors.dropoffAddress = t.errors.dropoffAddressRequired;
+    }
+
+    if (!customerName.trim()) {
+      errors.customerName = t.errors.nameRequired;
+    }
+
+    if (!customerEmail.trim()) {
+      errors.customerEmail = t.errors.emailRequired;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      errors.customerEmail = t.errors.invalidEmail;
+    }
+
+    if (!customerPhone.trim()) {
+      errors.customerPhone = t.errors.phoneRequired;
+    } else if (!/^[0-9+ \-\(\)]{8,15}$/.test(customerPhone.trim())) {
+      errors.customerPhone = t.errors.phoneInvalid;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstError = Object.values(errors)[0];
+      if (firstError) toast.danger(firstError);
       return;
     }
 
-    const departureDate = `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}`;
-    const useFixedTime = route?.hasDepartureTimes && selectedDepartureTime;
+    setFieldErrors({});
+
+    const departureDate = `${dateValue!.year}-${String(dateValue!.month).padStart(2, "0")}-${String(dateValue!.day).padStart(2, "0")}`;
     const departureTime = useFixedTime
       ? selectedDepartureTime
       : `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}`;
 
     const params = new URLSearchParams({
-      routeId: String(route.id),
+      routeId: String(route!.id),
       tripType,
       departureDate,
       departureTime,
@@ -163,6 +239,8 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
     if (customerName.trim()) params.set("customerName", customerName.trim());
     if (customerEmail.trim()) params.set("customerEmail", customerEmail.trim());
     if (customerPhone.trim()) params.set("customerPhone", customerPhone.trim());
+    if (pickupAddress.trim()) params.set("pickupAddress", pickupAddress.trim());
+    if (dropoffAddress.trim()) params.set("dropoffAddress", dropoffAddress.trim());
     if (notes.trim()) params.set("notes", notes.trim());
 
     router.push(prefixUrl(`/rent-car/confirm?${params.toString()}`));
@@ -175,8 +253,8 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
 
       {/* Hero Section */}
       <HeroBanner sections={sections} locale={language} className="rounded-none min-h-[640px]">
-        <div className="w-full bg-white/30 dark:bg-black/20 backdrop-blur-2xl dark:backdrop-blur-2xl p-6 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col gap-6">
-          <div className="flex bg-slate-300 dark:bg-black/40 p-1 rounded-full w-full">
+        <div className="w-full bg-white dark:bg-[var(--bg-surface)] p-6 md:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl flex flex-col gap-6">
+          <div className="flex bg-slate-100 dark:bg-zinc-800 p-1 rounded-full w-full border border-slate-200/60 dark:border-slate-700/60">
             <button
               type="button"
               onClick={() => setTripType("one-way")}
@@ -203,21 +281,26 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <div className="flex flex-col w-full">
                 <Select
+                  isRequired
+                  isInvalid={!!fieldErrors.route}
                   className="w-full h-full"
                   placeholder={t.rentCar.selectRoute}
                   selectedKey={selectedRouteId != null ? String(selectedRouteId) : undefined}
                   onSelectionChange={(key) => {
-                    if (key) setSelectedRouteId(Number(key));
+                    if (key) {
+                      setSelectedRouteId(Number(key));
+                      if (fieldErrors.route) setFieldErrors((prev) => ({ ...prev, route: undefined }));
+                    }
                   }}
                 >
                   <Label isRequired className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 pl-1">
                     {t.rentCar.route}
                   </Label>
-                  <Select.Trigger className="h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 w-full">
+                  <Select.Trigger className="h-10 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 w-full">
                     <Select.Value className="text-xs sm:text-sm font-semibold truncate text-left w-full block pr-4" />
                     <Select.Indicator />
                   </Select.Trigger>
-                  <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl">
+                  <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl">
                     <ListBox>
                       {routes.map((r) => (
                         <ListBox.Item id={String(r.id)} key={r.id} textValue={getRouteName(r)} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer">
@@ -227,11 +310,17 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
                       ))}
                     </ListBox>
                   </Select.Popover>
-                  <Description className="text-[10px] sm:text-[11px] text-black dark:text-slate-300 mt-1 pl-1">
-                    {selectedRouteObj?.distanceKm
-                      ? `${selectedRouteObj.distanceKm} km ~ ${selectedRouteObj.estimatedHours || ""}h`
-                      : t.rentCar.departure}
-                  </Description>
+                  {fieldErrors.route ? (
+                    <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                      {fieldErrors.route}
+                    </FieldError>
+                  ) : (
+                    <Description className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-1 pl-1">
+                      {selectedRouteObj?.distanceKm
+                        ? `${selectedRouteObj.distanceKm} km ~ ${selectedRouteObj.estimatedHours || ""}h`
+                        : t.rentCar.departure}
+                    </Description>
+                  )}
                 </Select>
               </div>
 
@@ -239,16 +328,19 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
                 <DatePicker
                   isRequired
                   className="w-full"
-                  isInvalid={isDateInvalid}
+                  isInvalid={isDateInvalid || !!fieldErrors.date}
                   minValue={currentDate}
                   name="date"
                   value={dateValue}
-                  onChange={setDateValue}
+                  onChange={(val) => {
+                    setDateValue(val);
+                    if (fieldErrors.date) setFieldErrors((prev) => ({ ...prev, date: undefined }));
+                  }}
                 >
-                  <Label className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 pl-1">
+                  <Label isRequired className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 pl-1">
                     {t.rentCar.date}
                   </Label>
-                  <DateField.Group fullWidth className="h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                  <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                     <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                       {(segment) => <DateField.Segment segment={segment} />}
                     </DateField.Input>
@@ -259,9 +351,9 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
                     </DateField.Suffix>
                   </DateField.Group>
                   <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
-                    {t.rentCar.dateError}
+                    {fieldErrors.date || t.rentCar.dateError}
                   </FieldError>
-                  <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                  <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                     <Calendar aria-label="Travel date">
                       <Calendar.Header className="flex items-center justify-between mb-2">
                         <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
@@ -304,21 +396,26 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
               {routes.find((r) => r.id === selectedRouteId)?.hasDepartureTimes && departureTimes.length > 0 ? (
                 <div className="flex flex-col w-full">
                   <Select
+                    isRequired
+                    isInvalid={!!fieldErrors.time}
                     className="w-full"
                     placeholder={t.rentCar.selectTime}
                     selectedKey={selectedDepartureTime || undefined}
                     onSelectionChange={(key) => {
-                      if (key) setSelectedDepartureTime(String(key));
+                      if (key) {
+                        setSelectedDepartureTime(String(key));
+                        if (fieldErrors.time) setFieldErrors((prev) => ({ ...prev, time: undefined }));
+                      }
                     }}
                   >
-                    <Label className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-black dark:text-slate-500 mb-1.5 pl-1">
+                    <Label isRequired className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 pl-1">
                       {t.rentCar.time}
                     </Label>
-                    <Select.Trigger className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3">
+                    <Select.Trigger className="h-10 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3">
                       <Select.Value className="text-xs sm:text-sm font-semibold" />
                       <Select.Indicator />
                     </Select.Trigger>
-                    <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl">
+                    <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl">
                       <ListBox>
                         {departureTimes.map((dt) => (
                           <ListBox.Item key={dt.departureTime} id={dt.departureTime} textValue={dt.departureTime} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer">
@@ -328,18 +425,23 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
                         ))}
                       </ListBox>
                     </Select.Popover>
+                    {fieldErrors.time && (
+                      <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                        {fieldErrors.time}
+                      </FieldError>
+                    )}
                   </Select>
                 </div>
               ) : (
                 <div className="flex flex-col w-full">
                   <TimePicker
-                    labelClassName="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 pl-1 block text-black dark:text-white"
+                    labelClassName="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 pl-1 block text-slate-800 dark:text-slate-100"
                     value={timeValue}
                     onChange={setTimeValue}
                     label={t.rentCar.time}
                     language={language}
                     popoverTitle="Chọn giờ xuất phát"
-                    triggerClassName="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3"
+                    triggerClassName="bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3"
                     isRequired
                   />
                 </div>
@@ -347,59 +449,127 @@ export default function RentCarClient({ sections }: RentCarClientProps) {
 
             </div>
 
+            {/* Pickup & Dropoff Address */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <TextField isRequired isInvalid={!!fieldErrors.pickupAddress} className="w-full">
+                <Label isRequired className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider pl-1">
+                  {t.rentCar.pickupAddress}
+                </Label>
+                <Input
+                  type="text"
+                  placeholder={t.rentCar.pickupAddressPlaceholder}
+                  value={pickupAddress}
+                  onChange={(e) => {
+                    setPickupAddress(e.target.value);
+                    if (fieldErrors.pickupAddress) setFieldErrors((prev) => ({ ...prev, pickupAddress: undefined }));
+                  }}
+                  className="text-xs sm:text-sm font-semibold bg-slate-50 dark:bg-zinc-900"
+                />
+                {fieldErrors.pickupAddress && (
+                  <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                    {fieldErrors.pickupAddress}
+                  </FieldError>
+                )}
+              </TextField>
+              <TextField isRequired isInvalid={!!fieldErrors.dropoffAddress} className="w-full">
+                <Label isRequired className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider pl-1">
+                  {t.rentCar.dropoffAddress}
+                </Label>
+                <Input
+                  type="text"
+                  placeholder={t.rentCar.dropoffAddressPlaceholder}
+                  value={dropoffAddress}
+                  onChange={(e) => {
+                    setDropoffAddress(e.target.value);
+                    if (fieldErrors.dropoffAddress) setFieldErrors((prev) => ({ ...prev, dropoffAddress: undefined }));
+                  }}
+                  className="text-xs sm:text-sm font-semibold bg-slate-50 dark:bg-zinc-900"
+                />
+                {fieldErrors.dropoffAddress && (
+                  <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                    {fieldErrors.dropoffAddress}
+                  </FieldError>
+                )}
+              </TextField>
+            </div>
+
             <div className="space-y-3">
-              <Typography.Heading level={5} className="font-extrabold text-black dark:text-white pl-1">
+              <Typography.Heading level={5} className="font-extrabold text-slate-900 dark:text-white pl-1">
                 {t.rentCar.contactInfo}
               </Typography.Heading>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <TextField isRequired className="w-full">
-                  <Label className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider">
+                <TextField isRequired isInvalid={!!fieldErrors.customerName} className="w-full">
+                  <Label isRequired className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider pl-1">
                     {t.rentCar.fullName}
                   </Label>
                   <Input
                     type="text"
                     placeholder={t.common.name}
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="text-xs sm:text-sm font-semibold"
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      if (fieldErrors.customerName) setFieldErrors((prev) => ({ ...prev, customerName: undefined }));
+                    }}
+                    className="text-xs sm:text-sm font-semibold bg-slate-50 dark:bg-zinc-900"
                   />
+                  {fieldErrors.customerName && (
+                    <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                      {fieldErrors.customerName}
+                    </FieldError>
+                  )}
                 </TextField>
-                <TextField isRequired className="w-full">
-                  <Label className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider">
+                <TextField isRequired isInvalid={!!fieldErrors.customerEmail} className="w-full">
+                  <Label isRequired className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider pl-1">
                     Email
                   </Label>
                   <Input
                     type="email"
                     placeholder="email@example.com"
                     value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="text-xs sm:text-sm font-semibold"
+                    onChange={(e) => {
+                      setCustomerEmail(e.target.value);
+                      if (fieldErrors.customerEmail) setFieldErrors((prev) => ({ ...prev, customerEmail: undefined }));
+                    }}
+                    className="text-xs sm:text-sm font-semibold bg-slate-50 dark:bg-zinc-900"
                   />
+                  {fieldErrors.customerEmail && (
+                    <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                      {fieldErrors.customerEmail}
+                    </FieldError>
+                  )}
                 </TextField>
-                <TextField isRequired className="w-full">
-                  <Label className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider">
+                <TextField isRequired isInvalid={!!fieldErrors.customerPhone} className="w-full">
+                  <Label isRequired className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider pl-1">
                     {t.rentCar.phone}
                   </Label>
                   <Input
                     type="tel"
                     placeholder="0901 234 567"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="text-xs sm:text-sm font-semibold"
+                    onChange={(e) => {
+                      setCustomerPhone(e.target.value);
+                      if (fieldErrors.customerPhone) setFieldErrors((prev) => ({ ...prev, customerPhone: undefined }));
+                    }}
+                    className="text-xs sm:text-sm font-semibold bg-slate-50 dark:bg-zinc-900"
                   />
+                  {fieldErrors.customerPhone && (
+                    <FieldError className="text-[10px] sm:text-[11px] text-red-500 mt-1 pl-1">
+                      {fieldErrors.customerPhone}
+                    </FieldError>
+                  )}
                 </TextField>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-black dark:text-white pl-1">
+              <label className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 pl-1">
                 {`${t.rentCar.notes}`}
               </label>
               <TextArea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={t.rentCar.notesPlaceholder}
-                className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs sm:text-sm font-semibold outline-none resize-none focus:border-accent transition-colors"
+                className="w-full h-16 p-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs sm:text-sm font-semibold outline-none resize-none focus:border-accent transition-colors"
               />
             </div>
 

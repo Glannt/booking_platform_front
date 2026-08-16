@@ -113,6 +113,64 @@ export function formatPriceSync(amountVND: number, language: Language = "vi"): s
   }).format(amountVND * fallback.rate);
 }
 
+/**
+ * Compact currency formatter for dashboards and stat cards to prevent text overflow.
+ * E.g., for Vietnamese:
+ * - 0 -> "0 ₫"
+ * - 1,000,000 -> "1 triệu ₫"
+ * - 10,000,000 -> "10 triệu ₫"
+ * - 100,000,000 -> "100 triệu ₫"
+ * - 1,500,000,000 -> "1.5 tỷ ₫"
+ */
+export function formatCompactPrice(amountVND: number, language: Language = "vi"): string {
+  if (isNaN(amountVND) || amountVND === 0) {
+    return formatPriceSync(0, language);
+  }
+
+  if (language === "vi") {
+    const abs = Math.abs(amountVND);
+    const sign = amountVND < 0 ? "-" : "";
+
+    if (abs >= 1_000_000_000) {
+      const billions = abs / 1_000_000_000;
+      const formatted = Number.isInteger(billions) ? billions.toString() : billions.toFixed(2).replace(/\.?0+$/, "");
+      return `${sign}${formatted} tỷ ₫`;
+    }
+
+    if (abs >= 1_000_000) {
+      const millions = abs / 1_000_000;
+      const formatted = Number.isInteger(millions) ? millions.toString() : millions.toFixed(2).replace(/\.?0+$/, "");
+      return `${sign}${formatted} triệu ₫`;
+    }
+
+    if (abs >= 1_000) {
+      const thousands = abs / 1_000;
+      const formatted = Number.isInteger(thousands) ? thousands.toString() : thousands.toFixed(1).replace(/\.?0+$/, "");
+      return `${sign}${formatted}k ₫`;
+    }
+
+    return `${sign}${abs.toLocaleString("vi-VN")} ₫`;
+  }
+
+  // Non-Vietnamese currencies using Intl compact notation
+  const currencyCode = CURRENCY_BY_LANGUAGE[language] || "VND";
+  const apiRate = cachedRates?.[currencyCode];
+  const rate = apiRate?.rateToVnd || (FALLBACK_RATES[language] ? 1 / FALLBACK_RATES[language].rate : 1);
+  const converted = amountVND / rate;
+
+  try {
+    return new Intl.NumberFormat(LOCALE_MAP[language] || "en-US", {
+      style: "currency",
+      currency: currencyCode,
+      notation: "compact",
+      compactDisplay: "short",
+      maximumFractionDigits: 1,
+    }).format(converted);
+  } catch {
+    return formatPriceSync(amountVND, language);
+  }
+}
+
 import { Time } from "@internationalized/date";
 
 export function formatTimeDisplay(timeStr?: string): string {

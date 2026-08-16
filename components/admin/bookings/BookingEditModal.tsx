@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -55,30 +56,10 @@ export default function BookingEditModal({
 
   const getStatusLabel = (status: string, lang: string) => {
     const map: Record<string, Record<string, string>> = {
-      pending: {
-        vi: "Chờ xử lý",
-        en: "Pending",
-        ko: "대기 중",
-        ru: "В ожидании"
-      },
-      confirmed: {
-        vi: "Đã xác nhận",
-        en: "Confirmed",
-        ko: "확정됨",
-        ru: "Подтверждено"
-      },
-      completed: {
-        vi: "Đã hoàn thành",
-        en: "Completed",
-        ko: "완료됨",
-        ru: "Завершено"
-      },
-      cancelled: {
-        vi: "Đã hủy",
-        en: "Cancelled",
-        ko: "취소됨",
-        ru: "Отменено"
-      }
+      pending: { vi: "Chờ xử lý", en: "Pending", ko: "대기 중", ru: "В ожидании" },
+      confirmed: { vi: "Đã xác nhận", en: "Confirmed", ko: "확정됨", ru: "Подтверждено" },
+      completed: { vi: "Đã hoàn thành", en: "Completed", ko: "완료됨", ru: "Завершено" },
+      cancelled: { vi: "Đã hủy", en: "Cancelled", ko: "취소됨", ru: "Отменеno" }
     };
     return map[status]?.[lang] || map[status]?.["en"] || status;
   };
@@ -108,35 +89,36 @@ export default function BookingEditModal({
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="booking-edit-title">
-      <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
-        <ModalContainer size="md">
-          <ModalDialog className="max-w-2xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
+      <ModalBackdrop className="bg-slate-950/45 backdrop-blur-[2px]">
+        <ModalContainer>
+          <ModalDialog className="max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full">
+            <ModalCloseTrigger />
             <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
-              <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
-                <span id="booking-edit-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
+              <ModalHeader className="border-b border-divider py-4 px-6 flex flex-col gap-0.5 shrink-0 bg-default-50 dark:bg-[var(--bg-surface)]">
+                <span id="booking-edit-title" className="text-lg font-black text-foreground">
                   {language === "vi" ? "Chỉnh sửa Đơn đặt" : "Edit Booking"}
                 </span>
-                <span className="text-xs font-mono font-bold text-slate-400">
+                <span className="text-xs font-mono font-bold text-primary">
                   {booking.bookingCode}
                 </span>
               </ModalHeader>
 
-              <ModalBody className="p-6 space-y-4 overflow-y-auto">
+              <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <TextField isRequired className="w-full">
-                    <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Tên khách hàng" : "Customer Name"}</Label>
-                    <Input type="text" value={formData.customerName || ""} onChange={(e) => setFormData({ ...formData, customerName: e.target.value })} className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                    <Label className="text-xs font-bold uppercase tracking-wider text-default-500">{language === "vi" ? "Tên khách hàng" : "Customer Name"}</Label>
+                    <Input type="text" value={formData.customerName || ""} onChange={(e) => setFormData({ ...formData, customerName: e.target.value })} className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-foreground" />
                   </TextField>
 
                   <TextField isRequired className="w-full">
-                    <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Số điện thoại" : "Phone Number"}</Label>
-                    <Input type="text" value={formData.customerPhone || ""} onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })} className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                    <Label className="text-xs font-bold uppercase tracking-wider text-default-500">{language === "vi" ? "Số điện thoại" : "Phone Number"}</Label>
+                    <Input type="text" value={formData.customerPhone || ""} onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })} className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-foreground" />
                   </TextField>
                 </div>
 
                 <TextField isRequired className="w-full">
-                  <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Email liên hệ" : "Contact Email"}</Label>
-                  <Input type="email" value={formData.customerEmail || ""} onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })} className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                  <Label className="text-xs font-bold uppercase tracking-wider text-default-500">{language === "vi" ? "Email liên hệ" : "Contact Email"}</Label>
+                  <Input type="email" value={formData.customerEmail || ""} onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })} className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-foreground" />
                 </TextField>
 
                 <div className="w-full">
@@ -152,28 +134,28 @@ export default function BookingEditModal({
                       }
                     }}
                   >
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Label className="block text-xs font-bold text-default-500 uppercase tracking-wider mb-2">
                       {language === "vi" ? "Trạng thái đơn hàng" : "Booking Status"}
                     </Label>
-                    <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer">
+                    <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer">
                       <Select.Value />
                       <Select.Indicator />
                     </Select.Trigger>
-                    <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                    <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                       <ListBox>
-                        <ListBox.Item id="pending" textValue={getStatusLabel("pending", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="pending" textValue={getStatusLabel("pending", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-foreground flex items-center justify-between">
                           {getStatusLabel("pending", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="confirmed" textValue={getStatusLabel("confirmed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="confirmed" textValue={getStatusLabel("confirmed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-foreground flex items-center justify-between">
                           {getStatusLabel("confirmed", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="completed" textValue={getStatusLabel("completed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="completed" textValue={getStatusLabel("completed", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-foreground flex items-center justify-between">
                           {getStatusLabel("completed", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="cancelled" textValue={getStatusLabel("cancelled", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        <ListBox.Item id="cancelled" textValue={getStatusLabel("cancelled", language)} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-foreground flex items-center justify-between">
                           {getStatusLabel("cancelled", language)}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -183,8 +165,8 @@ export default function BookingEditModal({
                 </div>
 
                 <div>
-                  <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    {language === "vi" ? "Tổng tiền" : "Total Amount"}
+                  <Label className="block text-xs font-bold text-default-500 uppercase tracking-wider mb-2">
+                    {language === "vi" ? "Tổng tiền (VND)" : "Total Amount"}
                   </Label>
                   <NumberField
                     isDisabled
@@ -195,50 +177,47 @@ export default function BookingEditModal({
                     isRequired
                     fullWidth
                   >
-                    <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
-                      <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-                      <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
-                        ▲
-                      </NumberField.IncrementButton>
-                      <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
-                        ▼
-                      </NumberField.DecrementButton>
+                    <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-foreground overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
+                      <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold text-primary" />
                     </NumberField.Group>
                   </NumberField>
                 </div>
 
-                <div>
-                  <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    {language === "vi" ? "Ghi chú đơn đặt" : "Booking Notes"}
-                  </Label>
+                <TextField className="w-full">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-default-500">{language === "vi" ? "Ghi chú của khách" : "Customer Notes"}</Label>
                   <textarea
                     rows={3}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                     value={formData.customerNotes || ""}
                     onChange={(e) => setFormData({ ...formData, customerNotes: e.target.value })}
+                    className="w-full p-2.5 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-foreground outline-none focus:ring-2 focus:ring-primary"
                   />
-                </div>
+                </TextField>
               </ModalBody>
 
-              <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 justify-end gap-2.5">
+              <ModalFooter className="border-t border-divider py-3 px-6 justify-end gap-2 shrink-0 bg-default-50 dark:bg-[var(--bg-surface)]">
                 <Button
-                  className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
+                  className="rounded-xl font-bold bg-default-200 dark:bg-[var(--bg-card)] text-foreground cursor-pointer"
                   onClick={onClose}
-                  type="button"
+                  isDisabled={loading}
                 >
                   {language === "vi" ? "Hủy" : "Cancel"}
                 </Button>
                 <Button
-                  className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8922a] text-white shadow-sm border border-transparent"
                   type="submit"
                   isDisabled={loading}
+                  className="bg-accent text-white font-bold rounded-xl cursor-pointer flex items-center gap-1.5"
                 >
                   {loading ? (
-                    <RefreshCw className="animate-spin" size={16} />
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      {language === "vi" ? "Đang lưu..." : "Saving..."}
+                    </>
                   ) : (
-                    <Save size={16} className="mr-1.5" />
+                    <>
+                      <Save size={14} />
+                      {language === "vi" ? "Lưu thay đổi" : "Save Changes"}
+                    </>
                   )}
-                  {language === "vi" ? "Lưu thay đổi" : "Save Changes"}
                 </Button>
               </ModalFooter>
             </form>

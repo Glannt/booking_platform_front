@@ -19,7 +19,7 @@ import {
 import { Button, Spinner } from "@heroui/react";
 import { getBookings } from "@/lib/api/bookings";
 import { getDashboardStats } from "@/lib/api/dashboard";
-import { formatPriceSync } from "@/lib/format";
+import { formatPriceSync, formatCompactPrice } from "@/lib/format";
 import { useI18n } from "@/context/LanguageContext";
 import { useRouter } from "next/navigation";
 
@@ -181,19 +181,22 @@ export default function AdminOverviewPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Revenue Card */}
           <div className="rounded-2xl p-6 border border-divider bg-content1 shadow-xs flex items-center justify-between transition-colors">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-default-500 uppercase tracking-wider">
+            <div className="space-y-1 min-w-0 flex-1 pr-2">
+              <span className="text-xs font-bold text-default-500 uppercase tracking-wider block">
                 Doanh thu hệ thống
               </span>
-              <p className="text-2xl font-black text-foreground">
-                {formatPriceSync(stats.totalRevenue, language)}
+              <p
+                className="text-2xl font-black text-foreground truncate"
+                title={formatPriceSync(stats.totalRevenue, language)}
+              >
+                {formatCompactPrice(stats.totalRevenue, language)}
               </p>
               <span className="text-xs text-success font-bold flex items-center gap-1">
-                <TrendingUp size={12} />
+                <TrendingUp size={12} className="shrink-0" />
                 Toàn bộ thời gian
               </span>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-success-100/30 dark:bg-success-950/20 text-success flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-success-100/30 dark:bg-success-950/20 text-success flex items-center justify-center shrink-0">
               <DollarSign size={22} />
             </div>
           </div>

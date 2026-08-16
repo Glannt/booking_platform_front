@@ -233,8 +233,51 @@ export async function deleteDepartureTime(id: number): Promise<ApiResponse<void>
 
 // === Rentals (self-drive) ===
 
+export async function getAdminRentals(page = 0, size = 100): Promise<ApiResponse<{ content: RentalDto[]; totalElements: number }>> {
+  return apiFetch(`/api/v1/admin/rentals?page=${page}&size=${size}`, { skipTranslationFilter: true });
+}
+
+export async function createRental(dto: Partial<RentalDto>): Promise<ApiResponse<RentalDto>> {
+  return apiFetch("/api/v1/admin/rentals", {
+    method: "POST",
+    body: JSON.stringify(dto),
+    skipTranslationFilter: true,
+  });
+}
+
+export async function updateRental(id: number, dto: Partial<RentalDto>): Promise<ApiResponse<RentalDto>> {
+  return apiFetch(`/api/v1/admin/rentals/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(dto),
+    skipTranslationFilter: true,
+  });
+}
+
+export async function deleteRental(id: number): Promise<ApiResponse<void>> {
+  return apiFetch(`/api/v1/admin/rentals/${id}`, {
+    method: "DELETE",
+    skipTranslationFilter: true,
+  });
+}
+
 export async function getRentalPricesByRental(rentalId: number): Promise<ApiResponse<RentalPriceDto[]>> {
   return apiFetch(`/api/v1/rentals/${rentalId}/prices`);
+}
+
+export async function createRentalPrice(rentalId: number, dto: Partial<RentalPriceDto>): Promise<ApiResponse<RentalPriceDto>> {
+  return apiFetch(`/api/v1/admin/rentals/${rentalId}/prices`, {
+    method: "POST",
+    body: JSON.stringify(dto),
+    skipTranslationFilter: true,
+  });
+}
+
+export async function updateRentalPrice(rentalId: number, priceId: number, dto: Partial<RentalPriceDto>): Promise<ApiResponse<RentalPriceDto>> {
+  return apiFetch(`/api/v1/admin/rentals/${rentalId}/prices/${priceId}`, {
+    method: "PUT",
+    body: JSON.stringify(dto),
+    skipTranslationFilter: true,
+  });
 }
 
 export async function getActiveRentals(options?: ApiOptions): Promise<ApiResponse<RentalDto[]>> {

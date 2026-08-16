@@ -149,7 +149,22 @@ export default function SelfDriveBookingPage() {
         setVehicles(mapped);
 
         const vehicleIdParam = searchParams.get("vehicleId");
-        const match = vehicleIdParam && mapped.find(v => v.id === vehicleIdParam);
+        const categoryIdParam = searchParams.get("categoryId");
+        const seatsParam = searchParams.get("seats");
+
+        let match = vehicleIdParam ? mapped.find(v => v.id === vehicleIdParam) : undefined;
+        if (!match && categoryIdParam) {
+          match = mapped.find(v => String(v.vehicleCategoryId) === categoryIdParam);
+        }
+        if (!match && seatsParam) {
+          if (seatsParam.includes("4")) {
+            match = mapped.find(v => v.capacity.includes("4") || v.capacity.includes("5") || v.name.includes("4"));
+          } else if (seatsParam.includes("7")) {
+            match = mapped.find(v => v.capacity.includes("7") || v.name.includes("7"));
+          } else if (seatsParam.includes("16")) {
+            match = mapped.find(v => v.capacity.includes("16") || v.name.includes("16"));
+          }
+        }
         setSelectedVehicleKey(match ? match.id : mapped[0]?.id);
       } catch (err) {
         console.error("Failed to load vehicles:", err);
@@ -181,13 +196,18 @@ export default function SelfDriveBookingPage() {
   }, [user, searchParams]);
 
   useEffect(() => {
-    const pickupDateParam = searchParams.get("pickupDate");
+    const pickupDateParam = searchParams.get("pickupDate") || searchParams.get("date");
     if (pickupDateParam) {
       try {
         setDateValue(parseDate(pickupDateParam));
       } catch (e) {
         console.error("Failed to parse pickupDate from URL:", e);
       }
+    }
+
+    const pickupLocParam = searchParams.get("pickupLocation") || searchParams.get("pickup");
+    if (pickupLocParam) {
+      setPickupLocation(pickupLocParam);
     }
 
     const daysParam = searchParams.get("days");
@@ -460,6 +480,7 @@ export default function SelfDriveBookingPage() {
                     </label>
                     <AutofillButton
                       onFill={(d) => { setCustomerName(d.fullname); setCustomerPhone(d.phone); setCustomerEmail(d.email); setZaloId(d.zaloId ?? ""); setKakaoTalkId(d.kakaoTalkId ?? ""); }}
+                      label={t.common.autoFill}
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -521,15 +542,16 @@ export default function SelfDriveBookingPage() {
                 </div>
 
                 {/* Notes */}
-                <div className="space-y-2">
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-white pl-1">
+                <div className="space-y-1 w-full">
+                  <Label className="text-[10px] font-extrabold uppercase tracking-wider block pl-1">
                     {t.rentCar.notes}
-                  </label>
+                  </Label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={t.selfDrive.notesPlaceholder}
-                    className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-black text-xs font-semibold outline-none resize-none focus:border-accent transition-colors"
+                    rows={3}
+                    className="w-full p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-black text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none resize-none focus:border-accent transition-colors"
                   />
                 </div>
 
@@ -601,7 +623,7 @@ export default function SelfDriveBookingPage() {
                       {isCalculating ? (
                         <Skeleton className="w-24 h-5 rounded-lg bg-slate-200 dark:bg-[var(--bg-card)]" />
                       ) : (
-                        <span className="text-base font-black text-blue-700 dark:text-blue-400">{price.toLocaleString("vi-VN")}đ</span>
+                        <span className="text-base font-black">{price.toLocaleString("vi-VN")}đ</span>
                       )}
                     </div>
                   </div>

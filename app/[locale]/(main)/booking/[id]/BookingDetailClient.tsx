@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   CircleCheck
 } from "lucide-react";
-import { Card, Button, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, Select, ListBox } from "@heroui/react";
+import { Card, Button, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalBody, Select, ListBox } from "@heroui/react";
 import { useI18n } from "@/context/LanguageContext";
 import { createBooking } from "@/lib/api/bookings";
 import { ServiceDto, ServiceOptionDto } from "@/lib/api/services";
@@ -597,7 +597,8 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
       <Modal isOpen={modalState !== "idle"} onOpenChange={(open) => { if (!open) setModalState("idle"); }} aria-label="Booking status">
         <ModalBackdrop className="bg-slate-950/60 backdrop-blur-sm">
           <ModalContainer size="sm">
-            <ModalDialog className="bg-content1 border border-default-250/50 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl focus:outline-none overflow-hidden">
+            <ModalDialog className="bg-content1 border border-default-250/50 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl focus:outline-none overflow-hidden relative">
+              <ModalCloseTrigger />
               <ModalBody className="p-0 space-y-6">
                 {modalState === "submitting" && (
                   <div className="space-y-4">

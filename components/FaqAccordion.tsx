@@ -28,10 +28,10 @@ export function FaqAccordion({
   className,
 }: FaqAccordionProps) {
   return (
-    <div className={`flex w-full flex-col gap-6 ${className ?? ""}`}>
+    <div className={`flex w-full flex-col gap-8 ${className ?? ""}`}>
       {categories.map((category) => (
-        <div key={category.title}>
-          <p className="text-md mb-2 font-medium text-muted">
+        <div key={category.title} className="w-full flex flex-col gap-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary">
             {category.title}
           </p>
           <Accordion
@@ -40,17 +40,19 @@ export function FaqAccordion({
             allowsMultipleExpanded={allowsMultipleExpanded}
           >
             {category.items.map((item, index) => (
-              <Accordion.Item key={index}>
-                <Accordion.Heading>
-                  <Accordion.Trigger>
-                    {item.title}
-                    <Accordion.Indicator>
+              <Accordion.Item key={index} className="w-full">
+                <Accordion.Heading className="w-full m-0 p-0">
+                  <Accordion.Trigger className="w-full text-left font-semibold text-sm sm:text-base text-slate-800 dark:text-slate-100 flex items-center justify-between py-4 px-5 cursor-pointer select-none">
+                    <span className="flex-1 pr-4">{item.title}</span>
+                    <Accordion.Indicator className="shrink-0 text-slate-400">
                       <ChevronDown />
                     </Accordion.Indicator>
                   </Accordion.Trigger>
                 </Accordion.Heading>
-                <Accordion.Panel>
-                  <Accordion.Body>{item.content}</Accordion.Body>
+                <Accordion.Panel className="w-full m-0 p-0">
+                  <Accordion.Body className="w-full text-left text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed px-5 pb-5 pt-0">
+                    {item.content}
+                  </Accordion.Body>
                 </Accordion.Panel>
               </Accordion.Item>
             ))}

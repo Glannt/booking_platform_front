@@ -8,6 +8,7 @@ export interface AirportPriceInput {
   baseKm: number;
   baseAmount: number;
   perKmAmount: number;
+  zoneBufferKm?: number;
   fixedOvercharge?: boolean;
   feeOverchargeFixed?: number;
 }
@@ -16,9 +17,11 @@ export function roundToThousand(value: number): number {
   return Math.round(value / 1000) * 1000;
 }
 
-/** oneWay calculation supporting fixedOvercharge and per-km rate. roundTrip = 2 * oneWay. */
+/** oneWay calculation supporting zoneBufferKm, fixedOvercharge and per-km rate. roundTrip = 2 * oneWay. */
 export function calcAirportPrice(price: AirportPriceInput | undefined, actualKm?: number): { oneWay: number; roundTrip: number } {
   const baseKm = Number(price?.baseKm ?? 0);
+  const zoneBufferKm = Number(price?.zoneBufferKm ?? 0);
+  const effectiveBaseKm = baseKm + zoneBufferKm;
   const baseAmount = Number(price?.baseAmount ?? 0);
   const perKmAmount = Number(price?.perKmAmount ?? 0);
   const fixedOvercharge = Boolean(price?.fixedOvercharge ?? false);
@@ -27,7 +30,7 @@ export function calcAirportPrice(price: AirportPriceInput | undefined, actualKm?
     : 100000; // mặc định 100k
 
   const km = actualKm !== undefined && actualKm !== null ? Number(actualKm) : baseKm;
-  const overage = Math.max(0, km - baseKm);
+  const overage = Math.max(0, km - effectiveBaseKm);
   
   let oneWay = baseAmount;
   if (overage > 0) {

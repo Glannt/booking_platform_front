@@ -1,7 +1,7 @@
 "use client";
 
 import React, { use, useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   MapPin,
@@ -13,7 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Button, Skeleton, Select, ListBox, DatePicker, DateField, Calendar, Label, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody } from "@heroui/react";
+import { Button, Skeleton, Select, ListBox, DatePicker, DateField, Calendar, Label, TextField, Input, FieldError, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody } from "@heroui/react";
 import type { DateValue } from "@internationalized/date";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 import dynamic from "next/dynamic";
@@ -42,6 +42,7 @@ interface RouteDetailClientProps {
 
 export default function RouteDetailClient({ sections, routeId }: RouteDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const getImageUrl = (url: string | null | undefined) => {
     if (!url) return "";
@@ -64,10 +65,33 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
   const [tripType, setTripType] = useState("one-way");
   const [dateValue, setDateValue] = useState<DateValue | null>(null);
   const [departureTime, setDepartureTime] = useState("");
+  const [pickupAddress, setPickupAddress] = useState("");
+  const [dropoffAddress, setDropoffAddress] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const isPickupInvalid = Boolean(errors.pickupAddress);
+  const isDropoffInvalid = Boolean(errors.dropoffAddress);
+  const isDateInvalid = Boolean(errors.date);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [vehicleModalCategoryId, setVehicleModalCategoryId] = useState<number | null>(null);
   const carouselRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const [heroImageIndex, setHeroImageIndex] = useState(0);
+
+  useEffect(() => {
+    const tripTypeParam = searchParams.get("tripType");
+    if (tripTypeParam === "return" || tripTypeParam === "round-trip" || tripTypeParam === "one-way") {
+      setTripType(tripTypeParam === "round-trip" || tripTypeParam === "return" ? "round-trip" : "one-way");
+    }
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      try {
+        setDateValue(parseDate(dateParam));
+      } catch {}
+    }
+    const pickupParam = searchParams.get("pickup") || searchParams.get("pickupAddress");
+    if (pickupParam) setPickupAddress(pickupParam);
+    const dropoffParam = searchParams.get("dropoff") || searchParams.get("dropoffAddress");
+    if (dropoffParam) setDropoffAddress(dropoffParam);
+  }, [searchParams]);
 
   const currentDate = today(getLocalTimeZone());
   const formatPrice = (value: number) => _formatPrice(value, language);
@@ -156,7 +180,17 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
 
           setCategories(catsWithVehicles);
           if (catsWithVehicles.length > 0) {
-            setSelectedCategoryId(catsWithVehicles[0].category.id);
+            const seatsParam = searchParams.get("seats");
+            let initialCat = catsWithVehicles[0].category.id;
+            if (seatsParam) {
+              const matched = catsWithVehicles.find(
+                (c) =>
+                  c.category.code.toLowerCase() === seatsParam.toLowerCase() ||
+                  c.category.code.toLowerCase().includes(seatsParam.toLowerCase())
+              );
+              if (matched) initialCat = matched.category.id;
+            }
+            setSelectedCategoryId(initialCat);
           }
 
           if (foundRoute.hasDepartureTimes && foundRoute.departureTimes?.length) {
@@ -172,13 +206,29 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
     };
 
     fetchData();
-  }, [routeId, language]);
+  }, [routeId, language, searchParams]);
 
   const selectedCategory = categories.find((c) => c.category.id === selectedCategoryId);
   const selectedModalCategory = categories.find((c) => c.category.id === vehicleModalCategoryId);
 
   const handleBooking = () => {
     if (!route) return;
+
+    const newErrors: Record<string, string> = {};
+    if (!dateValue) {
+      newErrors.date = t.rentCar.dateError || "Vui lòng chọn ngày đi";
+    }
+    if (!pickupAddress.trim()) {
+      newErrors.pickupAddress = t.errors.pickupAddressRequired || "Vui lòng nhập địa điểm đón";
+    }
+    if (!dropoffAddress.trim()) {
+      newErrors.dropoffAddress = t.errors.dropoffAddressRequired || "Vui lòng nhập địa điểm trả";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
     let dateStr = "";
     if (dateValue) {
@@ -190,10 +240,13 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
 
     const params = new URLSearchParams({
       routeId: String(route.id),
-      tripType,
+      tripType: tripType === "round-trip" ? "return" : tripType,
     });
     if (dateStr) params.set("departureDate", dateStr);
     if (departureTime) params.set("departureTime", departureTime);
+    if (pickupAddress.trim()) params.set("pickupAddress", pickupAddress.trim());
+    if (dropoffAddress.trim()) params.set("dropoffAddress", dropoffAddress.trim());
+    if (selectedCategoryId) params.set("categoryId", String(selectedCategoryId));
 
     router.push(prefixUrl(`/rent-car/confirm?${params.toString()}`));
   };
@@ -280,12 +333,14 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
           <>
             <button
               onClick={prevHero}
+              aria-label="Xem ảnh trước"
               className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm border border-white/15 flex items-center justify-center transition-colors cursor-pointer"
             >
               <ChevronLeft size={20} className="text-white" />
             </button>
             <button
               onClick={nextHero}
+              aria-label="Xem ảnh tiếp theo"
               className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm border border-white/15 flex items-center justify-center transition-colors cursor-pointer"
             >
               <ChevronRight size={20} className="text-white" />
@@ -300,6 +355,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
               <button
                 key={idx}
                 onClick={() => setHeroImageIndex(idx)}
+                aria-label={`Chuyển đến ảnh ${idx + 1}`}
                 className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === heroImageIndex
                   ? "bg-[#C9A227] scale-125"
                   : "bg-white/40 hover:bg-white/70"
@@ -493,7 +549,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
 
             {/* Trip Type */}
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.rentCar.tripType}</p>
+              <Label className="text-[10px] font-bold uppercase tracking-wider block">{t.rentCar.tripType}</Label>
               <Select
                 selectedKey={tripType}
                 onSelectionChange={(key) => { if (key) setTripType(key as string); }}
@@ -520,12 +576,23 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
             {/* Date Picker */}
             <div className="space-y-1.5">
               <DatePicker
+                isRequired
+                isInvalid={isDateInvalid}
                 className="w-full"
                 minValue={currentDate}
                 value={dateValue}
-                onChange={setDateValue}
+                onChange={(val) => {
+                  setDateValue(val);
+                  if (errors.date) {
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.date;
+                      return next;
+                    });
+                  }
+                }}
               >
-                <Label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.rentCar.date}</Label>
+                <Label className="text-[10px] font-bold uppercase tracking-wider block">{t.rentCar.date}</Label>
                 <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700/80 rounded-xl px-3 flex items-center justify-between">
                   <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none text-slate-900 dark:text-slate-100">
                     {(segment) => <DateField.Segment segment={segment} />}
@@ -536,6 +603,11 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                     </DatePicker.Trigger>
                   </DateField.Suffix>
                 </DateField.Group>
+                {isDateInvalid && (
+                  <FieldError className="text-[11px] text-red-500 mt-1">
+                    {errors.date}
+                  </FieldError>
+                )}
                 <DatePicker.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                   <Calendar aria-label="Pick date">
                     <Calendar.Header className="flex items-center justify-between mb-2">
@@ -576,6 +648,70 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
               </DatePicker>
             </div>
 
+            {/* Pickup Address */}
+            <TextField
+              isRequired
+              isInvalid={isPickupInvalid}
+              name="pickupAddress"
+              value={pickupAddress}
+              onChange={(val) => {
+                setPickupAddress(val);
+                if (errors.pickupAddress) {
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.pickupAddress;
+                    return next;
+                  });
+                }
+              }}
+              className="w-full"
+            >
+              <Label className="text-[10px] font-bold uppercase tracking-wider block">
+                {t.rentCar.pickupAddress}
+              </Label>
+              <Input
+                placeholder={t.rentCar.pickupAddressPlaceholder}
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-900 dark:text-slate-100 text-xs font-semibold outline-none focus:border-accent"
+              />
+              {isPickupInvalid && (
+                <FieldError className="text-[11px] text-red-500 mt-1">
+                  {errors.pickupAddress}
+                </FieldError>
+              )}
+            </TextField>
+
+            {/* Dropoff Address */}
+            <TextField
+              isRequired
+              isInvalid={isDropoffInvalid}
+              name="dropoffAddress"
+              value={dropoffAddress}
+              onChange={(val) => {
+                setDropoffAddress(val);
+                if (errors.dropoffAddress) {
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.dropoffAddress;
+                    return next;
+                  });
+                }
+              }}
+              className="w-full"
+            >
+              <Label className="text-[10px] font-bold uppercase tracking-wider block">
+                {t.rentCar.dropoffAddress}
+              </Label>
+              <Input
+                placeholder={t.rentCar.dropoffAddressPlaceholder}
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-900 dark:text-slate-100 text-xs font-semibold outline-none focus:border-accent"
+              />
+              {isDropoffInvalid && (
+                <FieldError className="text-[11px] text-red-500 mt-1">
+                  {errors.dropoffAddress}
+                </FieldError>
+              )}
+            </TextField>
+
             <Button
               onClick={handleBooking}
               isDisabled={!selectedCategory}
@@ -609,6 +745,7 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
         <ModalBackdrop>
           <ModalContainer>
             <ModalDialog className="max-w-lg w-[calc(100vw-2rem)]">
+              <ModalCloseTrigger />
               <ModalHeader className="flex items-center justify-between">
                 <span>
                   {selectedModalCategory?.category.translations?.find(tr => tr.locale === language)?.name
@@ -617,9 +754,6 @@ export default function RouteDetailClient({ sections, routeId }: RouteDetailClie
                     ({selectedModalCategory?.vehicles.length} {t.rentCar.vehicleList})
                   </span>
                 </span>
-                <button onClick={() => setVehicleModalCategoryId(null)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer">
-                  <X size={16} className="text-slate-400" />
-                </button>
               </ModalHeader>
               <ModalBody className="gap-4 max-h-[70vh] overflow-y-auto p-1">
                 {selectedModalCategory?.vehicles.map((v) => {

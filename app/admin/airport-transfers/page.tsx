@@ -230,6 +230,7 @@ export default function AirportTransferManagementPage() {
     { id: "route", label: "Tuyến", sortable: true },
     { id: "category", label: "Loại xe", sortable: true },
     { id: "baseKm", label: "Km cơ bản", sortable: true },
+    { id: "zoneBufferKm", label: "Vùng đệm Zone", sortable: true },
     { id: "baseAmount", label: "Giá trong km", sortable: true },
     { id: "perKmAmount", label: "Giá / km thêm", sortable: true },
     { id: "active", label: "Trạng thái", sortable: true },
@@ -543,6 +544,14 @@ export default function AirportTransferManagementPage() {
                             <Chip size="sm" color="accent">{getCategoryName(cat)}</Chip>
                           </Table.Cell>
                           <Table.Cell>{t.baseKm != null ? `${t.baseKm.toLocaleString()} km` : "—"}</Table.Cell>
+                          <Table.Cell className="text-xs">
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                              +{t.zoneBufferKm ?? 2} km
+                            </span>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">
+                              (đến {((t.baseKm ?? 0) + (t.zoneBufferKm ?? 2)).toFixed(1)} km)
+                            </span>
+                          </Table.Cell>
                           <Table.Cell className="font-black text-amber-500">{t.baseAmount > 0 ? `${t.baseAmount.toLocaleString()} ${t.currency}` : "—"}</Table.Cell>
                           <Table.Cell className="text-xs">
                             {t.fixedOvercharge ? (
@@ -607,7 +616,7 @@ export default function AirportTransferManagementPage() {
       </div>
 
       <AirportModal isOpen={airportModalOpen} onClose={() => { setAirportModalOpen(false); setSelectedAirport(null); setAirportDefaultEditMode(false); }} airport={selectedAirport} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={airportDefaultEditMode} />
-      <AirportRouteModal isOpen={routeModalOpen} onClose={() => { setRouteModalOpen(false); setSelectedRoute(null); }} route={selectedRoute} airports={airports} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={routeDefaultEditMode} />
+      <AirportRouteModal isOpen={routeModalOpen} onClose={() => { setRouteModalOpen(false); setSelectedRoute(null); }} route={selectedRoute} airports={airports} categories={categories} routes={routes} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={routeDefaultEditMode} />
       <AirportTransferModal isOpen={transferModalOpen} onClose={() => { setTransferModalOpen(false); setSelectedTransfer(null); }} transfer={selectedTransfer} routes={routes} categories={categories} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={transferDefaultEditMode} />
     </div>
   );

@@ -65,6 +65,7 @@ export const homePage = {
   selectVehicleClass: "차종 선택",
   airportName: "까라잉 공항",
   rentalPickupPlaceholder: "예: 나트랑 시내...",
+  rentalDropoffPlaceholder: "예: 호텔, 리조트, 도착지 주소...",
   vehicle4Seats: "4인승 세단",
   vehicle4SeatsName: "4인승 세단/해치백",
   vehicle7Seats: "7인승 SUV",

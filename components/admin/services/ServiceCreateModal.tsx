@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -565,6 +566,7 @@ export default function ServiceCreateModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="lg">
           <ModalDialog className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] max-w-4xl flex flex-col">
+            <ModalCloseTrigger />
             <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
               <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
                 <span id="service-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">

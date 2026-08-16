@@ -272,7 +272,7 @@ export const Navbar = () => {
 
                     {isRentCarSubOpen && (
                       <div
-                        className="absolute left-full top-0 ml-1 min-w-[200px] bg-white dark:bg-[var(--bg-card)] text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-zinc-700 shadow-xl rounded-md p-1.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-3 before:bg-transparent"
+                        className="absolute left-full top-0 ml-2.5 min-w-[200px] bg-white dark:bg-[var(--bg-card)] text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-zinc-700 shadow-xl rounded-md p-1.5 z-50 animate-in fade-in-50 zoom-in-95 duration-150 before:absolute before:-left-3.5 before:top-0 before:bottom-0 before:w-3.5 before:bg-transparent"
                         onMouseEnter={handleRentCarMouseEnter}
                         onMouseLeave={handleRentCarMouseLeave}
                       >

@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "Minh Khoa Travel",
+  description: "Minh Khoa Travel - Dịch vụ xe du lịch, thuê xe tự lái & có tài xế, đưa đón sân bay chuyên nghiệp tại Nha Trang.",
   navItems: [
     {
       label: "Home",

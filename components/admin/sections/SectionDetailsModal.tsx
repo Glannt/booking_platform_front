@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, Button, Label, Switch } from "@heroui/react";
+import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, Button, Label, Switch } from "@heroui/react";
 import { SectionDto } from "@/lib/api/sections";
 import { StatusChip } from "@/components/StatusChip";
 import { Pencil, Trash2, ImageOff } from "lucide-react";
@@ -42,6 +42,7 @@ export default function SectionDetailsModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer className="max-w-4xl w-full">
           <ModalDialog className="bg-white dark:bg-black rounded-md border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
+            <ModalCloseTrigger />
             <ModalHeader className="flex flex-row items-center justify-between px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
               <span id="section-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">Chi tiết Section</span>
               <div className="flex items-center gap-2">

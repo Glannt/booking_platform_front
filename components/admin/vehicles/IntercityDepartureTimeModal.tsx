@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Clock, GripVertical } from "lucide-react";
-import { Button, Input, Label, toast, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Button, Input, Label, toast, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 
 import {
   getDepartureTimesByRoute,
@@ -96,6 +96,7 @@ export function IntercityDepartureTimeModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
           <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <ModalCloseTrigger />
             <ModalHeader className="p-0 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-accent" />

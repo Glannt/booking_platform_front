@@ -317,6 +317,7 @@ export default function SectionsManagementPage() {
                               <Button
                                 isIconOnly
                                 variant="ghost"
+                                aria-label="Xem chi tiết section"
                                 className="text-slate-500 hover:text-primary"
                                 onClick={(e: React.MouseEvent) => {
                                   e.stopPropagation();
@@ -329,6 +330,7 @@ export default function SectionsManagementPage() {
                               <Button
                                 isIconOnly
                                 variant="ghost"
+                                aria-label="Xóa section"
                                 className="text-slate-400 hover:text-red-500"
                                 onClick={(e: React.MouseEvent) => {
                                   e.stopPropagation();

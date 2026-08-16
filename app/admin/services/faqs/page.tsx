@@ -5,7 +5,7 @@ import {
   Search, Plus, Trash2, Edit, RefreshCw, Star, MessageSquare
 } from "lucide-react";
 import {
-  Button, Table, Modal, ModalBackdrop, ModalContainer, ModalDialog,
+  Button, Table, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger,
   ModalHeader, ModalBody, ModalFooter, Separator, toast,
   Input, TextField, Label, NumberField, Select, ListBox
 } from "@heroui/react";
@@ -310,6 +310,7 @@ export default function AdminFeedbackPage() {
         <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
           <ModalContainer size="lg">
             <ModalDialog className="max-w-3xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl w-full max-h-[90vh] flex flex-col focus:outline-none">
+              <ModalCloseTrigger />
               <form onSubmit={handleSave} className="flex flex-col h-full overflow-hidden">
                 <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
                   <span id="faq-modal-title" className="text-lg font-extrabold text-slate-900 dark:text-white">

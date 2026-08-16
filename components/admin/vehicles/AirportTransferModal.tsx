@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -16,7 +17,7 @@ import {
   ListBox,
   NumberField
 } from "@heroui/react";
-import { Save, RefreshCw, Pencil, X } from "lucide-react";
+import { Save, RefreshCw, Pencil, Info } from "lucide-react";
 
 import {
   createAirportTransfer,
@@ -54,6 +55,7 @@ export default function AirportTransferModal({
   const [airportRouteId, setAirportRouteId] = useState<number>(0);
   const [vehicleCategoryId, setVehicleCategoryId] = useState<number>(0);
   const [baseKm, setBaseKm] = useState<number>(35);
+  const [zoneBufferKm, setZoneBufferKm] = useState<number>(2.0);
   const [baseAmount, setBaseAmount] = useState<number>(0);
   const [perKmAmount, setPerKmAmount] = useState<number>(0);
   const [fixedOvercharge, setFixedOvercharge] = useState<boolean>(false);
@@ -68,6 +70,7 @@ export default function AirportTransferModal({
         setAirportRouteId(transfer.airportRouteId);
         setVehicleCategoryId(transfer.vehicleCategoryId);
         setBaseKm(transfer.baseKm ?? 35);
+        setZoneBufferKm(transfer.zoneBufferKm ?? 2.0);
         setBaseAmount(transfer.baseAmount ?? 0);
         setPerKmAmount(transfer.perKmAmount ?? 0);
         setFixedOvercharge(transfer.fixedOvercharge ?? false);
@@ -79,6 +82,7 @@ export default function AirportTransferModal({
         setAirportRouteId(routes[0]?.id || 0);
         setVehicleCategoryId(categories[0]?.id || 0);
         setBaseKm(35);
+        setZoneBufferKm(2.0);
         setBaseAmount(0);
         setPerKmAmount(0);
         setFixedOvercharge(false);
@@ -102,6 +106,7 @@ export default function AirportTransferModal({
       airportRouteId,
       vehicleCategoryId,
       baseKm,
+      zoneBufferKm,
       baseAmount,
       perKmAmount,
       fixedOvercharge,
@@ -140,34 +145,28 @@ export default function AirportTransferModal({
     return r?.code || `#${rId}`;
   };
 
-  const isView = mode === "view";
+  const maxZoneKm = baseKm + zoneBufferKm;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="airport-transfer-title">
-      <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
-        <ModalContainer size="md">
-          <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-lg relative">
-            <Button
-              isIconOnly
-              variant="ghost"
-              onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
-            >
-              <X size={18} />
-            </Button>
-
-            <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
-              <div>
-                <h2 id="airport-transfer-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  {isView ? "Chi Tiết Giá Vé" : transfer ? "Chỉnh Sửa Giá Vé" : "Thêm Giá Vé Mới"}
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {isView ? "Xem cấu hình giá của tuyến đường và loại xe." : "Thiết lập giá cho tuyến đường và loại xe."}
-                </p>
-              </div>
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <ModalBackdrop className="bg-slate-950/45 backdrop-blur-[2px]">
+        <ModalContainer>
+          <ModalDialog className="max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <ModalCloseTrigger />
+            <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+              <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
+                {mode === "create" && "Thêm Cấu Hình Giá Sân Bay Mới"}
+                {mode === "edit" && "Chỉnh Sửa Cấu Hình Giá Sân Bay"}
+                {mode === "view" && "Chi Tiết Cấu Hình Giá Sân Bay"}
+              </h3>
             </ModalHeader>
 
-            {isView ? (
+            {mode === "view" ? (
               <>
                 <ModalBody className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                   <div className="grid grid-cols-2 gap-4">
@@ -183,25 +182,27 @@ export default function AirportTransferModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Km cơ bản"}</Label>
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Km Cơ Bản"}</Label>
                       <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{baseKm} km</p>
                     </div>
                     <div>
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Giá trong km cơ bản"}</Label>
-                      <p className="mt-1 text-sm font-bold text-amber-500">{baseAmount.toLocaleString()} {currency}</p>
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Vùng Đệm Zone (Km)"}</Label>
+                      <p className="mt-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                        +{zoneBufferKm} km (Áp dụng giá gốc đến {maxZoneKm.toFixed(1)} km)
+                      </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Cơ chế phụ trội"}</Label>
-                      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                        {fixedOvercharge ? "Phụ thu cố định" : "Tính theo km vượt quá"}
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Giá Trong Km Cơ Bản"}</Label>
+                      <p className="mt-1 text-sm font-bold text-primary">
+                        {baseAmount.toLocaleString()} {currency}
                       </p>
                     </div>
                     <div>
                       <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        {fixedOvercharge ? "Mức phí cố định" : "Đơn giá mỗi km thêm"}
+                        {fixedOvercharge ? "Mức Phí Cố Định" : "Đơn Giá Mỗi Km Thêm"}
                       </Label>
                       <p className="mt-1 text-sm font-bold text-amber-500">
                         {fixedOvercharge
@@ -216,31 +217,48 @@ export default function AirportTransferModal({
                     <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{active ? "Kích hoạt" : "Ngừng hoạt động"}</p>
                   </div>
 
-                  {(() => {
-                    const routeObj = routes.find(r => r.id === airportRouteId);
-                    const pricingKm = routeObj?.distanceKm ?? baseKm;
-                    const { oneWay, roundTrip } = calcAirportPrice(
-                      { baseKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed },
-                      pricingKm
-                    );
-                    return (
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl px-3 py-2">
-                        {`${pricingKm} km (Mặc định tuyến) → 1 chiều ${oneWay.toLocaleString()} / khứ hồi ${roundTrip.toLocaleString()}`}
-                      </div>
-                    );
-                  })()}
+                  {/* Live Zone Preview */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <Info size={14} className="text-primary" />
+                      <span>Xem trước tính giá theo Vùng đệm Zone:</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                      {(() => {
+                        const inBase = calcAirportPrice({ baseKm, zoneBufferKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed }, baseKm);
+                        const inZone = calcAirportPrice({ baseKm, zoneBufferKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed }, baseKm + zoneBufferKm * 0.7);
+                        const overZone = calcAirportPrice({ baseKm, zoneBufferKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed }, maxZoneKm + 4);
+                        return (
+                          <>
+                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-100 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block">{baseKm} km (Cơ bản)</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{inBase.oneWay.toLocaleString()} ₫</span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-100 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block">{(baseKm + zoneBufferKm * 0.7).toFixed(1)} km (Trong Zone)</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{inZone.oneWay.toLocaleString()} ₫ (Giá gốc)</span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-100 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block">{(maxZoneKm + 4).toFixed(1)} km (Vượt Zone)</span>
+                              <span className="font-bold text-amber-600 dark:text-amber-400">{overZone.oneWay.toLocaleString()} ₫</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </ModalBody>
 
-                <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
+                <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
                   <Button
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none cursor-pointer"
                     onClick={onClose}
                   >
                     {"Đóng"}
                   </Button>
                   <Button
-                    className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none"
+                    className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none cursor-pointer"
                     onPress={() => setMode("edit")}
                   >
                     <Pencil size={16} className="mr-1.5" />
@@ -259,29 +277,26 @@ export default function AirportTransferModal({
                       selectedKey={String(airportRouteId)}
                       onSelectionChange={(key) => { if (key) setAirportRouteId(Number(key)); }}
                     >
-                      <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
+                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
                         {"Tuyến Đường"}
                       </Label>
-                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-808 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                      <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
-                          {routes.map((r) => {
-                            const routeName = r.code;
-                            return (
-                              <ListBox.Item
-                                key={r.id}
-                                id={String(r.id)}
-                                textValue={routeName}
-                                className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between"
-                              >
-                                {routeName}
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            );
-                          })}
+                          {routes.map((r) => (
+                            <ListBox.Item
+                              key={r.id}
+                              id={String(r.id)}
+                              textValue={r.code}
+                              className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between"
+                            >
+                              {r.code}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
                         </ListBox>
                       </Select.Popover>
                     </Select>
@@ -295,14 +310,14 @@ export default function AirportTransferModal({
                       selectedKey={String(vehicleCategoryId)}
                       onSelectionChange={(key) => { if (key) setVehicleCategoryId(Number(key)); }}
                     >
-                      <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
+                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
                         {"Loại Xe"}
                       </Label>
-                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-808 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                      <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
                           {categories.map((c) => {
                             const tr = c.translations?.find((t) => t.locale === "vi") || c.translations?.[0];
@@ -324,29 +339,60 @@ export default function AirportTransferModal({
                     </Select>
                   </div>
 
-                  <div>
-                    <NumberField
-                      className="w-full"
-                      value={baseKm}
-                      onChange={(val) => setBaseKm(val || 0)}
-                      minValue={0}
-                    >
-                      <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
-                        {"Km cơ bản"}
-                      </Label>
-                      <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
-                        <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
-                        <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
-                          <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
-                            ▲
-                          </NumberField.IncrementButton>
-                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
-                            ▼
-                          </NumberField.DecrementButton>
-                        </div>
-                      </NumberField.Group>
-                    </NumberField>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <NumberField
+                        className="w-full"
+                        value={baseKm}
+                        onChange={(val) => setBaseKm(val || 0)}
+                        minValue={0}
+                      >
+                        <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                          {"Km Cơ Bản"}
+                        </Label>
+                        <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 overflow-hidden h-[40px]">
+                          <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
+                          <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                            <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
+                              ▲
+                            </NumberField.IncrementButton>
+                            <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent border-t border-slate-200 dark:border-slate-800">
+                              ▼
+                            </NumberField.DecrementButton>
+                          </div>
+                        </NumberField.Group>
+                      </NumberField>
+                    </div>
+
+                    <div>
+                      <NumberField
+                        className="w-full"
+                        value={zoneBufferKm}
+                        onChange={(val) => setZoneBufferKm(val ?? 0)}
+                        minValue={0}
+                        step={0.5}
+                      >
+                        <Label className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                          {"Vùng Đệm Zone (Km)"}
+                        </Label>
+                        <NumberField.Group className="flex items-center w-full rounded-xl border border-emerald-300 dark:border-emerald-700/60 bg-emerald-50/40 dark:bg-emerald-950/20 text-slate-800 dark:text-slate-100 overflow-hidden h-[40px]">
+                          <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold text-emerald-700 dark:text-emerald-300" />
+                          <div className="flex h-full flex-col border-l border-emerald-200 dark:border-emerald-800">
+                            <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-emerald-600 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 cursor-pointer bg-transparent">
+                              ▲
+                            </NumberField.IncrementButton>
+                            <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-emerald-600 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 cursor-pointer bg-transparent border-t border-emerald-200 dark:border-emerald-800">
+                              ▼
+                            </NumberField.DecrementButton>
+                          </div>
+                        </NumberField.Group>
+                      </NumberField>
+                    </div>
                   </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 -mt-2">
+                    💡 Dung sai bán kính: Khoảng cách từ 0 đến <strong className="text-emerald-600 dark:text-emerald-400">{maxZoneKm.toFixed(1)} km</strong> sẽ áp dụng giá gốc, không bị đôn giá km phát sinh.
+                  </p>
 
                   <div>
                     <NumberField
@@ -355,10 +401,10 @@ export default function AirportTransferModal({
                       onChange={(val) => setBaseAmount(val || 0)}
                       minValue={0}
                     >
-                      <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
-                        {"Giá trong km cơ bản"} ({currency})
+                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                        {"Giá Trong Km Cơ Bản"} ({currency})
                       </Label>
-                      <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
+                      <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 overflow-hidden h-[40px]">
                         <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
                         <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
                           <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
@@ -372,7 +418,7 @@ export default function AirportTransferModal({
                     </NumberField>
                   </div>
 
-                  <div className="flex items-center gap-3 py-2">
+                  <div className="flex items-center gap-3 py-1">
                     <Checkbox
                       id="transfer-fixed-overcharge"
                       isSelected={fixedOvercharge}
@@ -384,8 +430,8 @@ export default function AirportTransferModal({
                         </Checkbox.Control>
                       </Checkbox.Content>
                     </Checkbox>
-                    <Label htmlFor="transfer-fixed-overcharge" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                      {"Sử dụng phí phụ trội cố định"}
+                    <Label htmlFor="transfer-fixed-overcharge" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                      {"Sử dụng phí phụ trội cố định khi vượt zone"}
                     </Label>
                   </div>
 
@@ -397,10 +443,10 @@ export default function AirportTransferModal({
                         onChange={(val) => setFeeOverchargeFixed(val || 0)}
                         minValue={0}
                       >
-                        <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
-                          {"Phí phụ trội cố định (khi vượt km)"} ({currency})
+                        <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                          {"Phí Phụ Trội Cố Định (khi vượt Zone)"} ({currency})
                         </Label>
-                        <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
+                        <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 overflow-hidden h-[40px]">
                           <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
                           <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
                             <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
@@ -421,10 +467,10 @@ export default function AirportTransferModal({
                         onChange={(val) => setPerKmAmount(val || 0)}
                         minValue={0}
                       >
-                        <Label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">
-                          {"Giá mỗi km thêm"} ({currency})
+                        <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                          {"Giá Mỗi Km Thêm (khi vượt Zone)"} ({currency})
                         </Label>
-                        <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-black text-slate-850 dark:text-slate-100 overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
+                        <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 overflow-hidden h-[40px]">
                           <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
                           <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
                             <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent">
@@ -439,21 +485,38 @@ export default function AirportTransferModal({
                     </div>
                   )}
 
-                  {(() => {
-                    const routeObj = routes.find(r => r.id === airportRouteId);
-                    const pricingKm = routeObj?.distanceKm ?? baseKm;
-                    const { oneWay, roundTrip } = calcAirportPrice(
-                      { baseKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed },
-                      pricingKm
-                    );
-                    return (
-                      <div className="text-[11px] text-slate-550 dark:text-slate-400 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl px-3 py-2">
-                        {`${pricingKm} km → 1 chiều ${oneWay.toLocaleString()} / khứ hồi ${roundTrip.toLocaleString()}`}
-                      </div>
-                    );
-                  })()}
+                  {/* Live Calculation Preview */}
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <Info size={14} className="text-primary" />
+                      <span>Xem trước tính giá tức thì theo các mốc Km:</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                      {(() => {
+                        const inBase = calcAirportPrice({ baseKm, zoneBufferKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed }, baseKm);
+                        const inZone = calcAirportPrice({ baseKm, zoneBufferKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed }, baseKm + zoneBufferKm * 0.7);
+                        const overZone = calcAirportPrice({ baseKm, zoneBufferKm, baseAmount, perKmAmount, fixedOvercharge, feeOverchargeFixed }, maxZoneKm + 4);
+                        return (
+                          <>
+                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-100 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block">{baseKm} km (Cơ bản)</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{inBase.oneWay.toLocaleString()} ₫</span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-100 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block">{(baseKm + zoneBufferKm * 0.7).toFixed(1)} km (Trong Zone)</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">{inZone.oneWay.toLocaleString()} ₫</span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-slate-100 dark:border-slate-800">
+                              <span className="text-slate-500 dark:text-slate-400 block">{(maxZoneKm + 4).toFixed(1)} km (Vượt Zone)</span>
+                              <span className="font-bold text-amber-600 dark:text-amber-400">{overZone.oneWay.toLocaleString()} ₫</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
 
-                  <div className="flex items-center gap-3 py-2">
+                  <div className="flex items-center gap-3 py-1">
                     <Checkbox
                       id="transfer-active"
                       isSelected={active}
@@ -465,16 +528,16 @@ export default function AirportTransferModal({
                         </Checkbox.Control>
                       </Checkbox.Content>
                     </Checkbox>
-                    <Label htmlFor="transfer-active" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                      {"Kích hoạt"}
+                    <Label htmlFor="transfer-active" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                      {"Kích hoạt cấu hình giá này"}
                     </Label>
                   </div>
                 </ModalBody>
 
-                <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
+                <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
                   <Button
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none cursor-pointer"
                     onClick={onClose}
                     isDisabled={loading}
                   >
@@ -483,7 +546,7 @@ export default function AirportTransferModal({
                   <Button
                     type="submit"
                     isDisabled={loading}
-                    className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none"
+                    className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none cursor-pointer"
                   >
                     {loading ? (
                       <RefreshCw size={16} className="animate-spin mr-1.5" />

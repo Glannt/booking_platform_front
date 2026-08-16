@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -642,6 +643,7 @@ export default function ServiceDetailsModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="lg">
           <ModalDialog className="max-w-4xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
+            <ModalCloseTrigger />
             {isEditing ? (
               /* ───────────── EDIT MODE FORM ───────────── */
               <form onSubmit={handleSaveChanges} className="flex flex-col h-full overflow-hidden">

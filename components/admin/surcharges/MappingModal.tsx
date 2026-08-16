@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   Button,
@@ -16,7 +17,7 @@ import {
   Checkbox,
   toast,
 } from "@heroui/react";
-import { X, Layers, Trash2 } from "lucide-react";
+import { Layers, Trash2, X } from "lucide-react";
 import {
   ModuleDescriptorDto,
   ModuleSurchargeMappingDto,
@@ -265,6 +266,7 @@ export function MappingModal({
       <ModalBackdrop>
         <ModalContainer>
           <ModalDialog className="w-full max-w-lg bg-white dark:bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <ModalCloseTrigger />
             <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-primary" />
@@ -272,12 +274,6 @@ export function MappingModal({
                   {modalTitle}
                 </h2>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </ModalHeader>
 
             <ModalBody className="p-6 max-h-[80vh] overflow-y-auto">

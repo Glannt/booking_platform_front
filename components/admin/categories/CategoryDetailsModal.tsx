@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -155,16 +156,9 @@ export default function CategoryDetailsModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="category-details-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="lg">
-          <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-2xl relative">
-            <Button
-              isIconOnly
-              variant="ghost"
-              onClick={onClose}
-              className="absolute top-4 right-4 z-50 rounded-xl text-slate-400 hover:text-slate-750 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none"
-            >
-              ✕
-            </Button>
-            <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden w-full max-w-2xl flex flex-col max-h-[90vh]">
+            <ModalCloseTrigger />
+            <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <h2 id="category-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                   <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Danh Mục" : "Edit Category") : (language === "vi" ? "Chi tiết Danh Mục" : "Category Details")}</span>

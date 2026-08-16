@@ -143,6 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             isIconOnly
             size="sm"
             variant="ghost"
+            aria-label={isCollapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"}
             className="absolute -right-3 top-4 z-50 bg-background border border-divider shadow-sm hover:bg-default-100 min-w-0 w-6 h-6 rounded-full"
             onClick={toggleSidebar}
           >

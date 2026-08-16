@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
+import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
@@ -57,6 +57,7 @@ export default function BookingConfirmationModal({
       <ModalBackdrop className="backdrop-blur-sm">
         <ModalContainer size="md">
           <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden w-full max-w-md relative p-6 space-y-4">
+            <ModalCloseTrigger />
             <ModalHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
               <h2 id="booking-confirm-title" className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber-500" />

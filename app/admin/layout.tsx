@@ -24,6 +24,7 @@ import {
   Coins,
   Search,
   Percent,
+  KeyRound,
 } from "lucide-react";
 import {
   Drawer,
@@ -89,10 +90,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           icon: <Compass size={20} />,
         },
         {
-          key: "vehicles-mgmt",
-          label: "Đội xe",
-          path: "/admin/vehicles",
-          icon: <Car size={20} />,
+          key: "self-drive-mgmt",
+          label: "Thuê xe Tự lái",
+          path: "/admin/self-drive",
+          icon: <KeyRound size={20} />,
+        },
+        {
+          key: "intercity-mgmt",
+          label: "Tuyến xe Liên tỉnh",
+          path: "/admin/intercity",
+          icon: <Milestone size={20} />,
         },
         {
           key: "airport-transfers-mgmt",
@@ -101,10 +108,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           icon: <Plane size={20} />,
         },
         {
-          key: "intercity-mgmt",
-          label: "Tuyến xe Liên tỉnh",
-          path: "/admin/intercity",
-          icon: <Milestone size={20} />,
+          key: "vehicles-mgmt",
+          label: "Đội xe",
+          path: "/admin/vehicles",
+          icon: <Car size={20} />,
         },
         {
           key: "surcharges-mgmt",

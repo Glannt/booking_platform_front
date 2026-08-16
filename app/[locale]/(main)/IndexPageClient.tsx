@@ -19,11 +19,13 @@ import { Button, Separator, Select, Label, ListBox, SearchField, DatePicker, Dat
 import { useI18n } from "@/context/LanguageContext";
 import { getPublicServices, ServiceDto } from "@/lib/api/services";
 import { getVehicleCategories, VehicleCategoryDto, getActiveAirports, type AirportDto } from "@/lib/api/fleet";
+import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/rental";
 import { getTours, type TourDto } from "@/lib/api/tours";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
 import { TimePicker, type TimeValue } from "@/components/time-picker";
+import { FormattedDescription } from "@/components/FormattedDescription";
 
 export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const { language, t, contacts } = useI18n();
@@ -45,17 +47,25 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
   // Car Rental Form state
   const [rentalType, setRentalType] = useState<"self" | "driver">("self");
+  const [rentalTripType, setRentalTripType] = useState<"one-way" | "return">("one-way");
   const [rentalPickup, setRentalPickup] = useState("");
   const [rentalPickupSuggestions, setRentalPickupSuggestions] = useState<LocationSearchResult[]>([]);
   const [showRentalPickupSug, setShowRentalPickupSug] = useState(false);
+  const [rentalDropoff, setRentalDropoff] = useState("");
+  const [rentalDropoffSuggestions, setRentalDropoffSuggestions] = useState<LocationSearchResult[]>([]);
+  const [showRentalDropoffSug, setShowRentalDropoffSug] = useState(false);
   const [rentalDate, setRentalDate] = useState<DateValue | null>(null);
-  const [rentalDays, setRentalDays] = useState(1);
+  const [rentalGuests, setRentalGuests] = useState(1);
   const [rentalSeats, setRentalSeats] = useState<any>("4-seater");
   const [vehicleCategories, setVehicleCategories] = useState<VehicleCategoryDto[]>([]);
+  const [intercityRoutes, setIntercityRoutes] = useState<IntercityRouteDto[]>([]);
+  const [selectedIntercityRouteId, setSelectedIntercityRouteId] = useState<number | null>(null);
 
   // Tours Form state
   const [tourKeyword, setTourKeyword] = useState("");
   const [tourPickup, setTourPickup] = useState("");
+  const [tourPickupSuggestions, setTourPickupSuggestions] = useState<LocationSearchResult[]>([]);
+  const [showTourPickupSug, setShowTourPickupSug] = useState(false);
   const [tourSearchQuery, setTourSearchQuery] = useState("");
   const [selectedTour, setSelectedTour] = useState<TourDto | null>(null);
   const [tourDate, setTourDate] = useState<DateValue | null>(null);
@@ -105,6 +115,18 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
         }
       })
       .catch(err => console.error("Error fetching initial tours:", err));
+
+    getActiveIntercityRoutes()
+      .then(res => {
+        if (res?.data) {
+          const data = res.data as IntercityRouteDto[];
+          setIntercityRoutes(data);
+          if (data.length > 0) {
+            setSelectedIntercityRouteId(data[0].id);
+          }
+        }
+      })
+      .catch(err => console.error("Error loading intercity routes:", err));
   }, []);
 
   // Load airports for direction selector
@@ -169,6 +191,12 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     return tr?.name || "Tour";
   };
 
+  const getIntercityRouteName = (r: IntercityRouteDto) => {
+    const tr = r.translations?.find((t) => t.locale === language);
+    if (tr?.name) return tr.name;
+    return `${r.originCity} ⇌ ${r.destinationCity}`;
+  };
+
   useEffect(() => {
     handleTourKeywordSearch(tourSearchQuery);
   }, [tourSearchQuery]);
@@ -212,9 +240,23 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     e.preventDefault();
     const dateStr = rentalDate ? rentalDate.toString() : "";
     if (rentalType === "self") {
-      router.push(`/${language}/self-drive?date=${dateStr}&days=${rentalDays}&pickup=${encodeURIComponent(rentalPickup)}&seats=${rentalSeats}`);
+      const params = new URLSearchParams();
+      if (dateStr) params.set("pickupDate", dateStr);
+      if (rentalPickup.trim()) params.set("pickupLocation", rentalPickup.trim());
+      if (rentalSeats) params.set("seats", rentalSeats);
+      if (rentalGuests) params.set("guests", String(rentalGuests));
+
+      router.push(`/${language}/self-drive/booking?${params.toString()}`);
     } else {
-      router.push(`/${language}/rent-car?date=${dateStr}&pickup=${encodeURIComponent(rentalPickup)}&seats=${rentalSeats}`);
+      const params = new URLSearchParams();
+      if (selectedIntercityRouteId) params.set("routeId", String(selectedIntercityRouteId));
+      params.set("tripType", rentalTripType);
+      if (dateStr) params.set("departureDate", dateStr);
+      if (rentalPickup.trim()) params.set("pickupAddress", rentalPickup.trim());
+      if (rentalDropoff.trim()) params.set("dropoffAddress", rentalDropoff.trim());
+      if (rentalSeats) params.set("seats", rentalSeats);
+
+      router.push(`/${language}/rent-car/confirm?${params.toString()}`);
     }
   };
 
@@ -253,11 +295,10 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                   type="button"
                   onClick={() => setCurrentHeroImage(idx)}
                   aria-label={`Slide ${idx + 1}`}
-                  className={`h-2 rounded-full transition-all cursor-pointer border-none p-0 ${
-                    idx === currentHeroImage
-                      ? "w-6 bg-white shadow-md"
-                      : "w-2 bg-white/50 hover:bg-white/80"
-                  }`}
+                  className={`h-2 rounded-full transition-all cursor-pointer border-none p-0 ${idx === currentHeroImage
+                    ? "w-6 bg-white shadow-md"
+                    : "w-2 bg-white/50 hover:bg-white/80"
+                    }`}
                 />
               ))}
             </div>
@@ -284,9 +325,10 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                 </span>
               ))}
             </h1>
-            <p className="text-lg sm:text-xl text-slate-200 drop-shadow-sm font-semibold max-w-xl leading-relaxed">
-              {heroSubtitle}
-            </p>
+            <FormattedDescription
+              description={heroSubtitle}
+              className="text-lg sm:text-xl text-slate-200 drop-shadow-sm font-semibold max-w-xl"
+            />
           </div>
 
           {/* Right: Floating Search Form Card with Service Tabs */}
@@ -667,38 +709,119 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                   <form onSubmit={handleRentalSearch} className="flex flex-col gap-4">
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-800 bg-slate-50/50 dark:bg-black/20 relative">
 
-                      {/* Pickup location / Destination */}
+                      {/* Intercity Route Select (when rentalType === "driver") */}
                       {rentalType === "driver" && (
-                        <div className={`flex items-center gap-3 px-4 py-3 relative ${showRentalPickupSug ? "z-20" : "z-10"}`}>
+                        <div className="flex items-center gap-3 px-4 py-3 relative z-30">
                           <MapPin className="text-accent shrink-0" size={20} />
+                          <div className="w-full text-left">
+                            <Select
+                              className="w-full"
+                              placeholder={t.rentCar.selectRoute}
+                              selectedKey={selectedIntercityRouteId != null ? String(selectedIntercityRouteId) : undefined}
+                              onSelectionChange={(key) => {
+                                if (key) setSelectedIntercityRouteId(Number(key));
+                              }}
+                            >
+                              <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                                {t.rentCar.route}
+                              </Label>
+                              <Select.Trigger className="h-6 bg-transparent border-none flex items-center justify-between p-0 w-full outline-none cursor-pointer">
+                                <Select.Value className="ml-3 text-xs font-semibold text-slate-800 dark:text-slate-100 truncate" />
+                                <Select.Indicator className="text-slate-400" />
+                              </Select.Trigger>
+                              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl z-50 w-[var(--trigger-width)]">
+                                <ListBox className="max-h-48 overflow-y-auto">
+                                  {intercityRoutes.map((r) => (
+                                    <ListBox.Item
+                                      id={String(r.id)}
+                                      key={r.id}
+                                      textValue={getIntercityRouteName(r)}
+                                      className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between"
+                                    >
+                                      <span>{getIntercityRouteName(r)}</span>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pickup location search */}
+                      <div className={`flex items-center gap-3 px-4 py-3 relative ${showRentalPickupSug ? "z-20" : "z-10"}`}>
+                        <MapPin className="text-blue-500 shrink-0" size={20} />
+                        <div className="w-full text-left relative">
+                          <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            {t.homePage.pickupLocation}
+                          </label>
+                          <input
+                            type="text"
+                            value={rentalPickup}
+                            onChange={(e) => {
+                              setRentalPickup(e.target.value);
+                              setShowRentalPickupSug(true);
+                              handleAddressSearch(e.target.value, setRentalPickupSuggestions);
+                            }}
+                            onFocus={() => setShowRentalPickupSug(true)}
+                            placeholder={t.homePage.rentalPickupPlaceholder}
+                            className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
+                          />
+                          {showRentalPickupSug && rentalPickupSuggestions.length > 0 && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setShowRentalPickupSug(false)} />
+                              <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                {rentalPickupSuggestions.map((item, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => { setRentalPickup(item.address || item.name); setShowRentalPickupSug(false); }}
+                                    className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                                  >
+                                    <MapPin size={12} className="text-blue-500 shrink-0" />
+                                    <div className="min-w-0">
+                                      <span className="block truncate font-semibold">{item.name}</span>
+                                      <span className="block truncate text-[10px] text-slate-400">{item.address}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Dropoff location search (when rentalType === "driver") */}
+                      {rentalType === "driver" && (
+                        <div className={`flex items-center gap-3 px-4 py-3 relative ${showRentalDropoffSug ? "z-20" : "z-10"}`}>
+                          <MapPin className="text-red-500 shrink-0" size={20} />
                           <div className="w-full text-left relative">
                             <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                              {t.homePage.pickupLocation}
+                              {t.homePage.destination}
                             </label>
                             <input
                               type="text"
-                              value={rentalPickup}
+                              value={rentalDropoff}
                               onChange={(e) => {
-                                setRentalPickup(e.target.value);
-                                setShowRentalPickupSug(true);
-                                handleAddressSearch(e.target.value, setRentalPickupSuggestions);
+                                setRentalDropoff(e.target.value);
+                                setShowRentalDropoffSug(true);
+                                handleAddressSearch(e.target.value, setRentalDropoffSuggestions);
                               }}
-                              onFocus={() => setShowRentalPickupSug(true)}
-                              placeholder={t.homePage.rentalPickupPlaceholder}
+                              onFocus={() => setShowRentalDropoffSug(true)}
+                              placeholder={t.homePage.rentalDropoffPlaceholder}
                               className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
-                              required
                             />
-                            {showRentalPickupSug && rentalPickupSuggestions.length > 0 && (
+                            {showRentalDropoffSug && rentalDropoffSuggestions.length > 0 && (
                               <>
-                                <div className="fixed inset-0 z-40" onClick={() => setShowRentalPickupSug(false)} />
+                                <div className="fixed inset-0 z-40" onClick={() => setShowRentalDropoffSug(false)} />
                                 <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                                  {rentalPickupSuggestions.map((item, idx) => (
+                                  {rentalDropoffSuggestions.map((item, idx) => (
                                     <div
                                       key={idx}
-                                      onClick={() => { setRentalPickup(item.address || item.name); setShowRentalPickupSug(false); }}
+                                      onClick={() => { setRentalDropoff(item.address || item.name); setShowRentalDropoffSug(false); }}
                                       className="p-2.5 hover:bg-blue-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
                                     >
-                                      <MapPin size={12} className="text-blue-500 shrink-0" />
+                                      <MapPin size={12} className="text-red-500 shrink-0" />
                                       <div className="min-w-0">
                                         <span className="block truncate font-semibold">{item.name}</span>
                                         <span className="block truncate text-[10px] text-slate-400">{item.address}</span>
@@ -712,11 +835,11 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         </div>
                       )}
 
-                      {/* Date & Days */}
+                      {/* Date & Trip Type */}
                       <div className="flex items-center gap-3 px-4 py-3">
                         <CalendarIcon className="text-amber-500 shrink-0" size={20} />
                         <div className="w-full text-left grid grid-cols-12 gap-2">
-                          <div className="col-span-7">
+                          <div className="col-span-6">
                             <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                               {t.homePage.startDate}
                             </label>
@@ -766,19 +889,64 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                               </DatePicker.Popover>
                             </DatePicker>
                           </div>
-                          <div className="col-span-5 border-l border-slate-200 dark:border-slate-800 pl-2 flex flex-col justify-center">
-                            <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                              {t.homePage.rentalDays}
-                            </label>
-                            <input
-                              type="number"
-                              min={1}
-                              value={rentalDays}
-                              onChange={(e) => setRentalDays(parseInt(e.target.value) || 1)}
-                              className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none mt-0.5"
-                              required
-                            />
-                          </div>
+                          {/* Right column: Trip Type for Driver, Passengers count for Self-Drive */}
+                          {rentalType === "driver" ? (
+                            <div className="col-span-6 border-l border-slate-200 dark:border-slate-800 pl-2 flex flex-col justify-center">
+                              <Select
+                                className="w-full"
+                                placeholder={t.homePage.oneWay}
+                                selectedKey={rentalTripType}
+                                onSelectionChange={(key) => {
+                                  if (key) setRentalTripType(key as "one-way" | "return");
+                                }}
+                              >
+                                <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                                  {t.airportTransfer.tripType}
+                                </Label>
+                                <Select.Trigger className="h-6 bg-transparent border-none flex items-center justify-between p-0 w-full outline-none cursor-pointer">
+                                  <Select.Value className="ml-3 text-xs font-semibold text-slate-800 dark:text-slate-100 truncate" />
+                                  <Select.Indicator className="text-slate-400" />
+                                </Select.Trigger>
+                                <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl z-50 w-[140px]">
+                                  <ListBox>
+                                    <ListBox.Item id="one-way" textValue={t.homePage.oneWay} className="text-xs font-semibold px-2.5 py-1.5 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                      <span>{t.homePage.oneWay}</span>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                    <ListBox.Item id="return" textValue={t.homePage.returnTrip} className="text-xs font-semibold px-2.5 py-1.5 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                      <span>{t.homePage.returnTrip}</span>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  </ListBox>
+                                </Select.Popover>
+                              </Select>
+                            </div>
+                          ) : (
+                            <div className="col-span-6 border-l border-slate-200 dark:border-slate-800 pl-2 flex flex-col justify-center">
+                              <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                {t.homePage.passengers}
+                              </label>
+                              <div className="flex items-center justify-between mt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setRentalGuests(Math.max(1, rentalGuests - 1))}
+                                  className="w-5 h-5 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                                >
+                                  <Minus size={10} />
+                                </button>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                  {rentalGuests} {t.homePage.passengers.toLowerCase()}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setRentalGuests(rentalGuests + 1)}
+                                  className="w-5 h-5 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 font-bold transition-all cursor-pointer"
+                                >
+                                  <Plus size={10} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -863,20 +1031,48 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-800 bg-slate-50/50 dark:bg-black/20 relative">
 
                       {/* Tour pickup input */}
-                      <div className="flex items-center gap-3 px-4 py-3 relative z-10">
+                      <div className={`flex items-center gap-3 px-4 py-3 relative ${showTourPickupSug ? "z-20" : "z-10"}`}>
                         <MapPin className="text-accent shrink-0" size={20} />
-                        <div className="w-full text-left">
+                        <div className="w-full text-left relative">
                           <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                             {t.homePage.pickupLocation}
                           </Label>
                           <input
                             type="text"
                             value={tourPickup}
-                            onChange={(e) => setTourPickup(e.target.value)}
+                            onChange={(e) => {
+                              setTourPickup(e.target.value);
+                              setShowTourPickupSug(true);
+                              handleAddressSearch(e.target.value, setTourPickupSuggestions);
+                            }}
+                            onFocus={() => setShowTourPickupSug(true)}
                             placeholder={t.homePage.rentalPickupPlaceholder}
                             className="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 mt-0.5"
                             required
                           />
+                          {showTourPickupSug && tourPickupSuggestions.length > 0 && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setShowTourPickupSug(false)} />
+                              <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                                {tourPickupSuggestions.map((item, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => {
+                                      setTourPickup(item.address || item.name);
+                                      setShowTourPickupSug(false);
+                                    }}
+                                    className="p-2.5 hover:bg-amber-50/50 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                                  >
+                                    <MapPin size={12} className="text-accent shrink-0" />
+                                    <div className="min-w-0">
+                                      <span className="block truncate font-semibold">{item.name}</span>
+                                      <span className="block truncate text-[10px] text-slate-400">{item.address}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 

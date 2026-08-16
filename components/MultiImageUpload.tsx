@@ -154,16 +154,16 @@ export default function MultiImageUpload({
                       className={clsx(
                         "p-1.5 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer",
                         thumbnailId === img.id
-                          ? "bg-primary text-white"
-                          : "bg-white/90 text-slate-600 hover:text-primary"
+                          ? "bg-accent text-white"
+                          : "bg-white/90 text-slate-600 hover:text-accent"
                       )}
                       aria-label="Đặt làm ảnh chính"
                     >
                       <Star size={14} fill={thumbnailId === img.id ? "currentColor" : "none"} />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content className="bg-default-900 dark:bg-default-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-default-800 z-[999]">
-                    <Tooltip.Arrow />
+                  <Tooltip.Content className="bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xl z-[999]">
+                    <Tooltip.Arrow className="fill-white dark:fill-[var(--bg-card)] stroke-slate-200 dark:stroke-slate-800" />
                     {thumbnailId === img.id ? "Ảnh chính hiện tại" : "Đặt làm ảnh chính"}
                   </Tooltip.Content>
                 </Tooltip>
@@ -179,8 +179,8 @@ export default function MultiImageUpload({
                       <X size={14} />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content className="bg-rose-600 text-white text-xs px-2.5 py-1.5 rounded-lg z-[999]">
-                    <Tooltip.Arrow />
+                  <Tooltip.Content className="bg-white dark:bg-[var(--bg-card)] text-rose-600 dark:text-rose-400 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xl z-[999]">
+                    <Tooltip.Arrow className="fill-white dark:fill-[var(--bg-card)] stroke-slate-200 dark:stroke-slate-800" />
                     Xóa ảnh này
                   </Tooltip.Content>
                 </Tooltip>
@@ -188,7 +188,7 @@ export default function MultiImageUpload({
             )}
             {/* Thumbnail badge */}
             {thumbnailId === img.id && (
-              <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded-md">
+              <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-accent text-white rounded-md shadow-xs">
                 Ảnh chính
               </span>
             )}

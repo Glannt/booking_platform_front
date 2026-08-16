@@ -8,6 +8,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   Button,
@@ -252,14 +253,15 @@ export function RouteFormModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <ModalBackdrop className="bg-slate-950/45 backdrop-blur-[2px]">
         <ModalContainer>
-          <ModalDialog className="max-w-4xl bg-white dark:bg-[var(--bg-surface)] p-6 rounded-2xl shadow-2xl">
-            <ModalHeader className="flex items-center justify-between p-0 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <ModalDialog className="max-w-4xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <ModalCloseTrigger />
+            <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <Typography type="h3" className="text-base font-bold text-slate-800 dark:text-slate-100">
                 {editingRoute ? "Chỉnh sửa tuyến đường" : "Thêm tuyến đường mới"}
               </Typography>
             </ModalHeader>
 
-            <ModalBody className="gap-4 max-h-[75vh] overflow-y-auto pr-2 mt-4">
+            <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
               {/* Tab Navigation if Editing */}
               {editingRoute && (
                 <div className="flex border-b border-slate-200 dark:border-black/10 gap-6 mb-4">
@@ -550,7 +552,7 @@ export function RouteFormModal({
                       <p className="text-xs text-slate-400 italic">Chưa cấu hình giá xe cho tuyến đường này.</p>
                     </div>
                   ) : (
-                    <Table className="w-full text-xs">
+                    <Table aria-label="Bảng giá xe theo tuyến" className="w-full text-xs">
                       <Table.ScrollContainer>
                         <Table.Content>
                           <Table.Header>

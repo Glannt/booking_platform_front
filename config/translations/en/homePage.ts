@@ -65,6 +65,7 @@ export const homePage = {
   selectVehicleClass: "Select Vehicle Class",
   airportName: "Cam Ranh Airport",
   rentalPickupPlaceholder: "E.g: Nha Trang City...",
+  rentalDropoffPlaceholder: "E.g: Hotel, resort, destination address...",
   vehicle4Seats: "4 Seats Sedan",
   vehicle4SeatsName: "4 Seats Sedan/Hatchback",
   vehicle7Seats: "7 Seats SUV",

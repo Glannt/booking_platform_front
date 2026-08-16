@@ -18,6 +18,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -369,6 +370,7 @@ export default function SelfDriveBookingsPage() {
         <ModalBackdrop>
           <ModalContainer size="lg">
             <ModalDialog>
+              <ModalCloseTrigger />
               <ModalHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex flex-col gap-1">
                   <h2 id="self-drive-detail-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
@@ -460,6 +462,7 @@ export default function SelfDriveBookingsPage() {
         <ModalBackdrop>
           <ModalContainer size="md">
             <ModalDialog>
+              <ModalCloseTrigger />
               <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <h2 id="self-drive-edit-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                   Cập nhật trạng thái

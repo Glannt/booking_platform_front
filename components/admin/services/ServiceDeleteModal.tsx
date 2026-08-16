@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
+import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { AlertTriangle, Trash2, RefreshCw } from "lucide-react";
 import { ServiceDto, deleteService } from "@/lib/api/services";
 
@@ -61,6 +61,7 @@ export default function ServiceDeleteModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
           <ModalDialog className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-w-md">
+            <ModalCloseTrigger />
             <ModalHeader className="flex gap-2 items-center text-rose-600 dark:text-rose-400 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40">
               <AlertTriangle size={22} />
               <span id="service-delete-title" className="font-extrabold text-lg">

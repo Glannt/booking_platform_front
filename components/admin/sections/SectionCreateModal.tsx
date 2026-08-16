@@ -6,6 +6,7 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -281,6 +282,7 @@ export default function SectionCreateModal({
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer className="max-w-4xl w-full">
           <ModalDialog className="bg-white dark:bg-black rounded-md border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
+            <ModalCloseTrigger />
             <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
               <h2 id="section-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                 {isEdit ? "Chỉnh sửa Section" : "Thêm Section mới"}
@@ -362,7 +364,7 @@ export default function SectionCreateModal({
                                 <ColorSlider.Thumb />
                               </ColorSlider.Track>
                             </ColorSlider>
-                            <Button type="button" isIconOnly size="sm" variant="outline" className="h-8 w-8 rounded-lg bg-slate-50 border border-divider" onClick={() => setTextColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
+                            <Button type="button" isIconOnly size="sm" variant="outline" aria-label="Chọn màu chữ ngẫu nhiên" className="h-8 w-8 rounded-lg bg-slate-50 border border-divider" onClick={() => setTextColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
                               <Shuffle size={12} />
                             </Button>
                           </div>
@@ -399,7 +401,7 @@ export default function SectionCreateModal({
                                 <ColorSlider.Thumb />
                               </ColorSlider.Track>
                             </ColorSlider>
-                            <Button type="button" isIconOnly size="sm" variant="outline" className="h-8 w-8 rounded-lg bg-slate-50 border border-divider" onClick={() => setBgColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
+                            <Button type="button" isIconOnly size="sm" variant="outline" aria-label="Chọn màu nền ngẫu nhiên" className="h-8 w-8 rounded-lg bg-slate-50 border border-divider" onClick={() => setBgColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
                               <Shuffle size={12} />
                             </Button>
                           </div>

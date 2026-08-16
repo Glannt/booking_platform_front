@@ -1,22 +1,40 @@
 /**
- * Typed Section Content Schemas and Pure Key Factory Registry
- * Supports: /, /tours, /self-drive, /rent-car, /airport-transfer
- * and all section types (HERO_BANNER, FEATURES, SLIDE_CARD, SLIDE_REVIEW, INSPIRATION, BOOKING_PROCESS, PROMO, CTA, BANNER)
+ * Section Content Data Templates & Schema Hints
+ * Provides TypeScript type definitions, empty schema factories, and property hints
+ * for the dynamic Section Key-Value Editor.
  */
 
-// ── 1. Basic Multilingual Types ─────────────────────────────────
-export type MultilingualText2 = { vi: string; en: string };
-export type MultilingualText4 = { vi: string; en: string; ko: string; ru: string };
+// ── Common Sub-schemas ──────────────────────────────────────────
+export interface MultilingualText4 {
+  vi: string;
+  en: string;
+  ko: string;
+  ru: string;
+}
 
-export const createEmptyText2 = (): MultilingualText2 => ({ vi: "", en: "" });
-export const createEmptyText4 = (): MultilingualText4 => ({ vi: "", en: "", ko: "", ru: "" });
+export interface MultilingualText2 {
+  vi: string;
+  en: string;
+}
 
-// ── 2. HERO_BANNER Schema ────────────────────────────────────────
+export const createEmptyText4 = (): MultilingualText4 => ({
+  vi: "",
+  en: "",
+  ko: "",
+  ru: "",
+});
+
+export const createEmptyText2 = (): MultilingualText2 => ({
+  vi: "",
+  en: "",
+});
+
+// ── 1. HERO_BANNER Schema ────────────────────────────────────────
 export interface HeroBadgeSchema {
   text: MultilingualText2;
   textColor: string;
   bgColor: string;
-  iconUrl: string;
+  icon: string;
 }
 
 export interface HeroBannerContentSchema {
@@ -25,12 +43,12 @@ export interface HeroBannerContentSchema {
 
 export const createEmptyHeroBadge = (): HeroBadgeSchema => ({
   text: createEmptyText2(),
-  textColor: "",
-  bgColor: "",
-  iconUrl: "",
+  textColor: "#ffffff",
+  bgColor: "#000000",
+  icon: "Star",
 });
 
-// ── 3. FEATURES Schema ───────────────────────────────────────────
+// ── 2. FEATURES Schema ───────────────────────────────────────────
 export interface FeatureStyleSchema {
   iconBg: string;
   iconBgDark: string;
@@ -71,7 +89,7 @@ export const createEmptyFeatureItem = (): FeatureItemSchema => ({
   description: createEmptyText4(),
 });
 
-// ── 4. SLIDE_CARD Schema (Home, Tours, Rent-Car, Airport) ────────
+// ── 3. SLIDE_CARD Schema (Home, Tours, Rent-Car, Airport) ────────
 export interface SlideCardItemSchema {
   title: MultilingualText2;
   description: MultilingualText2;
@@ -101,15 +119,15 @@ export const createEmptySlideCardSimple = () => ({
   linkUrl: "",
 });
 
-// ── 5. SLIDE_REVIEW Schema ───────────────────────────────────────
+// ── 4. SLIDE_REVIEW Schema ───────────────────────────────────────
 export interface SlideReviewItemSchema {
-  author: string;
-  avatar: string;
+  title: MultilingualText4;
+  description: MultilingualText4;
   rating: number;
-  date: string;
+  author: string;
+  avatarBg: string;
+  avatarText: string;
   route: string;
-  service: MultilingualText2;
-  content: MultilingualText2;
 }
 
 export interface SlideReviewContentSchema {
@@ -118,16 +136,16 @@ export interface SlideReviewContentSchema {
 }
 
 export const createEmptySlideReviewItem = (): SlideReviewItemSchema => ({
-  author: "",
-  avatar: "",
+  title: createEmptyText4(),
+  description: createEmptyText4(),
   rating: 5,
-  date: "",
+  author: "",
+  avatarBg: "bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400",
+  avatarText: "",
   route: "",
-  service: createEmptyText2(),
-  content: createEmptyText2(),
 });
 
-// ── 6. INSPIRATION Schema ────────────────────────────────────────
+// ── 5. INSPIRATION Schema ────────────────────────────────────────
 export interface InspirationItemSchema {
   title: MultilingualText2;
   subtitle: MultilingualText2;
@@ -148,26 +166,26 @@ export const createEmptyInspirationItem = (): InspirationItemSchema => ({
   linkUrl: "",
 });
 
-// ── 7. BOOKING_PROCESS Schema ────────────────────────────────────
-export interface BookingStepItemSchema {
-  stepNumber: number;
+// ── 6. BOOKING_PROCESS Schema ────────────────────────────────────
+export interface BookingStepSchema {
+  step: number;
   icon: string;
-  title: MultilingualText2;
-  description: MultilingualText2;
+  title: MultilingualText4;
+  description: MultilingualText4;
 }
 
 export interface BookingProcessContentSchema {
-  steps: BookingStepItemSchema[];
+  steps: BookingStepSchema[];
 }
 
-export const createEmptyBookingStepItem = (): BookingStepItemSchema => ({
-  stepNumber: 1,
-  icon: "CheckCircle",
-  title: createEmptyText2(),
-  description: createEmptyText2(),
+export const createEmptyBookingStepItem = (): BookingStepSchema => ({
+  step: 1,
+  icon: "Search",
+  title: createEmptyText4(),
+  description: createEmptyText4(),
 });
 
-// ── 8. PROMO Schema ──────────────────────────────────────────────
+// ── 7. PROMO Schema ──────────────────────────────────────────────
 export interface PromoContentSchema {
   badge: MultilingualText2;
   discountPercent: number;
@@ -184,7 +202,7 @@ export const createEmptyPromoContent = (): PromoContentSchema => ({
   termsUrl: "",
 });
 
-// ── 9. CTA Schema ────────────────────────────────────────────────
+// ── 8. CTA Schema ────────────────────────────────────────────────
 export interface CTAContentSchema {
   highlightText: MultilingualText2;
   phone: string;
@@ -199,7 +217,7 @@ export const createEmptyCTAContent = (): CTAContentSchema => ({
   zaloUrl: "",
 });
 
-// ── 10. BANNER Schema ────────────────────────────────────────────
+// ── 9. BANNER Schema ────────────────────────────────────────────
 export interface BannerContentSchema {
   bannerType: string;
   actionUrl: string;
@@ -210,6 +228,31 @@ export const createEmptyBannerContent = (): BannerContentSchema => ({
   bannerType: "FULL_WIDTH",
   actionUrl: "",
   caption: createEmptyText2(),
+});
+
+// ── 10. FAQ Schema ───────────────────────────────────────────────
+export interface FaqItemSchema {
+  title: MultilingualText4;
+  content: MultilingualText4;
+}
+
+export interface FaqCategorySchema {
+  title: MultilingualText4;
+  items: FaqItemSchema[];
+}
+
+export interface FaqContentSchema {
+  categories: FaqCategorySchema[];
+}
+
+export const createEmptyFaqItem = (): FaqItemSchema => ({
+  title: createEmptyText4(),
+  content: createEmptyText4(),
+});
+
+export const createEmptyFaqCategory = (): FaqCategorySchema => ({
+  title: createEmptyText4(),
+  items: [createEmptyFaqItem()],
 });
 
 // ── 11. Schema Registry Mapping ──────────────────────────────────
@@ -241,8 +284,8 @@ export const ITEM_SCHEMA_FACTORIES: Record<string, TemplatePreset[]> = {
   ],
   reviews: [
     {
-      label: "Mục Đánh giá chuẩn (author/rating/service/content)",
-      description: "Tạo cấu trúc đánh giá khách hàng",
+      label: "Mục Đánh giá chuẩn (title/description/rating/author/avatarBg/avatarText/route)",
+      description: "Tạo cấu trúc đánh giá 4 ngôn ngữ (title, description, rating, author, avatarBg, avatarText, route)",
       factory: createEmptySlideReviewItem,
     },
   ],
@@ -265,6 +308,20 @@ export const ITEM_SCHEMA_FACTORIES: Record<string, TemplatePreset[]> = {
       label: "Huy hiệu Banner (text/textColor/bgColor/icon)",
       description: "Tạo cấu trúc huy hiệu nổi bật",
       factory: createEmptyHeroBadge,
+    },
+  ],
+  categories: [
+    {
+      label: "Danh mục Câu hỏi FAQ (title/items 4 ngôn ngữ)",
+      description: "Tạo danh mục nhóm các câu hỏi thường gặp",
+      factory: createEmptyFaqCategory,
+    },
+  ],
+  faqs: [
+    {
+      label: "Câu hỏi & Trả lời FAQ (title/content 4 ngôn ngữ)",
+      description: "Tạo 1 câu hỏi và câu trả lời 4 ngôn ngữ",
+      factory: createEmptyFaqItem,
     },
   ],
 };
@@ -292,6 +349,7 @@ export const ROOT_SCHEMA_FACTORIES: Record<string, () => any> = {
   bannerType: () => "FULL_WIDTH",
   actionUrl: () => "",
   caption: createEmptyText2,
+  categories: () => [createEmptyFaqCategory()],
 };
 
 // ── 12. Page & Section Type Hints ─────────────────────────────────
@@ -325,6 +383,10 @@ export const SECTION_HINTS: Record<string, SectionTypeHint> = {
     keys: ["steps"],
     description: "Cấu trúc Quy trình: mảng steps (các bước đặt chuyến đi)",
   },
+  FAQ: {
+    keys: ["categories"],
+    description: "Cấu trúc Câu hỏi thường gặp: mảng categories gồm các danh mục và câu hỏi 4 ngôn ngữ",
+  },
   PROMO: {
     keys: ["badge", "discountPercent", "promoCode", "expiryDate", "termsUrl"],
     description: "Cấu trúc Khuyến mãi: mã giảm giá, phần trăm, hạn dùng và điều khoản",
@@ -343,9 +405,9 @@ export const SECTION_HINTS: Record<string, SectionTypeHint> = {
  * Suggestions per Page Path
  */
 export const PAGE_SECTION_RECOMMENDATIONS: Record<string, string[]> = {
-  "/": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "SLIDE_REVIEW", "INSPIRATION", "CTA"],
-  "/tours": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "CTA"],
-  "/self-drive": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "CTA"],
-  "/rent-car": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "CTA"],
-  "/airport-transfer": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "CTA"],
+  "/": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "SLIDE_REVIEW", "INSPIRATION", "FAQ", "CTA"],
+  "/tours": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
+  "/self-drive": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
+  "/rent-car": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
+  "/airport-transfer": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
 };

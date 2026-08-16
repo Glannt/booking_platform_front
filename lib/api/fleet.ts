@@ -253,6 +253,7 @@ export interface AirportTransferPrice {
   baseKm: number;
   baseAmount: number;
   perKmAmount: number;
+  zoneBufferKm?: number;
   fixedOvercharge: boolean;
   feeOverchargeFixed?: number;
   currency: string;

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ImageOff, Sparkles } from "lucide-react";
 import { SectionDto, SectionTranslationDto } from "@/lib/api/sections";
+import { FormattedDescription } from "@/components/FormattedDescription";
 
 interface HeroBadge {
   text: string;
@@ -172,9 +173,10 @@ export function HeroBanner({ sections, locale, children, className = "" }: HeroB
                 </h1>
               )}
               {trans?.description && (
-                <p className="text-sm md:text-base text-slate-200 leading-relaxed font-medium">
-                  {trans.description}
-                </p>
+                <FormattedDescription
+                  description={trans.description}
+                  className="text-sm md:text-base text-slate-200 font-medium"
+                />
               )}
               {!hasImages && !trans?.title && (
                 <p className="text-sm opacity-60 italic">
@@ -227,9 +229,10 @@ export function HeroBanner({ sections, locale, children, className = "" }: HeroB
               </h1>
             )}
             {trans?.description && (
-              <p className="text-base md:text-lg opacity-90 max-w-xl mb-8 leading-relaxed">
-                {trans.description}
-              </p>
+              <FormattedDescription
+                description={trans.description}
+                className="text-base md:text-lg opacity-90 max-w-xl mb-8 font-medium"
+              />
             )}
             {!hasImages && !trans?.title && (
               <p className="text-sm opacity-60 italic">

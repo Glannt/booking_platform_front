@@ -56,6 +56,7 @@ import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcAirportPrice } from "@/lib/pricing";
 import { saveBookingDraft, loadBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import type { SectionDto } from "@/lib/api/sections";
+import { FormattedDescription } from "@/components/FormattedDescription";
 
 // Build vehicle list from API data (VehicleCategory + Vehicle)
 interface VehicleOption {
@@ -1023,9 +1024,10 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
             <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
               {heroSection?.translations?.find(tr => tr.locale === language)?.title || t.airportTransfer.title}
             </h1>
-            <p className="mt-2 text-sm md:text-base text-slate-200 max-w-3xl font-medium leading-relaxed">
-              {heroSection?.translations?.find(tr => tr.locale === language)?.description || t.airportTransfer.heroDesc}
-            </p>
+            <FormattedDescription
+              description={heroSection?.translations?.find(tr => tr.locale === language)?.description || t.airportTransfer.heroDesc}
+              className="mt-2 text-sm md:text-base text-slate-200 max-w-3xl font-medium"
+            />
           </div>
           <a
             href="tel:0764971971"

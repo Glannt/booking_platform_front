@@ -6,6 +6,7 @@ import {
     ModalBackdrop,
     ModalContainer,
     ModalDialog,
+    ModalCloseTrigger,
     ModalHeader,
     ModalBody,
     ModalFooter,
@@ -302,19 +303,9 @@ export default function TourCreateModal({
         <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="tour-create-title">
             <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
                 <ModalContainer size="lg">
-                    <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-3xl relative">
-                        <Button
-                            type="button"
-                            isIconOnly
-                            variant="ghost"
-                            onClick={onClose}
-                            className="absolute top-4 right-4 z-50 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none bg-transparent"
-                            aria-label={language === "vi" ? "Đóng" : "Close"}
-                        >
-                            <X size={18} />
-                        </Button>
-
-                        <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-between">
+                    <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden w-full max-w-3xl flex flex-col max-h-[90vh]">
+                        <ModalCloseTrigger />
+                        <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                             <div>
                                 <h2 id="tour-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                                     {language === "vi" ? "Thêm mới Tour Du Lịch" : "Add New Sightseeing Tour"}
@@ -605,6 +596,7 @@ export default function TourCreateModal({
                                                                         isIconOnly
                                                                         size="sm"
                                                                         variant="outline"
+                                                                        aria-label="Chọn màu biểu tượng ngẫu nhiên"
                                                                         className="h-8 w-8 rounded-lg bg-slate-50 border border-divider"
                                                                         onClick={() => handleOptionChange(index, "colorIcon", "hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}
                                                                     >
@@ -659,6 +651,7 @@ export default function TourCreateModal({
                                                                         isIconOnly
                                                                         size="sm"
                                                                         variant="outline"
+                                                                        aria-label="Chọn màu chữ ngẫu nhiên"
                                                                         className="h-8 w-8 rounded-lg bg-slate-50 border border-divider"
                                                                         onClick={() => handleOptionChange(index, "colorText", "hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}
                                                                     >
@@ -683,6 +676,7 @@ export default function TourCreateModal({
                                                             type="button"
                                                             isIconOnly
                                                             variant="ghost"
+                                                            aria-label="Xóa tùy chọn này"
                                                             className="rounded-xl h-9 w-9 bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 cursor-pointer border-none"
                                                             onClick={() => handleRemoveOption(index)}
                                                         >

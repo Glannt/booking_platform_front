@@ -53,14 +53,14 @@ export default function RentCarConfirmPage() {
 
   const routeId = Number(searchParams.get("routeId") || "0");
   const tripType = searchParams.get("tripType") || "one-way";
-  const departureDate = searchParams.get("departureDate") || "";
-  const departureTime = searchParams.get("departureTime") || "";
+  const departureDate = searchParams.get("departureDate") || searchParams.get("date") || "";
+  const departureTime = searchParams.get("departureTime") || searchParams.get("time") || "";
   const customerName = searchParams.get("customerName") || "";
   const customerEmail = searchParams.get("customerEmail") || "";
   const customerPhone = searchParams.get("customerPhone") || "";
   const notes = searchParams.get("notes") || "";
-  const initialPickupAddress = searchParams.get("pickupAddress") || "";
-  const initialDropoffAddress = searchParams.get("dropoffAddress") || "";
+  const initialPickupAddress = searchParams.get("pickupAddress") || searchParams.get("pickup") || "";
+  const initialDropoffAddress = searchParams.get("dropoffAddress") || searchParams.get("dropoff") || "";
 
   const [route, setRoute] = useState<IntercityRouteDto | null>(null);
   const [allRoutes, setAllRoutes] = useState<IntercityRouteDto[]>([]);

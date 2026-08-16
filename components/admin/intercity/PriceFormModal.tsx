@@ -6,140 +6,109 @@ import {
   ModalBackdrop,
   ModalContainer,
   ModalDialog,
+  ModalCloseTrigger,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   Button,
-  Input,
-  Label,
   Select,
   ListBox,
+  Input,
+  Label,
+  TextField,
   NumberField,
   Checkbox,
-  TextField,
-  Typography,
-  toast
+  toast,
+  Typography
 } from "@heroui/react";
-import type { IntercityRoutePriceDto, IntercityRouteDto } from "@/lib/api/rental";
-import { getIntercityRoutePrices } from "@/lib/api/rental";
+import type { IntercityRouteDto, IntercityRoutePriceDto } from "@/lib/api/rental";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 
 interface PriceFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  routeId?: number;
-  editingPrice: IntercityRoutePriceDto | null;
+  onSave: (payload: Partial<IntercityRoutePriceDto>) => Promise<void>;
+  routes: IntercityRouteDto[];
   categories: VehicleCategoryDto[];
-  routes?: IntercityRouteDto[];
-  onSave: (payload: any) => Promise<void>;
+  editingPrice?: IntercityRoutePriceDto | null;
+  routeId?: number; // Pre-filled if opened from a specific route
 }
 
 export function PriceFormModal({
   isOpen,
   onClose,
-  routeId,
-  editingPrice,
-  categories,
-  routes = [],
   onSave,
+  routes,
+  categories,
+  editingPrice,
+  routeId,
 }: PriceFormModalProps) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    routeId: string;
+    vehicleCategoryId: string;
+    perKmAmount: string;
+    currency: string;
+    active: boolean;
+  }>({
     routeId: "",
     vehicleCategoryId: "",
     perKmAmount: "",
     currency: "VND",
-    active: true
+    active: true,
   });
 
   const [saving, setSaving] = useState(false);
-  const [existingPrices, setExistingPrices] = useState<IntercityRoutePriceDto[]>([]);
-
-  useEffect(() => {
-    const activeRouteId = routeId || Number(form.routeId);
-    if (!activeRouteId || !isOpen) {
-      setExistingPrices([]);
-      return;
-    }
-    let active = true;
-    (async () => {
-      try {
-        const res = await getIntercityRoutePrices(activeRouteId);
-        if (active && res.data) {
-          setExistingPrices(Array.isArray(res.data) ? res.data : []);
-        }
-      } catch {
-        setExistingPrices([]);
-      }
-    })();
-    return () => { active = false; };
-  }, [routeId, form.routeId, isOpen]);
 
   useEffect(() => {
     if (editingPrice) {
       setForm({
-        routeId: String(editingPrice.routeId ?? ""),
+        routeId: String(editingPrice.routeId),
         vehicleCategoryId: String(editingPrice.vehicleCategoryId),
         perKmAmount: String(editingPrice.perKmAmount),
         currency: editingPrice.currency || "VND",
-        active: editingPrice.active ?? true
+        active: editingPrice.active,
       });
     } else {
       setForm({
-        routeId: routeId ? String(routeId) : "",
-        vehicleCategoryId: "",
+        routeId: routeId ? String(routeId) : (routes[0] ? String(routes[0].id) : ""),
+        vehicleCategoryId: categories[0] ? String(categories[0].id) : "",
         perKmAmount: "",
         currency: "VND",
-        active: true
+        active: true,
       });
     }
-  }, [editingPrice, routeId, isOpen]);
-
-  const getCategoryName = (c: VehicleCategoryDto) => {
-    const t = c.translations?.find(tr => tr.locale === "vi") || c.translations?.[0];
-    return t?.name || c.code;
-  };
+  }, [editingPrice, routeId, routes, categories, isOpen]);
 
   const getRouteName = (r: IntercityRouteDto) => {
-    const t = r.translations?.find((tr: any) => tr.locale === "vi") || r.translations?.[0];
+    const t = r.translations?.find(t => t.locale === "vi") || r.translations?.[0];
     return t?.name || `${r.originCity} ⇌ ${r.destinationCity}`;
   };
 
+  const getCategoryName = (c: VehicleCategoryDto) => {
+    const t = c.translations?.find(t => t.locale === "vi") || c.translations?.[0];
+    return t?.name || c.code;
+  };
+
   const handleSave = async () => {
-    const finalRouteId = routeId || Number(form.routeId);
-    if (!finalRouteId) {
-      toast.danger("Vui lòng chọn tuyến đường.");
+    if (!form.routeId || !form.vehicleCategoryId || !form.perKmAmount) {
+      toast.danger("Vui lòng điền đầy đủ các thông tin bắt buộc.");
       return;
     }
-    if (!form.vehicleCategoryId) {
-      toast.danger("Vui lòng chọn dòng xe.");
-      return;
-    }
-    if (!form.perKmAmount.trim()) {
-      toast.danger("Vui lòng nhập giá theo km.");
-      return;
-    }
-
-    // Check unique constraint: routeId + vehicleCategoryId
-    if (!editingPrice) {
-      const alreadyExists = existingPrices.some(
-        p => p.vehicleCategoryId === Number(form.vehicleCategoryId) && p.routeId === finalRouteId
-      );
-      if (alreadyExists) {
-        toast.danger("Dòng xe này đã được cấu hình giá cho tuyến đường này. Vui lòng chỉnh sửa thay vì tạo mới.");
-        return;
-      }
-    }
-
-    const payload = {
-      routeId: finalRouteId,
-      vehicleCategoryId: Number(form.vehicleCategoryId),
-      perKmAmount: Number(form.perKmAmount),
-      currency: form.currency,
-      active: form.active
-    };
 
     setSaving(true);
     try {
+      const payload: Partial<IntercityRoutePriceDto> = {
+        routeId: Number(form.routeId),
+        vehicleCategoryId: Number(form.vehicleCategoryId),
+        perKmAmount: Number(form.perKmAmount),
+        currency: form.currency || "VND",
+        active: form.active,
+      };
+
       await onSave(payload);
+      onClose();
+    } catch {
+      toast.danger("Có lỗi xảy ra khi lưu cấu hình giá.");
     } finally {
       setSaving(false);
     }
@@ -149,14 +118,15 @@ export function PriceFormModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <ModalBackdrop className="bg-slate-950/45 backdrop-blur-[2px]">
         <ModalContainer>
-          <ModalDialog className="max-w-md bg-white dark:bg-[var(--bg-surface)] p-6 rounded-2xl shadow-2xl">
-            <ModalHeader className="flex items-center justify-between p-0 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <ModalDialog className="max-w-md max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <ModalCloseTrigger />
+            <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <Typography type="h3" className="text-base font-bold text-slate-800 dark:text-slate-100">
                 {editingPrice ? "Chỉnh sửa giá dịch vụ" : "Thêm giá dịch vụ mới"}
               </Typography>
             </ModalHeader>
 
-            <ModalBody className="gap-4 mt-4">
+            <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
               {/* Optional Route Selector (Only if routeId is not pre-defined) */}
               {!routeId && routes.length > 0 && (
                 <div className="flex flex-col gap-1 w-full">
@@ -168,7 +138,7 @@ export function PriceFormModal({
                     selectedKey={form.routeId || undefined}
                     onSelectionChange={(key) => { if (key) setForm(f => ({ ...f, routeId: String(key) })); }}
                   >
-                    <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[40px]">
+                    <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[40px] cursor-pointer">
                       <Select.Value />
                       <Select.Indicator />
                     </Select.Trigger>
@@ -186,7 +156,7 @@ export function PriceFormModal({
                 </div>
               )}
 
-              <div className="flex flex-col gap-1 w-full mt-5">
+              <div className="flex flex-col gap-1 w-full">
                 <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Dòng xe</Label>
                 <Select
                   fullWidth
@@ -195,7 +165,7 @@ export function PriceFormModal({
                   selectedKey={form.vehicleCategoryId || undefined}
                   onSelectionChange={(key) => { if (key) setForm(f => ({ ...f, vehicleCategoryId: String(key) })); }}
                 >
-                  <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[40px]">
+                  <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[40px] cursor-pointer">
                     <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
@@ -212,7 +182,7 @@ export function PriceFormModal({
                 </Select>
               </div>
 
-              <NumberField value={form.perKmAmount ? Number(form.perKmAmount) : 0} onChange={val => setForm(f => ({ ...f, perKmAmount: String(val || 0) }))} minValue={0} className="w-full mt-5">
+              <NumberField value={form.perKmAmount ? Number(form.perKmAmount) : 0} onChange={val => setForm(f => ({ ...f, perKmAmount: String(val || 0) }))} minValue={0} className="w-full">
                 <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 block">Giá / km (VND)</Label>
                 <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[40px]">
                   <NumberField.Input placeholder="Ví dụ: 10000" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
@@ -230,14 +200,14 @@ export function PriceFormModal({
                 const oneWay = perKm * routeObj.distanceKm;
                 return (
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl px-3 py-2">
-                    {`${routeObj.distanceKm} km × ${perKm.toLocaleString()} = ${Math.round(oneWay / 1000) * 1000}`}
+                    {`${routeObj.distanceKm} km × ${perKm.toLocaleString()} = ${Math.round(oneWay / 1000) * 1000} VND`}
                   </div>
                 );
               })()}
 
-              <TextField className="w-full mt-5">
+              <TextField className="w-full">
                 <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 block">Tiền tệ</Label>
-                <Input placeholder="VND" value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="px-3 py-2 border rounded-xl text-sm w-full" />
+                <Input placeholder="VND" value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm w-full bg-white dark:bg-[var(--bg-surface)]" />
               </TextField>
 
               <div className="flex items-center gap-3 my-2">
@@ -257,12 +227,16 @@ export function PriceFormModal({
                   Kích hoạt bảng giá
                 </Label>
               </div>
-
-              <div className="flex gap-2 justify-end border-t border-slate-100 dark:border-slate-800 pt-4 mt-2">
-                <Button size="sm" onClick={handleSave} isDisabled={saving}>Lưu</Button>
-                <Button size="sm" variant="ghost" onClick={onClose} isDisabled={saving}>Hủy</Button>
-              </div>
             </ModalBody>
+
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0 bg-white dark:bg-[var(--bg-surface)]">
+              <Button size="sm" variant="ghost" onClick={onClose} isDisabled={saving} className="rounded-xl font-bold cursor-pointer">
+                Hủy
+              </Button>
+              <Button size="sm" onClick={handleSave} isDisabled={saving} className="bg-accent text-white font-bold rounded-xl cursor-pointer">
+                Lưu
+              </Button>
+            </ModalFooter>
           </ModalDialog>
         </ModalContainer>
       </ModalBackdrop>
