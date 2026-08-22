@@ -2,8 +2,8 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --ignore-scripts
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+RUN pnpm install --frozen-lockfile
 
 # ============ Build stage ============
 FROM node:22-alpine AS build
