@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Language, translations, TranslationDictionary } from "@/config/translations";
 import { getContactSettings } from "@/lib/api/setting";
 
@@ -35,6 +35,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname() || "";
+  const router = useRouter();
 
   const [contacts, setContacts] = useState({
     phone: "0764971971",
@@ -126,9 +127,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    if (typeof window !== "undefined") {
-      window.location.href = newPath;
-    }
+    // ponytail: client-side nav keeps components mounted, no full reload
+    router.push(newPath);
   };
 
   const t = translations[language];

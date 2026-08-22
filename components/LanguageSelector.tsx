@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Language } from "@/config/translations";
+import { useI18n } from "@/context/LanguageContext";
 
 const LANGUAGES: { code: Language; label: string; flag: string; desc: string }[] = [
   { code: "vi", label: "Tiếng Việt", flag: "🇻🇳", desc: "Vietnamese" },
@@ -13,6 +14,7 @@ const LANGUAGES: { code: Language; label: string; flag: string; desc: string }[]
 export function LanguageSelector() {
   const [show, setShow] = useState(false);
   const pathname = usePathname() || "";
+  const { setLanguage } = useI18n();
 
   useEffect(() => {
     // Only show on public pages, not admin/dashboard/staff
@@ -29,16 +31,9 @@ export function LanguageSelector() {
   }, [pathname]);
 
   const selectLanguage = (lang: Language) => {
-    // Set cookie + localStorage
-    document.cookie = `NEXT_LOCALE=${lang}; path=/; max-age=31536000; samesite=lax`;
-    document.cookie = `app_lang=${lang}; path=/; max-age=31536000; samesite=lax`;
-    document.cookie = `app_lang_selected=true; path=/; max-age=31536000; samesite=lax`;
-    localStorage.setItem("app_lang", lang);
-    localStorage.setItem("app_lang_selected", "true");
     setShow(false);
-
-    // Navigate to locale-prefixed homepage
-    window.location.href = `/${lang}`;
+    // ponytail: delegate to context — cookies/localStorage/navigation all handled there
+    setLanguage(lang);
   };
 
   if (!show) return null;

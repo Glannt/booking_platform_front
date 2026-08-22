@@ -88,13 +88,14 @@ export const Navbar = () => {
       toast.success(t.auth.logoutSuccess || "Logged out successfully!");
       
       const isProtectedPage =
+        pathname?.startsWith("/portal") ||
         pathname?.startsWith("/admin") ||
         pathname?.startsWith("/staff") ||
         pathname?.includes("/dashboard");
 
       if (isProtectedPage) {
-        if (pathname?.startsWith("/admin")) {
-          router.push("/admin/login");
+        if (pathname?.startsWith("/portal") || pathname?.startsWith("/admin")) {
+          router.push("/portal/login");
         } else {
           router.push(`/${language}`);
         }
@@ -362,9 +363,9 @@ export const Navbar = () => {
                       </span>
                     </div>
                   </Dropdown.Item>
-                  {(user.role === "ADMIN" || user.role === "STAFF") ? (
-                    <Dropdown.Item id={user.role === "ADMIN" ? `/${language}/admin/services` : `/${language}/admin/bookings`} key={user.role === "ADMIN" ? `/${language}/admin/services` : `/${language}/admin/bookings`} textValue="Admin Dashboard">
-                      <Label>{user.role === "ADMIN" ? "Admin Dashboard" : "Staff Dashboard"}</Label>
+                  {(user.role === "ADMIN" || user.role === "MODERATOR" || user.role === "STAFF") ? (
+                    <Dropdown.Item id="/portal" key="/portal" textValue="Portal">
+                      <Label>Minh Khoa Portal</Label>
                     </Dropdown.Item>
                   ) : (
                     <>
@@ -493,18 +494,18 @@ export const Navbar = () => {
                     {user.role}
                   </span>
                 </li>
-                {(user.role === "ADMIN" || user.role === "STAFF") && (
+                {(user.role === "ADMIN" || user.role === "MODERATOR" || user.role === "STAFF") && (
                   <li>
                     <NextLink
                       className="block py-2.5 px-3 rounded-md text-base text-foreground hover:bg-default-50 no-underline font-semibold"
-                      href={user.role === "ADMIN" ? `/${language}/admin/services` : `/${language}/admin/bookings`}
+                      href="/portal"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      {user.role === "ADMIN" ? "Admin Dashboard" : "Staff Dashboard"}
+                      Minh Khoa Portal
                     </NextLink>
                   </li>
                 )}
-                {user.role !== "ADMIN" && user.role !== "STAFF" && (
+                {user.role === "CUSTOMER" && (
                   <li>
                     <NextLink
                       className="block py-2.5 px-3 rounded-md text-base text-foreground hover:bg-default-50 no-underline font-semibold"

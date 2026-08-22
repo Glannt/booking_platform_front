@@ -3,7 +3,7 @@ import { Metadata } from "next";
 
 async function getFeedbacks() {
   try {
-    const backendUrl = process.env.BACKEND_API || "http://localhost:8080";
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
     const res = await fetch(`${backendUrl}/api/v1/feedbacks`, {
       cache: "no-store",
     });

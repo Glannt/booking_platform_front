@@ -5,8 +5,8 @@ export const backendUrl = typeof window !== "undefined"
   ? ""
   : (process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080");
 
-// Backend URL for server-side (SSR) requests — can use internal Docker network
-const serverBackendUrl = process.env.BACKEND_API || process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
+// Backend URL for server-side (SSR) requests
+const serverBackendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
 
 export interface ApiResponse<T> {
   status?: string;
@@ -214,7 +214,7 @@ export async function apiFetch<T>(path: string, options?: ApiOptions): Promise<T
     }
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
-      if (pathname.includes("/admin") || pathname.includes("/staff")) {
+      if (pathname.includes("/portal") || pathname.includes("/admin") || pathname.includes("/staff")) {
         shouldFilter = false;
       }
     }

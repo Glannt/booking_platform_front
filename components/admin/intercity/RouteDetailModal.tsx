@@ -39,7 +39,7 @@ export function RouteDetailModal({
 }: RouteDetailModalProps) {
   if (!route) return null;
 
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
   const imageUrl = route.thumbnailUrl
     ? (route.thumbnailUrl.startsWith("http")
         ? route.thumbnailUrl

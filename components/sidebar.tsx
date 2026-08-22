@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const { t } = useI18n();
-  const isAdminView = isAdmin ?? (pathname?.startsWith("/admin") || pathname?.startsWith("/staff"));
+  const isAdminView = isAdmin ?? (pathname?.startsWith("/portal") || pathname?.startsWith("/admin") || pathname?.startsWith("/staff"));
 
   const profileLabel = labels?.profile || (isAdminView ? "Hồ sơ cá nhân" : (t.nav?.myProfile || t.profile?.title || "Hồ sơ cá nhân"));
   const settingsLabel = labels?.settings || (isAdminView ? "Cài đặt tài khoản" : (t.profile?.title || "Cài đặt"));
@@ -119,8 +119,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={clsx(
-        "relative flex flex-col h-screen border-r border-divider bg-background/70 backdrop-blur-md transition-all duration-300 ease-in-out select-none",
-        isCollapsed ? "w-[72px]" : "w-[260px]",
+        "relative flex flex-col h-screen border-r border-divider bg-background/70 backdrop-blur-md transition-all duration-300 ease-in-out select-none flex-shrink-0",
+        isCollapsed ? "w-[72px]" : "w-[270px]",
         className
       )}
     >
@@ -274,12 +274,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Footer (User Profile) */}
       {user && (
-        <div className="p-4 border-t border-divider bg-background/50">
+        <div className="p-3 border-t border-divider bg-background/50 overflow-hidden flex-shrink-0">
           <Dropdown>
-            <Dropdown.Trigger>
+            <Dropdown.Trigger className="w-full min-w-0 max-w-full outline-none block">
               <div
                 className={clsx(
-                  "flex items-center gap-3 cursor-pointer p-1.5 rounded-xl hover:bg-default-100 transition-all duration-200 w-full bg-transparent border-none text-left outline-none",
+                  "flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-default-100 transition-all duration-200 w-full min-w-0 max-w-full bg-transparent border-none text-left outline-none overflow-hidden",
                   isCollapsed ? "justify-center" : ""
                 )}
               >
@@ -289,10 +289,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </Avatar>
                 {!isCollapsed && (
                   <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-                    <span className="text-sm font-semibold text-foreground truncate">
+                    <span className="text-xs font-semibold text-foreground truncate block" title={user.name}>
                       {user.name}
                     </span>
-                    <span className="text-2xs text-foreground-400 truncate">
+                    <span className="text-[11px] text-foreground-400 truncate block font-normal" title={user.email}>
                       {user.email}
                     </span>
                   </div>

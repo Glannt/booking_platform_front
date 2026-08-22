@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    const backendUrl = process.env.BACKEND_API || "http://localhost:8080";
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
     return [
       {
         source: "/uploads/:path*",
@@ -28,6 +28,26 @@ const nextConfig = {
       {
         source: "/thue-xe-tu-lai-nha-trang",
         destination: "/vi/self-drive",
+        permanent: true,
+      },
+      {
+        source: "/xe-dua-don-san-bay-cam-ranh",
+        destination: "/vi/airport-transfer",
+        permanent: true,
+      },
+      {
+        source: "/xe-nha-trang-di-da-lat",
+        destination: "/vi/rent-car/xe-nha-trang-di-da-lat",
+        permanent: true,
+      },
+      {
+        source: "/tour-3-dao-nha-trang",
+        destination: "/vi/tours/tour-3-dao-nha-trang-vip",
+        permanent: true,
+      },
+      {
+        source: "/tour-noi-thanh-nha-trang",
+        destination: "/vi/tours",
         permanent: true,
       },
       {

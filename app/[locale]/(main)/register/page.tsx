@@ -19,7 +19,7 @@ export default function RegisterPage() {
 
   const registerSchema = z.object({
     email: z.string().email({ message: t.errors.invalidEmail }),
-    password: z.string().min(6, { message: t.errors.passwordTooShort }),
+    password: z.string().regex(/^(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/, { message: t.errors.passwordRequirements }),
     fullname: z.string().min(2, { message: t.errors.fullnameRequired }),
     phone: z.string().min(10, { message: t.errors.phoneInvalid }),
     role: z.enum(["CUSTOMER", "STAFF", "ADMIN"]),

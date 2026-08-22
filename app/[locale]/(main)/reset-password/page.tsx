@@ -22,8 +22,8 @@ export default function ResetPasswordPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const resetPasswordSchema = z.object({
-    newPassword: z.string().min(6, { message: t.errors.passwordTooShort }),
-    confirmPassword: z.string().min(6, { message: t.errors.passwordTooShort }),
+    newPassword: z.string().regex(/^(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/, { message: t.errors.passwordRequirements }),
+    confirmPassword: z.string().min(1, { message: t.errors.requiredField }),
   }).refine((data) => data.newPassword === data.confirmPassword, {
     message: t.auth.passwordMismatch,
     path: ["confirmPassword"],

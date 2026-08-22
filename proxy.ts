@@ -30,19 +30,20 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check and guard admin, dashboard, staff paths
+  // Check and guard portal, admin, dashboard, staff paths
   const firstSegment = pathname.split("/")[1];
-  if (["admin", "dashboard", "staff"].includes(firstSegment)) {
+  if (["portal", "admin", "dashboard", "staff"].includes(firstSegment)) {
     const accessToken = request.cookies.get("accessToken")?.value;
     const userRole = request.cookies.get("user_role")?.value;
 
-    if (firstSegment === "admin") {
-      if (pathname === "/admin/login") {
+    if (firstSegment === "portal" || firstSegment === "admin") {
+      if (pathname === "/portal/login" || pathname === "/admin/login") {
         return NextResponse.next();
       }
-      if (!accessToken || userRole !== "ADMIN") {
+      const allowedRoles = ["ADMIN", "MODERATOR", "STAFF"];
+      if (!accessToken || !userRole || !allowedRoles.includes(userRole)) {
         const url = request.nextUrl.clone();
-        url.pathname = "/admin/login";
+        url.pathname = "/portal/login";
         return NextResponse.redirect(url);
       }
     } else if (firstSegment === "staff") {

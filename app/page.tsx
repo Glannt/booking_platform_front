@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/context/LanguageContext";
 import { Language } from "@/config/translations";
 import { Globe, ArrowRight, Heart } from "lucide-react";
@@ -15,6 +16,7 @@ const LANGUAGES: { code: Language; label: string; flag: string; native: string; 
 
 export default function RootPage() {
   const { setLanguage } = useI18n();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [hoveredLang, setHoveredLang] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export default function RootPage() {
     const selected = localStorage.getItem("app_lang_selected") === "true";
     if (selected) {
       const preferred = (localStorage.getItem("app_lang") || "vi") as Language;
-      window.location.href = `/${preferred}`;
+      router.replace(`/${preferred}`);
       return;
     }
 

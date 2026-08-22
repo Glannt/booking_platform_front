@@ -26,6 +26,7 @@ import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
 import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { FormattedDescription } from "@/components/FormattedDescription";
+import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
 
 export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const { language, t, contacts } = useI18n();
@@ -264,7 +265,8 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     e.preventDefault();
     if (!selectedTour) return;
     const dateStr = tourDate ? tourDate.toString() : "";
-    router.push(`/${language}/tours/${selectedTour.id}/confirm?tourId=${selectedTour.id}&date=${dateStr}&guests=${tourGuests}&pickup=${encodeURIComponent(tourPickup)}`);
+    const tourSlug = resolveLocalizedSlug(selectedTour.translations, language) || selectedTour.id;
+    router.push(`/${language}/tours/${tourSlug}/confirm?tourId=${selectedTour.id}&date=${dateStr}&guests=${tourGuests}&pickup=${encodeURIComponent(tourPickup)}`);
   };
 
   return (

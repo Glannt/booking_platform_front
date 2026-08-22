@@ -49,15 +49,14 @@ export default function LoginPage() {
       if (response && response.data) {
         const { user, accessToken, refreshToken } = response.data;
 
-        // Only CUSTOMER can login here; ADMIN/STAFF/MODERATOR must use /admin/login
-        if (user.role === "ADMIN" || user.role === "STAFF" || user.role === "MODERATOR") {
-          toast.danger("Tài khoản này vui lòng đăng nhập tại trang quản trị.");
-          return;
-        }
-
         setAuth(user, accessToken, refreshToken);
         toast.success(t.auth.loginSuccess || "Logged in successfully!");
-        router.push(`/${language}`);
+
+        if (user.role === "ADMIN" || user.role === "MODERATOR" || user.role === "STAFF") {
+          router.push("/portal");
+        } else {
+          router.push(`/${language}`);
+        }
       } else {
         throw new Error(t.errors.unexpected);
       }

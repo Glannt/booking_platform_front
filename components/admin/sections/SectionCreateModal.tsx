@@ -15,6 +15,7 @@ import {
   Label,
   Switch,
   Input,
+  TextArea,
   NumberField,
   Select,
   ListBox,
@@ -235,88 +236,103 @@ export default function SectionCreateModal({
     data: { title: string; subtitle: string; description: string; btnText: string; btnLink: string },
     setter: (d: any) => void
   ) => (
-    <div key={locale} className="space-y-3 p-4 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-md">
-      <Label className="text-sm font-bold text-slate-700 dark:text-slate-200">
+    <div key={locale} className="space-y-3 p-4 bg-default-50 dark:bg-[var(--bg-muted)] border border-divider rounded-xl">
+      <Label className="text-sm font-bold text-foreground block">
         Ngôn ngữ: {locale.toUpperCase()}
       </Label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input
-          placeholder="Tiêu đề"
-          value={data.title}
-          onChange={(e) => setter({ ...data, title: e.target.value })}
-          className="w-full rounded-md"
-        />
-        <Input
-          placeholder="Tiêu đề phụ"
-          value={data.subtitle}
-          onChange={(e) => setter({ ...data, subtitle: e.target.value })}
-          className="w-full rounded-md"
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold text-foreground/80">Tiêu đề</Label>
+          <Input
+            placeholder="Tiêu đề banner..."
+            value={data.title}
+            onChange={(e) => setter({ ...data, title: e.target.value })}
+            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold text-foreground/80">Tiêu đề phụ</Label>
+          <Input
+            placeholder="Tiêu đề phụ..."
+            value={data.subtitle}
+            onChange={(e) => setter({ ...data, subtitle: e.target.value })}
+            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs font-semibold text-foreground/80">Mô tả</Label>
+        <TextArea
+          placeholder="Nội dung mô tả chi tiết..."
+          value={data.description}
+          onChange={(e) => setter({ ...data, description: e.target.value })}
+          rows={4}
+          className="w-full px-3 py-2.5 rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-sm text-foreground resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
-      <textarea
-        placeholder="Mô tả"
-        value={data.description}
-        onChange={(e) => setter({ ...data, description: e.target.value })}
-        rows={2}
-        className="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-sm resize-none"
-      />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input
-          placeholder="Text nút"
-          value={data.btnText}
-          onChange={(e) => setter({ ...data, btnText: e.target.value })}
-          className="w-full rounded-md"
-        />
-        <Input
-          placeholder="Link nút"
-          value={data.btnLink}
-          onChange={(e) => setter({ ...data, btnLink: e.target.value })}
-          className="w-full rounded-md"
-        />
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold text-foreground/80">Chữ trên nút (Button Text)</Label>
+          <Input
+            placeholder="VD: Hotline: 0764 971 971"
+            value={data.btnText}
+            onChange={(e) => setter({ ...data, btnText: e.target.value })}
+            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-semibold text-foreground/80">Đường dẫn nút (Button Link / tel / url)</Label>
+          <Input
+            placeholder="VD: tel:0764971971 hoặc /dat-xe"
+            value={data.btnLink}
+            onChange={(e) => setter({ ...data, btnLink: e.target.value })}
+            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+          />
+        </div>
       </div>
     </div>
   );
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="section-create-title">
-      <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
+      <ModalBackdrop className="bg-black/50 backdrop-blur-sm">
         <ModalContainer className="max-w-4xl w-full">
-          <ModalDialog className="bg-white dark:bg-black rounded-md border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
             <ModalCloseTrigger />
-            <ModalHeader className="px-6 py-4 border-b border-divider bg-slate-50 dark:bg-black/40">
-              <h2 id="section-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
+            <ModalHeader className="px-6 py-4 border-b border-divider bg-default-50 dark:bg-[var(--bg-page)]/50">
+              <h2 id="section-create-title" className="text-lg font-extrabold text-foreground">
                 {isEdit ? "Chỉnh sửa Section" : "Thêm Section mới"}
               </h2>
             </ModalHeader>
             <ModalBody className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
               {/* Basic Info */}
               <div className="space-y-4">
-                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Thông tin cơ bản</h4>
+                <h4 className="text-xs font-bold text-foreground/60 uppercase tracking-wider">Thông tin cơ bản</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-bold">Tên section *</Label>
+                    <Label className="text-xs font-bold text-foreground">Tên section *</Label>
                     <Input
                       value={sectionName}
                       onChange={(e) => setSectionName(e.target.value)}
                       placeholder="VD: Hero Banner Homepage"
-                      className="w-full"
+                      className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-bold">Loại section *</Label>
+                    <Label className="text-xs font-bold text-foreground">Loại section *</Label>
                     <Select
                       fullWidth
                       selectedKey={sectionType}
                       onSelectionChange={(key) => { if (key) setSectionType(String(key)); }}
                     >
-                      <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-sm h-[38px]">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground text-sm h-[38px] cursor-pointer">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-divider rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
                           {SECTION_TYPES.map((t) => (
-                            <ListBox.Item key={t.value} id={t.value} textValue={t.label} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                            <ListBox.Item key={t.value} id={t.value} textValue={t.label} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-default-100 dark:hover:bg-[var(--bg-elevated)] text-foreground flex items-center justify-between">
                               {t.label}
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
@@ -329,13 +345,13 @@ export default function SectionCreateModal({
 
                 <div className="space-y-4">
                   <div className="space-y-1.5 max-w-[120px]">
-                    <Label className="text-sm font-bold">Thứ tự</Label>
+                    <Label className="text-xs font-bold text-foreground">Thứ tự</Label>
                     <NumberField value={orderIndex} onChange={(val) => setOrderIndex(val || 0)} minValue={0}>
-                      <NumberField.Group className="flex items-center w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
-                        <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full" />
-                        <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-700">
-                          <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-700">▼</NumberField.DecrementButton>
+                      <NumberField.Group className="flex items-center w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
+                        <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm text-foreground outline-none border-none h-full" />
+                        <div className="flex h-full flex-col border-l border-divider">
+                          <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-foreground/60 hover:bg-default-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
+                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-foreground/60 hover:bg-default-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer bg-transparent text-xs border-t border-divider">▼</NumberField.DecrementButton>
                         </div>
                       </NumberField.Group>
                     </NumberField>
@@ -343,18 +359,18 @@ export default function SectionCreateModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-bold">Màu chữ</Label>
+                      <Label className="text-xs font-bold text-foreground">Màu chữ</Label>
                       <ColorPicker
                         value={safeParseColor(textColor, "#ffffff")}
                         onChange={(color) => setTextColor(color.toString("hex"))}
                       >
-                        <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+                        <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] cursor-pointer w-full justify-between">
                           <div className="flex items-center gap-1.5">
                             <ColorSwatch size="xs" color={safeParseColor(textColor, "#ffffff")} />
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-350">{textColor || "#ffffff"}</span>
+                            <span className="text-xs font-bold text-foreground">{textColor || "#ffffff"}</span>
                           </div>
                         </ColorPicker.Trigger>
-                        <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-xl">
+                        <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-card)] border border-divider shadow-xl rounded-xl">
                           <ColorArea aria-label="Color area" className="max-w-full h-32 rounded-lg" colorSpace="hsb" xChannel="saturation" yChannel="brightness">
                             <ColorArea.Thumb />
                           </ColorArea>
@@ -364,7 +380,7 @@ export default function SectionCreateModal({
                                 <ColorSlider.Thumb />
                               </ColorSlider.Track>
                             </ColorSlider>
-                            <Button type="button" isIconOnly size="sm" variant="outline" aria-label="Chọn màu chữ ngẫu nhiên" className="h-8 w-8 rounded-lg bg-slate-50 border border-divider" onClick={() => setTextColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
+                            <Button type="button" isIconOnly size="sm" variant="outline" aria-label="Chọn màu chữ ngẫu nhiên" className="h-8 w-8 rounded-lg bg-default-50 border border-divider" onClick={() => setTextColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
                               <Shuffle size={12} />
                             </Button>
                           </div>
@@ -380,18 +396,18 @@ export default function SectionCreateModal({
                       </ColorPicker>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-bold">Màu nền</Label>
+                      <Label className="text-xs font-bold text-foreground">Màu nền</Label>
                       <ColorPicker
                         value={safeParseColor(bgColor, "#1a1a2e")}
                         onChange={(color) => setBgColor(color.toString("hex"))}
                       >
-                        <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+                        <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] cursor-pointer w-full justify-between">
                           <div className="flex items-center gap-1.5">
                             <ColorSwatch size="xs" color={safeParseColor(bgColor, "#1a1a2e")} />
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-350">{bgColor || "#1a1a2e"}</span>
+                            <span className="text-xs font-bold text-foreground">{bgColor || "#1a1a2e"}</span>
                           </div>
                         </ColorPicker.Trigger>
-                        <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-xl">
+                        <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-card)] border border-divider shadow-xl rounded-xl">
                           <ColorArea aria-label="Color area" className="max-w-full h-32 rounded-lg" colorSpace="hsb" xChannel="saturation" yChannel="brightness">
                             <ColorArea.Thumb />
                           </ColorArea>
@@ -401,7 +417,7 @@ export default function SectionCreateModal({
                                 <ColorSlider.Thumb />
                               </ColorSlider.Track>
                             </ColorSlider>
-                            <Button type="button" isIconOnly size="sm" variant="outline" aria-label="Chọn màu nền ngẫu nhiên" className="h-8 w-8 rounded-lg bg-slate-50 border border-divider" onClick={() => setBgColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
+                            <Button type="button" isIconOnly size="sm" variant="outline" aria-label="Chọn màu nền ngẫu nhiên" className="h-8 w-8 rounded-lg bg-default-50 border border-divider" onClick={() => setBgColor("hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}>
                               <Shuffle size={12} />
                             </Button>
                           </div>
@@ -421,12 +437,12 @@ export default function SectionCreateModal({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-bold">CSS Class</Label>
-                    <Input value={cssClass} onChange={(e) => setCssClass(e.target.value)} placeholder="hero-home" className="w-full" />
+                    <Label className="text-xs font-bold text-foreground">CSS Class</Label>
+                    <Input value={cssClass} onChange={(e) => setCssClass(e.target.value)} placeholder="hero-home" className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-bold">Link URL</Label>
-                    <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="/tours" className="w-full" />
+                    <Label className="text-xs font-bold text-foreground">Link URL</Label>
+                    <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="/tours" className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground" />
                   </div>
                 </div>
 
@@ -439,9 +455,9 @@ export default function SectionCreateModal({
 
                 {/* Image Upload */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-bold">Hình ảnh</Label>
+                  <Label className="text-xs font-bold text-foreground">Hình ảnh</Label>
                   <div
-                    className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-md p-4 cursor-pointer hover:border-[#C9A227] transition-colors"
+                    className="border-2 border-dashed border-divider rounded-xl p-4 cursor-pointer hover:border-primary transition-colors bg-default-50 dark:bg-[var(--bg-card)]"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <input
@@ -452,9 +468,9 @@ export default function SectionCreateModal({
                       className="hidden"
                       onChange={(e) => handleImageUpload(e.target.files)}
                     />
-                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                    <div className="flex flex-col items-center gap-2 text-foreground/50">
                       {uploading ? (
-                        <div className="w-6 h-6 border-2 border-[#C9A227] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Upload size={24} />
                       )}
@@ -466,7 +482,7 @@ export default function SectionCreateModal({
                   {images.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {images.map((img, idx) => (
-                        <div key={`${img.id}-${idx}`} className="relative group w-20 h-20 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700">
+                        <div key={`${img.id}-${idx}`} className="relative group w-20 h-20 rounded-xl overflow-hidden border border-divider">
                           <img
                             src={img.url}
                             alt={img.fileName}
@@ -475,7 +491,7 @@ export default function SectionCreateModal({
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(idx)}
-                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 w-5 h-5 bg-danger text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none"
                           >
                             <X size={12} />
                           </button>
@@ -487,26 +503,26 @@ export default function SectionCreateModal({
 
                 <div className="flex items-center gap-3">
                   <Switch isSelected={active} onChange={() => setActive(!active)}>
-                    <Label className="text-sm font-bold">Kích hoạt</Label>
+                    <Label className="text-xs font-bold text-foreground">Kích hoạt</Label>
                   </Switch>
                 </div>
               </div>
 
               {/* Translations */}
               <div className="space-y-4">
-                <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Nội dung đa ngôn ngữ</h4>
+                <h4 className="text-xs font-bold text-foreground/60 uppercase tracking-wider">Nội dung đa ngôn ngữ</h4>
                 {renderTranslationFields("vi", transVi, setTransVi)}
                 {renderTranslationFields("en", transEn, setTransEn)}
                 {renderTranslationFields("ko", transKo, setTransKo)}
                 {renderTranslationFields("ru", transRu, setTransRu)}
               </div>
             </ModalBody>
-            <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={onClose} className="rounded-md">
+            <ModalFooter className="px-6 py-4 border-t border-divider bg-default-50 dark:bg-[var(--bg-page)]/50 flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={onClose} className="rounded-xl border-divider">
                 Hủy
               </Button>
               <Button
-                className="rounded-md font-bold bg-[#C9A227] text-white"
+                className="rounded-xl font-bold bg-accent hover:bg-accent-hover text-white shadow-sm"
                 onClick={handleSubmit}
                 isDisabled={submitting}
               >
