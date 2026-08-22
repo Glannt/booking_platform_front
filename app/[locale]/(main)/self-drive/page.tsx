@@ -42,11 +42,13 @@ import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto, type Re
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 import { FormattedDescription } from "@/components/FormattedDescription";
 import { AutofillButton } from "@/components/AutofillButton";
+import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
 
 interface Vehicle {
   id: string;
   rentalId: number;
   vehicleCategoryId: number;
+  categorySlug?: string;
   nameVi: string;
   nameEn: string;
   descVi: string;
@@ -194,11 +196,13 @@ export default function SelfDrivePage() {
               const rentalPrices = priceMap.get(r.id) || [];
               const activePrice = rentalPrices.find(p => p.active && p.vehicleCategoryId === r.vehicleCategoryId);
               const dailyRate = activePrice ? Number(activePrice.amount) : 0;
+              const categorySlug = resolveLocalizedSlug(cat?.translations, language) || String(cat?.id || r.vehicleCategoryId);
 
               return {
                 id: `${r.id}-${r.vehicleCategoryId}`,
                 rentalId: r.id,
                 vehicleCategoryId: r.vehicleCategoryId,
+                categorySlug,
                 nameVi: name,
                 nameEn: name,
                 descVi: desc,
@@ -725,7 +729,7 @@ export default function SelfDrivePage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/${language}/self-drive/${vehicle.vehicleCategoryId}`);
+                            router.push(`/${language}/self-drive/${vehicle.categorySlug || vehicle.vehicleCategoryId}`);
                           }}
                           className="py-2.5 px-3 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer border-none"
                         >

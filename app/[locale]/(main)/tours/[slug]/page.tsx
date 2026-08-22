@@ -4,7 +4,7 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import TourDetailClient from "./TourDetailClient";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = translations[locale as keyof typeof translations] || translations.vi;
   return {
@@ -18,14 +18,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function TourDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
-  const { id, locale } = await params;
-  const tourId = Number(id);
+export default async function TourDetailPage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
+  const { slug, locale } = await params;
   let sections: SectionDto[] = [];
   try {
     sections = await getActiveSectionsServer("/tours", locale);
   } catch {
     sections = [];
   }
-  return <TourDetailClient sections={sections} tourId={tourId} />;
+  return <TourDetailClient sections={sections} tourIdentifier={slug} />;
 }

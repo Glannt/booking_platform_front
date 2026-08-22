@@ -4,7 +4,7 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import RouteDetailClient from "./RouteDetailClient";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
   const locale = rawLocale || "vi";
   const t = translations[locale as "vi" | "en" | "ko" | "ru"] || translations.vi;
@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function RouteDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
-  const { id, locale: rawLocale } = await params;
+export default async function RouteDetailPage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
+  const { slug, locale: rawLocale } = await params;
   const locale = rawLocale || "vi";
   let sections: SectionDto[] = [];
   try {
@@ -28,5 +28,5 @@ export default async function RouteDetailPage({ params }: { params: Promise<{ id
   } catch {
     sections = [];
   }
-  return <RouteDetailClient sections={sections} routeId={Number(id)} />;
+  return <RouteDetailClient sections={sections} routeIdentifier={slug} />;
 }

@@ -16,6 +16,7 @@ import { getActiveIntercityRoutes, type IntercityRouteDto, type IntercityRoutePr
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcIntercityPrice } from "@/lib/pricing";
+import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
 import { backendUrl } from "@/lib/api/client";
 import type { SectionDto } from "@/lib/api/sections";
 
@@ -293,7 +294,10 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
                   <div
                     key={route.id}
                     className="group relative bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:border-accent hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col md:flex-row"
-                    onClick={() => router.push(prefixUrl(`/rent-car/${route.id}`))}
+                    onClick={() => {
+                      const slug = resolveLocalizedSlug(route.translations, language) || route.id;
+                      router.push(prefixUrl(`/rent-car/${slug}`));
+                    }}
                   >
                     {/* Thumbnail */}
                     <div className="relative h-40 md:h-auto md:w-36 shrink-0 overflow-hidden">

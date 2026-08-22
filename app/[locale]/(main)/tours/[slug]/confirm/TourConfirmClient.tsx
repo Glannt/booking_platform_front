@@ -8,13 +8,13 @@ import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
 import { TimePicker, TimeValue } from "@/components/time-picker";
 
-import { getTourById, TourDto } from "@/lib/api/tours";
+import { getTourByIdOrSlug, TourDto } from "@/lib/api/tours";
 import { getVehicles, VehicleDto } from "@/lib/api/fleet";
 import { createTourBooking } from "@/lib/api/tours/bookings";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { resolveLocalizedName, resolveTranslation } from "@/lib/i18n-helpers";
+import { resolveLocalizedName, resolveLocalizedSlug, resolveTranslation } from "@/lib/i18n-helpers";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmModal from "@/components/tours/BookingConfirmModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
@@ -28,18 +28,17 @@ const PickupMap = dynamic(
 );
 
 const resolveMediaUrl = (filePath: string): string => {
-    return filePath.startsWith("http") ? filePath : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}${filePath}`;
+    return filePath.startsWith("http") ? filePath : `${process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080"}${filePath}`;
 };
 
 interface TourConfirmClientProps {
-    tourId: number;
+    tourIdentifier: string | number;
     sections: SectionDto[];
 }
 
-export default function TourConfirmClient({ tourId, sections }: TourConfirmClientProps) {
+export default function TourConfirmClient({ tourIdentifier, sections }: TourConfirmClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const id = tourId;
     const vehicleIdParam = Number(searchParams.get("vehicleId") || "1");
     const { language, t } = useI18n();
 
@@ -126,12 +125,12 @@ export default function TourConfirmClient({ tourId, sections }: TourConfirmClien
 
     // Load tour and vehicle data
     useEffect(() => {
-        if (!id) return;
+        if (!tourIdentifier) return;
         let active = true;
         (async () => {
             try {
                 const [tourRes, fleetRes] = await Promise.all([
-                    getTourById(id),
+                    getTourByIdOrSlug(tourIdentifier),
                     getVehicles()
                 ]);
                 if (!active) return;
@@ -148,7 +147,7 @@ export default function TourConfirmClient({ tourId, sections }: TourConfirmClien
             }
         })();
         return () => { active = false; };
-    }, [id, vehicleIdParam]);
+    }, [tourIdentifier, vehicleIdParam]);
 
     const getLocalizedName = (srv: TourDto) => {
         return resolveLocalizedName(srv.translations, language, "Tour");
@@ -490,5 +489,3 @@ export default function TourConfirmClient({ tourId, sections }: TourConfirmClien
         </div>
     );
 }
-
-

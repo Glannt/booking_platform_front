@@ -5,6 +5,7 @@ export interface IntercityRouteTranslationDto {
   routeId?: number;
   locale: string;
   name: string;
+  slug?: string;
   description?: string;
 }
 
@@ -109,6 +110,17 @@ export async function getIntercityRoutes(page = 0, size = 50): Promise<ApiRespon
 
 export async function getIntercityRouteById(id: number): Promise<ApiResponse<IntercityRouteDto>> {
   return apiFetch(`/api/v1/intercity-routes/${id}`, { skipTranslationFilter: true });
+}
+
+export async function getIntercityRouteBySlug(slug: string): Promise<ApiResponse<IntercityRouteDto>> {
+  return apiFetch(`/api/v1/intercity-routes/slug/${encodeURIComponent(slug)}`, { skipTranslationFilter: true });
+}
+
+export async function getIntercityRouteByIdOrSlug(idOrSlug: string | number): Promise<ApiResponse<IntercityRouteDto>> {
+  if (typeof idOrSlug === "number" || (!isNaN(Number(idOrSlug)) && !String(idOrSlug).includes("-"))) {
+    return getIntercityRouteById(Number(idOrSlug));
+  }
+  return getIntercityRouteBySlug(String(idOrSlug));
 }
 
 export async function getIntercityRoutePrices(routeId: number): Promise<ApiResponse<IntercityRoutePriceDto[]>> {

@@ -4,7 +4,7 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import SelfDriveDetailClient from "./SelfDriveDetailClient";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   return {
     title: `${locale === "vi" ? "Thuê xe tự lái" : "Self-Drive Rental"} | Minh Khoa Travel`,
@@ -21,14 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function SelfDriveDetailPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
-  const { id, locale } = await params;
-  const categoryId = Number(id);
+export default async function SelfDriveDetailPage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
+  const { slug, locale } = await params;
   let sections: SectionDto[] = [];
   try {
     sections = await getActiveSectionsServer("/self-drive", locale);
   } catch {
     sections = [];
   }
-  return <SelfDriveDetailClient sections={sections} categoryId={categoryId} />;
+  return <SelfDriveDetailClient sections={sections} categoryIdentifier={slug} />;
 }

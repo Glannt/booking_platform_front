@@ -70,6 +70,21 @@ export async function getVehicleCategories(params?: {
   );
 }
 
+export async function getVehicleCategoryById(id: number, options?: ApiOptions): Promise<ApiResponse<VehicleCategoryDto>> {
+  return apiFetch<ApiResponse<VehicleCategoryDto>>(`/api/v1/vehicle-categories/${id}`, options);
+}
+
+export async function getVehicleCategoryBySlug(slug: string, options?: ApiOptions): Promise<ApiResponse<VehicleCategoryDto>> {
+  return apiFetch<ApiResponse<VehicleCategoryDto>>(`/api/v1/vehicle-categories/slug/${encodeURIComponent(slug)}`, options);
+}
+
+export async function getVehicleCategoryByIdOrSlug(idOrSlug: string | number, options?: ApiOptions): Promise<ApiResponse<VehicleCategoryDto>> {
+  if (typeof idOrSlug === "number" || (!isNaN(Number(idOrSlug)) && !String(idOrSlug).includes("-"))) {
+    return getVehicleCategoryById(Number(idOrSlug), options);
+  }
+  return getVehicleCategoryBySlug(String(idOrSlug), options);
+}
+
 export async function createVehicleCategory(payload: Omit<VehicleCategoryDto, "id">): Promise<ApiResponse<VehicleCategoryDto>> {
   return apiFetch<ApiResponse<VehicleCategoryDto>>("/api/v1/vehicle-categories", {
     method: "POST",

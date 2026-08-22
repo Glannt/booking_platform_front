@@ -4,7 +4,7 @@ import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
 import TourConfirmClient from "./TourConfirmClient";
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string; locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   return {
     title: `${locale === "vi" ? "Xác nhận đặt tour" : "Confirm Tour Booking"} | Minh Khoa Travel`,
@@ -21,13 +21,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function TourConfirmPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
-  const { id, locale } = await params;
+export default async function TourConfirmPage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
+  const { slug, locale } = await params;
   let sections: SectionDto[] = [];
   try {
     sections = await getActiveSectionsServer("/tours", locale);
   } catch {
     sections = [];
   }
-  return <TourConfirmClient tourId={Number(id)} sections={sections} />;
+  return <TourConfirmClient tourIdentifier={slug} sections={sections} />;
 }

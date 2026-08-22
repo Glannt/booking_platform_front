@@ -9,7 +9,7 @@ import { getTours, getTourCategories, TourDto, TourCategoryDto } from "@/lib/api
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { resolveImageUrls } from "@/lib/api/media";
-import { resolveLocalizedName, resolveLocalizedDescription, resolveTranslation } from "@/lib/i18n-helpers";
+import { resolveLocalizedName, resolveLocalizedDescription, resolveLocalizedSlug, resolveTranslation } from "@/lib/i18n-helpers";
 import { ImageGrid } from "@/components/ImageGallery";
 import type { SectionDto } from "@/lib/api/sections";
 
@@ -346,7 +346,10 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
                       <span className="text-base font-black text-amber-500">{formatPrice(minPrice)}</span>
                     </div>
                     <Button
-                      onClick={() => router.push(`/${language}/tours/${tour.id}`)}
+                      onClick={() => {
+                        const tourSlug = resolveLocalizedSlug(tour.translations, language) || tour.id;
+                        router.push(`/${language}/tours/${tourSlug}`);
+                      }}
                       className="bg-accent hover:bg-accent-hover text-white font-extrabold text-[11px] uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm border-none cursor-pointer"
                     >
                       {t.tours.bookNow} →

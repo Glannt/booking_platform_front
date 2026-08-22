@@ -957,6 +957,7 @@ priceSchemaInfoKm: string;
     dropoffAddressRequired: string;
     invalidEmail: string;
     passwordTooShort: string;
+    passwordRequirements: string;
     phoneInvalid: string;
     fullnameRequired: string;
     maximumItems: string;

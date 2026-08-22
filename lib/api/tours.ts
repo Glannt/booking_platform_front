@@ -5,6 +5,7 @@ export interface TourTranslationDto {
   id?: number;
   locale: string;
   name: string;
+  slug?: string;
   description: string;
   content: string;
 }
@@ -146,6 +147,17 @@ export async function getTourCategories(): Promise<ApiResponse<PageResponse<Tour
 
 export async function getTourById(id: number): Promise<ApiResponse<TourDto>> {
   return apiFetch<ApiResponse<TourDto>>(`/api/v1/tours/${id}`);
+}
+
+export async function getTourBySlug(slug: string): Promise<ApiResponse<TourDto>> {
+  return apiFetch<ApiResponse<TourDto>>(`/api/v1/tours/slug/${encodeURIComponent(slug)}`);
+}
+
+export async function getTourByIdOrSlug(idOrSlug: string | number): Promise<ApiResponse<TourDto>> {
+  if (typeof idOrSlug === "number" || (!isNaN(Number(idOrSlug)) && !String(idOrSlug).includes("-"))) {
+    return getTourById(Number(idOrSlug));
+  }
+  return getTourBySlug(String(idOrSlug));
 }
 
 export async function createTour(payload: CreateTourRequest): Promise<ApiResponse<TourDto>> {

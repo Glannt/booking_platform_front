@@ -5,24 +5,23 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, MapPin, Star, Shield, Ship, Utensils, Award, User, Briefcase, CheckCircle, Compass } from "lucide-react";
 import { Button, Skeleton } from "@heroui/react";
 
-import { getTourById, TourDto } from "@/lib/api/tours";
+import { getTourByIdOrSlug, TourDto } from "@/lib/api/tours";
 import { getVehicles, VehicleDto } from "@/lib/api/fleet";
 import { getMediaDetails } from "@/lib/api/media";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice, formatTimeDisplay } from "@/lib/format";
-import { resolveLocalizedName, resolveLocalizedContent, resolveTranslation } from "@/lib/i18n-helpers";
+import { resolveLocalizedName, resolveLocalizedContent, resolveLocalizedSlug, resolveTranslation } from "@/lib/i18n-helpers";
 import { ImageGallery } from "@/components/ImageGallery";
 import type { SectionDto } from "@/lib/api/sections";
 
 interface TourDetailClientProps {
   sections: SectionDto[];
-  tourId: number;
+  tourIdentifier: string | number;
 }
 
-export default function TourDetailClient({ sections, tourId }: TourDetailClientProps) {
+export default function TourDetailClient({ sections, tourIdentifier }: TourDetailClientProps) {
   const router = useRouter();
   const { language, t } = useI18n();
-  const id = tourId;
 
   const [tour, setTour] = useState<TourDto | null>(null);
   const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
@@ -35,7 +34,7 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
       setLoading(true);
       try {
         const [tourRes, fleetRes] = await Promise.all([
-          getTourById(id),
+          getTourByIdOrSlug(tourIdentifier),
           getVehicles()
         ]);
 
@@ -52,7 +51,7 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
         const defaultV = list.find(v => v.type?.default) || list[0];
         setSelectedVehicle(defaultV);
 
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
         const imagesMap: Record<number, string> = {};
         await Promise.all(
           list.map(async (v) => {
@@ -79,10 +78,10 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
       }
     };
     fetchData();
-  }, [id]);
+  }, [tourIdentifier]);
 
   const resolveMediaUrl = (filePath: string): string => {
-    return filePath.startsWith("http") ? filePath : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}${filePath}`;
+    return filePath.startsWith("http") ? filePath : `${process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080"}${filePath}`;
   };
 
   const getLocalizedName = () => {
@@ -126,8 +125,9 @@ export default function TourDetailClient({ sections, tourId }: TourDetailClientP
   };
 
   const handleProceedBooking = () => {
-    if (!selectedVehicle) return;
-    router.push(`/${language}/tours/${id}/confirm?vehicleId=${selectedVehicle.id}`);
+    if (!selectedVehicle || !tour) return;
+    const slugOrId = resolveLocalizedSlug(tour.translations, language) || tour.id || tourIdentifier;
+    router.push(`/${language}/tours/${slugOrId}/confirm?vehicleId=${selectedVehicle.id}`);
   };
 
   if (loading) {

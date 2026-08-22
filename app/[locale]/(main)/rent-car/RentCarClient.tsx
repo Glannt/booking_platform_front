@@ -39,6 +39,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { getActiveIntercityRoutes, getActiveDepartureTimes, type IntercityRouteDto, type IntercityDepartureTimeDto } from "@/lib/api/rental";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcIntercityPrice } from "@/lib/pricing";
+import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
 import { backendUrl } from "@/lib/api/client";
 import { HeroBanner } from "@/components/sections/HeroBanner";
 import { BookingProcessSection } from "@/components/sections/BookingProcessSection";

@@ -64,6 +64,18 @@ export function resolveLocalizedContent(
 }
 
 /**
+ * Resolve a localized slug from a translations array.
+ */
+export function resolveLocalizedSlug(
+  translations: Array<{ locale: string; slug?: string }> | undefined,
+  language: Language,
+  fallbackSlug: string = "",
+): string {
+  const t = resolveTranslation(translations, language);
+  return t?.slug || fallbackSlug;
+}
+
+/**
  * Generic localized text getter — picks the field matching the key name.
  * Useful for resolving any string field (e.g., "description", "title", "name") from translations.
  */
