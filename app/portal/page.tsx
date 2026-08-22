@@ -23,9 +23,12 @@ import { formatPriceSync, formatCompactPrice } from "@/lib/format";
 import { useI18n } from "@/context/LanguageContext";
 import { useRouter } from "next/navigation";
 
+import { useAuthStore } from "@/lib/store/authStore";
+
 export default function AdminOverviewPage() {
   const { language } = useI18n();
   const router = useRouter();
+  const { user: authUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
   
   const [stats, setStats] = useState({
@@ -120,52 +123,56 @@ export default function AdminOverviewPage() {
   const shortcuts = [
     {
       label: "Quản lý Đơn đặt",
-      path: "/admin/bookings",
+      path: "/portal/bookings",
       icon: <Calendar size={16} className="text-primary" />,
     },
     {
       label: "Quản lý Tours",
-      path: "/admin/tours",
+      path: "/portal/tours",
       icon: <Compass size={16} className="text-success" />,
     },
     {
       label: "Đội xe & Xe tự lái",
-      path: "/admin/vehicles",
+      path: "/portal/vehicles",
       icon: <Car size={16} className="text-warning" />,
     },
     {
       label: "Đưa đón Sân bay",
-      path: "/admin/airport-transfers",
+      path: "/portal/airport-transfers",
       icon: <Plane size={16} className="text-secondary" />,
     },
     {
       label: "Đơn thuê xe tự lái",
-      path: "/admin/rental-bookings",
+      path: "/portal/bookings/self-drive",
       icon: <CalendarDays size={16} className="text-primary" />,
     },
     {
       label: "Tuyến xe Liên tỉnh",
-      path: "/admin/intercity",
+      path: "/portal/intercity",
       icon: <Milestone size={16} className="text-success" />,
     },
     {
       label: "Sections & Banners",
-      path: "/admin/sections",
+      path: "/portal/sections",
       icon: <Layers size={16} className="text-danger" />,
     },
     {
       label: "Quản lý Users",
-      path: "/admin/users",
+      path: "/portal/users",
       icon: <Users size={16} className="text-default-600" />,
     },
-    {
-      label: "Phân quyền hệ thống",
-      path: "/admin/roles",
-      icon: <Shield size={16} className="text-success" />,
-    },
+    ...(authUser?.role === "ADMIN"
+      ? [
+          {
+            label: "Phân quyền hệ thống",
+            path: "/portal/users?tab=roles",
+            icon: <Shield size={16} className="text-success" />,
+          },
+        ]
+      : []),
     {
       label: "Cấu hình Liên hệ",
-      path: "/admin/contacts",
+      path: "/portal/contacts",
       icon: <Globe size={16} className="text-danger" />,
     },
   ];

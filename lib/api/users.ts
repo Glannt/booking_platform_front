@@ -7,8 +7,10 @@ export interface AdminUserDto {
   fullname?: string;
   role: string;
   status: string;
+  reasonInactive?: string;
   kakaoTalkId?: string;
   zaloId?: string;
+  whatsapp?: string;
 }
 
 export interface AdminCreateUserRequest {
@@ -17,13 +19,23 @@ export interface AdminCreateUserRequest {
   fullname: string;
   phone?: string;
   role: string;
+  status?: string;
+  reasonInactive?: string;
+  kakaoTalkId?: string;
+  zaloId?: string;
+  whatsapp?: string;
 }
 
 export interface AdminUpdateUserRequest {
   fullname?: string;
   phone?: string;
+  password?: string;
   role?: string;
   status?: string;
+  reasonInactive?: string;
+  kakaoTalkId?: string;
+  zaloId?: string;
+  whatsapp?: string;
 }
 
 export interface PageResponse<T> {

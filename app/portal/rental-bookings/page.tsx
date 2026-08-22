@@ -92,7 +92,7 @@ export default function RentalBookingsPage() {
 
   // Redirect to the new self-drive page
   useEffect(() => {
-    router.replace("/admin/bookings/self-drive");
+    router.replace("/portal/bookings/self-drive");
   }, [router]);
 
   const rentalItems = useMemo(() => {

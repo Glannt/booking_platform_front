@@ -51,18 +51,18 @@ export default function UserDeleteModal({
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="user-delete-title">
-      <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
+      <ModalBackdrop className="bg-black/50 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="sm">
-          <ModalDialog className="max-w-md bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
-            <ModalCloseTrigger />
-            <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
-              <span id="user-delete-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <ModalDialog className="max-w-md bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
+            <ModalCloseTrigger aria-label="Đóng xác nhận xóa user" />
+            <ModalHeader className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[var(--bg-page)]/40 py-4 px-6">
+              <span id="user-delete-title" className="text-lg font-extrabold text-neutral-900 dark:text-white flex items-center gap-2">
                 <AlertCircle className="text-rose-500" size={20} />
                 Xác nhận xóa User
               </span>
             </ModalHeader>
 
-            <ModalBody className="p-6 text-sm text-slate-600 dark:text-slate-350">
+            <ModalBody className="p-6 text-sm text-neutral-600 dark:text-neutral-300">
               <p>
                 Bạn có chắc chắn muốn xóa user{" "}
                 <strong className="text-primary font-bold">{user.fullname || user.email}</strong>?
@@ -72,15 +72,17 @@ export default function UserDeleteModal({
               </p>
             </ModalBody>
 
-            <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 justify-end gap-2.5">
+            <ModalFooter className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[var(--bg-page)]/40 py-3 px-6 justify-end gap-2.5">
               <Button
-                className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200"
+                aria-label="Hủy thao tác xóa user"
+                className="rounded-xl font-bold bg-neutral-200 dark:bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200"
                 onClick={onClose}
                 isDisabled={loading}
               >
                 Hủy
               </Button>
               <Button
+                aria-label="Xác nhận xóa user"
                 className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm border border-transparent"
                 onClick={handleDelete}
                 isDisabled={loading}

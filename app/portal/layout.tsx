@@ -37,7 +37,7 @@ import { useAuthStore } from "@/lib/store/authStore";
 import { apiFetch } from "@/lib/api/client";
 import AuthGuard from "@/components/auth-guard";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { language, setLanguage, t, supportedLanguages } = useI18n();
@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       });
     } catch { }
     clearAuth();
-    router.push("/admin/login");
+    router.push("/portal/login");
   };
 
   const sidebarGroups: SidebarGroup[] = [
@@ -62,9 +62,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: "Khám phá",
       items: [
         {
-          key: "admin-dashboard",
+          key: "portal-dashboard",
           label: "Tổng quan",
-          path: "/admin",
+          path: "/portal",
           icon: <LayoutDashboard size={20} />,
         },
       ],
@@ -77,52 +77,52 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           label: "Quản lý Đơn đặt",
           icon: <Calendar size={20} />,
           children: [
-            { key: "booking-tours", label: "Đơn đặt Tours", path: "/admin/bookings" },
-            { key: "booking-self-drive", label: "Đơn đặt xe tự lái", path: "/admin/bookings/self-drive" },
-            { key: "booking-intercity", label: "Đơn đặt xe liên tỉnh", path: "/admin/bookings/intercity" },
-            { key: "booking-airport", label: "Đơn đưa đón sân bay", path: "/admin/bookings/airport-transfers" },
+            { key: "booking-tours", label: "Đơn đặt Tours", path: "/portal/bookings" },
+            { key: "booking-self-drive", label: "Đơn đặt xe tự lái", path: "/portal/bookings/self-drive" },
+            { key: "booking-intercity", label: "Đơn đặt xe liên tỉnh", path: "/portal/bookings/intercity" },
+            { key: "booking-airport", label: "Đơn đưa đón sân bay", path: "/portal/bookings/airport-transfers" },
           ],
         },
         {
           key: "tours-mgmt",
           label: "Quản lý Tour",
-          path: "/admin/tours",
+          path: "/portal/tours",
           icon: <Compass size={20} />,
         },
         {
           key: "self-drive-mgmt",
           label: "Thuê xe Tự lái",
-          path: "/admin/self-drive",
+          path: "/portal/self-drive",
           icon: <KeyRound size={20} />,
         },
         {
           key: "intercity-mgmt",
           label: "Tuyến xe Liên tỉnh",
-          path: "/admin/intercity",
+          path: "/portal/intercity",
           icon: <Milestone size={20} />,
         },
         {
           key: "airport-transfers-mgmt",
           label: "Đưa đón sân bay",
-          path: "/admin/airport-transfers",
+          path: "/portal/airport-transfers",
           icon: <Plane size={20} />,
         },
         {
           key: "vehicles-mgmt",
           label: "Đội xe",
-          path: "/admin/vehicles",
+          path: "/portal/vehicles",
           icon: <Car size={20} />,
         },
         {
           key: "surcharges-mgmt",
           label: "Quản lý Phụ thu",
-          path: "/admin/surcharges",
+          path: "/portal/surcharges",
           icon: <Percent size={20} />,
         },
         {
           key: "flights-mgmt",
           label: "Tra cứu chuyến bay",
-          path: "/admin/flights",
+          path: "/portal/flights",
           icon: <Search size={20} />,
         },
       ],
@@ -133,37 +133,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {
           key: "sections-mgmt",
           label: "Sections / Banner",
-          path: "/admin/sections",
+          path: "/portal/sections",
           icon: <Layers size={20} />,
         },
         {
           key: "currencies-mgmt",
           label: "Tiền tệ & Tỉ giá",
-          path: "/admin/currencies",
+          path: "/portal/currencies",
           icon: <Coins size={20} />,
         },
         {
           key: "contact-settings",
           label: "Cấu hình Liên hệ",
-          path: "/admin/contacts",
+          path: "/portal/contacts",
           icon: <Globe size={20} />,
         },
-        ...(authUser?.role === "ADMIN"
-          ? [
-            {
-              key: "roles",
-              label: "Phân quyền",
-              path: "/admin/roles",
-              icon: <Shield size={20} />,
-            },
-          ]
-          : []),
         ...(authUser?.role === "ADMIN" || authUser?.role === "MODERATOR"
           ? [
             {
               key: "users-mgmt",
-              label: "Quản lý Users",
-              path: "/admin/users",
+              label: "Người dùng & Phân quyền",
+              path: "/portal/users",
               icon: <Users size={20} />,
             },
           ]
@@ -171,7 +161,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {
           key: "settings",
           label: "Cài đặt tài khoản",
-          path: "/admin/settings",
+          path: "/portal/settings",
           icon: <Settings size={20} />,
         },
       ],
@@ -196,23 +186,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
-  const isBookingsMgmt = pathname?.startsWith("/admin/bookings");
-  const isBookingTours = pathname === "/admin/bookings";
-  const isBookingSelfDrive = pathname?.startsWith("/admin/bookings/self-drive");
-  const isBookingIntercity = pathname?.startsWith("/admin/bookings/intercity");
-  const isBookingAirport = pathname?.startsWith("/admin/bookings/airport-transfers");
-  const isToursMgmt = pathname?.startsWith("/admin/tours");
-  const isVehiclesMgmt = pathname?.startsWith("/admin/vehicles");
-  const isFaqsMgmt = pathname?.startsWith("/admin/services/faqs");
-  const isSettings = pathname?.startsWith("/admin/settings");
-  const isRoles = pathname?.startsWith("/admin/roles");
-  const isSections = pathname?.startsWith("/admin/sections");
-  const isContactsMgmt = pathname?.startsWith("/admin/contacts");
-  const isRentalBookings = pathname?.startsWith("/admin/rental-bookings");
-  const isIntercityMgmt = pathname?.startsWith("/admin/intercity");
-  const isSurchargesMgmt = pathname?.startsWith("/admin/surcharges");
-  const isCurrenciesMgmt = pathname?.startsWith("/admin/currencies");
-  const isFlightsMgmt = pathname?.startsWith("/admin/flights");
+  const isBookingsMgmt = pathname?.startsWith("/portal/bookings") || pathname?.startsWith("/admin/bookings");
+  const isBookingTours = pathname === "/portal/bookings" || pathname === "/admin/bookings";
+  const isBookingSelfDrive = pathname?.startsWith("/portal/bookings/self-drive") || pathname?.startsWith("/admin/bookings/self-drive");
+  const isBookingIntercity = pathname?.startsWith("/portal/bookings/intercity") || pathname?.startsWith("/admin/bookings/intercity");
+  const isBookingAirport = pathname?.startsWith("/portal/bookings/airport-transfers") || pathname?.startsWith("/admin/bookings/airport-transfers");
+  const isToursMgmt = pathname?.startsWith("/portal/tours") || pathname?.startsWith("/admin/tours");
+  const isVehiclesMgmt = pathname?.startsWith("/portal/vehicles") || pathname?.startsWith("/admin/vehicles");
+  const isFaqsMgmt = pathname?.startsWith("/portal/services/faqs") || pathname?.startsWith("/admin/services/faqs");
+  const isSettings = pathname?.startsWith("/portal/settings") || pathname?.startsWith("/admin/settings");
+  const isRoles = pathname?.startsWith("/portal/roles") || pathname?.startsWith("/admin/roles");
+  const isSections = pathname?.startsWith("/portal/sections") || pathname?.startsWith("/admin/sections");
+  const isContactsMgmt = pathname?.startsWith("/portal/contacts") || pathname?.startsWith("/admin/contacts");
+  const isRentalBookings = pathname?.startsWith("/portal/rental-bookings") || pathname?.startsWith("/admin/rental-bookings");
+  const isIntercityMgmt = pathname?.startsWith("/portal/intercity") || pathname?.startsWith("/admin/intercity");
+  const isSurchargesMgmt = pathname?.startsWith("/portal/surcharges") || pathname?.startsWith("/admin/surcharges");
+  const isCurrenciesMgmt = pathname?.startsWith("/portal/currencies") || pathname?.startsWith("/admin/currencies");
+  const isFlightsMgmt = pathname?.startsWith("/portal/flights") || pathname?.startsWith("/admin/flights");
 
   const getPageTitle = () => {
     if (isBookingSelfDrive) {
@@ -321,7 +311,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return "Báo cáo số liệu đặt xe, doanh thu và kiểm tra lịch sử hoạt động.";
   };
 
-  const isLoginPage = pathname === "/admin/login";
+  const isLoginPage = pathname === "/portal/login" || pathname === "/admin/login";
 
   if (isLoginPage) {
     return <>{children}</>;
@@ -329,20 +319,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AuthGuard allowedRoles={["ADMIN", "STAFF", "MODERATOR"]}>
-      <div className="admin-layout flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
+      <div className="portal-layout flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
         {/* Sidebar - desktop */}
-        <div className="hidden md:flex">
+        <div className="hidden md:flex flex-shrink-0">
           <Sidebar
             isShowCollapsedBadge={true}
             className="text-foreground"
             groups={sidebarGroups}
             user={userProfile}
-            brandName="Minh Khoa Travel"
+            brandName="Minh Khoa Portal"
             isAdmin={true}
             logo={<LayoutDashboard className="text-primary" size={24} />}
             onLogout={handleLogout}
-            onSettingsClick={() => router.push("/admin/settings")}
-            onProfileClick={() => router.push("/admin/settings")}
+            onSettingsClick={() => router.push("/portal/settings")}
+            onProfileClick={() => router.push("/portal/settings")}
           />
         </div>
 
@@ -372,7 +362,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             isShowCollapsedBadge={false}
                             groups={sidebarGroups}
                             user={userProfile}
-                            brandName="Minh Khoa Travel"
+                            brandName="Minh Khoa Portal"
                             isAdmin={true}
                             logo={<LayoutDashboard className="text-primary" size={24} />}
                             onLogout={() => {
@@ -381,11 +371,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             }}
                             onSettingsClick={() => {
                               mobileDrawerState.close();
-                              router.push("/admin/settings");
+                              router.push("/portal/settings");
                             }}
                             onProfileClick={() => {
                               mobileDrawerState.close();
-                              router.push("/admin/settings");
+                              router.push("/portal/settings");
                             }}
                           />
                         </Drawer.Body>

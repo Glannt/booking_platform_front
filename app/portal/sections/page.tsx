@@ -11,6 +11,7 @@ import {
   EyeOff,
   ArrowUpDown,
   Layers,
+  Edit3,
 } from "lucide-react";
 import {
   Button,
@@ -326,6 +327,19 @@ export default function SectionsManagementPage() {
                                 }}
                               >
                                 <Eye size={16} />
+                              </Button>
+                              <Button
+                                isIconOnly
+                                variant="ghost"
+                                aria-label="Chỉnh sửa section"
+                                className="text-slate-500 hover:text-amber-500"
+                                onClick={(e: React.MouseEvent) => {
+                                  e.stopPropagation();
+                                  setSelectedSection(s);
+                                  setCreateModalOpen(true);
+                                }}
+                              >
+                                <Edit3 size={16} />
                               </Button>
                               <Button
                                 isIconOnly

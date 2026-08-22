@@ -18,7 +18,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function AdminLoginPage() {
+export default function PortalLoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,12 +45,12 @@ export default function AdminLoginPage() {
         const { user, accessToken, refreshToken } = response.data;
         const allowedRoles = ["ADMIN", "STAFF", "MODERATOR"];
         if (!allowedRoles.includes(user.role)) {
-          toast.danger("Tài khoản này không có quyền truy cập quản trị.");
+          toast.danger("Tài khoản này không có quyền truy cập cổng quản trị.");
           return;
         }
         setAuth(user, accessToken, refreshToken);
         toast.success("Đăng nhập thành công!");
-        router.push("/admin");
+        router.push("/portal");
       } else {
         throw new Error("Phản hồi không hợp lệ");
       }
@@ -72,8 +72,8 @@ export default function AdminLoginPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#C9A227]/10 text-[#C9A227] mb-2">
             <ShieldCheck size={24} />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Quản trị Hệ thống</h1>
-          <p className="text-sm text-muted-foreground">Đăng nhập để quản trị</p>
+          <h1 className="text-2xl font-bold text-foreground">Cổng Quản trị & Vận hành</h1>
+          <p className="text-sm text-muted-foreground">Minh Khoa Travel Portal</p>
         </div>
         <div className="py-2">
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
                   {...register("email")}
                   type="email"
                   required
-                  placeholder="admin@example.com"
+                  placeholder="name@example.com"
                   className="w-full pl-10 pr-3 py-2.5 bg-default-100/50 border border-default-200 rounded-2xl text-sm font-medium outline-none focus:border-[#C9A227] transition-colors text-foreground placeholder:text-default-400"
                 />
               </div>
@@ -129,7 +129,7 @@ export default function AdminLoginPage() {
               className="w-full mt-2 font-semibold shadow-md border-none cursor-pointer flex items-center justify-center gap-2 bg-[#C9A227] text-white"
             >
               {isLoading && <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
-              Đăng nhập Quản trị
+              Đăng nhập Portal
             </Button>
           </form>
         </div>
