@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useI18n } from "@/context/LanguageContext";
 import Link from "next/link";
@@ -151,6 +151,7 @@ export const Footer = () => {
       <div className="max-w-7xl mx-auto px-6 border-t border-slate-200 dark:border-slate-900 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-4 transition-colors">
         <span>&copy; {new Date().getFullYear()} {t.footer.copyright}</span>
         <span>{t.footer.companyFooter}</span>
+        <span>Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600 dark:hover:text-slate-300">OpenStreetMap</a> contributors</span>
       </div>
     </footer>
   );

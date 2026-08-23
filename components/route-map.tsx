@@ -62,7 +62,7 @@ export default function RouteMap({
     });
 
     L.tileLayer(tileUrl, {
-      attribution: '&copy; <a href="https://maps.google.com/">Google Maps</a>',
+      attribution: '&copy; <a href="https://maps.google.com/" target="_blank" rel="noopener noreferrer">Google Maps</a> | Route &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
     }).addTo(map);
 
     mapRef.current = map;
