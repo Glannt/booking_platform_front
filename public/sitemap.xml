@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- Root -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Airport Transfer -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/airport-transfer</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/airport-transfer" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/airport-transfer</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/airport-transfer" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/airport-transfer</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/airport-transfer" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/airport-transfer</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/airport-transfer" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/airport-transfer" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Rent Car (Thuê xe đi tỉnh) -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/rent-car</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/rent-car" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/rent-car" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/rent-car</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/rent-car" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/rent-car" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/rent-car</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/rent-car" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/rent-car" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/rent-car</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/rent-car" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/rent-car" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/rent-car" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Self Drive (Thuê xe tự lái) -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/self-drive</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/self-drive" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/self-drive" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/self-drive</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/self-drive" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/self-drive" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/self-drive</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/self-drive" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/self-drive" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/self-drive</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/self-drive" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/self-drive" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/self-drive" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Tours -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/tours</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/tours" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/tours" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/tours" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/tours" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/tours</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/tours" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/tours" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/tours" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/tours" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/tours</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/tours" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/tours" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/tours" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/tours" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/tours</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/tours" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/tours" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/tours" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/tours" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- About Us -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/about</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/about" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/about" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/about" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/about</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/about" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/about" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/about" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/about</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/about" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/about" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/about" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/about</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/about" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/about" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/about" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/about" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Pricing -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/pricing" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/pricing" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/pricing" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/pricing" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/pricing" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/pricing" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/pricing</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/pricing" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/pricing" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/pricing" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/pricing" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Blog -->
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/vi/blog</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/blog" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/blog" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/blog" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/en/blog</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/blog" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/blog" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/blog" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ko/blog</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/blog" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/blog" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/blog" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://booking.minhkhoatravel.vn/ru/blog</loc>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://booking.minhkhoatravel.vn/vi/blog" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://booking.minhkhoatravel.vn/en/blog" />
+    <xhtml:link rel="alternate" hreflang="ko" href="https://booking.minhkhoatravel.vn/ko/blog" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://booking.minhkhoatravel.vn/ru/blog" />
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

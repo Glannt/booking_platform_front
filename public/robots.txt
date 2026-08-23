@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /staff/
+Disallow: /api/
+
+Sitemap: https://booking.minhkhoatravel.vn/sitemap.xml
