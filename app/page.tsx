@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/context/LanguageContext";
 import { Language } from "@/config/translations";
-import { Globe, ArrowRight, Heart } from "lucide-react";
+import { Globe, ArrowRight, Heart, Sparkles, ShieldCheck, Clock, MapPin } from "lucide-react";
+import { ThemeSwitch } from "@/components/theme-switch";
 import clsx from "clsx";
 
 const LANGUAGES: { code: Language; label: string; flag: string; native: string; desc: string }[] = [
@@ -70,19 +71,19 @@ export default function RootPage() {
           setIsDetecting(false);
           setMounted(true);
         },
-        { timeout: 5000 }
+        { timeout: 4000 }
       );
     } else {
       setMounted(true);
     }
-  }, [setLanguage]);
+  }, [setLanguage, router]);
 
   if (isDetecting || !mounted) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <Globe className="text-primary animate-spin" size={40} />
-          <span className="text-slate-400 text-sm font-bold">
+          <Globe className="text-accent animate-spin" size={40} />
+          <span className="text-slate-500 dark:text-slate-400 text-sm font-bold">
             {isDetecting ? "Detecting your location..." : "Loading travel portal..."}
           </span>
         </div>
@@ -95,43 +96,55 @@ export default function RootPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden bg-slate-950 text-white font-sans px-4 select-none">
-      {/* Dynamic Animated Gradient Background Rings */}
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/10 blur-[120px] animate-pulse" style={{ animationDuration: '8s' }}></div>
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-500/10 blur-[120px] animate-pulse" style={{ animationDuration: '10s' }}></div>
+    <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden bg-background text-foreground font-sans px-4 select-none transition-colors duration-200">
+      {/* Dynamic Theme Gradient Orbs */}
+      <div className="pointer-events-none absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-accent/10 dark:bg-accent/15 blur-[130px] animate-pulse" style={{ animationDuration: '8s' }}></div>
+      <div className="pointer-events-none absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-accent/10 dark:bg-accent/15 blur-[130px] animate-pulse" style={{ animationDuration: '10s' }}></div>
 
-      {/* Main Glassmorphic Container */}
-      <div className="relative z-10 w-full max-w-4xl bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-[32px] p-8 md:p-12 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col md:flex-row gap-8 items-center">
+      {/* Top Bar with Theme Toggle */}
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeSwitch className="flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-2xl p-2.5 bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-slate-200 shadow-md hover:border-accent/50 transition-all cursor-pointer" />
+      </div>
+
+      {/* Main Glassmorphic Card */}
+      <div className="relative z-10 w-full max-w-4xl bg-white dark:bg-[var(--bg-surface)] backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-[32px] p-8 md:p-12 shadow-2xl flex flex-col md:flex-row gap-8 lg:gap-12 items-center">
         
         {/* Left Side: Brand Introduction */}
         <div className="w-full md:w-5/12 text-center md:text-left space-y-6 flex flex-col justify-center">
-          <div className="inline-flex items-center justify-center md:justify-start gap-2 bg-blue-500/10 border border-blue-500/20 px-3.5 py-1.5 rounded-full text-xs font-bold text-blue-400 tracking-wide w-fit mx-auto md:mx-0">
-            <Globe size={14} className="animate-spin-slow" />
-            <span>GLOBAL TRAVEL PORTAL</span>
+          <div className="flex items-center justify-center md:justify-start gap-3">
+            <img
+              src="https://minhkhoatravel.vn/wp-content/uploads/2025/05/logo_header_150x150.png"
+              alt="Minh Khoa Travel Logo"
+              className="w-12 h-12 rounded-xl object-contain shadow-sm border border-slate-100 dark:border-slate-800"
+            />
+            <div className="inline-flex items-center gap-1.5 bg-accent/10 border border-accent/30 px-3 py-1 rounded-full text-xs font-black text-accent tracking-wide">
+              <Sparkles size={13} />
+              <span>MINH KHOA TRAVEL</span>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              Minh Khoa Travel
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight leading-none text-slate-900 dark:text-white">
+              Nha Trang Travel & Booking
             </h1>
-            <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-sm mx-auto md:mx-0">
-              Welcome to Nha Trang's premium transportation & sightseeing planner. Select your language to customize your journey.
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-sm mx-auto md:mx-0">
+              Chào mừng bạn đến với cổng thông tin du lịch và đặt xe Nha Trang. Vui lòng chọn ngôn ngữ để tiếp tục hành trình.
             </p>
           </div>
 
-          <div className="pt-4 border-t border-slate-800/80 hidden md:block">
-            <div className="flex items-center gap-2.5 text-xs text-slate-500">
-              <span>Secure Booking</span>
-              <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-              <span>24/7 Support</span>
-              <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-              <span>Local Guides</span>
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 hidden md:block">
+            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+              <span className="flex items-center gap-1"><ShieldCheck size={14} className="text-emerald-500" /> Uy tín 100%</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+              <span className="flex items-center gap-1"><Clock size={14} className="text-amber-500" /> Hỗ trợ 24/7</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+              <span className="flex items-center gap-1"><MapPin size={14} className="text-blue-500" /> Nha Trang</span>
             </div>
           </div>
         </div>
 
         {/* Vertical Divider for desktop */}
-        <div className="hidden md:block w-px h-64 bg-gradient-to-b from-slate-800/20 via-slate-800 to-slate-800/20"></div>
+        <div className="hidden md:block w-px h-72 bg-gradient-to-b from-transparent via-slate-200 dark:via-slate-800 to-transparent"></div>
 
         {/* Right Side: Language Cards Grid */}
         <div className="w-full md:w-7/12 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -140,39 +153,40 @@ export default function RootPage() {
             return (
               <button
                 key={lang.code}
+                type="button"
                 onClick={() => handleSelectLanguage(lang.code)}
                 onMouseEnter={() => setHoveredLang(lang.code)}
                 onMouseLeave={() => setHoveredLang(null)}
                 className={clsx(
-                  "group relative flex items-center gap-4 p-5 rounded-2xl text-left border bg-slate-900/35 transition-all duration-300 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/50",
+                  "group relative flex items-center gap-4 p-5 rounded-2xl text-left border transition-all duration-200 cursor-pointer outline-none",
                   isHovered 
-                    ? "border-blue-500/80 bg-blue-500/5 shadow-[0_0_20px_rgba(59,130,246,0.15)] translate-y-[-2px]" 
-                    : "border-slate-800 hover:border-slate-750"
+                    ? "border-accent bg-accent/10 dark:bg-accent/15 shadow-md translate-y-[-2px]" 
+                    : "border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[var(--bg-card)] hover:border-accent/60"
                 )}
               >
                 {/* Flag Icon */}
-                <div className="w-12 h-12 bg-slate-800 dark:bg-[var(--bg-card)] rounded-xl flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-300">
+                <div className="w-12 h-12 bg-white dark:bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform duration-200 border border-slate-100 dark:border-slate-700 shrink-0">
                   {lang.flag}
                 </div>
 
                 {/* Info */}
                 <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-sm text-white group-hover:text-blue-400 transition-colors duration-300">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-accent transition-colors duration-200">
                       {lang.label}
                     </span>
                     <ArrowRight 
-                      size={12} 
+                      size={14} 
                       className={clsx(
-                        "text-blue-400 transition-all duration-300",
+                        "text-accent transition-all duration-200",
                         isHovered ? "opacity-100 translate-x-1" : "opacity-0 translate-x-0"
                       )} 
                     />
                   </div>
-                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                  <span className="block text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                     {lang.native}
                   </span>
-                  <span className="block text-[11px] text-slate-500 font-medium truncate mt-1">
+                  <span className="block text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-1">
                     {lang.desc}
                   </span>
                 </div>
@@ -183,12 +197,12 @@ export default function RootPage() {
       </div>
 
       {/* Footer copyright */}
-      <div className="absolute bottom-6 z-10 text-center space-y-1">
-        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+      <div className="mt-8 text-center space-y-1 z-10">
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
           Minh Khoa Travel Co., Ltd © 2026
         </p>
-        <p className="text-[9px] text-slate-650 font-medium flex items-center justify-center gap-1">
-          Made with <Heart size={10} className="text-rose-500/70 animate-pulse" /> for travelers worldwide
+        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium flex items-center justify-center gap-1">
+          Made with <Heart size={10} className="text-rose-500 animate-pulse" /> for travelers worldwide
         </p>
       </div>
     </div>
