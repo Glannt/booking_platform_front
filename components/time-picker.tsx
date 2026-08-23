@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Clock, ChevronDown, Check } from "lucide-react";
 
@@ -48,11 +48,11 @@ function ScrollColumn({ items, selected, onSelect, label }: ScrollColumnProps) {
       {/* Scroll drum */}
       <div className="relative w-full">
         {/* Top fade */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 z-10 bg-gradient-to-b from-white dark:from-[var(--bg-card)] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 z-10 bg-gradient-to-b from-white dark:from-[var(--bg-surface)] to-transparent" />
         {/* Selection highlight */}
         <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 h-[44px] z-10 bg-accent/10 dark:bg-accent/20 border-y border-accent/30 rounded-xl mx-1" />
         {/* Bottom fade */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 z-10 bg-gradient-to-t from-white dark:from-[var(--bg-card)] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 z-10 bg-gradient-to-t from-white dark:from-[var(--bg-surface)] to-transparent" />
 
         {/* Scrollable list */}
         <div
@@ -73,8 +73,8 @@ function ScrollColumn({ items, selected, onSelect, label }: ScrollColumnProps) {
               onClick={() => onSelect(i)}
               style={{ height: ITEM_H, scrollSnapAlign: "center" }}
               className={`flex items-center justify-center cursor-pointer select-none text-sm font-bold transition-all duration-150 ${selected === i
-                ? "text-accent scale-110"
-                : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "text-accent scale-110 font-black"
+                : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
                 }`}
             >
               {item}
@@ -108,8 +108,10 @@ interface TimePickerProps {
   /** Title shown inside the popover header */
   popoverTitle?: string;
   className?: string;
+  popoverClassName?: string;
   language?: string;
   triggerClassName?: string;
+  hideIcon?: boolean;
   isRequired?: boolean;
   isInvalid?: boolean;
   errorMessage?: string;
@@ -126,8 +128,10 @@ export function TimePicker({
   labelClassName = "text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-slate-400 mb-1.5 pl-1 block",
   popoverTitle,
   className,
+  popoverClassName,
   language = "vi",
   triggerClassName,
+  hideIcon = false,
   isRequired,
   isInvalid,
   errorMessage,
@@ -139,10 +143,15 @@ export function TimePicker({
   const h24 = (value.hour % 12) + (value.period === "PM" ? 12 : 0);
   const display = `${String(h24).padStart(2, "0")}:${String(value.minute).padStart(2, "0")}`;
 
-  // Trigger class: if triggerClassName provides bg-/dark:bg-, skip default bg-slate-50
+  // Trigger class: if triggerClassName provides bg-/dark:bg-, skip default bg
   const overrideBg = triggerClassName && /\b(bg-|dark:bg-)/.test(triggerClassName);
-  const triggerBase = "flex items-center gap-2 h-10 w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-slate-800 dark:text-slate-100 text-sm font-bold text-left cursor-pointer hover:border-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
-  const triggerDefaultBg = overrideBg ? "" : " bg-slate-50";
+  const isBorderless = triggerClassName && /\b(border-none|p-0|h-auto)\b/.test(triggerClassName);
+  
+  const triggerBase = isBorderless
+    ? "flex items-center gap-1.5 w-full text-slate-800 dark:text-slate-100 font-bold text-left cursor-pointer outline-none transition-colors"
+    : "flex items-center gap-2 h-10 w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-slate-800 dark:text-slate-100 text-sm font-bold text-left cursor-pointer hover:border-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  
+  const triggerDefaultBg = (overrideBg || isBorderless) ? "" : " bg-slate-50 dark:bg-[var(--bg-surface)]";
   const triggerClasses = `${triggerBase}${triggerDefaultBg}${triggerClassName ? ` ${triggerClassName}` : ""}${isInvalid ? " border-red-500" : ""}`;
 
   // Default popover title falls back to i18n string
@@ -174,13 +183,13 @@ export function TimePicker({
         onClick={() => setOpen((v) => !v)}
         className={triggerClasses}
       >
-        <Clock size={16} className="text-slate-400 dark:text-slate-500 shrink-0" />
-        <span className="flex-1">
+        {!hideIcon && <Clock size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />}
+        <span className="flex-1 truncate">
           {display}
         </span>
         <ChevronDown
-          size={14}
-          className={`text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          size={13}
+          className={`text-slate-400 dark:text-slate-500 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -191,16 +200,16 @@ export function TimePicker({
 
       {/* Popover */}
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-72 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+        <div className={`absolute top-full z-50 w-72 bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up mt-2 ${popoverClassName || "left-0"}`}>
           {/* Header */}
-          <div className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+          <div className="px-4 pt-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
               {headerTitle}
             </p>
           </div>
 
           {/* Drum-Roll Columns */}
-          <div className="flex items-stretch px-3 py-2 gap-1">
+          <div className="flex items-stretch px-3 py-2 gap-1 bg-white dark:bg-[var(--bg-surface)]">
             {/* Hours */}
             <ScrollColumn
               items={HOURS}
@@ -221,7 +230,7 @@ export function TimePicker({
             />
 
             {/* Divider */}
-            <div className="w-px bg-slate-100 dark:bg-[var(--bg-card)] mx-1 self-stretch" />
+            <div className="w-px bg-slate-100 dark:bg-[var(--bg-elevated)] mx-1 self-stretch" />
 
             {/* AM / PM */}
             <ScrollColumn
@@ -248,3 +257,4 @@ export function TimePicker({
     </div>
   );
 }
+

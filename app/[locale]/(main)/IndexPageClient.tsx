@@ -334,42 +334,44 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
           </div>
 
           {/* Right: Floating Search Form Card with Service Tabs */}
-          <div className="lg:col-span-5 flex flex-col justify-center lg:justify-end items-center lg:items-end w-full gap-4">
+          <div className="lg:col-span-5 flex flex-col justify-center lg:justify-end items-center lg:items-end w-full gap-4 max-w-full">
             {/* Horizontal Service Tab Bar */}
-            <div className="flex pb-1 gap-2.5 border-b border-white/20 w-full max-w-md">
-              <button
-                type="button"
-                onClick={() => setActiveServiceTab("airport")}
-                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-full transition-all shrink-0 cursor-pointer border-none ${activeServiceTab === "airport"
-                  ? "bg-white text-blue-900 shadow-md font-extrabold"
-                  : "bg-transparent text-white hover:bg-white/10"
-                  }`}
-              >
-                <Plane size={13} />
-                <span>{t.homePage.airportTransfer}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveServiceTab("rental")}
-                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-full transition-all shrink-0 cursor-pointer border-none ${activeServiceTab === "rental"
-                  ? "bg-white text-blue-900 shadow-md font-extrabold"
-                  : "bg-transparent text-white hover:bg-white/10"
-                  }`}
-              >
-                <Car size={13} />
-                <span>{t.homePage.carRental}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveServiceTab("tour")}
-                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-full transition-all shrink-0 cursor-pointer border-none ${activeServiceTab === "tour"
-                  ? "bg-white text-blue-900 shadow-md font-extrabold"
-                  : "bg-transparent text-white hover:bg-white/10"
-                  }`}
-              >
-                <Compass size={13} />
-                <span>{t.homePage.tours}</span>
-              </button>
+            <div className="w-full max-w-md overflow-x-auto scrollbar-hide pb-1 border-b border-white/20">
+              <div className="flex items-center gap-2 min-w-max">
+                <button
+                  type="button"
+                  onClick={() => setActiveServiceTab("airport")}
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-black rounded-full transition-all shrink-0 cursor-pointer border-none ${activeServiceTab === "airport"
+                    ? "bg-white text-blue-900 shadow-md font-extrabold"
+                    : "bg-transparent text-white hover:bg-white/10"
+                    }`}
+                >
+                  <Plane size={13} />
+                  <span>{t.homePage.airportTransfer}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveServiceTab("rental")}
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-black rounded-full transition-all shrink-0 cursor-pointer border-none ${activeServiceTab === "rental"
+                    ? "bg-white text-blue-900 shadow-md font-extrabold"
+                    : "bg-transparent text-white hover:bg-white/10"
+                    }`}
+                >
+                  <Car size={13} />
+                  <span>{t.homePage.carRental}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveServiceTab("tour")}
+                  className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-black rounded-full transition-all shrink-0 cursor-pointer border-none ${activeServiceTab === "tour"
+                    ? "bg-white text-blue-900 shadow-md font-extrabold"
+                    : "bg-transparent text-white hover:bg-white/10"
+                    }`}
+                >
+                  <Compass size={13} />
+                  <span>{t.homePage.tours}</span>
+                </button>
+              </div>
             </div>
 
             {/* Form Card */}
@@ -546,7 +548,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       {/* Date & Time */}
                       <div className="flex items-center gap-3 px-4 py-3">
                         <CalendarIcon className="text-amber-500 shrink-0" size={20} />
-                        <div className="w-full text-left grid grid-cols-12 gap-2">
+                        <div className="w-full text-left grid grid-cols-12 gap-2 items-center">
                           <div className="col-span-7">
                             <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                               {t.homePage.dateLabel}
@@ -568,7 +570,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                   </DatePicker.Trigger>
                                 </DateField.Suffix>
                               </DateField.Group>
-                              <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                              <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                                 <Calendar aria-label="Travel date">
                                   <Calendar.Header className="flex items-center justify-between mb-2">
                                     <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
@@ -605,6 +607,8 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                               value={time}
                               onChange={setTime}
                               language={language}
+                              triggerClassName="h-auto bg-transparent border-none p-0 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:border-none focus-visible:ring-0 shadow-none justify-between"
+                              popoverClassName="right-0"
                             />
                           </div>
                         </div>
@@ -862,7 +866,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                   </DatePicker.Trigger>
                                 </DateField.Suffix>
                               </DateField.Group>
-                              <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                              <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                                 <Calendar aria-label="Departure date">
                                   <Calendar.Header className="flex items-center justify-between mb-2">
                                     <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
@@ -971,7 +975,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <Select.Value className="text-xs font-semibold text-slate-800 dark:text-slate-100" />
                           <Select.Indicator className="text-slate-400" />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-1 shadow-xl w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-1 shadow-xl w-[var(--trigger-width)] z-50">
                           <ListBox>
                             {vehicleCategories.length > 0 ? (
                               vehicleCategories.map((c) => {
@@ -1110,7 +1114,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                 </div>
                               </div>
                             </Autocomplete.Trigger>
-                            <Autocomplete.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                            <Autocomplete.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                               <Autocomplete.Filter filter={contains}>
                                 <SearchField autoFocus name="search" variant="secondary" value={tourSearchQuery} onChange={setTourSearchQuery}>
                                   <SearchField.Group className="flex items-center border border-slate-200 dark:border-slate-800 rounded-xl px-3 h-10 bg-slate-50 dark:bg-black w-full mb-3">
@@ -1171,7 +1175,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                 </DatePicker.Trigger>
                               </DateField.Suffix>
                             </DateField.Group>
-                            <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                            <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                               <Calendar aria-label="Travel date">
                                 <Calendar.Header className="flex items-center justify-between mb-2">
                                   <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
