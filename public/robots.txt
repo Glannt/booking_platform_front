@@ -1,3 +1,31 @@
+# https://booking.minhkhoatravel.vn/robots.txt
+# Comprehensive bot configurations for Google, Edge (Bing), Safari (Apple), Firefox (DuckDuckGo/Bing), Cốc Cốc, Yandex
+
+User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Bingbot
+User-agent: msnbot
+User-agent: Applebot
+User-agent: DuckDuckBot
+User-agent: coccocbot
+User-agent: coccocbot-image
+User-agent: coccocbot-web
+User-agent: Yandex
+User-agent: YandexBot
+User-agent: Slurp
+User-agent: Baiduspider
+User-agent: facebookexternalhit
+User-agent: Twitterbot
+Allow: /
+Allow: /icon-*.png
+Allow: /favicon.ico
+Allow: /apple-touch-icon.png
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /staff/
+Disallow: /api/
+
 User-agent: *
 Allow: /
 Disallow: /portal/

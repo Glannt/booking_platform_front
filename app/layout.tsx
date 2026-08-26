@@ -26,13 +26,22 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Minh Khoa Travel" }],
   creator: "Minh Khoa Travel",
+  publisher: "Minh Khoa Travel",
+  alternates: {
+    canonical: "https://booking.minhkhoatravel.vn",
+  },
   icons: {
     icon: [
-      { url: "/icon.png", type: "image/png" },
-      { url: "/favicon.ico" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-48x48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/icon.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   openGraph: {
     type: "website",
@@ -43,12 +52,18 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [
       {
-        url: "/icon.png",
+        url: "/icon-512x512.png",
         width: 512,
         height: 512,
         alt: "Minh Khoa Travel Logo",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Minh Khoa Travel | Đặt Xe & Tour Du Lịch Nha Trang",
+    description: siteConfig.description,
+    images: ["/icon-512x512.png"],
   },
   robots: {
     index: true,
@@ -61,12 +76,54 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  other: {
+    bingbot: "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
+    applebot: "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
+    coccocbot: "index, follow, max-snippet:-1, max-image-preview:large",
+    duckduckbot: "index, follow",
+    yandex: "index, follow",
+    "msapplication-TileColor": "#09090b",
+    "msapplication-TileImage": "/icon-192x192.png",
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "TravelAgency",
+      "@id": "https://booking.minhkhoatravel.vn/#organization",
+      "name": "Minh Khoa Travel",
+      "alternateName": ["Minh Khoa Travel Nha Trang", "Thuê Xe Minh Khoa Travel"],
+      "url": "https://booking.minhkhoatravel.vn",
+      "logo": "https://booking.minhkhoatravel.vn/icon-512x512.png",
+      "image": "https://booking.minhkhoatravel.vn/icon-512x512.png",
+      "description": siteConfig.description,
+      "sameAs": ["https://minhkhoatravel.vn"],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Nha Trang",
+        "addressRegion": "Khánh Hòa",
+        "addressCountry": "VN",
+      },
+      "priceRange": "$$",
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://booking.minhkhoatravel.vn/#website",
+      "url": "https://booking.minhkhoatravel.vn",
+      "name": "Minh Khoa Travel",
+      "publisher": {
+        "@id": "https://booking.minhkhoatravel.vn/#organization",
+      },
+    },
   ],
 };
 
@@ -76,8 +133,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning lang="en">
-      <head />
+    <html suppressHydrationWarning lang="vi">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         suppressHydrationWarning
         className={clsx(
