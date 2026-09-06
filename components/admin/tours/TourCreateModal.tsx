@@ -26,17 +26,20 @@ import {
     Collection,
     ListBox,
     EmptyState,
-    NumberField
+    NumberField,
+    Switch,
+    TextArea,
 } from "@heroui/react";
 import * as LucideIcons from "lucide-react";
-import { Save, Plus, Trash2, RefreshCw, X, Shuffle } from "lucide-react";
+import { Save, Plus, Trash2, RefreshCw, X, Shuffle, Edit } from "lucide-react";
 import clsx from "clsx";
 
-import { createTour, TourDto, TourCategoryDto, TourOptionDto, CreateTourRequest } from "@/lib/api/tours";
+import { createTour, TourDto, TourCategoryDto, TourOptionDto, CreateTourRequest, TourPackageDto } from "@/lib/api/tours";
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
 import { getIconComponent } from "@/lib/utils/icons";
 import { TourOptionIconPicker } from "./TourOptionIconPicker";
 import MultiImageUpload from "@/components/MultiImageUpload";
+import TourPackageModal from "./TourPackageModal";
 
 interface TourCreateModalProps {
     isOpen: boolean;
@@ -68,7 +71,17 @@ export default function TourCreateModal({
     const [minGuest, setMinGuest] = useState<number>(2);
     const [maxGuest, setMaxGuest] = useState<number>(20);
     const [active, setActive] = useState<boolean>(true);
+    const [status, setStatus] = useState<"ACTIVE" | "DRAFT" | "INACTIVE">("DRAFT");
     const [isDefault, setIsDefault] = useState<boolean>(false);
+    const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+    const [editingPackageIndex, setEditingPackageIndex] = useState<number | null>(null);
+
+    // Inclusions & Exclusions
+    const [inclusions, setInclusions] = useState<string>("");
+    const [exclusions, setExclusions] = useState<string>("");
+
+    // Packages state
+    const [packages, setPackages] = useState<TourPackageDto[]>([]);
 
     // Translations
     const [translations, setTranslations] = useState({
@@ -117,6 +130,26 @@ export default function TourCreateModal({
             setMaxGuest(20);
             setActive(true);
             setIsDefault(false);
+            setInclusions("- Cano ghép theo hành trình.\n- Bữa trưa theo thực đơn tour.\n- Vé tham quan theo chương trình.\n- Xe & HDV đón khách tại khách sạn.");
+            setExclusions("- Chi phí cá nhân, trò chơi ngoài chương trình.\n- Thuế VAT.");
+            setPackages([
+                {
+                    code: "STANDARD_CANO",
+                    pricingType: "PER_PERSON",
+                    adultPrice: 650000,
+                    childPrice: 450000,
+                    infantPrice: 0,
+                    childPolicyNote: "Từ 1m - 1m29",
+                    infantPolicyNote: "Dưới 1m miễn phí",
+                    isContactOnly: false,
+                    active: true,
+                    sortOrder: 1,
+                    translations: [
+                        { locale: "vi", name: "Cano ghép – Tiêu chuẩn", description: "Cano ghép 3 đảo VIP đón tận nơi" },
+                        { locale: "en", name: "Shared Speedboat – Standard", description: "Shared 3-island VIP tour" }
+                    ]
+                }
+            ]);
             setTranslations({
                 vi: { name: "", description: "", content: "" },
                 en: { name: "", description: "", content: "" },
@@ -217,6 +250,28 @@ export default function TourCreateModal({
         return <IconComponent size={16} style={{ color }} />;
     };
 
+    const handleAddPackage = () => {
+        setEditingPackageIndex(null);
+        setIsPackageModalOpen(true);
+    };
+
+    const handleEditPackage = (idx: number) => {
+        setEditingPackageIndex(idx);
+        setIsPackageModalOpen(true);
+    };
+
+    const handleSavePackage = (savedPkg: TourPackageDto) => {
+        if (editingPackageIndex !== null && editingPackageIndex >= 0) {
+            setPackages(prev => prev.map((p, i) => i === editingPackageIndex ? savedPkg : p));
+        } else {
+            setPackages(prev => [...prev, { ...savedPkg, sortOrder: prev.length + 1 }]);
+        }
+    };
+
+    const handleRemovePackage = (idx: number) => {
+        setPackages(prev => prev.filter((_, i) => i !== idx));
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (loading) return;
@@ -265,16 +320,23 @@ export default function TourCreateModal({
 
         const payload: CreateTourRequest = {
             tourCategoryId,
+            inclusions,
+            exclusions,
             durationDays,
             durationNights,
             minGuest,
             maxGuest,
-            active,
+            active: status === "ACTIVE",
+            status,
             isDefault,
             translations: transPayload,
             options: optionsPayload,
             days: [],
             prices: pricesPayload,
+            packages: packages.filter(p => {
+                const name = p.translations?.find(t => t.name)?.name || p.code;
+                return Boolean(name);
+            }),
             imageIds: imageIds.length > 0 ? imageIds : undefined,
             thumbnailId: thumbnailId || undefined
         };
@@ -300,6 +362,7 @@ export default function TourCreateModal({
     };
 
     return (
+        <>
         <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="tour-create-title">
             <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
                 <ModalContainer size="lg">
@@ -319,7 +382,7 @@ export default function TourCreateModal({
                         <form onSubmit={handleSave}>
                             <ModalBody className="p-6 space-y-6 overflow-y-auto max-h-[65vh]">
                                 {/* General details */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                                     <div>
                                         <ComboBox
                                             allowsEmptyCollection
@@ -352,6 +415,8 @@ export default function TourCreateModal({
                                         </ComboBox>
                                     </div>
 
+
+
                                     <div>
                                         <NumberField minValue={0} value={durationDays} onChange={(val) => setDurationDays(val ?? 0)}>
                                             <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -380,22 +445,45 @@ export default function TourCreateModal({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-6 pb-1">
+                                    {/* Public active switch */}
                                     <div className="flex items-center gap-3">
-                                        <Checkbox
-                                            id="create-tour-active"
-                                            isSelected={active}
-                                            onChange={(val: boolean) => setActive(val)}
-                                            render={(props) => <div {...props} data-custom="bar" />}
-                                        >
-                                            <Checkbox.Content>
-                                                <Checkbox.Control>
-                                                    <Checkbox.Indicator />
-                                                </Checkbox.Control>
-                                            </Checkbox.Content>
-                                        </Checkbox>
-                                        <Label htmlFor="create-tour-active" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap">
-                                            {language === "vi" ? "Hiển thị công khai" : "Active / Visible"}
+                                        <Switch
+                                            isSelected={status === "ACTIVE"}
+                                            onChange={(checked) => {
+                                                setStatus(checked ? "ACTIVE" : "INACTIVE");
+                                                setActive(checked);
+                                            }}
+                                        />
+                                        <div>
+                                            <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                                                {language === "vi" ? "Hiển thị công khai" : "Active / Visible"}
+                                            </Label>
+                                            <span className="text-[10px] text-slate-400 block">
+                                                {status === "ACTIVE"
+                                                    ? (language === "vi" ? "Khách hàng có thể nhìn thấy và đặt tour" : "Visible to customers")
+                                                    : (language === "vi" ? "Ẩn hoặc đang thử nghiệm/bản nháp" : "Hidden or draft")}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Tour Status Select */}
+                                    <div className="flex items-center gap-2">
+                                        <Label className="text-xs font-bold text-slate-500 uppercase">
+                                            {language === "vi" ? "Trạng thái:" : "Status:"}
                                         </Label>
+                                        <select
+                                            value={status}
+                                            onChange={(e) => {
+                                                const val = e.target.value as "ACTIVE" | "DRAFT" | "INACTIVE";
+                                                setStatus(val);
+                                                setActive(val === "ACTIVE");
+                                            }}
+                                            className="h-8 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100"
+                                        >
+                                            <option value="ACTIVE">{language === "vi" ? "🟢 Hoạt động (ACTIVE)" : "🟢 Active"}</option>
+                                            <option value="DRAFT">{language === "vi" ? "🟡 Bản nháp (DRAFT)" : "🟡 Draft"}</option>
+                                            <option value="INACTIVE">{language === "vi" ? "⚪ Không hoạt động (INACTIVE)" : "⚪ Inactive"}</option>
+                                        </select>
                                     </div>
 
                                     <div className="flex items-center gap-3">
@@ -425,7 +513,7 @@ export default function TourCreateModal({
                                         <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
                                             {language === "vi" ? "Nội dung dịch thuật Tour" : "Tour Translations"}
                                         </Label>
-                                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-black p-1 rounded-xl w-fit">
+                                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-xl w-fit">
                                             {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
                                                 <button
                                                     key={lang}
@@ -464,9 +552,9 @@ export default function TourCreateModal({
                                             <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
                                                 {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
                                             </Label>
-                                            <textarea
+                                            <TextArea
                                                 rows={2}
-                                                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                                                className="w-full text-slate-800 dark:text-slate-100 font-medium"
                                                 placeholder="e.g. Khám phá biển đảo Vịnh Nha Trang..."
                                                 value={translations[activeFormLocale as keyof typeof translations]?.description || ""}
                                                 onChange={(e) => handleTranslationChange("description", e.target.value)}
@@ -477,14 +565,55 @@ export default function TourCreateModal({
                                             <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
                                                 {language === "vi" ? "Nội dung chi tiết" : "Detailed Content"} ({activeFormLocale.toUpperCase()})
                                             </Label>
-                                            <textarea
+                                            <TextArea
                                                 rows={4}
-                                                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium font-mono"
+                                                className="w-full text-slate-800 dark:text-slate-100 font-medium font-mono"
                                                 placeholder="Markdown or HTML itinerary content..."
                                                 value={translations[activeFormLocale as keyof typeof translations]?.content || ""}
                                                 onChange={(e) => handleTranslationChange("content", e.target.value)}
                                             />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
+
+                                {/* Inclusions & Exclusions */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label className="block text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                                            {language === "vi" ? "Bao gồm theo chương trình (Inclusions)" : "Tour Inclusions"}
+                                        </Label>
+                                        <p className="text-[11px] text-slate-400 mb-2">
+                                            {language === "vi"
+                                                ? "Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Cano ghép theo hành trình)"
+                                                : "Enter each item on a new line starting with '-'"}
+                                        </p>
+                                        <TextArea
+                                            rows={4}
+                                            className="w-full text-slate-800 dark:text-slate-100 text-xs font-semibold"
+                                            value={inclusions}
+                                            onChange={(e) => setInclusions(e.target.value)}
+                                            placeholder="- Cano ghép theo hành trình&#10;- Bữa trưa theo thực đơn tour&#10;- Vé tham quan theo chương trình&#10;- Xe & HDV đón khách tại khách sạn"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Label className="block text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
+                                            {language === "vi" ? "Chi phí tự túc nếu có nhu cầu (Exclusions)" : "Tour Exclusions"}
+                                        </Label>
+                                        <p className="text-[11px] text-slate-400 mb-2">
+                                            {language === "vi"
+                                                ? "Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Vé lặn biển bằng bình dưỡng khí)"
+                                                : "Enter each item on a new line starting with '-'"}
+                                        </p>
+                                        <TextArea
+                                            rows={3}
+                                            className="w-full text-slate-800 dark:text-slate-100 text-xs font-semibold"
+                                            value={exclusions}
+                                            onChange={(e) => setExclusions(e.target.value)}
+                                            placeholder="- Chi phí cá nhân, trò chơi ngoài chương trình&#10;- Thuế VAT"
+                                        />
                                     </div>
                                 </div>
 
@@ -529,7 +658,7 @@ export default function TourCreateModal({
                                             {options.map((opt, index) => (
                                                 <div
                                                     key={index}
-                                                    className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-black/20 p-4 rounded-2xl border border-divider shadow-sm"
+                                                    className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-[var(--bg-muted)] p-4 rounded-2xl border border-divider shadow-sm"
                                                 >
                                                     {/* Option label / text (for activeFormLocale) */}
                                                     <div className="sm:col-span-4">
@@ -569,13 +698,13 @@ export default function TourCreateModal({
                                                             value={safeParseColor(opt.colorIcon, "#3b82f6")}
                                                             onChange={(color) => handleOptionChange(index, "colorIcon", color.toString("hex"))}
                                                         >
-                                                            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+                                                            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] cursor-pointer w-full justify-between">
                                                                 <div className="flex items-center gap-1.5">
                                                                     <ColorSwatch size="xs" color={safeParseColor(opt.colorIcon, "#3b82f6")} />
-                                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{opt.colorIcon || "#3b82f6"}</span>
+                                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{opt.colorIcon || "#3b82f6"}</span>
                                                                 </div>
                                                             </ColorPicker.Trigger>
-                                                            <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-xl">
+                                                            <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-surface)] border border-divider shadow-xl rounded-xl">
                                                                 <ColorArea
                                                                     aria-label="Color area"
                                                                     className="max-w-full h-32 rounded-lg"
@@ -624,13 +753,13 @@ export default function TourCreateModal({
                                                             value={safeParseColor(opt.colorText, "#1e293b")}
                                                             onChange={(color) => handleOptionChange(index, "colorText", color.toString("hex"))}
                                                         >
-                                                            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+                                                            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] cursor-pointer w-full justify-between">
                                                                 <div className="flex items-center gap-1.5">
                                                                     <ColorSwatch size="xs" color={safeParseColor(opt.colorText, "#1e293b")} />
-                                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{opt.colorText || "#1e293b"}</span>
+                                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{opt.colorText || "#1e293b"}</span>
                                                                 </div>
                                                             </ColorPicker.Trigger>
-                                                            <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-xl">
+                                                            <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-surface)] border border-divider shadow-xl rounded-xl">
                                                                 <ColorArea
                                                                     aria-label="Color area"
                                                                     className="max-w-full h-32 rounded-lg"
@@ -691,6 +820,135 @@ export default function TourCreateModal({
 
                                 <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
+                                {/* Tour Packages & Pricing */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                                                {language === "vi" ? "Gói Tour & Bảng Giá" : "Tour Packages & Pricing"}
+                                            </Label>
+                                            <p className="text-[11px] text-slate-400">
+                                                {language === "vi"
+                                                    ? "Cấu hình giá theo người lớn / trẻ em hoặc trọn gói / cano riêng."
+                                                    : "Set prices per adult/child or fixed charter price."}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="bg-accent text-white rounded-xl text-xs font-bold gap-1 border-none shadow-sm cursor-pointer"
+                                            onClick={handleAddPackage}
+                                        >
+                                            <Plus size={14} />
+                                            {language === "vi" ? "Thêm gói tour" : "Add Package"}
+                                        </Button>
+                                    </div>
+
+                                    {packages.length === 0 ? (
+                                        <div className="text-center py-6 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                                            <p className="text-xs text-slate-400 italic mb-2">
+                                                {language === "vi" ? "Chưa có gói tour nào. Bấm 'Thêm gói tour' để tạo." : "No tour packages configured."}
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="bg-accent text-white rounded-xl text-xs font-bold gap-1 border-none shadow-sm cursor-pointer"
+                                                onClick={handleAddPackage}
+                                            >
+                                                <Plus size={14} />
+                                                {language === "vi" ? "Thêm gói tour" : "Add Package"}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {packages.map((pkg, idx) => {
+                                                const pkgTrans = pkg.translations?.find(t => t.locale === activeFormLocale) || pkg.translations?.[0];
+                                                const pkgName = pkgTrans?.name || pkg.code || (language === "vi" ? `Gói #${idx + 1}` : `Package #${idx + 1}`);
+
+                                                return (
+                                                    <div key={pkg.id || idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] space-y-3">
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">{pkgName}</span>
+                                                                    <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300">
+                                                                        {pkg.pricingType === "PER_PERSON"
+                                                                            ? (language === "vi" ? "Theo người" : "Per Person")
+                                                                            : (language === "vi" ? "Trọn gói" : "Charter")}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <Button
+                                                                    type="button"
+                                                                    isIconOnly
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 cursor-pointer border-none"
+                                                                    onClick={() => handleEditPackage(idx)}
+                                                                    aria-label={language === "vi" ? "Chỉnh sửa" : "Edit"}
+                                                                >
+                                                                    <Edit size={13} />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    isIconOnly
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-7 w-7 rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 cursor-pointer border-none"
+                                                                    onClick={() => handleRemovePackage(idx)}
+                                                                    aria-label={language === "vi" ? "Xóa" : "Delete"}
+                                                                >
+                                                                    <Trash2 size={13} />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+
+                                                        {pkg.isContactOnly ? (
+                                                            <div className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-1 rounded-lg inline-block">
+                                                                {language === "vi" ? "Liên hệ báo giá" : "Contact for Price"}
+                                                            </div>
+                                                        ) : pkg.pricingType === "PER_PERSON" ? (
+                                                            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px]">
+                                                                <div>
+                                                                    <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Người lớn" : "Adult"}</span>
+                                                                    <span className="font-bold text-slate-800 dark:text-slate-100">
+                                                                        {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.adultPrice || 0)}
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Trẻ em" : "Child"}</span>
+                                                                    <span className="font-bold text-slate-800 dark:text-slate-100">
+                                                                        {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.childPrice || 0)}
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Em bé" : "Infant"}</span>
+                                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                                        {pkg.infantPrice && pkg.infantPrice > 0
+                                                                            ? new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.infantPrice)
+                                                                            : (language === "vi" ? "Miễn phí" : "Free")}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                                                                <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Giá trọn gói" : "Charter Price"}</span>
+                                                                <span className="font-black text-slate-800 dark:text-slate-100 text-xs">
+                                                                    {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.fixedPrice || 0)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
+
                                 {/* Pricing Matrix */}
                                 <div className="space-y-4">
                                     <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
@@ -706,7 +964,7 @@ export default function TourCreateModal({
                                                 const vtr = vc.translations.find(t => t.locale === language) || vc.translations[0];
                                                 const isApplied = prices[vc.id] !== undefined;
                                                 return (
-                                                    <div key={vc.id} className="flex items-center gap-3 bg-slate-50 dark:bg-black p-3 rounded-xl border border-divider">
+                                                    <div key={vc.id} className="flex items-center gap-3 bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                                                         <div className="flex-grow">
                                                             <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{vtr?.name || vc.code}</span>
                                                             <span className="block text-[10px] text-slate-400">{vc.minSeat === vc.maxSeat ? vc.minSeat : `${vc.minSeat}-${vc.maxSeat}`} {language === "vi" ? "chỗ" : "seats"}</span>
@@ -762,7 +1020,7 @@ export default function TourCreateModal({
                                 </div>
                             </ModalBody>
 
-                            <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
+                            <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-[var(--bg-card)] flex items-center justify-end gap-3 flex-shrink-0">
                                 <Button
                                     variant="outline"
                                     className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
@@ -788,6 +1046,19 @@ export default function TourCreateModal({
                     </ModalDialog>
                 </ModalContainer>
             </ModalBackdrop>
-        </Modal >
+        </Modal>
+
+        {/* Tour Package Sub-Modal */}
+        <TourPackageModal
+            isOpen={isPackageModalOpen}
+            onClose={() => {
+                setIsPackageModalOpen(false);
+                setEditingPackageIndex(null);
+            }}
+            onSave={handleSavePackage}
+            initialData={editingPackageIndex !== null ? packages[editingPackageIndex] : null}
+            language={language}
+        />
+        </>
     );
 }

@@ -3,7 +3,7 @@
 import React from "react";
 import { useI18n } from "@/context/LanguageContext";
 
-type StatusType = "booking" | "active" | "publish";
+type StatusType = "booking" | "active" | "publish" | "tour";
 
 interface StatusChipProps {
   status: string;
@@ -34,15 +34,20 @@ const bookingColors: Record<string, { bg: string; text: string; border: string }
 };
 
 const activeColors: Record<string, { bg: string; text: string; border: string }> = {
-  true: {
+  active: {
     bg: "bg-emerald-50 dark:bg-emerald-950/50",
     text: "text-emerald-700 dark:text-emerald-300",
     border: "border-emerald-100 dark:border-emerald-900/50",
   },
-  false: {
+  draft: {
     bg: "bg-amber-50 dark:bg-amber-950/50",
     text: "text-amber-700 dark:text-amber-300",
     border: "border-amber-100 dark:border-amber-900/50",
+  },
+  inactive: {
+    bg: "bg-slate-100 dark:bg-slate-800/80",
+    text: "text-slate-600 dark:text-slate-400",
+    border: "border-slate-200 dark:border-slate-700",
   },
 };
 
@@ -64,6 +69,8 @@ function getStatusLabel(
   status: string,
   t: ReturnType<typeof useI18n>["t"]
 ): string {
+  const s = (status || "").toLowerCase().trim();
+
   if (type === "booking") {
     const labels: Record<string, string> = {
       pending: t.status.pending,
@@ -71,28 +78,38 @@ function getStatusLabel(
       completed: t.status.completed,
       cancelled: t.status.cancelled,
     };
-    return labels[status] || t.status.pending;
+    return labels[s] || t.status.pending;
   }
   if (type === "publish") {
     const labels: Record<string, string> = {
       published: t.status.published,
       draft: t.status.draft,
     };
-    return labels[status] || t.status.draft;
+    return labels[s] || t.status.draft;
   }
-  return status === "true" || status === "active" ? t.status.active : t.status.inactive;
+
+  if (s === "draft") return t.status.draft;
+  if (s === "true" || s === "active") return t.status.active;
+  return t.status.inactive;
 }
 
 export function StatusChip({ status, type = "active" }: StatusChipProps) {
   const { t } = useI18n();
+  const s = (status || "").toLowerCase().trim();
   let colors;
 
   if (type === "booking") {
-    colors = bookingColors[status] || bookingColors.pending;
+    colors = bookingColors[s] || bookingColors.pending;
   } else if (type === "publish") {
-    colors = publishColors[status] || publishColors.draft;
+    colors = publishColors[s] || publishColors.draft;
   } else {
-    colors = activeColors[status === "true" || status === "active" ? "true" : "false"];
+    if (s === "draft") {
+      colors = activeColors.draft;
+    } else if (s === "true" || s === "active") {
+      colors = activeColors.active;
+    } else {
+      colors = activeColors.inactive;
+    }
   }
 
   return (

@@ -4,7 +4,7 @@ import React from "react";
 import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { VehicleDto } from "@/lib/api/fleet";
-import { TourDto } from "@/lib/api/tours";
+import { TourDto, TourPackageDto } from "@/lib/api/tours";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { resolveLocalizedName, resolveTranslation } from "@/lib/i18n-helpers";
@@ -14,12 +14,16 @@ interface BookingConfirmModalProps {
   onClose: () => void;
   onConfirm: () => void;
   selectedTour: TourDto | null;
-  selectedVehicle: VehicleDto | null;
+  selectedPackage?: TourPackageDto | null;
+  selectedVehicle?: VehicleDto | null;
   fullName: string;
   phone: string;
   email: string;
   date: string;
   guestCount: number;
+  adultCount?: number;
+  childCount?: number;
+  infantCount?: number;
   totalAmount: number;
   submitting: boolean;
 }
@@ -29,12 +33,16 @@ export default function BookingConfirmModal({
   onClose,
   onConfirm,
   selectedTour,
+  selectedPackage,
   selectedVehicle,
   fullName,
   phone,
   email,
   date,
   guestCount,
+  adultCount,
+  childCount,
+  infantCount,
   totalAmount,
   submitting,
 }: BookingConfirmModalProps) {
@@ -42,6 +50,11 @@ export default function BookingConfirmModal({
 
   const getLocalizedName = (srv: TourDto) => {
     return resolveLocalizedName(srv.translations, language, "Tour");
+  };
+
+  const getLocalizedPackageName = (pkg: TourPackageDto) => {
+    const translation = resolveTranslation(pkg.translations, language);
+    return translation?.name || pkg.code || t.tours.tourPackage;
   };
 
   const getLocalizedVehicleName = (v: VehicleDto) => {
@@ -78,19 +91,37 @@ export default function BookingConfirmModal({
                     {selectedTour ? getLocalizedName(selectedTour) : ""}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400 font-normal">{t.tours.vehicleLabel}:</span>
-                  <span className="text-slate-950 dark:text-white">
-                    {selectedVehicle ? getLocalizedVehicleName(selectedVehicle) : ""}
-                  </span>
-                </div>
+                {selectedPackage ? (
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-normal">{t.tours.packages}:</span>
+                    <span className="text-slate-950 dark:text-white font-bold">
+                      {getLocalizedPackageName(selectedPackage)}
+                    </span>
+                  </div>
+                ) : selectedVehicle ? (
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-normal">{t.tours.vehicleLabel}:</span>
+                    <span className="text-slate-950 dark:text-white">
+                      {getLocalizedVehicleName(selectedVehicle)}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between">
                   <span className="text-slate-400 font-normal">{t.tours.departureDate}:</span>
                   <span className="text-slate-900 dark:text-white">{date}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400 font-normal">{t.tours.numberOfGuestsLabel}:</span>
-                  <span className="text-slate-900 dark:text-white">{guestCount} {t.common.guests}</span>
+                  <div className="text-right">
+                    <span className="text-slate-900 dark:text-white font-bold">{guestCount} {t.common.guests}</span>
+                    {adultCount !== undefined && (
+                      <div className="text-[10px] text-slate-400">
+                        {adultCount} {t.tours.adults}
+                        {childCount ? `, ${childCount} ${t.tours.children}` : ""}
+                        {infantCount ? `, ${infantCount} ${t.tours.infants}` : ""}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="border-t border-slate-200 dark:border-slate-850 pt-2 flex justify-between">
                   <span className="text-slate-400 font-normal">{t.common.name}:</span>

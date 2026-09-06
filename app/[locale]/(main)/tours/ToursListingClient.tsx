@@ -2,7 +2,24 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Compass, Calendar, User, Search, MapPin, Clock, Tag, Star, CheckCircle, Shield, Ship, Utensils, Award, ArrowUpDown } from "lucide-react";
+import {
+  Compass,
+  Ship,
+  Car,
+  Utensils,
+  Shield,
+  Award,
+  Clock,
+  Star,
+  Users,
+  ArrowUpDown,
+  Search,
+  MapPin,
+  Tag,
+  CheckCircle,
+  Calendar,
+  Filter
+} from "lucide-react";
 import { Button, Input, Label, SearchField, Skeleton, Select, ListBox } from "@heroui/react";
 
 import { getTours, getTourCategories, TourDto, TourCategoryDto } from "@/lib/api/tours";
@@ -123,6 +140,15 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
   };
 
   const getMinPrice = (t: TourDto) => {
+    if (t.packages && t.packages.length > 0) {
+      const activePackages = t.packages.filter(p => p.active && !p.isContactOnly);
+      const pkgPrices = activePackages
+        .map(p => (p.pricingType === "PER_PERSON" ? p.adultPrice : p.fixedPrice) || 0)
+        .filter(price => price > 0);
+      if (pkgPrices.length > 0) {
+        return Math.min(...pkgPrices);
+      }
+    }
     if (!t.prices || t.prices.length === 0) return 0;
     const activePrices = t.prices.filter(p => p.active);
     if (activePrices.length === 0) return 0;
@@ -144,7 +170,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
     }
   };
 
-  const sortedTours = [...tours].sort((a, b) => {
+  const filteredAndSortedTours = [...tours].sort((a, b) => {
     if (sortOrder === "default") return 0;
     const priceA = getMinPrice(a);
     const priceB = getMinPrice(b);
@@ -179,13 +205,16 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
             <div className="flex items-center gap-2 pl-3 flex-1 bg-white dark:bg-black rounded-2xl p-3 sm:p-0 shadow-lg sm:shadow-none border border-slate-200 dark:border-white/10 sm:border-none min-h-[46px] sm:min-h-0">
               <SearchField
                 name="search_tour"
+                aria-label={t.tours.searchPlaceholder || "Search tours"}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e)}
                 className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none w-full p-0"
               >
+                <Label className="sr-only">{t.tours.searchPlaceholder || "Search tours"}</Label>
                 <SearchField.Group className="w-full flex items-center bg-transparent border-none shadow-none">
                   <SearchField.SearchIcon className="text-slate-400 dark:text-slate-500 mr-2 flex-shrink-0" />
                   <SearchField.Input
+                    aria-label={t.tours.searchPlaceholder || "Search tours"}
                     placeholder={t.tours.searchPlaceholder}
                     className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none w-full border-none p-0 focus:ring-0"
                   />
@@ -203,7 +232,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
       </section>
 
       <main className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 flex-1 flex flex-col gap-6">
-        <div className="flex items-center justify-between overflow-x-auto scrollbar-hide pb-2 gap-2 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between overflow-x-auto scrollbar-hide pb-2 gap-3 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-hide">
             {categories.map((c) => {
               const isActive = activeCategoryId === c.id;
@@ -222,35 +251,39 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
             })}
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-3">
-            <ArrowUpDown size={14} className="text-slate-400 dark:text-slate-500" />
-            <Select
-              selectedKey={sortOrder}
-              onSelectionChange={(key) => { if (key) setSortOrder(key as typeof sortOrder); }}
-              className="w-34"
-            >
-              <Label className="sr-only">Sort</Label>
-              <Select.Trigger className="h-8 px-3 text-[10px] font-bold bg-slate-100 dark:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 rounded-lg border-none cursor-pointer">
-                <Select.Value className="text-[10px]" />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
-                <ListBox>
-                  <ListBox.Item key="default" id="default" textValue={t.tours.sortDefault} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
-                    {t.tours.sortDefault}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                  <ListBox.Item key="price_asc" id="price_asc" textValue={t.tours.sortPriceLow} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
-                    {t.tours.sortPriceLow}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                  <ListBox.Item key="price_desc" id="price_desc" textValue={t.tours.sortPriceHigh} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
-                    {t.tours.sortPriceHigh}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                </ListBox>
-              </Select.Popover>
-            </Select>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            {/* Price Sort Dropdown */}
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown size={14} className="text-slate-400 dark:text-slate-500" />
+              <Select
+                aria-label={t.tours.sortDefault || "Sort tours"}
+                selectedKey={sortOrder}
+                onSelectionChange={(key) => { if (key) setSortOrder(key as typeof sortOrder); }}
+                className="w-32 sm:w-36"
+              >
+                <Label className="sr-only">Sort</Label>
+                <Select.Trigger aria-label={t.tours.sortDefault || "Sort"} className="h-8 px-3 text-[10px] font-bold bg-slate-100 dark:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 rounded-lg border-none cursor-pointer">
+                  <Select.Value className="text-[10px]" />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
+                  <ListBox aria-label="Sort options">
+                    <ListBox.Item key="default" id="default" textValue={t.tours.sortDefault} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                      {t.tours.sortDefault}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item key="price_asc" id="price_asc" textValue={t.tours.sortPriceLow} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                      {t.tours.sortPriceLow}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item key="price_desc" id="price_desc" textValue={t.tours.sortPriceHigh} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
+                      {t.tours.sortPriceHigh}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -275,13 +308,13 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
               </div>
             ))}
           </div>
-        ) : tours.length === 0 ? (
-          <div className="py-24 text-center text-slate-400 text-xs font-bold bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-3xl">
+        ) : filteredAndSortedTours.length === 0 ? (
+          <div className="py-24 text-center text-slate-400 text-xs font-bold bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-3xl">
             {t.common.noResults}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedTours.map((tour) => {
+            {filteredAndSortedTours.map((tour) => {
               const minPrice = getMinPrice(tour);
               const name = getLocalizedName(tour);
               const desc = getLocalizedDesc(tour);
@@ -317,6 +350,17 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
                       <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 z-20">
                         <Clock size={10} /><span>{duration}</span>
                       </div>
+                      {(() => {
+                        const cat = categories.find(c => c.id === tour.tourCategoryId) || tour.tourCategory;
+                        if (!cat || cat.id === 0) return null;
+                        const catName = getLocalizedCatName(cat);
+                        return (
+                          <div className="absolute bottom-3 left-3 bg-accent/90 backdrop-blur-sm text-white px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 z-20 shadow-sm">
+                            {renderIcon(cat.icon)}
+                            <span>{catName}</span>
+                          </div>
+                        );
+                      })()}
                       {tour.isDefault && (
                         <div className="absolute top-3 right-3 bg-amber-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                           <Star size={9} className="fill-white" /><span>{t.tours.bestSeller}</span>
@@ -340,7 +384,7 @@ export default function ToursListingClient({ sections }: ToursListingClientProps
                     </div>
                   </div>
 
-                  <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-800 mt-4 flex items-center justify-between">
+                  <div className="p-5 pt-5 border-t border-slate-100 dark:border-slate-800 mt-4 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-400 font-bold block uppercase tracking-wider">{t.tours.priceFrom}</span>
                       <span className="text-base font-black text-amber-500">{formatPrice(minPrice)}</span>

@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, User, Phone, Mail, Calendar as IconCalendar, Users, MessageSquare, ClipboardList, Shield, MapPin } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Calendar as IconCalendar, Users, MessageSquare, ClipboardList, Shield, MapPin, Ship, Compass, Sparkles } from "lucide-react";
 import { Button, Label, Input, TextField, Skeleton, Select, ListBox, FieldError, DatePicker, DateField, Calendar, SearchField } from "@heroui/react";
 import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
 import { TimePicker, TimeValue } from "@/components/time-picker";
 
-import { getTourByIdOrSlug, TourDto } from "@/lib/api/tours";
+import { getTourByIdOrSlug, TourDto, TourPackageDto } from "@/lib/api/tours";
 import { getVehicles, VehicleDto } from "@/lib/api/fleet";
 import { createTourBooking } from "@/lib/api/tours/bookings";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
@@ -19,17 +19,7 @@ import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmModal from "@/components/tours/BookingConfirmModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
 import ErrorOverlay from "@/components/ErrorOverlay";
-import dynamic from "next/dynamic";
 import type { SectionDto } from "@/lib/api/sections";
-
-const PickupMap = dynamic(
-    () => import("@/components/pickup-map").then((mod) => mod.PickupMap),
-    { ssr: false }
-);
-
-const resolveMediaUrl = (filePath: string): string => {
-    return filePath.startsWith("http") ? filePath : `${process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080"}${filePath}`;
-};
 
 interface TourConfirmClientProps {
     tourIdentifier: string | number;
@@ -39,11 +29,17 @@ interface TourConfirmClientProps {
 export default function TourConfirmClient({ tourIdentifier, sections }: TourConfirmClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const vehicleIdParam = Number(searchParams.get("vehicleId") || "1");
+    const packageIdParam = searchParams.get("packageId") ? Number(searchParams.get("packageId")) : null;
+    const vehicleIdParam = searchParams.get("vehicleId") ? Number(searchParams.get("vehicleId")) : null;
+    const initialAdults = Math.max(1, parseInt(searchParams.get("adults") || "2", 10) || 1);
+    const initialChildren = Math.max(0, parseInt(searchParams.get("children") || "0", 10) || 0);
+    const initialInfants = Math.max(0, parseInt(searchParams.get("infants") || "0", 10) || 0);
+
     const { language, t } = useI18n();
 
     // Data states
     const [tour, setTour] = useState<TourDto | null>(null);
+    const [selectedPackage, setSelectedPackage] = useState<TourPackageDto | null>(null);
     const [vehicle, setVehicle] = useState<VehicleDto | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -54,7 +50,9 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
     const [zaloId, setZaloId] = useState("");
     const [kakaoTalkId, setKakaoTalkId] = useState("");
     const [notes, setNotes] = useState("");
-    const [guestCount, setGuestCount] = useState<number>(1);
+    const [adultCount, setAdultCount] = useState<number>(initialAdults);
+    const [childCount, setChildCount] = useState<number>(initialChildren);
+    const [infantCount, setInfantCount] = useState<number>(initialInfants);
     const [dateValue, setDateValue] = useState<DateValue | null>(today(getLocalTimeZone()));
     const [startTimeVal, setStartTimeVal] = useState<TimeValue>({ hour: 8, minute: 0, period: "AM" });
     const [meetingPoint, setMeetingPoint] = useState(searchParams.get("pickup") || searchParams.get("meetingPoint") || "");
@@ -123,23 +121,41 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
         setShowSuggestions(false);
     };
 
-    // Load tour and vehicle data
+    // Load tour data
     useEffect(() => {
         if (!tourIdentifier) return;
         let active = true;
         (async () => {
             try {
-                const [tourRes, fleetRes] = await Promise.all([
-                    getTourByIdOrSlug(tourIdentifier),
-                    getVehicles()
-                ]);
+                const tourRes = await getTourByIdOrSlug(tourIdentifier);
                 if (!active) return;
 
-                if (tourRes?.data) setTour(tourRes.data);
+                if (tourRes?.data) {
+                    const tourData = tourRes.data;
+                    setTour(tourData);
 
-                const allVehicles = fleetRes?.data?.content?.filter(v => v.active) || [];
-                const matchedVehicle = allVehicles.find(v => v.id === vehicleIdParam) || allVehicles[0];
-                if (matchedVehicle) setVehicle(matchedVehicle);
+                    // Resolve package
+                    if (tourData.packages && tourData.packages.length > 0) {
+                        const matchedPkg = packageIdParam
+                            ? tourData.packages.find((p) => p.id === packageIdParam)
+                            : tourData.packages[0];
+                        if (matchedPkg) setSelectedPackage(matchedPkg);
+                    }
+                }
+
+                // If legacy vehicleIdParam present, fetch vehicles for fallback
+                if (vehicleIdParam) {
+                    try {
+                        const fleetRes = await getVehicles();
+                        if (active && fleetRes?.data?.content) {
+                            const allVehicles = fleetRes.data.content.filter((v) => v.active);
+                            const matchedVehicle = allVehicles.find((v) => v.id === vehicleIdParam) || allVehicles[0];
+                            if (matchedVehicle) setVehicle(matchedVehicle);
+                        }
+                    } catch (e) {
+                        console.warn("Could not load vehicle:", e);
+                    }
+                }
             } catch (err) {
                 console.error("Error loading tour confirm data:", err);
             } finally {
@@ -147,31 +163,46 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
             }
         })();
         return () => { active = false; };
-    }, [tourIdentifier, vehicleIdParam]);
+    }, [tourIdentifier, packageIdParam, vehicleIdParam]);
 
     const getLocalizedName = (srv: TourDto) => {
         return resolveLocalizedName(srv.translations, language, "Tour");
     };
 
-    const getLocalizedVehicleName = (v: VehicleDto) => {
-        const cat = v.type;
-        if (!cat) return `${v.brand} ${v.model}`;
-        const translation = resolveTranslation(cat.translations, language);
-        return translation ? `${translation.name} (${v.brand} ${v.model})` : `${v.brand} ${v.model}`;
+    const getLocalizedPackageName = (pkg: TourPackageDto) => {
+        const translation = resolveTranslation(pkg.translations, language);
+        return translation?.name || pkg.code || t.tours.tourPackage;
     };
 
+    const totalGuests = adultCount + childCount + infantCount;
+
     const calculatePrice = () => {
-        if (!tour || !vehicle?.type) return 0;
-        const foundPrice = tour.prices?.find(p => p.vehicleCategoryId === vehicle.type?.id && p.active);
-        if (foundPrice) return foundPrice.amount * guestCount;
-        return 1200000 * guestCount;
+        if (selectedPackage) {
+            if (selectedPackage.isContactOnly) return 0;
+            if (selectedPackage.pricingType === "PER_PERSON") {
+                const adultTotal = (selectedPackage.adultPrice || 0) * adultCount;
+                const childTotal = (selectedPackage.childPrice || 0) * childCount;
+                return adultTotal + childTotal;
+            }
+            return selectedPackage.fixedPrice || 0;
+        }
+
+        // Legacy fallback
+        if (tour && vehicle?.type) {
+            const foundPrice = tour.prices?.find(p => p.vehicleCategoryId === vehicle.type?.id && p.active);
+            if (foundPrice) return foundPrice.amount;
+        }
+        return 0;
     };
 
     const totalPrice = calculatePrice();
-    const formatPrice = (value: number) => _formatPrice(value, language);
+    const formatPrice = (value: number) => {
+        if (value <= 0) return t.tours.contactOnly;
+        return _formatPrice(value, language);
+    };
 
     const handleConfirmBooking = async () => {
-        if (!tour || !vehicle || submitting) return;
+        if (!tour || submitting) return;
 
         setSubmitting(true);
         try {
@@ -180,20 +211,28 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                 : "";
             const timeStr = `${String(startTimeVal.hour).padStart(2, "0")}:${String(startTimeVal.minute).padStart(2, "0")}`;
 
+            const pkgName = selectedPackage ? getLocalizedPackageName(selectedPackage) : undefined;
+
             const res = await createTourBooking({
                 customerName: fullName,
                 customerEmail: email,
                 customerPhone: phone,
-                customerNotes: `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes}`,
+                customerNotes: notes.trim() || undefined,
                 zaloId: zaloId || undefined,
                 kakaoTalkId: kakaoTalkId || undefined,
                 contactChannel: zaloId ? "zalo" : kakaoTalkId ? "kakaotalk" : undefined,
                 contactId: zaloId || kakaoTalkId || undefined,
                 tourId: tour.id,
-                guestCount,
-                vehicleCategoryId: vehicle.type?.id || undefined,
+                tourPackageId: selectedPackage?.id,
+                packageName: pkgName,
+                pricingType: selectedPackage?.pricingType,
+                guestCount: totalGuests,
+                adultCount,
+                childCount,
+                infantCount,
+                vehicleCategoryId: vehicle?.type?.id || undefined,
                 pickupLocation: meetingPoint,
-                description: `Tour Booking with ${vehicle.brand} ${vehicle.model} (${vehicle.type?.code})`,
+                description: pkgName ? `Tour Package: ${pkgName}` : `Tour Booking`,
                 startTime: `${dateStr}T${timeStr}:00`,
                 totalPrice,
             });
@@ -222,7 +261,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
         );
     }
 
-    if (!tour || !vehicle) {
+    if (!tour) {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col items-center justify-center gap-4">
                 <p className="text-sm font-bold text-slate-500">{t.tours.notFound}</p>
@@ -236,11 +275,11 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 font-sans">
             {/* Header */}
-            <div className="bg-slate-50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-800">
+            <div className="bg-slate-50 dark:bg-[var(--bg-surface)] border-b border-slate-100 dark:border-slate-800">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
+                        className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none bg-transparent"
                     >
                         <ArrowLeft size={20} />
                     </button>
@@ -256,19 +295,47 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
             </div>
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-                {/* Tour Summary */}
-                <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
-                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        {t.tours.tourInfo}
+                {/* Tour & Package Summary */}
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                        <Compass size={15} className="text-accent" />
+                        <span>{t.tours.tourInfo}</span>
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                        <div><span className="text-slate-400">{t.tours.tourLabel}:</span> <span className="font-bold">{getLocalizedName(tour)}</span></div>
-                        <div><span className="text-slate-400">{t.tours.vehicleLabel}:</span> <span className="font-bold">{getLocalizedVehicleName(vehicle)}</span></div>
+                        <div>
+                            <span className="text-slate-400 font-medium block">{t.tours.tourLabel}:</span>
+                            <span className="font-bold text-slate-900 dark:text-white text-sm">{getLocalizedName(tour)}</span>
+                        </div>
+                        <div>
+                            <span className="text-slate-400 font-medium block">{t.tours.packages}:</span>
+                            <span className="font-bold text-accent text-sm">
+                                {selectedPackage ? getLocalizedPackageName(selectedPackage) : t.tours.tourPackage}
+                            </span>
+                        </div>
                     </div>
+
+                    {/* Passenger breakdown row */}
+                    {selectedPackage && selectedPackage.pricingType === "PER_PERSON" && !selectedPackage.isContactOnly && (
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4 text-xs">
+                            <span className="text-slate-500 dark:text-slate-400">
+                                {t.tours.adults}: <strong className="text-slate-900 dark:text-white">{adultCount}</strong> ({formatPrice(selectedPackage.adultPrice || 0)})
+                            </span>
+                            {childCount > 0 && (
+                                <span className="text-slate-500 dark:text-slate-400">
+                                    {t.tours.children}: <strong className="text-slate-900 dark:text-white">{childCount}</strong> ({formatPrice(selectedPackage.childPrice || 0)})
+                                </span>
+                            )}
+                            {infantCount > 0 && (
+                                <span className="text-slate-500 dark:text-slate-400">
+                                    {t.tours.infants}: <strong className="text-emerald-500">{infantCount} ({t.tours.free})</strong>
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Contact Info */}
-                <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             {t.tours.customerInfo}
@@ -303,7 +370,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                 </div>
 
                 {/* Booking Details */}
-                <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
                     <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         {t.tours.bookingDetails}
                     </h3>
@@ -319,7 +386,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                                     }
                                 }}
                             >
-                                <DateField.Group fullWidth className="h-10 bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
+                                <DateField.Group fullWidth className="h-10 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
                                     <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                                         {(segment) => <DateField.Segment segment={segment} />}
                                     </DateField.Input>
@@ -329,7 +396,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                                         </DatePicker.Trigger>
                                     </DateField.Suffix>
                                 </DateField.Group>
-                                <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
+                                <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                                     <Calendar aria-label="Travel date">
                                         <Calendar.Header className="flex items-center justify-between mb-2">
                                             <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
@@ -378,18 +445,12 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                         />
                         <div className="flex flex-col gap-1.5">
                             <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">{t.tours.guests}</Label>
-                            <TextField isInvalid={vehicle?.type?.maxSeat ? guestCount > vehicle.type.maxSeat : false}>
-                                <Input
-                                    type="number"
-                                    min={1}
-                                    max={vehicle?.type?.maxSeat || tour.maxGuest || 30}
-                                    value={guestCount}
-                                    onChange={(e) => setGuestCount(Math.max(1, parseInt(e.target.value) || 1))}
-                                />
-                                <FieldError>
-                                    {t.tours.maxGuestsError.replace("{max}", String(vehicle?.type?.maxSeat || ""))}
-                                </FieldError>
-                            </TextField>
+                            <div className="flex items-center h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-white justify-between">
+                                <span>{totalGuests} {t.common.guests}</span>
+                                <span className="text-[10px] text-slate-400 font-normal">
+                                    {adultCount} {t.tours.adults}{childCount > 0 ? `, ${childCount} ${t.tours.children}` : ""}{infantCount > 0 ? `, ${infantCount} ${t.tours.infants}` : ""}
+                                </span>
+                            </div>
                         </div>
                         <div className="flex flex-col gap-1.5 relative" ref={suggestionsRef}>
                             <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">{t.tours.meetingPoint}</Label>
@@ -433,20 +494,27 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder={t.airportTransfer.notesPlaceholder}
-                            className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-black text-xs font-semibold outline-none resize-none"
+                            className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[var(--bg-card)] text-xs font-semibold outline-none resize-none"
                         />
                     </div>
                 </div>
 
                 {/* Price Summary */}
-                <div className="bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
                     <div className="flex justify-between items-end">
-                        <span className="text-sm font-bold text-slate-500">{t.common.total}</span>
+                        <div>
+                            <span className="text-sm font-bold text-slate-500 block">{t.common.total}</span>
+                            {selectedPackage && (
+                                <span className="text-[10px] text-accent font-semibold">
+                                    {getLocalizedPackageName(selectedPackage)}
+                                </span>
+                            )}
+                        </div>
                         <span className="text-xl font-black text-accent">{formatPrice(totalPrice)}</span>
                     </div>
                     <Button
                         onClick={() => setShowConfirmModal(true)}
-                        isDisabled={!fullName || !phone || !email || submitting || (vehicle?.type?.maxSeat ? guestCount > vehicle.type.maxSeat : false)}
+                        isDisabled={!fullName || !phone || !email || submitting}
                         className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
                     >
                         {t.common.continueBtn}
@@ -459,12 +527,16 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                 onClose={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmBooking}
                 selectedTour={tour}
+                selectedPackage={selectedPackage}
                 selectedVehicle={vehicle}
                 fullName={fullName}
                 phone={phone}
                 email={email}
                 date={dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : ""}
-                guestCount={guestCount}
+                guestCount={totalGuests}
+                adultCount={adultCount}
+                childCount={childCount}
+                infantCount={infantCount}
                 totalAmount={totalPrice}
                 submitting={submitting}
             />

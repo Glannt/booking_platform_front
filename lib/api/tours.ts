@@ -53,6 +53,36 @@ export interface TourDayDto {
   activities: TourDayActivityDto[];
 }
 
+export interface TourPackageTranslationDto {
+  id?: number;
+  locale: string;
+  name: string;
+  description?: string;
+  highlights?: string;
+  inclusions?: string;
+  exclusions?: string;
+}
+
+export interface TourPackageDto {
+  id?: number;
+  tourId?: number;
+  code?: string;
+  pricingType: "PER_PERSON" | "PRIVATE_CHARTER";
+  adultPrice?: number;
+  childPrice?: number;
+  infantPrice?: number;
+  childPolicyNote?: string;
+  infantPolicyNote?: string;
+  fixedPrice?: number;
+  isContactOnly?: boolean;
+  highlights?: string;
+  inclusions?: string;
+  exclusions?: string;
+  active: boolean;
+  sortOrder?: number;
+  translations: TourPackageTranslationDto[];
+}
+
 export interface TourPriceDto {
   id?: number;
   vehicleCategoryId: number;
@@ -65,11 +95,14 @@ export interface TourDto {
   id: number;
   tourCategoryId?: number;
   tourCategory?: TourCategoryDto;
+  inclusions?: string;
+  exclusions?: string;
   durationDays: number;
   durationNights: number;
   minGuest?: number;
   maxGuest?: number;
   active: boolean;
+  status?: "ACTIVE" | "DRAFT" | "INACTIVE" | string;
   thumbnailId?: number;
   thumbnail?: MediaDto;
   imageIds?: number[];
@@ -79,15 +112,19 @@ export interface TourDto {
   options: TourOptionDto[];
   days: TourDayDto[];
   prices: TourPriceDto[];
+  packages?: TourPackageDto[];
 }
 
 export interface CreateTourRequest {
   tourCategoryId: number;
+  inclusions?: string;
+  exclusions?: string;
   durationDays: number;
   durationNights: number;
   minGuest?: number;
   maxGuest?: number;
   active: boolean;
+  status?: "ACTIVE" | "DRAFT" | "INACTIVE" | string;
   isDefault?: boolean;
   thumbnailId?: number;
   imageIds?: number[];
@@ -95,6 +132,7 @@ export interface CreateTourRequest {
   options: TourOptionDto[];
   days: TourDayDto[];
   prices: TourPriceDto[];
+  packages?: TourPackageDto[];
 }
 
 export interface PageResponse<T> {
@@ -111,12 +149,15 @@ export interface TourCategoryTranslationDto {
   id?: number;
   locale: string;
   name: string;
+  slug?: string;
   description?: string;
 }
 
 export interface TourCategoryDto {
   id: number;
   code?: string;
+  icon?: string;
+  sortOrder?: number;
   active?: boolean;
   isActive?: boolean;
   title?: string;
@@ -142,7 +183,31 @@ export async function getTours(params?: {
 }
 
 export async function getTourCategories(): Promise<ApiResponse<PageResponse<TourCategoryDto>>> {
+  return apiFetch<ApiResponse<PageResponse<TourCategoryDto>>>("/api/v1/public/tour-categories");
+}
+
+export async function getAdminTourCategories(): Promise<ApiResponse<PageResponse<TourCategoryDto>>> {
   return apiFetch<ApiResponse<PageResponse<TourCategoryDto>>>("/api/v1/tour-categories");
+}
+
+export async function createTourCategory(payload: Partial<TourCategoryDto>): Promise<ApiResponse<TourCategoryDto>> {
+  return apiFetch<ApiResponse<TourCategoryDto>>("/api/v1/tour-categories", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateTourCategory(id: number, payload: Partial<TourCategoryDto>): Promise<ApiResponse<TourCategoryDto>> {
+  return apiFetch<ApiResponse<TourCategoryDto>>(`/api/v1/tour-categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTourCategory(id: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/tour-categories/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function getTourById(id: number): Promise<ApiResponse<TourDto>> {

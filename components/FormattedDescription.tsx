@@ -21,7 +21,17 @@ export function FormattedDescription({
 }: FormattedDescriptionProps) {
   if (!description) return null;
 
-  const rawLines = description.split(/\r?\n/);
+  // Clean raw HTML paragraph tags if present in plain string
+  let normalized = description;
+  if (normalized.includes("<p>") || normalized.includes("</p>") || normalized.includes("<br")) {
+    normalized = normalized
+      .replace(/<p>/gi, "")
+      .replace(/<\/p>/gi, "\n\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .trim();
+  }
+
+  const rawLines = normalized.split(/\r?\n/);
   
   // Group lines into paragraphs and list blocks
   type Block =

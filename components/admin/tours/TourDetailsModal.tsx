@@ -26,17 +26,22 @@ import {
     Collection,
     ListBox,
     EmptyState,
-    NumberField
+    NumberField,
+    Switch,
+    TextArea,
 } from "@heroui/react";
 import * as LucideIcons from "lucide-react";
-import { Save, RefreshCw, Edit, Trash2, Plus, Shuffle } from "lucide-react";
+import { Save, RefreshCw, Edit, Trash2, Plus, Shuffle, CheckCircle2, XCircle, Package } from "lucide-react";
 import clsx from "clsx";
 
-import { updateTour, TourDto, TourCategoryDto, TourOptionDto } from "@/lib/api/tours";
+import { updateTour, TourDto, TourCategoryDto, TourOptionDto, TourPackageDto } from "@/lib/api/tours";
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
 import { getIconComponent } from "@/lib/utils/icons";
+import { parseBulletList } from "@/lib/utils/bullet-helper";
 import { TourOptionIconPicker } from "./TourOptionIconPicker";
 import MultiImageUpload from "@/components/MultiImageUpload";
+import { StatusChip } from "@/components/StatusChip";
+import TourPackageModal from "./TourPackageModal";
 
 interface TourDetailsModalProps {
     isOpen: boolean;
@@ -73,7 +78,17 @@ export default function TourDetailsModal({
     const [minGuest, setMinGuest] = useState<number>(2);
     const [maxGuest, setMaxGuest] = useState<number>(20);
     const [active, setActive] = useState<boolean>(true);
+    const [status, setStatus] = useState<string>("ACTIVE");
     const [isDefault, setIsDefault] = useState<boolean>(false);
+
+    // Inclusions & Exclusions
+    const [inclusions, setInclusions] = useState<string>("");
+    const [exclusions, setExclusions] = useState<string>("");
+
+    // Packages state & Sub-modal
+    const [packages, setPackages] = useState<TourPackageDto[]>([]);
+    const [isPackageModalOpen, setIsPackageModalOpen] = useState<boolean>(false);
+    const [editingPackageIndex, setEditingPackageIndex] = useState<number | null>(null);
 
     // Translations
     const [translations, setTranslations] = useState({
@@ -120,8 +135,12 @@ export default function TourDetailsModal({
             setMinGuest(tour.minGuest || 2);
             setMaxGuest(tour.maxGuest || 20);
             setActive(tour.active);
+            setStatus(tour.status || (tour.active ? "ACTIVE" : "INACTIVE"));
             setIsDefault(tour.isDefault || false);
             setIsEditMode(defaultEditMode);
+            setInclusions(tour.inclusions || "");
+            setExclusions(tour.exclusions || "");
+            setPackages(tour.packages || []);
 
             // Prepopulate translations
             const newTrans = {
@@ -246,6 +265,28 @@ export default function TourDetailsModal({
         return <IconComponent size={16} style={{ color }} />;
     };
 
+    const handleAddPackage = () => {
+        setEditingPackageIndex(null);
+        setIsPackageModalOpen(true);
+    };
+
+    const handleEditPackage = (idx: number) => {
+        setEditingPackageIndex(idx);
+        setIsPackageModalOpen(true);
+    };
+
+    const handleSavePackage = (savedPkg: TourPackageDto) => {
+        if (editingPackageIndex !== null && editingPackageIndex >= 0) {
+            setPackages(prev => prev.map((p, i) => i === editingPackageIndex ? savedPkg : p));
+        } else {
+            setPackages(prev => [...prev, { ...savedPkg, sortOrder: prev.length + 1 }]);
+        }
+    };
+
+    const handleRemovePackage = (idx: number) => {
+        setPackages(prev => prev.filter((_, i) => i !== idx));
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isEditMode || loading || !tour) return;
@@ -306,16 +347,23 @@ export default function TourDetailsModal({
 
         const payload: Partial<TourDto> = {
             tourCategoryId,
+            inclusions,
+            exclusions,
             durationDays,
             durationNights,
             minGuest,
             maxGuest,
-            active,
+            active: status === "ACTIVE",
+            status,
             isDefault,
             translations: transPayload,
             options: optionsPayload,
             days: tour.days || [],
             prices: pricesPayload,
+            packages: packages.filter(p => {
+                const name = p.translations?.find(t => t.name)?.name || p.code;
+                return Boolean(name);
+            }),
             thumbnailId: thumbnailId || undefined,
             imageIds: imageIds.length > 0 ? imageIds : undefined
         };
@@ -353,6 +401,7 @@ export default function TourDetailsModal({
     const FormTag = isEditMode ? "form" : "div";
 
     return (
+        <>
         <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="tour-details-title">
             <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
                 <ModalContainer size="lg">
@@ -378,39 +427,31 @@ export default function TourDetailsModal({
                                     // Read-Only view
                                     <>
                                         {/* General details */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="bg-slate-50 dark:bg-black/30 p-3.5 rounded-2xl border border-divider">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3.5 rounded-2xl border border-divider">
                                                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                                                     {language === "vi" ? "Danh mục tour" : "Tour Category"}
                                                 </span>
-                                                <span className="text-sm font-bold text-slate-850 dark:text-slate-100">
+                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
                                                     {categoryName}
                                                 </span>
                                             </div>
 
-                                            <div className="bg-slate-50 dark:bg-black/30 p-3.5 rounded-2xl border border-divider">
+                                            <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3.5 rounded-2xl border border-divider">
                                                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                                                     {language === "vi" ? "Thời lượng" : "Duration"}
                                                 </span>
-                                                <span className="text-sm font-bold text-slate-850 dark:text-slate-100">
+                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
                                                     {durationText}
                                                 </span>
                                             </div>
 
-                                            <div className="bg-slate-50 dark:bg-black/30 p-3.5 rounded-2xl border border-divider">
+                                            <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3.5 rounded-2xl border border-divider">
                                                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                                                     {language === "vi" ? "Trạng thái" : "Status"}
                                                 </span>
                                                 <div className="flex flex-wrap gap-2 items-center">
-                                                    {active ? (
-                                                        <span className="px-2.5 py-1 text-xs font-extrabold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-lg">
-                                                            {language === "vi" ? "Hiển thị công khai" : "Active / Visible"}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="px-2.5 py-1 text-xs font-extrabold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 rounded-lg">
-                                                            {language === "vi" ? "Ẩn công khai" : "Hidden"}
-                                                        </span>
-                                                    )}
+                                                    <StatusChip status={tour?.status || (tour?.active ? "ACTIVE" : "INACTIVE")} type="tour" />
                                                     {isDefault && (
                                                         <span className="px-2.5 py-1 text-xs font-extrabold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-lg">
                                                             {language === "vi" ? "Bán chạy" : "Best Seller"}
@@ -428,7 +469,7 @@ export default function TourDetailsModal({
                                                 <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
                                                     {language === "vi" ? "Nội dung dịch thuật Tour" : "Tour Translations"}
                                                 </Label>
-                                                <div className="flex items-center gap-1 bg-slate-100 dark:bg-black p-1 rounded-xl w-fit">
+                                                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-xl w-fit">
                                                     {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
                                                         <button
                                                             key={lang}
@@ -447,12 +488,11 @@ export default function TourDetailsModal({
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4 bg-slate-50 dark:bg-black/20 p-4 rounded-2xl border border-divider">
-                                                <div>
+                                                                   <div>
                                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                                         {language === "vi" ? "Tên Tour" : "Tour Name"} ({activeFormLocale.toUpperCase()})
                                                     </span>
-                                                    <p className="text-sm font-bold text-slate-850 dark:text-slate-100">
+                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
                                                         {translations[activeFormLocale as keyof typeof translations]?.name || "—"}
                                                     </p>
                                                 </div>
@@ -463,7 +503,7 @@ export default function TourDetailsModal({
                                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                                         {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
                                                     </span>
-                                                    <p className="text-sm font-semibold text-slate-650 dark:text-slate-350 whitespace-pre-line leading-relaxed">
+                                                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed">
                                                         {translations[activeFormLocale as keyof typeof translations]?.description || "—"}
                                                     </p>
                                                 </div>
@@ -474,10 +514,60 @@ export default function TourDetailsModal({
                                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                                         {language === "vi" ? "Nội dung chi tiết" : "Detailed Content"} ({activeFormLocale.toUpperCase()})
                                                     </span>
-                                                    <div className="text-sm font-medium text-slate-650 dark:text-slate-355 whitespace-pre-line leading-relaxed font-mono bg-white dark:bg-black p-3 rounded-xl border border-divider/60 max-h-48 overflow-y-auto">
+                                                    <div className="text-sm font-medium text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed font-mono bg-white dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider/60 max-h-48 overflow-y-auto">
                                                         {translations[activeFormLocale as keyof typeof translations]?.content || "—"}
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
+
+                                        {/* Inclusions & Exclusions Display */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-950 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+                                                <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                                                    <CheckCircle2 size={16} />
+                                                    <span className="text-xs font-extrabold uppercase tracking-wider">
+                                                        {language === "vi" ? "Bao gồm theo chương trình" : "Inclusions"}
+                                                    </span>
+                                                </div>
+                                                {inclusions ? (
+                                                    <ul className="space-y-1.5">
+                                                        {parseBulletList(inclusions).map((item, idx) => (
+                                                            <li key={idx} className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                                <span className="text-emerald-500 font-bold mt-0.5">•</span>
+                                                                <span>{item}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    <p className="text-xs text-slate-400 italic">
+                                                        {language === "vi" ? "Chưa có thông tin bao gồm." : "No inclusions specified."}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="p-4 rounded-2xl border border-amber-200 dark:border-amber-950 bg-amber-50/50 dark:bg-amber-950/20 space-y-2">
+                                                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                                                    <XCircle size={16} />
+                                                    <span className="text-xs font-extrabold uppercase tracking-wider">
+                                                        {language === "vi" ? "Chi phí tự túc (nếu có)" : "Exclusions"}
+                                                    </span>
+                                                </div>
+                                                {exclusions ? (
+                                                    <ul className="space-y-1.5">
+                                                        {parseBulletList(exclusions).map((item, idx) => (
+                                                            <li key={idx} className="flex items-start gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                                <span className="text-amber-500 font-bold mt-0.5">•</span>
+                                                                <span>{item}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    <p className="text-xs text-slate-400 italic">
+                                                        {language === "vi" ? "Chưa có thông tin tự túc." : "No exclusions specified."}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -499,7 +589,7 @@ export default function TourDetailsModal({
                                                         return (
                                                             <div
                                                                 key={opt.id || idx}
-                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-divider/60 bg-slate-50 dark:bg-black/20 shadow-sm"
+                                                                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-divider/60 bg-slate-50 dark:bg-[var(--bg-muted)] shadow-sm"
                                                                 style={{ color: opt.colorText || undefined }}
                                                             >
                                                                 {renderOptionIcon(opt.iconUrl, opt.colorIcon)}
@@ -516,9 +606,6 @@ export default function TourDetailsModal({
                                         {/* Tour Images Display */}
                                         {(tour.imageIds?.length || tour.thumbnailId) && (
                                             <div className="space-y-3">
-                                                {/* <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                                                    {language === "vi" ? "Hình ảnh Tour" : "Tour Images"}
-                                                </Label> */}
                                                 <MultiImageUpload
                                                     imageIds={imageIds}
                                                     thumbnailId={thumbnailId}
@@ -527,6 +614,76 @@ export default function TourDetailsModal({
                                                 />
                                             </div>
                                         )}
+
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
+
+                                        {/* Tour Packages Display */}
+                                        <div className="space-y-3">
+                                            <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                                                {language === "vi" ? "Gói Tour & Bảng Giá" : "Tour Packages & Pricing"}
+                                            </Label>
+                                            {packages.length === 0 ? (
+                                                <p className="text-xs text-slate-400 italic">
+                                                    {language === "vi" ? "Chưa cấu hình gói tour nào." : "No tour packages configured."}
+                                                </p>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {packages.map((pkg, idx) => {
+                                                        const pTr = pkg.translations?.find(t => t.locale === activeFormLocale) || pkg.translations?.[0];
+                                                        const name = pTr?.name || pkg.code;
+                                                        return (
+                                                            <div key={pkg.id || idx} className="p-3.5 rounded-2xl border border-divider bg-slate-50 dark:bg-[var(--bg-card)] space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{name}</span>
+                                                                        <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300">
+                                                                            {pkg.pricingType === "PER_PERSON"
+                                                                                ? (language === "vi" ? "Theo người" : "Per Person")
+                                                                                : (language === "vi" ? "Trọn gói" : "Charter")}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                {pkg.isContactOnly ? (
+                                                                    <div className="text-sm font-black text-amber-600 dark:text-amber-400">
+                                                                        {language === "vi" ? "Liên hệ báo giá" : "Contact for Price"}
+                                                                    </div>
+                                                                ) : pkg.pricingType === "PER_PERSON" ? (
+                                                                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-divider/60 text-xs">
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Người lớn" : "Adult"}</span>
+                                                                            <span className="font-bold text-primary">
+                                                                                {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.adultPrice || 0)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Trẻ em" : "Child"}</span>
+                                                                            <span className="font-bold text-primary">
+                                                                                {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.childPrice || 0)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Em bé" : "Infant"}</span>
+                                                                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                                                {pkg.infantPrice && pkg.infantPrice > 0
+                                                                                    ? new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.infantPrice)
+                                                                                    : (language === "vi" ? "Miễn phí" : "Free")}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="pt-1 border-t border-divider/60">
+                                                                        <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Giá trọn gói" : "Charter Price"}</span>
+                                                                        <span className="font-black text-primary text-sm">
+                                                                            {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.fixedPrice || 0)}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
 
                                         <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
@@ -554,9 +711,9 @@ export default function TourDetailsModal({
                                                                 }).format(priceVal)
                                                                 : (language === "vi" ? "Liên hệ" : "Contact");
                                                             return (
-                                                                <div key={vc.id} className="flex items-center justify-between bg-slate-50 dark:bg-black/30 p-3.5 rounded-xl border border-divider">
+                                                                <div key={vc.id} className="flex items-center justify-between bg-slate-50 dark:bg-[var(--bg-card)] p-3.5 rounded-xl border border-divider">
                                                                     <div>
-                                                                        <span className="text-sm font-bold text-slate-855 dark:text-slate-200">{vtr?.name || vc.code}</span>
+                                                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{vtr?.name || vc.code}</span>
                                                                         <span className="block text-[10px] text-slate-400">{vc.minSeat === vc.maxSeat ? vc.minSeat : `${vc.minSeat}-${vc.maxSeat}`} {language === "vi" ? "chỗ" : "seats"}</span>
                                                                     </div>
                                                                     <span className="text-sm font-black text-primary">
@@ -573,7 +730,7 @@ export default function TourDetailsModal({
                                     // Edit Form Mode
                                     <>
                                         {/* General details */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                             <div>
                                                 <ComboBox
                                                     allowsEmptyCollection
@@ -606,6 +763,8 @@ export default function TourDetailsModal({
                                                 </ComboBox>
                                             </div>
 
+
+
                                             <div>
                                                 <NumberField minValue={0} value={durationDays} onChange={(val) => setDurationDays(val ?? 0)}>
                                                     <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -635,21 +794,37 @@ export default function TourDetailsModal({
 
                                         <div className="flex flex-wrap items-center gap-6 pb-1">
                                             <div className="flex items-center gap-3">
-                                                <Checkbox
-                                                    id="detail-tour-active"
-                                                    isSelected={active}
-                                                    onChange={(val: boolean) => setActive(val)}
-                                                    render={(props) => <div {...props} data-custom="bar" />}
+                                                <Switch
+                                                    isSelected={status === "ACTIVE"}
+                                                    onChange={(checked) => {
+                                                        const nextStatus = checked ? "ACTIVE" : "INACTIVE";
+                                                        setStatus(nextStatus);
+                                                        setActive(checked);
+                                                    }}
                                                 >
-                                                    <Checkbox.Content>
-                                                        <Checkbox.Control>
-                                                            <Checkbox.Indicator />
-                                                        </Checkbox.Control>
-                                                    </Checkbox.Content>
-                                                </Checkbox>
-                                                <Label htmlFor="detail-tour-active" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap">
-                                                    {language === "vi" ? "Hiển thị công khai" : "Active / Visible"}
+                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+                                                        {language === "vi" ? "Hiển thị công khai" : "Active / Visible"}
+                                                    </span>
+                                                </Switch>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    {language === "vi" ? "Trạng thái:" : "Status:"}
                                                 </Label>
+                                                <select
+                                                    value={status}
+                                                    onChange={(e) => {
+                                                        const newStatus = e.target.value;
+                                                        setStatus(newStatus);
+                                                        setActive(newStatus === "ACTIVE");
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-bold outline-none cursor-pointer"
+                                                >
+                                                    <option value="ACTIVE">{language === "vi" ? "🟢 Hoạt động (Công khai)" : "🟢 Active (Public)"}</option>
+                                                    <option value="DRAFT">{language === "vi" ? "🟡 Bản nháp (Dự kiến / Thử nghiệm)" : "🟡 Draft (Testing / Upcoming)"}</option>
+                                                    <option value="INACTIVE">{language === "vi" ? "⚪ Không hoạt động (Tạm ẩn)" : "⚪ Inactive (Hidden)"}</option>
+                                                </select>
                                             </div>
 
                                             <div className="flex items-center gap-3">
@@ -665,7 +840,7 @@ export default function TourDetailsModal({
                                                         </Checkbox.Control>
                                                     </Checkbox.Content>
                                                 </Checkbox>
-                                                <Label htmlFor="detail-tour-default" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap">
+                                                <Label htmlFor="detail-tour-default" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap">
                                                     {language === "vi" ? "Bán chạy" : "Best Seller"}
                                                 </Label>
                                             </div>
@@ -679,7 +854,7 @@ export default function TourDetailsModal({
                                                 <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
                                                     {language === "vi" ? "Nội dung dịch thuật Tour" : "Tour Translations"}
                                                 </Label>
-                                                <div className="flex items-center gap-1 bg-slate-100 dark:bg-black p-1 rounded-xl w-fit">
+                                                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-xl w-fit">
                                                     {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
                                                         <button
                                                             key={lang}
@@ -709,7 +884,7 @@ export default function TourDetailsModal({
                                                             placeholder="e.g. Tour 3 Đảo Nha Trang VIP"
                                                             value={translations[activeFormLocale as keyof typeof translations]?.name || ""}
                                                             onChange={(e) => handleTranslationChange("name", e.target.value)}
-                                                            className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                                            className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100"
                                                         />
                                                     </TextField>
                                                 </div>
@@ -718,9 +893,9 @@ export default function TourDetailsModal({
                                                     <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
                                                         {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
                                                     </Label>
-                                                    <textarea
+                                                    <TextArea
                                                         rows={2}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-accent/30 text-xs font-semibold outline-none"
                                                         placeholder="e.g. Khám phá biển đảo Vịnh Nha Trang..."
                                                         value={translations[activeFormLocale as keyof typeof translations]?.description || ""}
                                                         onChange={(e) => handleTranslationChange("description", e.target.value)}
@@ -731,14 +906,55 @@ export default function TourDetailsModal({
                                                     <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
                                                         {language === "vi" ? "Nội dung chi tiết" : "Detailed Content"} ({activeFormLocale.toUpperCase()})
                                                     </Label>
-                                                    <textarea
+                                                    <TextArea
                                                         rows={4}
-                                                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium font-mono"
+                                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-accent/30 text-xs font-semibold outline-none font-mono"
                                                         placeholder="Markdown or HTML itinerary content..."
                                                         value={translations[activeFormLocale as keyof typeof translations]?.content || ""}
                                                         onChange={(e) => handleTranslationChange("content", e.target.value)}
                                                     />
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
+
+                                        {/* Inclusions & Exclusions */}
+                                        <div className="space-y-4">
+                                            <div>
+                                                <Label className="block text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                                                    {language === "vi" ? "Bao gồm theo chương trình (Inclusions)" : "Tour Inclusions"}
+                                                </Label>
+                                                <p className="text-[11px] text-slate-400 mb-2">
+                                                    {language === "vi"
+                                                        ? "Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Cano ghép theo hành trình)"
+                                                        : "Enter each item on a new line starting with '-'"}
+                                                </p>
+                                                <TextArea
+                                                    rows={4}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                                    value={inclusions}
+                                                    onChange={(e) => setInclusions(e.target.value)}
+                                                    placeholder="- Cano ghép theo hành trình&#10;- Bữa trưa theo thực đơn tour&#10;- Vé tham quan theo chương trình&#10;- Xe & HDV đón khách tại khách sạn"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <Label className="block text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
+                                                    {language === "vi" ? "Chi phí tự túc nếu có nhu cầu (Exclusions)" : "Tour Exclusions"}
+                                                </Label>
+                                                <p className="text-[11px] text-slate-400 mb-2">
+                                                    {language === "vi"
+                                                        ? "Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Vé lặn biển bằng bình dưỡng khí)"
+                                                        : "Enter each item on a new line starting with '-'"}
+                                                </p>
+                                                <TextArea
+                                                    rows={3}
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-xs font-semibold outline-none focus:ring-2 focus:ring-amber-500/30"
+                                                    value={exclusions}
+                                                    onChange={(e) => setExclusions(e.target.value)}
+                                                    placeholder="- Chi phí cá nhân, trò chơi ngoài chương trình&#10;- Thuế VAT"
+                                                />
                                             </div>
                                         </div>
 
@@ -770,7 +986,7 @@ export default function TourDetailsModal({
                                                     {options.map((opt, index) => (
                                                         <div
                                                             key={index}
-                                                            className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-black/20 p-4 rounded-2xl border border-divider shadow-sm"
+                                                            className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-slate-50 dark:bg-[var(--bg-muted)] p-4 rounded-2xl border border-divider shadow-sm"
                                                         >
                                                             {/* Option label / text (for activeFormLocale) */}
                                                             <div className="sm:col-span-4">
@@ -810,13 +1026,13 @@ export default function TourDetailsModal({
                                                                     value={safeParseColor(opt.colorIcon, "#3b82f6")}
                                                                     onChange={(color) => handleOptionChange(index, "colorIcon", color.toString("hex"))}
                                                                 >
-                                                                    <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+                                                                    <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] cursor-pointer w-full justify-between">
                                                                         <div className="flex items-center gap-1.5">
                                                                             <ColorSwatch size="xs" color={safeParseColor(opt.colorIcon, "#3b82f6")} />
-                                                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{opt.colorIcon || "#3b82f6"}</span>
+                                                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{opt.colorIcon || "#3b82f6"}</span>
                                                                         </div>
                                                                     </ColorPicker.Trigger>
-                                                                    <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-xl">
+                                                                    <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-surface)] border border-divider shadow-xl rounded-xl">
                                                                         <ColorArea
                                                                             aria-label="Color area"
                                                                             className="max-w-full h-32 rounded-lg"
@@ -865,13 +1081,13 @@ export default function TourDetailsModal({
                                                                     value={safeParseColor(opt.colorText, "#1e293b")}
                                                                     onChange={(color) => handleOptionChange(index, "colorText", color.toString("hex"))}
                                                                 >
-                                                                    <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+                                                                    <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] cursor-pointer w-full justify-between">
                                                                         <div className="flex items-center gap-1.5">
                                                                             <ColorSwatch size="xs" color={safeParseColor(opt.colorText, "#1e293b")} />
-                                                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{opt.colorText || "#1e293b"}</span>
+                                                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{opt.colorText || "#1e293b"}</span>
                                                                         </div>
                                                                     </ColorPicker.Trigger>
-                                                                    <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-xl">
+                                                                    <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-surface)] border border-divider shadow-xl rounded-xl">
                                                                         <ColorArea
                                                                             aria-label="Color area"
                                                                             className="max-w-full h-32 rounded-lg"
@@ -945,6 +1161,135 @@ export default function TourDetailsModal({
 
                                         <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
+                                        {/* Tour Packages & Pricing */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                                                        {language === "vi" ? "Gói Tour & Bảng Giá" : "Tour Packages & Pricing"}
+                                                    </Label>
+                                                    <p className="text-[11px] text-slate-400">
+                                                        {language === "vi"
+                                                            ? "Cấu hình giá theo người lớn / trẻ em hoặc trọn gói / cano riêng."
+                                                            : "Set prices per adult/child or fixed charter price."}
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="bg-accent text-white rounded-xl text-xs font-bold gap-1 border-none shadow-sm cursor-pointer"
+                                                    onClick={handleAddPackage}
+                                                >
+                                                    <Plus size={14} />
+                                                    {language === "vi" ? "Thêm gói tour" : "Add Package"}
+                                                </Button>
+                                            </div>
+
+                                            {packages.length === 0 ? (
+                                                <div className="text-center py-6 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                                                    <p className="text-xs text-slate-400 italic mb-2">
+                                                        {language === "vi" ? "Chưa có gói tour nào. Bấm 'Thêm gói tour' để tạo." : "No tour packages configured."}
+                                                    </p>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        className="bg-accent text-white rounded-xl text-xs font-bold gap-1 border-none shadow-sm cursor-pointer"
+                                                        onClick={handleAddPackage}
+                                                    >
+                                                        <Plus size={14} />
+                                                        {language === "vi" ? "Thêm gói tour" : "Add Package"}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {packages.map((pkg, idx) => {
+                                                        const pkgTrans = pkg.translations?.find(t => t.locale === activeFormLocale) || pkg.translations?.[0];
+                                                        const pkgName = pkgTrans?.name || pkg.code || (language === "vi" ? `Gói #${idx + 1}` : `Package #${idx + 1}`);
+
+                                                        return (
+                                                            <div key={pkg.id || idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] space-y-3">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">{pkgName}</span>
+                                                                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300">
+                                                                                {pkg.pricingType === "PER_PERSON"
+                                                                                    ? (language === "vi" ? "Theo người" : "Per Person")
+                                                                                    : (language === "vi" ? "Trọn gói" : "Charter")}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center gap-1 shrink-0">
+                                                                        <Button
+                                                                            type="button"
+                                                                            isIconOnly
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 cursor-pointer border-none"
+                                                                            onClick={() => handleEditPackage(idx)}
+                                                                            aria-label={language === "vi" ? "Chỉnh sửa" : "Edit"}
+                                                                        >
+                                                                            <Edit size={13} />
+                                                                        </Button>
+                                                                        <Button
+                                                                            type="button"
+                                                                            isIconOnly
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-7 w-7 rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 cursor-pointer border-none"
+                                                                            onClick={() => handleRemovePackage(idx)}
+                                                                            aria-label={language === "vi" ? "Xóa" : "Delete"}
+                                                                        >
+                                                                            <Trash2 size={13} />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+
+                                                                {pkg.isContactOnly ? (
+                                                                    <div className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-1 rounded-lg inline-block">
+                                                                        {language === "vi" ? "Liên hệ báo giá" : "Contact for Price"}
+                                                                    </div>
+                                                                ) : pkg.pricingType === "PER_PERSON" ? (
+                                                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px]">
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Người lớn" : "Adult"}</span>
+                                                                            <span className="font-bold text-slate-800 dark:text-slate-100">
+                                                                                {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.adultPrice || 0)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Trẻ em" : "Child"}</span>
+                                                                            <span className="font-bold text-slate-800 dark:text-slate-100">
+                                                                                {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.childPrice || 0)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Em bé" : "Infant"}</span>
+                                                                            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                                                {pkg.infantPrice && pkg.infantPrice > 0
+                                                                                    ? new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.infantPrice)
+                                                                                    : (language === "vi" ? "Miễn phí" : "Free")}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                                                                        <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Giá trọn gói" : "Charter Price"}</span>
+                                                                        <span className="font-black text-slate-800 dark:text-slate-100 text-xs">
+                                                                            {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.fixedPrice || 0)}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
+
                                         {/* Pricing Matrix */}
                                         <div className="space-y-4">
                                             <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
@@ -960,7 +1305,7 @@ export default function TourDetailsModal({
                                                         const vtr = vc.translations.find(t => t.locale === language) || vc.translations[0];
                                                         const isApplied = prices[vc.id] !== undefined;
                                                         return (
-                                                            <div key={vc.id} className="flex items-center gap-3 bg-slate-50 dark:bg-black p-3 rounded-xl border border-divider">
+                                                            <div key={vc.id} className="flex items-center gap-3 bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                                                                 <div className="flex-grow">
                                                                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{vtr?.name || vc.code}</span>
                                                                     <span className="block text-[10px] text-slate-400">{vc.minSeat === vc.maxSeat ? vc.minSeat : `${vc.minSeat}-${vc.maxSeat}`} {language === "vi" ? "chỗ" : "seats"}</span>
@@ -1018,7 +1363,7 @@ export default function TourDetailsModal({
                                 )}
                             </ModalBody>
 
-                            <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
+                            <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-[var(--bg-card)] flex items-center justify-end gap-3 flex-shrink-0">
                                 {!isEditMode ? (
                                     <>
                                         <Button
@@ -1052,6 +1397,9 @@ export default function TourDetailsModal({
                                                     setMaxGuest(tour.maxGuest || 20);
                                                     setActive(tour.active);
                                                     setIsDefault(tour.isDefault || false);
+                                                    setInclusions(tour.inclusions || "");
+                                                    setExclusions(tour.exclusions || "");
+                                                    setPackages(tour.packages || []);
                                                     const newTrans = {
                                                         vi: { name: "", description: "", content: "" },
                                                         en: { name: "", description: "", content: "" },
@@ -1103,5 +1451,18 @@ export default function TourDetailsModal({
                 </ModalContainer>
             </ModalBackdrop>
         </Modal>
+
+        {/* Tour Package Sub-Modal */}
+        <TourPackageModal
+            isOpen={isPackageModalOpen}
+            onClose={() => {
+                setIsPackageModalOpen(false);
+                setEditingPackageIndex(null);
+            }}
+            onSave={handleSavePackage}
+            initialData={editingPackageIndex !== null ? packages[editingPackageIndex] : null}
+            language={language}
+        />
+        </>
     );
 }
