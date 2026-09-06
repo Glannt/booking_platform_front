@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import type { Key } from "@heroui/react";
-import { Plus, Trash2, Clock, Edit3, DollarSign, Calendar, MapPin } from "lucide-react";
+import { Plus, Trash2, Clock, Edit3, DollarSign, Calendar, MapPin, Users } from "lucide-react";
 import {
   Modal,
   ModalBackdrop,
@@ -77,13 +77,18 @@ export function RouteFormModal({
     thumbnailId: null as number | null,
     imageIds: [] as number[],
     active: true,
-    hasDepartureTimes: false
+    hasDepartureTimes: false,
+    supportsShared: true,
+    sharedVehicleName: "Dcar Limousine",
+    sharedPriceOneWay: "250000",
+    sharedPriceRoundTrip: "500000",
   });
 
   const [activeSubTab, setActiveSubTab] = useState<"general" | "prices">("general");
   const [departureTimes, setDepartureTimes] = useState<IntercityDepartureTimeDto[]>([]);
   const [timesLoading, setTimesLoading] = useState(false);
   const [newTime, setNewTime] = useState("");
+  const [timeDirection, setTimeDirection] = useState<"OUTBOUND" | "RETURN">("OUTBOUND");
   const [savingTime, setSavingTime] = useState(false);
   const [savingRoute, setSavingRoute] = useState(false);
   const [surchargeToAssign, setSurchargeToAssign] = useState<Key | null>(null);
@@ -115,7 +120,11 @@ export function RouteFormModal({
         thumbnailId: editingRoute.thumbnailId || null,
         imageIds: editingRoute.imageIds || [],
         active: editingRoute.active ?? true,
-        hasDepartureTimes: editingRoute.hasDepartureTimes ?? false
+        hasDepartureTimes: editingRoute.hasDepartureTimes ?? false,
+        supportsShared: editingRoute.supportsShared ?? true,
+        sharedVehicleName: editingRoute.sharedVehicleName || "Dcar Limousine",
+        sharedPriceOneWay: String(editingRoute.sharedPriceOneWay ?? 250000),
+        sharedPriceRoundTrip: String(editingRoute.sharedPriceRoundTrip ?? 500000),
       });
       setOriginSearchQuery(originName);
       setDestinationSearchQuery(destName);
@@ -134,7 +143,11 @@ export function RouteFormModal({
         thumbnailId: null,
         imageIds: [],
         active: true,
-        hasDepartureTimes: false
+        hasDepartureTimes: false,
+        supportsShared: true,
+        sharedVehicleName: "Dcar Limousine",
+        sharedPriceOneWay: "250000",
+        sharedPriceRoundTrip: "500000",
       });
       setDepartureTimes([]);
       setActiveSubTab("general");
@@ -185,6 +198,7 @@ export function RouteFormModal({
       await createDepartureTime({
         routeId: editingRoute.id,
         departureTime: newTime,
+        direction: timeDirection,
         orderIndex: departureTimes.length + 1,
         active: true,
       });
@@ -227,6 +241,10 @@ export function RouteFormModal({
       translations: routeForm.name ? [{ locale: "vi", name: routeForm.name }] : undefined,
       active: routeForm.active,
       hasDepartureTimes: routeForm.hasDepartureTimes,
+      supportsShared: routeForm.supportsShared,
+      sharedVehicleName: routeForm.sharedVehicleName?.trim() || "Dcar Limousine",
+      sharedPriceOneWay: routeForm.sharedPriceOneWay ? Number(routeForm.sharedPriceOneWay) : 250000,
+      sharedPriceRoundTrip: routeForm.sharedPriceRoundTrip ? Number(routeForm.sharedPriceRoundTrip) : 500000,
       thumbnailId: routeForm.thumbnailId || undefined,
       imageIds: routeForm.imageIds || [],
     };
@@ -453,21 +471,105 @@ export function RouteFormModal({
                     </div>
                   </div>
 
+                  {/* Configure Shared Rides (Vé xe ghép) */}
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-slate-50/50 dark:bg-[var(--bg-card)] my-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-amber-500" />
+                        <Typography type="h4" className="text-sm font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                          Dịch vụ Vé xe ghép chỗ (Shared)
+                        </Typography>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="route-supports-shared"
+                          isSelected={routeForm.supportsShared}
+                          onChange={(val: boolean) => setRouteForm(f => ({ ...f, supportsShared: val }))}
+                          render={(props) => <div {...props} data-custom="bar" />}
+                        >
+                          <Checkbox.Content>
+                            <Checkbox.Control className="border-1 border-zinc-800">
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Label htmlFor="route-supports-shared" className="text-xs font-extrabold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                          Hỗ trợ vé xe ghép
+                        </Label>
+                      </div>
+                    </div>
+
+                    {routeForm.supportsShared && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                        <TextField className="w-full">
+                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">
+                            Tên loại xe ghép
+                          </Label>
+                          <Input
+                            placeholder="Ví dụ: Dcar Limousine"
+                            value={routeForm.sharedVehicleName}
+                            onChange={(e) => setRouteForm(f => ({ ...f, sharedVehicleName: e.target.value }))}
+                            className="px-3 py-2 border rounded-xl text-sm w-full"
+                          />
+                        </TextField>
+
+                        <TextField className="w-full">
+                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">
+                            Giá vé 1 chiều / khách (VND)
+                          </Label>
+                          <Input
+                            type="number"
+                            placeholder="250000"
+                            value={routeForm.sharedPriceOneWay}
+                            onChange={(e) => setRouteForm(f => ({ ...f, sharedPriceOneWay: e.target.value }))}
+                            className="px-3 py-2 border rounded-xl text-sm w-full"
+                          />
+                        </TextField>
+
+                        <TextField className="w-full">
+                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">
+                            Giá vé khứ hồi / khách (VND)
+                          </Label>
+                          <Input
+                            type="number"
+                            placeholder="500000"
+                            value={routeForm.sharedPriceRoundTrip}
+                            onChange={(e) => setRouteForm(f => ({ ...f, sharedPriceRoundTrip: e.target.value }))}
+                            className="px-3 py-2 border rounded-xl text-sm w-full"
+                          />
+                        </TextField>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Configure Departure Times Section */}
                   {routeForm.hasDepartureTimes && (
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-slate-50 dark:bg-slate-900/50 my-4 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-accent" />
-                        <Typography type="h4" className="text-sm font-extrabold text-slate-850 dark:text-slate-200 uppercase tracking-wider">
-                          Cấu hình giờ khởi hành cố định
-                        </Typography>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock size={16} className="text-accent" />
+                          <Typography type="h4" className="text-sm font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                            Cấu hình giờ khởi hành cố định
+                          </Typography>
+                        </div>
                       </div>
 
                       {editingRoute?.id ? (
                         <div className="space-y-4">
-                          <div className="flex items-end gap-3">
-                            <TextField className="flex-1">
-                              <Label className="text-xs font-bold text-slate-555 mb-1.5 block">Thêm giờ mới (HH:MM)</Label>
+                          <div className="flex items-end gap-3 flex-wrap">
+                            <div className="w-44">
+                              <Label className="text-xs font-bold text-slate-500 mb-1.5 block">Chiều khởi hành</Label>
+                              <select
+                                value={timeDirection}
+                                onChange={(e) => setTimeDirection(e.target.value as "OUTBOUND" | "RETURN")}
+                                className="w-full h-[38px] px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-xs font-bold"
+                              >
+                                <option value="OUTBOUND">Chiều đi ({routeForm.originCity || "Đi"} → {routeForm.destinationCity || "Đến"})</option>
+                                <option value="RETURN">Chiều về ({routeForm.destinationCity || "Đến"} → {routeForm.originCity || "Đi"})</option>
+                              </select>
+                            </div>
+                            <TextField className="flex-1 min-w-[140px]">
+                              <Label className="text-xs font-bold text-slate-500 mb-1.5 block">Thêm giờ mới (HH:MM)</Label>
                               <Input
                                 placeholder="Ví dụ: 08:30"
                                 value={newTime}
@@ -490,18 +592,52 @@ export function RouteFormModal({
                           ) : departureTimes.length === 0 ? (
                             <p className="text-xs text-slate-400 italic">Chưa cấu hình khung giờ nào.</p>
                           ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              {departureTimes.map((dt) => (
-                                <div key={dt.id} className="flex items-center justify-between px-3 py-2 bg-white dark:bg-black border border-slate-100 dark:border-slate-800 rounded-xl">
-                                  <span className="text-xs font-bold text-slate-700 dark:text-slate-350">{dt.departureTime}</span>
-                                  <button
-                                    onClick={() => handleDeleteDepartureTime(dt.id!)}
-                                    className="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer border-none bg-transparent"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
+                            <div className="space-y-3">
+                              {/* Chiều đi */}
+                              <div className="p-3 bg-white dark:bg-[var(--bg-surface)] rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                                <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-accent" />
+                                  Chiều đi: {routeForm.originCity || "Đi"} → {routeForm.destinationCity || "Đến"}
+                                </span>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  {departureTimes
+                                    .filter((dt) => (dt.direction || "OUTBOUND") === "OUTBOUND")
+                                    .map((dt) => (
+                                      <div key={dt.id} className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl">
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{dt.departureTime}</span>
+                                        <button
+                                          onClick={() => handleDeleteDepartureTime(dt.id!)}
+                                          className="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer border-none bg-transparent"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      </div>
+                                    ))}
                                 </div>
-                              ))}
+                              </div>
+
+                              {/* Chiều về */}
+                              <div className="p-3 bg-white dark:bg-[var(--bg-surface)] rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                                <span className="text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                  Chiều về: {routeForm.destinationCity || "Đến"} → {routeForm.originCity || "Đi"}
+                                </span>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  {departureTimes
+                                    .filter((dt) => dt.direction === "RETURN")
+                                    .map((dt) => (
+                                      <div key={dt.id} className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl">
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{dt.departureTime}</span>
+                                        <button
+                                          onClick={() => handleDeleteDepartureTime(dt.id!)}
+                                          className="text-red-500 hover:text-red-700 p-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer border-none bg-transparent"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>

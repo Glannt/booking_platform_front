@@ -22,12 +22,15 @@ export interface VehicleCategoryDto {
   thumbnailId?: number;
   thumbnailUrl?: string;
   luggageWeight?: number;
+  totalVehicles?: number;
+  availableVehicles?: number;
 }
 
 export interface VehicleDto {
   id: number;
   brand: string;
   model: string;
+  licensePlate?: string;
   year: number;
   fuelType: string;
   active: boolean;

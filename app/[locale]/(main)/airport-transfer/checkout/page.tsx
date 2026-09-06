@@ -99,19 +99,13 @@ export default function AirportTransferCheckoutPage() {
 
     setSubmitting(true);
 
-    const contactTags = [
-      zaloId ? `[Zalo: ${zaloId}]` : "",
-      kakaoTalkId ? `[KakaoTalk: ${kakaoTalkId}]` : "",
-      whatsapp ? `[WhatsApp: ${whatsapp}]` : "",
-    ].filter(Boolean).join(" ");
-
     try {
       const res = await createAirportTransferBooking({
         ...draft.payload,
         customerName: name || "Guest",
         customerEmail: email || `${phone}@traveler.com`,
         customerPhone: phone,
-        customerNotes: `${contactTags} ${notes}`.trim(),
+        customerNotes: notes.trim() || undefined,
         zaloId: zaloId || undefined,
         kakaoTalkId: kakaoTalkId || undefined,
         whatsapp: whatsapp || undefined,

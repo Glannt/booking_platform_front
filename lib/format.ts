@@ -33,7 +33,7 @@ function fetchRatesIfNeeded(): Promise<void> {
   fetchPromise = (async () => {
     try {
       const backendUrl = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080");
-      const res = await fetch(`${backendUrl}/api/v1/currencies/active`, {
+      const res = await fetch(`${backendUrl}/api/v1/public/currencies/active`, {
         headers: { "Accept": "application/json" },
       });
       if (res.ok) {

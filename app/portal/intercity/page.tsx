@@ -35,7 +35,7 @@ import {
 } from "@/lib/api/rental";
 
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
-import { calcIntercityPrice } from "@/lib/pricing";
+import { calcIntercityPrice, calcIntercityPrivatePrice } from "@/lib/pricing";
 import MultiImageUpload from "@/components/MultiImageUpload";
 import { backendUrl } from "@/lib/api/client";
 import { IntercityDepartureTimeModal } from "@/components/admin/vehicles/IntercityDepartureTimeModal";
@@ -264,7 +264,8 @@ export default function IntercityManagementPage() {
 
   const routeColumns: ColumnInterface[] = [
     { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "name", label: "Tên", sortable: true },
+    { id: "name", label: "Tên tuyến", sortable: true },
+    { id: "shared", label: "Vé xe ghép", sortable: false },
     { id: "distance", label: "Khoảng cách (km)", sortable: true },
     { id: "hours", label: "Thời gian (h)", sortable: true },
     { id: "active", label: "Trạng thái", sortable: true },
@@ -311,6 +312,7 @@ export default function IntercityManagementPage() {
     { id: "id", label: "ID", sortable: true, isRowHeader: true },
     { id: "route", label: "Tuyến đường", sortable: false },
     { id: "category", label: "Loại xe", sortable: false },
+    { id: "pricingType", label: "Hình thức", sortable: false },
     { id: "perKm", label: "Giá / km", sortable: true },
     { id: "oneWay", label: "1 chiều", sortable: false },
     { id: "roundTrip", label: "Khứ hồi", sortable: false },
@@ -519,6 +521,20 @@ export default function IntercityManagementPage() {
                         <Table.Row key={r.id} id={String(r.id)}>
                           <Table.Cell>#{r.id}</Table.Cell>
                           <Table.Cell className="font-bold">{getRouteName(r)}</Table.Cell>
+                          <Table.Cell>
+                            {r.supportsShared ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                  {r.sharedVehicleName || "Dcar Limousine"}
+                                </span>
+                                <span className="text-[11px] text-slate-500 font-medium">
+                                  {r.sharedPriceOneWay ? `${r.sharedPriceOneWay.toLocaleString()} VND/vé` : "Chưa đặt giá"}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">Không hỗ trợ</span>
+                            )}
+                          </Table.Cell>
                           <Table.Cell>{r.distanceKm ?? "N/A"}</Table.Cell>
                           <Table.Cell>{r.estimatedHours ?? "N/A"}</Table.Cell>
                           <Table.Cell>
@@ -574,16 +590,47 @@ export default function IntercityManagementPage() {
                     <Table.Body>
                       {paginatedPrices.map((p) => {
                         const cat = categories.find(c => c.id === p.vehicleCategoryId);
+                        const r = routes.find(route => route.id === p.routeId);
+                        const oneWay = calcIntercityPrivatePrice({
+                          distanceKm: r?.distanceKm,
+                          pricingType: p.pricingType,
+                          perKmAmount: p.perKmAmount,
+                          fixedPriceOneWay: p.fixedPriceOneWay,
+                          fixedPriceRoundTrip: p.fixedPriceRoundTrip,
+                          roundTripPrice: p.roundTripPrice,
+                          roundTripPerKmAmount: p.roundTripPerKmAmount,
+                        }, false);
+                        const roundTrip = calcIntercityPrivatePrice({
+                          distanceKm: r?.distanceKm,
+                          pricingType: p.pricingType,
+                          perKmAmount: p.perKmAmount,
+                          fixedPriceOneWay: p.fixedPriceOneWay,
+                          fixedPriceRoundTrip: p.fixedPriceRoundTrip,
+                          roundTripPrice: p.roundTripPrice,
+                          roundTripPerKmAmount: p.roundTripPerKmAmount,
+                        }, true);
+
                         return (
                           <Table.Row key={p.id} id={String(p.id)}>
                             <Table.Cell>#{p.id}</Table.Cell>
-                            <Table.Cell className="font-bold">{getRouteName(routes.find(r => r.id === p.routeId) || routes[0])}</Table.Cell>
+                            <Table.Cell className="font-bold">{getRouteName(r || routes[0])}</Table.Cell>
                             <Table.Cell>
                               <Chip size="sm" color="accent">{getCategoryName(cat)}</Chip>
                             </Table.Cell>
-                            <Table.Cell className="font-black text-amber-500">{p.perKmAmount > 0 ? `${p.perKmAmount.toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
-                            <Table.Cell className="font-black text-amber-500">{p.perKmAmount > 0 ? `${calcIntercityPrice(routes.find(r => r.id === p.routeId)?.distanceKm, p.perKmAmount, false).toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
-                            <Table.Cell className="font-black text-amber-500">{p.perKmAmount > 0 ? `${calcIntercityPrice(routes.find(r => r.id === p.routeId)?.distanceKm, p.perKmAmount, true).toLocaleString()} ${p.currency}` : "—"}</Table.Cell>
+                            <Table.Cell>
+                              <Chip size="sm" color={p.pricingType === "FIXED" ? "accent" : "default"}>
+                                {p.pricingType === "FIXED" ? "Trọn gói (Fixed)" : "Theo km (Per-km)"}
+                              </Chip>
+                            </Table.Cell>
+                            <Table.Cell className="font-semibold text-slate-600 dark:text-slate-300">
+                              {p.pricingType === "FIXED" ? "—" : (p.perKmAmount > 0 ? `${p.perKmAmount.toLocaleString()} ${p.currency}` : "—")}
+                            </Table.Cell>
+                            <Table.Cell className="font-black text-amber-500">
+                              {oneWay > 0 ? `${oneWay.toLocaleString()} ${p.currency}` : "—"}
+                            </Table.Cell>
+                            <Table.Cell className="font-black text-amber-500">
+                              {roundTrip > 0 ? `${roundTrip.toLocaleString()} ${p.currency}` : "—"}
+                            </Table.Cell>
                             <Table.Cell>
                               <Chip size="sm" color={p.active ? "success" : "warning"}>
                                 {p.active ? "Hoạt động" : "Ngưng"}

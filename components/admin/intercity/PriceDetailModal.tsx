@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import type { IntercityRoutePriceDto, IntercityRouteDto } from "@/lib/api/rental";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
-import { calcIntercityPrice } from "@/lib/pricing";
+import { calcIntercityPrice, calcIntercityPrivatePrice } from "@/lib/pricing";
 
 interface PriceDetailModalProps {
   isOpen: boolean;
@@ -90,14 +90,31 @@ export function PriceDetailModal({
                 </div>
               </div>
 
+              {/* Pricing Type Banner */}
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Hình thức tính giá</p>
+                  <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                    {price.pricingType === "FIXED" ? "Giá trọn gói cố định" : "Tính theo số KM"}
+                  </span>
+                </div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent">
+                  {price.pricingType || "PER_KM"}
+                </span>
+              </div>
+
               {/* Amounts detail */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Giá / km</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                    {price.pricingType === "FIXED" ? "Đơn giá" : "Giá / km"}
+                  </p>
                   <div className="flex items-center gap-2">
                     <DollarSign size={16} className="text-emerald-500" />
                     <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                      {price.perKmAmount > 0 ? `${price.perKmAmount.toLocaleString()} ${price.currency}` : "—"}
+                      {price.pricingType === "FIXED"
+                        ? "Trọn gói"
+                        : (price.perKmAmount > 0 ? `${price.perKmAmount.toLocaleString()} ${price.currency}` : "—")}
                     </span>
                   </div>
                 </div>
@@ -107,7 +124,18 @@ export function PriceDetailModal({
                   <div className="flex items-center gap-2">
                     <DollarSign size={16} className="text-emerald-500" />
                     <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                      {routeObj?.distanceKm ? `${calcIntercityPrice(routeObj.distanceKm, price.perKmAmount, false).toLocaleString()} ${price.currency}` : "—"}
+                      {(() => {
+                        const calculated = calcIntercityPrivatePrice({
+                          distanceKm: routeObj?.distanceKm,
+                          pricingType: price.pricingType,
+                          perKmAmount: price.perKmAmount,
+                          fixedPriceOneWay: price.fixedPriceOneWay,
+                          fixedPriceRoundTrip: price.fixedPriceRoundTrip,
+                          roundTripPrice: price.roundTripPrice,
+                          roundTripPerKmAmount: price.roundTripPerKmAmount,
+                        }, false);
+                        return calculated > 0 ? `${calculated.toLocaleString()} ${price.currency}` : "—";
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -117,7 +145,18 @@ export function PriceDetailModal({
                   <div className="flex items-center gap-2">
                     <DollarSign size={16} className="text-emerald-500" />
                     <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                      {routeObj?.distanceKm ? `${calcIntercityPrice(routeObj.distanceKm, price.perKmAmount, true).toLocaleString()} ${price.currency}` : "—"}
+                      {(() => {
+                        const calculated = calcIntercityPrivatePrice({
+                          distanceKm: routeObj?.distanceKm,
+                          pricingType: price.pricingType,
+                          perKmAmount: price.perKmAmount,
+                          fixedPriceOneWay: price.fixedPriceOneWay,
+                          fixedPriceRoundTrip: price.fixedPriceRoundTrip,
+                          roundTripPrice: price.roundTripPrice,
+                          roundTripPerKmAmount: price.roundTripPerKmAmount,
+                        }, true);
+                        return calculated > 0 ? `${calculated.toLocaleString()} ${price.currency}` : "—";
+                      })()}
                     </span>
                   </div>
                 </div>

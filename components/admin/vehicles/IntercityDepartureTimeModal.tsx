@@ -1,8 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, Clock, GripVertical } from "lucide-react";
-import { Button, Input, Label, toast, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Plus, Trash2, Clock, GripVertical, ArrowRight } from "lucide-react";
+import {
+  Button,
+  Input,
+  toast,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalCloseTrigger,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Chip,
+} from "@heroui/react";
 
 import {
   getDepartureTimesByRoute,
@@ -28,6 +41,7 @@ export function IntercityDepartureTimeModal({
   const [departureTimes, setDepartureTimes] = useState<IntercityDepartureTimeDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [newTime, setNewTime] = useState("");
+  const [direction, setDirection] = useState<"OUTBOUND" | "RETURN">("OUTBOUND");
   const [saving, setSaving] = useState(false);
 
   const fetchTimes = async () => {
@@ -48,7 +62,7 @@ export function IntercityDepartureTimeModal({
 
   const handleAdd = async () => {
     if (!newTime.match(/^\d{2}:\d{2}$/)) {
-      toast.danger("Giờ không hợp lệ. Định dạng: HH:MM");
+      toast.danger("Giờ không hợp lệ. Định dạng: HH:MM (ví dụ: 08:00)");
       return;
     }
     setSaving(true);
@@ -56,12 +70,13 @@ export function IntercityDepartureTimeModal({
       await createDepartureTime({
         routeId,
         departureTime: newTime,
+        direction: direction,
         orderIndex: departureTimes.length + 1,
         active: true,
       });
       setNewTime("");
       await fetchTimes();
-      toast.success("Đã thêm giờ khởi hành.");
+      toast.success(`Đã thêm giờ khởi hành cho ${direction === "OUTBOUND" ? "Chiều đi" : "Chiều về"}.`);
     } catch {
       toast.danger("Không thể thêm giờ khởi hành.");
     } finally {
@@ -91,23 +106,61 @@ export function IntercityDepartureTimeModal({
     }
   };
 
+  const filteredTimes = departureTimes.filter(
+    (dt) => (dt.direction || "OUTBOUND") === direction
+  );
+
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="departure-time-title">
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      aria-labelledby="departure-time-title"
+    >
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
-          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-800">
             <ModalCloseTrigger />
             <ModalHeader className="p-0 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-accent" />
                 <h3 id="departure-time-title" className="text-base font-bold text-slate-900 dark:text-white">
-                  Giờ khởi hành — {routeName}
+                  Giờ xuất bến — {routeName}
                 </h3>
               </div>
             </ModalHeader>
 
             <ModalBody className="p-0 py-4 space-y-4">
-              {/* Add new time */}
+              {/* Direction Tabs */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-[var(--bg-card)] rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setDirection("OUTBOUND")}
+                  className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                    direction === "OUTBOUND"
+                      ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
+                  }`}
+                >
+                  <ArrowRight size={13} className="text-accent" />
+                  <span>Chiều đi (Outbound)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDirection("RETURN")}
+                  className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                    direction === "RETURN"
+                      ? "bg-white dark:bg-[var(--bg-surface)] text-amber-500 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
+                  }`}
+                >
+                  <ArrowRight size={13} className="text-amber-500 rotate-180" />
+                  <span>Chiều về (Return)</span>
+                </button>
+              </div>
+
+              {/* Add new time for active direction */}
               <div className="flex gap-2">
                 <Input
                   type="time"
@@ -119,23 +172,23 @@ export function IntercityDepartureTimeModal({
                 <Button
                   onClick={handleAdd}
                   isDisabled={saving || !newTime}
-                  className="bg-[#C9A227] hover:bg-[#B8911F] text-white border-none"
+                  className="bg-accent hover:bg-accent-hover text-white border-none font-bold text-xs cursor-pointer flex items-center gap-1"
                 >
                   <Plus size={14} />
                   Thêm
                 </Button>
               </div>
 
-              {/* List of times */}
+              {/* List of times for active direction */}
               {loading ? (
                 <div className="text-center py-8 text-sm text-slate-400">Đang tải...</div>
-              ) : departureTimes.length === 0 ? (
-                <div className="text-center py-8 text-sm text-slate-400">
-                  Chưa có giờ khởi hành nào.
+              ) : filteredTimes.length === 0 ? (
+                <div className="text-center py-8 text-xs text-slate-400 italic bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-100 dark:border-slate-800">
+                  Chưa có khung giờ cố định nào cho {direction === "OUTBOUND" ? "Chiều đi" : "Chiều về"}.
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {departureTimes.map((dt) => (
+                  {filteredTimes.map((dt) => (
                     <div
                       key={dt.id}
                       className={`flex items-center justify-between p-3 rounded-xl border ${
@@ -146,25 +199,27 @@ export function IntercityDepartureTimeModal({
                     >
                       <div className="flex items-center gap-3">
                         <GripVertical size={14} className="text-slate-300" />
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                        <span className="text-sm font-black text-slate-800 dark:text-slate-200">
                           {dt.departureTime}
                         </span>
-                        <span className="text-[10px] text-slate-400">#{dt.orderIndex}</span>
+                        <Chip size="sm" variant="soft" className="text-[10px] font-bold">
+                          {dt.direction === "RETURN" ? "Về" : "Đi"}
+                        </Chip>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleToggleActive(dt)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-lg cursor-pointer ${
+                          className={`text-[10px] font-bold px-2 py-1 rounded-lg cursor-pointer border-none ${
                             dt.active
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-slate-100 text-slate-500 dark:bg-[var(--bg-card)] dark:text-slate-400"
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                              : "bg-slate-100 text-slate-500 dark:bg-[var(--bg-elevated)] dark:text-slate-400"
                           }`}
                         >
-                          {dt.active ? "Active" : "Off"}
+                          {dt.active ? "Đang chạy" : "Tạm ngưng"}
                         </button>
                         <button
                           onClick={() => handleDelete(dt.id!)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-500 cursor-pointer border-none bg-transparent"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -176,7 +231,10 @@ export function IntercityDepartureTimeModal({
             </ModalBody>
 
             <ModalFooter className="p-0 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-              <Button onClick={onClose} className="bg-slate-100 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-300">
+              <Button
+                onClick={onClose}
+                className="bg-slate-100 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl"
+              >
                 Đóng
               </Button>
             </ModalFooter>

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Edit3, Navigation, CheckCircle, XCircle, ImageIcon, MapPin } from "lucide-react";
+import { Edit3, Navigation, CheckCircle, XCircle, ImageIcon, MapPin, Users } from "lucide-react";
 import {
   Modal,
   ModalBackdrop,
@@ -168,6 +168,42 @@ export function RouteDetailModal({
                   </p>
                 </div>
               )}
+
+              {/* Shared Ride Info Section */}
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Users size={14} className="text-amber-500" />
+                    Dịch vụ Vé xe ghép chỗ (Shared)
+                  </span>
+                  <Chip size="sm" color={route.supportsShared ? "success" : "warning"} className="text-[10px] font-bold">
+                    {route.supportsShared ? "Đang hỗ trợ" : "Không hỗ trợ"}
+                  </Chip>
+                </div>
+
+                {route.supportsShared && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div className="p-3 bg-white dark:bg-[var(--bg-surface)] rounded-xl border border-slate-100 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Phương tiện ghép</span>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        {route.sharedVehicleName || "Dcar Limousine"}
+                      </span>
+                    </div>
+                    <div className="p-3 bg-white dark:bg-[var(--bg-surface)] rounded-xl border border-slate-100 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Vé 1 chiều / khách</span>
+                      <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                        {route.sharedPriceOneWay ? `${Number(route.sharedPriceOneWay).toLocaleString()} VND` : "250,000 VND"}
+                      </span>
+                    </div>
+                    <div className="p-3 bg-white dark:bg-[var(--bg-surface)] rounded-xl border border-slate-100 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase">Vé khứ hồi / khách</span>
+                      <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                        {route.sharedPriceRoundTrip ? `${Number(route.sharedPriceRoundTrip).toLocaleString()} VND` : "500,000 VND"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Price Table Section */}
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-4">

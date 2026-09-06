@@ -14,6 +14,11 @@ export interface IntercityRoutePriceDto {
   routeId?: number;
   vehicleCategoryId: number;
   perKmAmount: number;
+  pricingType?: "PER_KM" | "FIXED";
+  fixedPriceOneWay?: number;
+  fixedPriceRoundTrip?: number;
+  roundTripPrice?: number;
+  roundTripPerKmAmount?: number;
   currency: string;
   active: boolean;
 }
@@ -22,6 +27,7 @@ export interface IntercityDepartureTimeDto {
   id?: number;
   routeId?: number;
   departureTime: string;
+  direction?: "OUTBOUND" | "RETURN" | string;
   orderIndex: number;
   active: boolean;
 }
@@ -36,8 +42,14 @@ export interface IntercityRouteDto {
   originLng?: number;
   destinationLat?: number;
   destinationLng?: number;
+  originName?: string;
+  destinationName?: string;
   active: boolean;
   hasDepartureTimes: boolean;
+  supportsShared?: boolean;
+  sharedVehicleName?: string;
+  sharedPriceOneWay?: number;
+  sharedPriceRoundTrip?: number;
   thumbnailId?: number;
   thumbnailUrl?: string;
   imageIds?: number[];
@@ -212,12 +224,14 @@ export async function getActiveSurcharges(
 
 // === Intercity Departure Times ===
 
-export async function getActiveDepartureTimes(routeId: number): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
-  return apiFetch(`/api/v1/intercity-departure-times/active/by-route/${routeId}`, { skipTranslationFilter: true });
+export async function getActiveDepartureTimes(routeId: number, direction?: string): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
+  const query = direction ? `?direction=${direction}` : "";
+  return apiFetch(`/api/v1/intercity-departure-times/active/by-route/${routeId}${query}`, { skipTranslationFilter: true });
 }
 
-export async function getDepartureTimesByRoute(routeId: number): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
-  return apiFetch(`/api/v1/intercity-departure-times/by-route/${routeId}`, { skipTranslationFilter: true });
+export async function getDepartureTimesByRoute(routeId: number, direction?: string): Promise<ApiResponse<IntercityDepartureTimeDto[]>> {
+  const query = direction ? `?direction=${direction}` : "";
+  return apiFetch(`/api/v1/intercity-departure-times/by-route/${routeId}${query}`, { skipTranslationFilter: true });
 }
 
 export async function createDepartureTime(dto: Partial<IntercityDepartureTimeDto>): Promise<ApiResponse<IntercityDepartureTimeDto>> {

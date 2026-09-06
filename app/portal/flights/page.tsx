@@ -89,6 +89,9 @@ export default function FlightsTrackingPage() {
       } else {
         const results = await trackFlightOpenSky(q);
         setOpenSkyResults(results);
+        if (results.length === 0) {
+          setSearchError(`Không tìm thấy chuyến bay nào đang hoạt động với callsign "${q.toUpperCase()}" trên OpenSky.`);
+        }
       }
     } catch (err: any) {
       const msg = err?.message || "Không thể tra cứu. Vui lòng thử lại sau.";

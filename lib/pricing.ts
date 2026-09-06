@@ -52,3 +52,73 @@ export function calcIntercityPrice(distanceKm: number | undefined, perKmAmount: 
   const oneWay = roundToThousand(dist * perKm);
   return roundTrip ? oneWay * 2 : oneWay;
 }
+
+export interface IntercityPrivatePriceInput {
+  distanceKm?: number;
+  pricingType?: "PER_KM" | "FIXED" | string;
+  perKmAmount?: number;
+  fixedPriceOneWay?: number;
+  fixedPriceRoundTrip?: number;
+  roundTripPrice?: number;
+  roundTripPerKmAmount?: number;
+}
+
+/**
+ * Calculates private car trip price with FIXED or PER_KM pricing,
+ * respecting roundTripPrice or fixedPriceRoundTrip overrides.
+ */
+export function calcIntercityPrivatePrice(
+  input: IntercityPrivatePriceInput,
+  roundTrip: boolean
+): number {
+  if (input.pricingType === "FIXED") {
+    const oneWay = Number(input.fixedPriceOneWay ?? 0);
+    if (roundTrip) {
+      if (input.fixedPriceRoundTrip && Number(input.fixedPriceRoundTrip) > 0) {
+        return Number(input.fixedPriceRoundTrip);
+      }
+      if (input.roundTripPrice && Number(input.roundTripPrice) > 0) {
+        return Number(input.roundTripPrice);
+      }
+      return oneWay * 2;
+    }
+    return oneWay;
+  }
+
+  // Default: PER_KM
+  const dist = Number(input.distanceKm ?? 0);
+  const perKm = Number(input.perKmAmount ?? 0);
+  const oneWay = roundToThousand(dist * perKm);
+
+  if (roundTrip) {
+    if (input.roundTripPrice && Number(input.roundTripPrice) > 0) {
+      return Number(input.roundTripPrice);
+    }
+    if (input.roundTripPerKmAmount && Number(input.roundTripPerKmAmount) > 0) {
+      return roundToThousand(dist * Number(input.roundTripPerKmAmount) * 2);
+    }
+    return oneWay * 2;
+  }
+  return oneWay;
+}
+
+/**
+ * Calculates shared vehicle price per passenger,
+ * supporting independent roundTrip pricing.
+ */
+export function calcSharedPrice(
+  priceOneWay: number | undefined,
+  priceRoundTrip: number | undefined,
+  passengerCount: number,
+  roundTrip: boolean
+): number {
+  const pax = Math.max(1, passengerCount || 1);
+  const oneWay = Number(priceOneWay ?? 0);
+  if (roundTrip) {
+    const round = (priceRoundTrip && Number(priceRoundTrip) > 0)
+      ? Number(priceRoundTrip)
+      : oneWay * 2;
+    return round * pax;
+  }
+  return oneWay * pax;
+}

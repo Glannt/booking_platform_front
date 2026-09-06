@@ -1734,38 +1734,19 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
               </NumberField>
             </div>
 
-            {/* Surcharge notices from Surcharge Engine */}
-            {allSurcharges.length > 0 && (
-              <div className="p-4 bg-red-50/50 dark:bg-[var(--bg-muted)] border border-red-200 dark:border-red-900/50 rounded-2xl text-xs font-semibold text-red-800 dark:text-red-300">
-                <p className="font-extrabold uppercase mb-1.5 text-red-600 dark:text-red-400 flex items-center gap-1.5">
-                  <AlertTriangle size={14} className="text-red-500 shrink-0" />
-                  {t.airportTransfer.surchargeNoticeTitle || "LƯU Ý PHỤ THU"}
+            {/* Applied surcharges banner when matched */}
+            {appliedSurcharges.length > 0 && (
+              <div className="p-4 bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl text-xs font-semibold text-amber-900 dark:text-amber-300">
+                <p className="font-extrabold uppercase mb-1.5 text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                  {t.airportTransfer.surchargeApplied || "Phụ thu áp dụng cho chuyến đi của bạn:"}
                 </p>
-                <ul className="list-disc pl-5 space-y-1">
-                  {allSurcharges.map((s, idx) => (
+                <ul className="list-disc pl-5 space-y-1 font-medium">
+                  {appliedSurcharges.map((s, idx) => (
                     <li key={s.id || idx}>
                       {formatSurchargeRuleDescription(s)}
                     </li>
                   ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Applied surcharges banner when matched */}
-            {appliedSurcharges.length > 0 && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300">
-                <p className="font-bold mb-1 text-amber-800 dark:text-amber-300">
-                  {t.airportTransfer.surchargeApplied || "Phụ thu áp dụng cho chuyến đi của bạn:"}
-                </p>
-                <ul className="list-disc pl-5 space-y-1 font-medium">
-                  {appliedSurcharges.map((s, idx) => {
-                    const valText = s.calculationType === "PERCENT" ? `+${s.value}%` : `+${formatPrice(s.value)}`;
-                    return (
-                      <li key={s.id || idx}>
-                        <span className="font-bold">{s.name}</span>: {valText}
-                      </li>
-                    );
-                  })}
                 </ul>
               </div>
             )}

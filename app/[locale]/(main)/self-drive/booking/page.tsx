@@ -25,7 +25,9 @@ import {
   Mail,
   ArrowLeft,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  Ban,
+  AlertCircle
 } from "lucide-react";
 
 import { TimePicker, type TimeValue } from "@/components/time-picker";
@@ -33,7 +35,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { useAuthStore } from "@/lib/store/authStore";
 import { AutofillButton } from "@/components/AutofillButton";
 import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto } from "@/lib/api/rental";
-import { createSelfDriveBooking } from "@/lib/api/self-drive/bookings";
+import { createSelfDriveBooking, getSelfDriveAvailability, type CategoryAvailabilityDto } from "@/lib/api/self-drive/bookings";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
@@ -49,18 +51,21 @@ interface Vehicle {
   deposit: number;
   minimumDays: number;
   capacity: string;
+  categoryTotalVehicles?: number;
+  categoryAvailableVehicles?: number;
 }
 
 export default function SelfDriveBookingPage() {
   const { language, t, contacts } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const vi = language === "vi";
   const user = useAuthStore((s) => s.user);
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehiclesLoading, setVehiclesLoading] = useState(true);
   const [selectedVehicleKey, setSelectedVehicleKey] = useState<string | undefined>();
+  const [availabilities, setAvailabilities] = useState<CategoryAvailabilityDto[]>([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -141,7 +146,9 @@ export default function SelfDriveBookingPage() {
               pricePerDay: dailyRate,
               deposit: r.deposit || 0,
               minimumDays: r.minimumDays || 1,
-              capacity
+              capacity,
+              categoryTotalVehicles: cat?.totalVehicles,
+              categoryAvailableVehicles: cat?.availableVehicles
             };
           });
 
@@ -173,7 +180,52 @@ export default function SelfDriveBookingPage() {
       }
     })();
     return () => { active = false; };
-  }, [language, vi, searchParams]);
+  }, [language, searchParams]);
+
+  useEffect(() => {
+    if (!dateValue || isDateInvalid) {
+      setAvailabilities([]);
+      return;
+    }
+    let active = true;
+    setIsCheckingAvailability(true);
+
+    const startDate = `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}`;
+    const end = new Date(dateValue.year, dateValue.month - 1, dateValue.day + rentalDays);
+    const endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+
+    getSelfDriveAvailability({ startDate, endDate, locale: language })
+      .then((res) => {
+        if (active && res?.data) {
+          setAvailabilities(res.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to check availability:", err);
+      })
+      .finally(() => {
+        if (active) setIsCheckingAvailability(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [dateValue, rentalDays, isDateInvalid, language]);
+
+  const availabilityMap = new Map<number, CategoryAvailabilityDto>();
+  availabilities.forEach((a) => availabilityMap.set(a.vehicleCategoryId, a));
+
+  const selectedAvailability = selectedVehicle ? availabilityMap.get(selectedVehicle.vehicleCategoryId) : undefined;
+
+  const currentAvailableCount = selectedAvailability !== undefined
+    ? selectedAvailability.availableVehicles
+    : (selectedVehicle?.categoryAvailableVehicles ?? 0);
+
+  const currentTotalCount = selectedAvailability !== undefined
+    ? selectedAvailability.totalVehicles
+    : (selectedVehicle?.categoryTotalVehicles ?? 0);
+
+  const isSoldOut = Boolean(dateValue && !isDateInvalid && currentAvailableCount <= 0);
 
   useEffect(() => {
     if (!selectedVehicle || !selectedVehicle.pricePerDay) { setPrice(0); return; }
@@ -248,7 +300,7 @@ export default function SelfDriveBookingPage() {
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim() || `${customerPhone.trim()}@traveler.com`,
         customerPhone: customerPhone.trim(),
-        customerNotes: `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes.trim() || (vi ? `Thuê xe tự lái - ${selectedVehicle.name}` : `Self-drive rental - ${selectedVehicle.name}`)}`,
+        customerNotes: notes.trim() || undefined,
         vehicleCategoryId: selectedVehicle.vehicleCategoryId,
         zaloId: zaloId || undefined,
         kakaoTalkId: kakaoTalkId || undefined,
@@ -268,9 +320,10 @@ export default function SelfDriveBookingPage() {
       } else {
         setErrorMessage(t.errors.bookingFailed);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Booking failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : t.errors.bookingFailed);
+      const serverMsg = err?.response?.data?.message || (err instanceof Error ? err.message : t.errors.bookingFailed);
+      setErrorMessage(serverMsg);
     } finally {
       setIsSubmitting(false);
       setShowConfirmModal(false);
@@ -348,20 +401,48 @@ export default function SelfDriveBookingPage() {
                       </Select.Trigger>
                       <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl">
                         <ListBox>
-                          {vehicles.map((v) => (
-                            <ListBox.Item id={v.id} key={v.id} textValue={v.name} className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer">
-                              <span className="flex items-center gap-2">
-                                <Car size={14} className="text-slate-400" />
-                                {v.name}
-                                {v.pricePerDay > 0 && (
-                                  <span className="text-slate-400 font-bold">
-                                    ({v.pricePerDay.toLocaleString("vi-VN")}đ/{t.selfDrive.perTrip})
+                          {vehicles.map((v) => {
+                            const avail = availabilityMap.get(v.vehicleCategoryId);
+                            const availCount = avail !== undefined
+                              ? avail.availableVehicles
+                              : (v.categoryAvailableVehicles ?? 0);
+                            const itemSoldOut = Boolean(dateValue && !isDateInvalid && availCount <= 0);
+
+                            return (
+                              <ListBox.Item
+                                id={v.id}
+                                key={v.id}
+                                textValue={v.name}
+                                className="text-xs font-semibold px-3 py-2 hover:bg-slate-50 dark:hover:bg-[var(--bg-card)] rounded-lg cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span className="flex items-center gap-2">
+                                    <Car size={14} className="text-slate-400 shrink-0" />
+                                    <span>{v.name}</span>
+                                    {v.pricePerDay > 0 && (
+                                      <span className="text-slate-400 font-bold">
+                                        ({v.pricePerDay.toLocaleString("vi-VN")}đ/{t.selfDrive.perTrip})
+                                      </span>
+                                    )}
                                   </span>
-                                )}
-                              </span>
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          ))}
+                                  <span className="flex items-center gap-1.5 shrink-0">
+                                    {dateValue && !isDateInvalid && (
+                                      itemSoldOut ? (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
+                                          {t.selfDrive.soldOut}
+                                        </span>
+                                      ) : (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                          {t.selfDrive.availableCount.replace("{count}", String(availCount))}
+                                        </span>
+                                      )
+                                    )}
+                                    <ListBox.ItemIndicator />
+                                  </span>
+                                </div>
+                              </ListBox.Item>
+                            );
+                          })}
                         </ListBox>
                       </Select.Popover>
                     </Select>
@@ -555,14 +636,33 @@ export default function SelfDriveBookingPage() {
                   />
                 </div>
 
+                {/* Sold out alert if selected vehicle category has no capacity */}
+                {isSoldOut && (
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs">
+                    <AlertCircle size={18} className="shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+                    <div className="space-y-1">
+                      <p className="font-extrabold">{t.selfDrive.soldOutNotice}</p>
+                      <p className="text-[11px] opacity-90">
+                        {t.selfDrive.availableVehicles}: 0 / {currentTotalCount}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Submit */}
                 <Button
                   type="submit"
-                  isDisabled={isDateInvalid || !dateValue || isSubmitting || !customerName.trim() || !customerPhone.trim()}
-                  className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
+                  isDisabled={isDateInvalid || !dateValue || isSubmitting || !customerName.trim() || !customerPhone.trim() || isSoldOut}
+                  className={`w-full h-12 rounded-2xl font-black text-sm shadow-md gap-2 border-none transition-all ${
+                    isSoldOut
+                      ? "bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 cursor-not-allowed"
+                      : "bg-accent text-white hover:bg-accent-hover cursor-pointer"
+                  }`}
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2"><Loader2 size={15} className="animate-spin" />{t.selfDrive.processing}</span>
+                  ) : isSoldOut ? (
+                    <span className="flex items-center gap-2"><Ban size={15} />{t.selfDrive.soldOut}</span>
                   ) : (
                     <span className="flex items-center gap-2"><CheckCircle size={15} />{t.selfDrive.bookNowBtn}</span>
                   )}
@@ -595,6 +695,16 @@ export default function SelfDriveBookingPage() {
                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                       <span>{t.selfDrive.capacityLabel}</span>
                       <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedVehicle.capacity} {t.selfDrive.seatsCount}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                      <span>{t.selfDrive.totalVehicles}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">{currentTotalCount}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                      <span>{t.selfDrive.availableVehicles}</span>
+                      <span className={`font-extrabold ${isSoldOut ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                        {currentAvailableCount}
+                      </span>
                     </div>
                   </div>
 
@@ -654,7 +764,7 @@ export default function SelfDriveBookingPage() {
           { label: t.selfDrive.confirmName, value: selectedVehicle?.name || "" },
           { label: t.selfDrive.confirmDate, value: dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : "" },
           { label: t.selfDrive.confirmTime, value: `${String(timeValue.hour).padStart(2, "0")}:${String(timeValue.minute).padStart(2, "0")}` },
-          { label: t.selfDrive.duration, value: `${rentalDays} ${vi ? "ngày" : "days"}` },
+          { label: t.selfDrive.duration, value: `${rentalDays} ${t.selfDrive.dayUnit}` },
           { label: t.selfDrive.pickupLocationLabel, value: pickupLocation || "-" },
           { label: t.selfDrive.confirmNotes, value: notes || "-" },
         ]}
