@@ -160,7 +160,7 @@ export const Navbar = () => {
 
   const languageSelector = (
     <Dropdown>
-      <Dropdown.Trigger className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-separator/85 bg-default-55/10 backdrop-blur-sm text-xs font-semibold cursor-pointer outline-none">
+      <Dropdown.Trigger aria-label="Select language" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-separator/85 bg-default-55/10 backdrop-blur-sm text-xs font-semibold cursor-pointer outline-none">
         <Globe size={14} className="opacity-70 flex-shrink-0" />
         <span className="text-xs">{getLanguageLabel(language)}</span>
         <ChevronDown size={12} className="opacity-60 flex-shrink-0" />
@@ -338,7 +338,7 @@ export const Navbar = () => {
 
           {isAuthenticated && user ? (
             <Dropdown>
-              <Dropdown.Trigger className="cursor-pointer outline-none">
+              <Dropdown.Trigger aria-label="User profile menu" className="cursor-pointer outline-none">
                 <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-default-100 transition-colors">
                   <Avatar
                     size="sm"

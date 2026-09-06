@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface UserDto {
   id: number;
@@ -28,6 +28,7 @@ interface AuthState {
   setHydrated: (v: boolean) => void;
   setAuth: (user: UserDto, accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
+  updateUser: (user: UserDto) => void;
   updateAccessToken: (accessToken: string) => void;
   setRefreshToken: (refreshToken: string) => void;
 }
@@ -58,6 +59,10 @@ export const useAuthStore = create<AuthState>()(
         setCookie("accessToken", accessToken, 24 * 60 * 60);
         setCookie("user_role", user.role, 24 * 60 * 60);
       },
+      updateUser: (user) => {
+        set({ user });
+        setCookie("user_role", user.role, 24 * 60 * 60);
+      },
       clearAuth: () => {
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
         deleteCookie("accessToken");
@@ -71,8 +76,31 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      // Persist all auth fields. Session survives page reload.
-      // Server-side refreshToken expiry is validated via whoAmI / refresh endpoint.
+      // Only persist non-null auth fields to localStorage when authenticated
+      storage: createJSONStorage(() => ({
+        getItem: (name: string) => {
+          if (typeof window === "undefined") return null;
+          return localStorage.getItem(name);
+        },
+        setItem: (name: string, value: string) => {
+          if (typeof window === "undefined") return;
+          try {
+            const parsed = JSON.parse(value);
+            if (parsed?.state?.isAuthenticated && parsed?.state?.accessToken) {
+              localStorage.setItem(name, value);
+            } else {
+              // Do not store null/empty states for guests
+              localStorage.removeItem(name);
+            }
+          } catch {
+            localStorage.removeItem(name);
+          }
+        },
+        removeItem: (name: string) => {
+          if (typeof window === "undefined") return;
+          localStorage.removeItem(name);
+        },
+      })),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
