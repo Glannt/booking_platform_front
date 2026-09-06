@@ -31,7 +31,7 @@ export async function getCurrencies(): Promise<CurrencyDto[]> {
 }
 
 export async function getActiveCurrencies(): Promise<CurrencyDto[]> {
-  const res = await apiFetch<ApiResponse<CurrencyDto[]>>("/api/v1/currencies/active", {
+  const res = await apiFetch<ApiResponse<CurrencyDto[]>>("/api/v1/public/currencies/active", {
     skipTranslationFilter: true,
   });
   return res?.data || [];

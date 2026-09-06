@@ -3,8 +3,9 @@ import Image from "next/image";
 import { translations } from "@/config/translations";
 import { Building2, User, FileText, MapPin, Phone, Mail, Globe, ShieldCheck, Handshake, Clock, Car, Plane } from "lucide-react";
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const locale = params.locale || "vi";
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = rawLocale || "vi";
   const t = translations[locale as "vi" | "en" | "ko" | "ru"] || translations.vi;
   return {
     title: `${t.nav.about} | Minh Khoa Travel`,
@@ -17,8 +18,9 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   };
 }
 
-export default function AboutPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale || "vi";
+export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: rawLocale } = await params;
+  const locale = rawLocale || "vi";
   const t = translations[locale as "vi" | "en" | "ko" | "ru"] || translations.vi;
   const ap = t.aboutPage;
 
