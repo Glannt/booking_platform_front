@@ -12,7 +12,13 @@ export interface CreateTourBookingDto {
   contactId?: string;
 
   tourId: number;
+  tourPackageId?: number;
+  packageName?: string;
+  pricingType?: string;
   guestCount: number;
+  adultCount?: number;
+  childCount?: number;
+  infantCount?: number;
   vehicleCategoryId?: number;
   pickupLocation?: string;
   note?: string;

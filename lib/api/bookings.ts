@@ -34,6 +34,19 @@ export interface BookingDto {
   idempotencyKey?: string;
   contactChannel?: string;
   contactId?: string;
+  zaloId?: string;
+  kakaoTalkId?: string;
+  whatsapp?: string;
+  internalNotes?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paidAmount?: number;
+  depositAmount?: number;
+  receivedAmount?: number;
+  remainingAmount?: number;
+  deletionReason?: string;
+  assignedDriver?: string;
+  assignedVehicle?: string;
   items: BookingItemDto[];
   createdAt: string;
   updatedAt?: string;
@@ -64,6 +77,8 @@ export interface CreateBookingRequest {
   contactId?: string;
   zaloId?: string;
   kakaoTalkId?: string;
+  whatsapp?: string;
+  paymentMethod?: string;
   items: CreateBookingItemRequest[];
 }
 
@@ -74,6 +89,33 @@ export interface UpdateBookingRequest {
   totalAmount?: number;
   bookingStatus?: BookingStatus;
   customerNotes?: string;
+  contactChannel?: string;
+  contactId?: string;
+  zaloId?: string;
+  kakaoTalkId?: string;
+  whatsapp?: string;
+  internalNotes?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paidAmount?: number;
+  depositAmount?: number;
+  receivedAmount?: number;
+  deletionReason?: string;
+  assignedDriver?: string;
+  assignedVehicle?: string;
+}
+
+export interface BookingTimelineDto {
+  id: number;
+  bookingId: number;
+  actorId?: number;
+  actorName: string;
+  eventType: string; // CREATED, STATUS_CHANGE, PAYMENT_UPDATE, DISPATCH_UPDATE, NOTE_UPDATE, DELETED
+  title: string;
+  description?: string;
+  oldValue?: string;
+  newValue?: string;
+  createdAt: string;
 }
 
 export async function getBookings(): Promise<ApiResponse<BookingDto[]>> {
@@ -82,6 +124,10 @@ export async function getBookings(): Promise<ApiResponse<BookingDto[]>> {
 
 export async function getBooking(id: number): Promise<ApiResponse<BookingDto>> {
   return apiFetch<ApiResponse<BookingDto>>(`/api/v1/admin/bookings/${id}`);
+}
+
+export async function getBookingTimeline(id: number): Promise<ApiResponse<BookingTimelineDto[]>> {
+  return apiFetch<ApiResponse<BookingTimelineDto[]>>(`/api/v1/admin/bookings/${id}/timeline`);
 }
 
 export async function createBooking(payload: CreateBookingRequest): Promise<ApiResponse<BookingDto>> {
@@ -98,8 +144,9 @@ export async function updateBooking(id: number, payload: UpdateBookingRequest): 
   });
 }
 
-export async function deleteBooking(id: number): Promise<void> {
-  return apiFetch<void>(`/api/v1/admin/bookings/${id}`, {
+export async function deleteBooking(id: number, reason?: string): Promise<void> {
+  const query = reason ? `?reason=${encodeURIComponent(reason)}` : "";
+  return apiFetch<void>(`/api/v1/admin/bookings/${id}${query}`, {
     method: "DELETE",
   });
 }
@@ -144,9 +191,12 @@ export async function trackFlight(flightNumber: string): Promise<FlightTracking>
 }
 
 export async function trackFlightOpenSky(callsign: string): Promise<OpenSkyFlightState[]> {
-  const res = await apiFetch<ApiResponse<OpenSkyFlightState[]>>(`/api/v1/flights/opensky/track?callsign=${encodeURIComponent(callsign)}`);
-  if (!res || !res.data) throw new Error(res?.message || "Không tìm thấy chuyến bay");
-  return res.data;
+  const res = await apiFetch<ApiResponse<OpenSkyFlightState[]> | OpenSkyFlightState[]>(
+    `/api/v1/flights/opensky/track?callsign=${encodeURIComponent(callsign)}`
+  );
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  return res.data ?? [];
 }
 
 export async function getFlightTrackingHistory(): Promise<FlightTracking[]> {

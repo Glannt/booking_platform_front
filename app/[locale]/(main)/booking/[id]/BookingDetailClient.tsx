@@ -148,7 +148,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
     setModalState("submitting");
     setErrorMessage("");
 
-    const compiledNotes = `[Zalo: ${zaloId}] [KakaoTalk: ${kakaoTalkId}] ${notes}`;
+    const compiledNotes = notes.trim() || undefined;
     const itemDetails = `Category ID: ${catId}, StartDate: ${startDate}, EndDate: ${endDate}, Pickup: ${pickup}, Dropoff: ${dropoff}, Flight: ${flightNo}`;
 
     const payload = {

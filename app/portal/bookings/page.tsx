@@ -222,16 +222,22 @@ export default function BookingsManagementPage() {
             <Table aria-label="Bảng quản lý đơn đặt" className="w-full text-left">
               <Table.ScrollContainer>
                 <Table.Content>
-                  <Table.Header className="bg-slate-50 dark:bg-black/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-card)] border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
                     <Table.Column isRowHeader className="px-6 py-4">Mã đơn đặt</Table.Column>
                     <Table.Column className="px-6 py-4">Khách hàng</Table.Column>
-                    <Table.Column className="px-6 py-4">Tổng tiền</Table.Column>
+                    <Table.Column className="px-6 py-4">Tài chính</Table.Column>
+                    <Table.Column className="px-6 py-4">Thanh toán & Vận hành</Table.Column>
                     <Table.Column className="px-6 py-4">Trạng thái đơn</Table.Column>
                     <Table.Column className="px-6 py-4">Ngày tạo</Table.Column>
                     <Table.Column className="px-6 py-4 text-right">Thao tác</Table.Column>
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {paginatedBookings.map((b) => {
+                      const deposit = b.depositAmount ?? 0;
+                      const received = b.receivedAmount ?? 0;
+                      const paid = b.paidAmount ?? (deposit + received);
+                      const remaining = b.remainingAmount ?? Math.max(0, b.totalAmount - paid);
+
                       return (
                         <Table.Row
                           key={b.id}
@@ -246,8 +252,50 @@ export default function BookingsManagementPage() {
                               <div className="text-xs text-slate-500 mt-0.5">{b.customerPhone} | {b.customerEmail}</div>
                             </div>
                           </Table.Cell>
-                          <Table.Cell className="px-6 py-4 font-extrabold text-slate-900 dark:text-white">
-                            {formatPrice(b.totalAmount)}
+                          <Table.Cell className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="font-extrabold text-slate-900 dark:text-white text-xs">
+                                {formatPrice(b.totalAmount)}
+                              </span>
+                              <div className="flex items-center gap-2 text-[11px] mt-0.5">
+                                {deposit > 0 && (
+                                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                    Cọc: {formatPrice(deposit)}
+                                  </span>
+                                )}
+                                {received > 0 && (
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    Nhận: {formatPrice(received)}
+                                  </span>
+                                )}
+                              </div>
+                              {remaining > 0 && (
+                                <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                  Còn nợ: {formatPrice(remaining)}
+                                </span>
+                              )}
+                            </div>
+                          </Table.Cell>
+                          <Table.Cell className="px-6 py-4">
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                b.paymentStatus === "PAID"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                  : b.paymentStatus === "DEPOSITED"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                  : b.paymentStatus === "REFUNDED"
+                                  ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                                  : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20"
+                              }`}>
+                                {b.paymentStatus === "PAID" ? "Đã thanh toán" : b.paymentStatus === "DEPOSITED" ? "Đã đặt cọc" : b.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Chưa thanh toán"}
+                              </span>
+                              {(b.assignedDriver || b.assignedVehicle) && (
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col mt-0.5">
+                                  {b.assignedDriver && <span>TX: <strong className="text-slate-700 dark:text-slate-300">{b.assignedDriver}</strong></span>}
+                                  {b.assignedVehicle && <span className="font-mono text-primary font-bold">Xe: {b.assignedVehicle}</span>}
+                                </div>
+                              )}
+                            </div>
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4">
                             <StatusChip status={b.bookingStatus} type="booking" />

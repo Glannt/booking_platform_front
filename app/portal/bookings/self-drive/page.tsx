@@ -30,6 +30,7 @@ import {
 import clsx from "clsx";
 
 import { StatusChip } from "@/components/StatusChip";
+import BookingEditModal from "@/components/admin/bookings/BookingEditModal";
 import {
   BookingDto,
   BookingItemDto,
@@ -261,17 +262,23 @@ export default function SelfDriveBookingsPage() {
             <Table aria-label="Bảng quản lý đơn đặt xe tự lái" className="w-full text-left">
               <Table.ScrollContainer>
                 <Table.Content>
-                  <Table.Header className="bg-slate-50 dark:bg-black/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-card)] border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
                     <Table.Column isRowHeader className="px-6 py-4">ID</Table.Column>
                     <Table.Column className="px-6 py-4">Mã đặt chỗ</Table.Column>
                     <Table.Column className="px-6 py-4">Khách hàng</Table.Column>
-                    <Table.Column className="px-6 py-4">Số ĐT</Table.Column>
-                    <Table.Column className="px-6 py-4">Tổng tiền</Table.Column>
+                    <Table.Column className="px-6 py-4">Tài chính</Table.Column>
+                    <Table.Column className="px-6 py-4">Thanh toán & Xe</Table.Column>
                     <Table.Column className="px-6 py-4">Trạng thái</Table.Column>
                     <Table.Column className="px-6 py-4 text-right">Thao tác</Table.Column>
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                    {paginatedItems.map((ri) => (
+                    {paginatedItems.map((ri) => {
+                      const deposit = ri.booking.depositAmount ?? 0;
+                      const received = ri.booking.receivedAmount ?? 0;
+                      const paid = ri.booking.paidAmount ?? (deposit + received);
+                      const remaining = ri.booking.remainingAmount ?? Math.max(0, Number(ri.booking.totalAmount) - paid);
+
+                      return (
                       <Table.Row
                         key={`${ri.booking.id}-${ri.item.id}`}
                         className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
@@ -284,13 +291,51 @@ export default function SelfDriveBookingsPage() {
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4">
                           <div className="font-bold text-slate-900 dark:text-white">{ri.booking.customerName}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">{ri.booking.customerEmail}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{ri.booking.customerPhone} | {ri.booking.customerEmail}</div>
                         </Table.Cell>
-                        <Table.Cell className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 font-medium">
-                          {ri.booking.customerPhone}
+                        <Table.Cell className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-slate-900 dark:text-white text-xs">
+                              {formatPrice(Number(ri.booking.totalAmount))}
+                            </span>
+                            <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
+                              {deposit > 0 && (
+                                <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                  Cọc: {formatPrice(deposit)}
+                                </span>
+                              )}
+                              {received > 0 && (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                  Nhận: {formatPrice(received)}
+                                </span>
+                              )}
+                            </div>
+                            {remaining > 0 && (
+                              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                Còn nợ: {formatPrice(remaining)}
+                              </span>
+                            )}
+                          </div>
                         </Table.Cell>
-                        <Table.Cell className="px-6 py-4 font-extrabold text-slate-900 dark:text-white">
-                          {formatPrice(Number(ri.booking.totalAmount))}
+                        <Table.Cell className="px-6 py-4">
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              ri.booking.paymentStatus === "PAID"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                : ri.booking.paymentStatus === "DEPOSITED"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                : ri.booking.paymentStatus === "REFUNDED"
+                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                                : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20"
+                            }`}>
+                              {ri.booking.paymentStatus === "PAID" ? "Đã thanh toán" : ri.booking.paymentStatus === "DEPOSITED" ? "Đã đặt cọc" : ri.booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Chưa thanh toán"}
+                            </span>
+                            {ri.booking.assignedVehicle && (
+                              <span className="font-mono text-xs font-bold text-primary mt-0.5">
+                                Xe: {ri.booking.assignedVehicle}
+                              </span>
+                            )}
+                          </div>
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4">
                           <StatusChip status={ri.booking.bookingStatus} type="booking" />
@@ -314,7 +359,7 @@ export default function SelfDriveBookingsPage() {
                           </div>
                         </Table.Cell>
                       </Table.Row>
-                    ))}
+                    )})}
                   </Table.Body>
                 </Table.Content>
               </Table.ScrollContainer>
@@ -457,78 +502,21 @@ export default function SelfDriveBookingsPage() {
         </ModalBackdrop>
       </Modal>
 
-      {/* Edit Status Modal - backdrop fix */}
-      <Modal isOpen={editModalOpen} onOpenChange={(open) => { if (!open) { setEditModalOpen(false); setSelectedBooking(null); setSelectedItem(null); } }} aria-labelledby="self-drive-edit-title">
-        <ModalBackdrop>
-          <ModalContainer size="md">
-            <ModalDialog>
-              <ModalCloseTrigger />
-              <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800 pb-4">
-                <h2 id="self-drive-edit-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  Cập nhật trạng thái
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {selectedBooking?.bookingCode}
-                </p>
-              </ModalHeader>
-              <ModalBody className="py-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
-                      Trạng thái đặt chỗ
-                    </Label>
-                    <Select
-                      className="w-full"
-                      selectedKey={editStatus}
-                      onSelectionChange={(key) => setEditStatus(key as BookingStatus)}
-                    >
-                      <Select.Trigger className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-855 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold cursor-pointer h-[42px] flex items-center justify-between">
-                        <Select.Value />
-                        <Select.Indicator />
-                      </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
-                        <ListBox>
-                          <ListBox.Item id="pending" textValue="Chờ xử lý">
-                            Chờ xử lý
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="confirmed" textValue="Đã xác nhận">
-                            Đã xác nhận
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="completed" textValue="Đã hoàn thành">
-                            Đã hoàn thành
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                          <ListBox.Item id="cancelled" textValue="Đã hủy">
-                            Đã hủy
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
-                  </div>
-                </div>
-              </ModalBody>
-              <ModalFooter className="border-t border-slate-100 dark:border-slate-800 pt-4">
-                <Button
-                  variant="outline"
-                  className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200"
-                  onClick={() => { setEditModalOpen(false); setSelectedBooking(null); setSelectedItem(null); }}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white"
-                  onClick={handleSaveStatus}
-                >
-                  Lưu thay đổi
-                </Button>
-              </ModalFooter>
-            </ModalDialog>
-          </ModalContainer>
-        </ModalBackdrop>
-      </Modal>
+      {/* Edit Booking & Operations Modal */}
+      <BookingEditModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedBooking(null);
+          setSelectedItem(null);
+        }}
+        booking={selectedBooking}
+        language="vi"
+        onSaveSuccess={() => {
+          fetchBookings();
+        }}
+        showToast={showToast}
+      />
     </div>
   );
 }

@@ -2,8 +2,9 @@ import { Metadata } from "next";
 import { translations } from "@/config/translations";
 import BookingPageClient from "./BookingPageClient";
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-  const locale = params.locale || "vi";
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = rawLocale || "vi";
   const t = translations[locale as "vi" | "en" | "ko" | "ru"] || translations.vi;
   return {
     title: `${t.nav.booking} | Minh Khoa Travel`,

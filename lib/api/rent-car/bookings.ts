@@ -12,7 +12,9 @@ export interface CreateRentCarBookingDto {
   kakaoTalkId?: string;
 
   routeId: number;
-  vehicleCategoryId: number;
+  vehicleCategoryId?: number;
+  serviceType?: "PRIVATE" | "SHARED" | string;
+  passengerCount?: number;
   tripType: string;
   departureDate: string;
   departureTime: string;
