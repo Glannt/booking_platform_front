@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { usePathname, useRouter } from "next/navigation";
 import { Language, translations, TranslationDictionary } from "@/config/translations";
 import { getContactSettings } from "@/lib/api/setting";
+import { useAuthStore } from "@/lib/store/authStore";
 
 export interface LanguageItem {
   code: Language;
@@ -37,6 +38,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname() || "";
   const router = useRouter();
 
+  const accessToken = useAuthStore((s) => s.accessToken);
   const [contacts, setContacts] = useState({
     phone: "0764971971",
     zalo: "https://zalo.me/0764971971",
@@ -45,6 +47,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
+    // Only logged-in users call contact-settings; guest users skip to avoid 403 Forbidden
+    if (!accessToken) return;
+
     getContactSettings()
       .then((res) => {
         if (res?.data) {
@@ -56,8 +61,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           });
         }
       })
-      .catch((err) => console.error("Failed to load contact settings:", err));
-  }, []);
+      .catch((err) => console.warn("Failed to load contact settings:", err));
+  }, [accessToken]);
 
   const getLangFromPath = (path: string): Language => {
     const segments = path.split("/");

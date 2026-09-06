@@ -91,6 +91,11 @@ import { surchargeEngine as surchargeEngineEn } from "./en/surchargeEngine";
 import { surchargeEngine as surchargeEngineKo } from "./ko/surchargeEngine";
 import { surchargeEngine as surchargeEngineRu } from "./ru/surchargeEngine";
 
+import { adminBookings as adminBookingsVi } from "./vi/adminBookings";
+import { adminBookings as adminBookingsEn } from "./en/adminBookings";
+import { adminBookings as adminBookingsKo } from "./ko/adminBookings";
+import { adminBookings as adminBookingsRu } from "./ru/adminBookings";
+
 const vi: TranslationDictionary = {
   nav: navVi,
   aboutPage: aboutPageVi,
@@ -113,6 +118,7 @@ const vi: TranslationDictionary = {
   errors: errorsVi,
   myBookings: myBookingsVi,
   surchargeEngine: surchargeEngineVi,
+  adminBookings: adminBookingsVi,
 };
 
 const en: TranslationDictionary = {
@@ -137,6 +143,7 @@ const en: TranslationDictionary = {
   errors: errorsEn,
   myBookings: myBookingsEn,
   surchargeEngine: surchargeEngineEn,
+  adminBookings: adminBookingsEn,
 };
 
 const ko: TranslationDictionary = {
@@ -161,6 +168,7 @@ const ko: TranslationDictionary = {
   errors: errorsKo,
   myBookings: myBookingsKo,
   surchargeEngine: surchargeEngineKo,
+  adminBookings: adminBookingsKo,
 };
 
 const ru: TranslationDictionary = {
@@ -185,6 +193,7 @@ const ru: TranslationDictionary = {
   errors: errorsRu,
   myBookings: myBookingsRu,
   surchargeEngine: surchargeEngineRu,
+  adminBookings: adminBookingsRu,
 };
 
 export const translations: Record<Language, TranslationDictionary> = { vi, en, ko, ru };

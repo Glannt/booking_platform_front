@@ -144,4 +144,10 @@ export const selfDrive = {
   successNote: "이메일로 확인 메시지를 보냈으며, 추가 연락처 채널(있을 경우)로 연락드리겠습니다. 예약을 완료하기 위해 확인해 주세요.",
   redirecting: "이동 중...",
   backToHome: "홈으로",
+  soldOut: "마감 (차량 없음)",
+  soldOutNotice: "선택한 일정에 예약 가능한 차량이 없습니다",
+  totalVehicles: "총 보유 대수",
+  availableVehicles: "이용 가능 대수",
+  availableCount: "{count}대 이용 가능",
+  dayUnit: "일",
 };

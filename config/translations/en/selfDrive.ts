@@ -144,4 +144,10 @@ export const selfDrive = {
   successNote: "We have sent a confirmation message to your email and will contact you via your secondary contact channels. Please respond to finalize.",
   redirecting: "Redirecting...",
   backToHome: "Back to Home",
+  soldOut: "Sold out",
+  soldOutNotice: "Sold out for selected dates",
+  totalVehicles: "Total fleet",
+  availableVehicles: "Available",
+  availableCount: "{count} available",
+  dayUnit: "days",
 };

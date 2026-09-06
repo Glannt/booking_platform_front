@@ -144,4 +144,10 @@ export const selfDrive = {
   successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến email của bạn và sẽ liên hệ qua các kênh liên hệ phụ của bạn. Vui lòng phản hồi để hoàn tất.",
   redirecting: "Đang chuyển hướng...",
   backToHome: "Về trang chủ",
+  soldOut: "Hết xe",
+  soldOutNotice: "Hết xe trong khoảng thời gian đã chọn",
+  totalVehicles: "Số lượng hiện có",
+  availableVehicles: "Số lượng có thể sử dụng",
+  availableCount: "Còn {count} xe",
+  dayUnit: "ngày",
 };
