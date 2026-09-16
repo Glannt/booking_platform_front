@@ -471,11 +471,10 @@ export default function BookingEditModal({
                                   key={mv.id}
                                   type="button"
                                   onClick={() => setFormData({ ...formData, assignedVehicle: valStr })}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
-                                    isSelected
-                                      ? "bg-primary text-white border-primary shadow-sm"
-                                      : "bg-white dark:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-200 border-border hover:border-primary"
-                                  }`}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${isSelected
+                                    ? "bg-primary text-white border-primary shadow-sm"
+                                    : "bg-white dark:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-200 border-border hover:border-primary"
+                                    }`}
                                 >
                                   {isSelected && <Check size={12} />}
                                   <span>{valStr}</span>
@@ -586,22 +585,20 @@ export default function BookingEditModal({
                         <button
                           type="button"
                           onClick={() => handleDepositTypeChange(DepositType.RATE)}
-                          className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                            currentDepositType === DepositType.RATE
-                              ? "bg-primary text-white shadow-xs"
-                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                          }`}
+                          className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${currentDepositType === DepositType.RATE
+                            ? "bg-primary text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                            }`}
                         >
                           {tb.typeRate}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDepositTypeChange(DepositType.FIXED)}
-                          className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                            currentDepositType === DepositType.FIXED
-                              ? "bg-primary text-white shadow-xs"
-                              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                          }`}
+                          className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${currentDepositType === DepositType.FIXED
+                            ? "bg-primary text-white shadow-xs"
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                            }`}
                         >
                           {tb.typeFixed}
                         </button>
@@ -639,7 +636,7 @@ export default function BookingEditModal({
                             onChange={handleRateChange}
                             fullWidth
                           >
-                            <NumberField.Group className="flex items-center w-full rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-card)] text-slate-900 dark:text-white overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
+                            <NumberField.Group className="flex items-center w-full mt-5 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-card)] text-slate-900 dark:text-white overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
                               <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-xs outline-none border-none h-full font-bold text-amber-600 dark:text-amber-400" />
                               <span className="pr-3 text-xs font-bold text-slate-400">%</span>
                             </NumberField.Group>
@@ -678,7 +675,7 @@ export default function BookingEditModal({
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                             {tb.depositRate}
                           </Label>
-                          <div className="flex items-center w-full rounded-xl border border-separator bg-slate-100/70 dark:bg-[var(--bg-surface)] px-3 py-2 h-10 text-xs font-bold text-slate-700 dark:text-slate-300">
+                          <div className="flex items-center w-full mt-6 rounded-xl border border-separator bg-slate-100/70 dark:bg-[var(--bg-surface)] px-3 py-2 h-10 text-xs font-bold text-slate-700 dark:text-slate-300">
                             {currentDepositRate}%
                           </div>
                         </div>

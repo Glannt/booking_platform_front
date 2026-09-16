@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Phone, Mail, MessageSquare } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, MessageSquare, ShieldCheck } from "lucide-react";
 import { Button, Skeleton, Input, TextArea, Label, TextField, FieldError } from "@heroui/react";
 import { useI18n } from "@/context/LanguageContext";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -10,6 +10,7 @@ import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
 import ErrorOverlay from "@/components/ErrorOverlay";
+import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
 import { createAirportTransferBooking } from "@/lib/api/airport-transfer/bookings";
 import { loadBookingDraft, saveBookingDraft, clearBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
@@ -44,15 +45,20 @@ export default function AirportTransferCheckoutPage() {
   const [createdCode, setCreatedCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountInfo | null>(null);
+
   const formatPrice = (value: number) => _formatPrice(value, language);
+
+  const rawTotalPrice = draft?.totalAmount ?? 0;
+  const finalTotalPrice = Math.max(0, rawTotalPrice - (appliedDiscount?.amount ?? 0));
 
   const depositCalc = useMemo(() => {
     return calculateDeposit({
-      totalAmount: draft?.totalAmount ?? 0,
-      depositType: DepositType.RATE,
+      totalAmount: finalTotalPrice,
+      depositType: DepositType.PERCENT,
       defaultRate: 20,
     });
-  }, [draft?.totalAmount]);
+  }, [finalTotalPrice]);
 
   useEffect(() => {
     const d = loadBookingDraft();
@@ -111,6 +117,7 @@ export default function AirportTransferCheckoutPage() {
     try {
       const res = await createAirportTransferBooking({
         ...draft.payload,
+        totalPrice: finalTotalPrice,
         customerName: name || "Guest",
         customerEmail: email || `${phone}@traveler.com`,
         customerPhone: phone,
@@ -195,6 +202,15 @@ export default function AirportTransferCheckoutPage() {
       </header>
 
       <main className="max-w-3xl mx-auto w-full px-4 md:px-6 py-6 space-y-5">
+        {/* Customer Discount Section */}
+        {rawTotalPrice > 0 && (
+          <CustomerDiscountSection
+            scopeType="AIRPORT_TRANSFER"
+            orderTotal={rawTotalPrice}
+            onDiscountChange={setAppliedDiscount}
+          />
+        )}
+
         {/* Booking Summary */}
         <section className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -210,9 +226,38 @@ export default function AirportTransferCheckoutPage() {
               </div>
             ))}
           </div>
+
+          {appliedDiscount && (
+            <div className="flex justify-between items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span>{t.discounts?.tabDiscounts || "Khuyến mãi"} ({appliedDiscount.code})</span>
+              <span className="font-extrabold">
+                - {formatPrice(appliedDiscount.amount)}
+              </span>
+            </div>
+          )}
+
           <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex justify-between items-center">
             <span className="text-sm font-bold text-slate-500">{t.common.total}</span>
-            <span className="text-lg font-black text-accent">{formatPrice(draft.totalAmount)}</span>
+            <span className="text-lg font-black text-accent">{formatPrice(finalTotalPrice)}</span>
+          </div>
+
+          {/* Deposit Info Box */}
+          <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                <ShieldCheck size={15} className="text-amber-600 shrink-0" />
+                {t.discounts?.depositRequired || "Tiền đặt cọc"} ({depositCalc.depositRate}%)
+              </span>
+              <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
+                {formatPrice(depositCalc.depositAmount)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <span>{t.discounts?.remainingPayment || "Thanh toán còn lại"}:</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">
+                {formatPrice(depositCalc.remainingAmount)}
+              </span>
+            </div>
           </div>
         </section>
 
@@ -344,7 +389,7 @@ export default function AirportTransferCheckoutPage() {
         <Button
           onClick={handleSubmit}
           isDisabled={!draft || submitting}
-          className="w-full h-12 rounded-2xl font-black text-sm sm:text-base bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
+          className="w-full h-12 rounded-2xl font-black text-sm sm:text-base bg-accent text-accent-foreground hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
         >
           {submitting ? t.airportTransfer.submittingRequest : t.airportTransfer.confirmBooking}
         </Button>
@@ -356,8 +401,13 @@ export default function AirportTransferCheckoutPage() {
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
-        summaryItems={draft.summaryItems}
-        totalAmount={draft.totalAmount}
+        summaryItems={[
+          ...draft.summaryItems,
+          ...(appliedDiscount
+            ? [{ label: `${t.discounts?.tabDiscounts || "Khuyến mãi"} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
+            : []),
+        ]}
+        totalAmount={finalTotalPrice}
         totalLabel={t.common.total}
         depositAmount={depositCalc.depositAmount}
         depositRate={depositCalc.depositRate}

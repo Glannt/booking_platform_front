@@ -42,7 +42,8 @@ import {
   Briefcase,
   Scale,
   Users,
-  AlertTriangle
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 
 import dynamic from "next/dynamic";
@@ -54,6 +55,7 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcAirportPrice } from "@/lib/pricing";
+import { calculateDeposit, DepositType, DEFAULT_MODULE_DEPOSIT_RATES } from "@/lib/pricing/deposit";
 import { saveBookingDraft, loadBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import type { SectionDto } from "@/lib/api/sections";
 import { FormattedDescription } from "@/components/FormattedDescription";
@@ -851,6 +853,15 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
 
   const finalPrice = unitPrice + surchargeAmount;
 
+  const depositCalc = useMemo(() => {
+    if (!isFormComplete || !selectedVehicle || finalPrice <= 0) return null;
+    return calculateDeposit({
+      totalAmount: finalPrice,
+      depositType: DepositType.PERCENT,
+      defaultRate: DEFAULT_MODULE_DEPOSIT_RATES.AIRPORT,
+    });
+  }, [finalPrice, isFormComplete, selectedVehicle]);
+
   const finalPriceDisplay = useMemo(() => {
     if (!isFormComplete || !selectedVehicle) return "—";
     return formatPrice(finalPrice);
@@ -935,6 +946,9 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       totalPrice: finalPrice,
       passengerCount,
       luggageWeight,
+      depositType: depositCalc?.depositType,
+      depositRate: depositCalc?.depositRate,
+      depositAmount: depositCalc?.depositAmount,
     };
 
     const summaryItems = [
@@ -944,6 +958,10 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       ...(dateValue ? [{ label: t.airportTransfer.dateTime, value: `${dateValue.toString()} ${timeValue.hour}:${String(timeValue.minute).padStart(2, "0")} ${timeValue.period}` }] : []),
       ...(tripType === "return" && returnDateValue ? [{ label: t.airportTransfer.returnDate, value: `${returnDateValue.toString()} ${returnTimeValue.hour}:${String(returnTimeValue.minute).padStart(2, "0")} ${returnTimeValue.period}` }] : []),
       ...(nhaTrangAddress ? [{ label: t.airportTransfer.address, value: nhaTrangAddress }] : []),
+      ...(depositCalc ? [
+        { label: t.discounts?.depositRequired || "Tiền đặt cọc", value: `${formatPrice(depositCalc.depositAmount)} (${depositCalc.depositRate}%)` },
+        { label: t.discounts?.remainingPayment || "Thanh toán còn lại", value: formatPrice(depositCalc.remainingAmount) },
+      ] : []),
     ];
 
     return {
@@ -1883,12 +1901,32 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                 <span className="text-sm font-bold text-slate-500">{t.common.total}</span>
                 <span className="text-xl font-black text-accent">{finalPriceDisplay}</span>
               </div>
+
+              {depositCalc && isFormComplete && selectedVehicle && (
+                <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                      <ShieldCheck size={15} className="text-amber-600 shrink-0" />
+                      {t.discounts?.depositRequired || "Tiền đặt cọc"} ({depositCalc.depositRate}%)
+                    </span>
+                    <span className="text-sm font-black text-amber-700 dark:text-amber-400">
+                      {formatPrice(depositCalc.depositAmount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    <span>{t.discounts?.remainingPayment || "Thanh toán còn lại"}:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {formatPrice(depositCalc.remainingAmount)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button
               onClick={handleBooking}
               isDisabled={!isFormComplete || !selectedVehicle || (isCustomAddress && estimatedDistance == null)}
-              className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-2xs gap-2 border-none cursor-pointer"
+              className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-accent-foreground hover:bg-accent-hover shadow-2xs gap-2 border-none cursor-pointer"
             >
               {t.airportTransfer.bookNow}
             </Button>
