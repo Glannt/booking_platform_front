@@ -7,4 +7,6 @@ export const status = {
   inactive: "Không hoạt động",
   published: "Đã xuất bản",
   draft: "Bản nháp",
+  paused: "Tạm ngưng",
+  hidden: "Tạm ẩn",
 };

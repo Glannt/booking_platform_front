@@ -12,11 +12,13 @@ import {
   Eye,
   Edit3
 } from "lucide-react";
-import { Button, Input, Table, toast, Select, ListBox } from "@heroui/react";
+import { Button, Input, Table, toast, Select, ListBox, Tooltip } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
-import ServiceDetailsModal from "@/components/admin/services/ServiceDetailsModal";
+import ServiceDetailModal from "@/components/admin/services/ServiceDetailModal";
 import ServiceCreateModal from "@/components/admin/services/ServiceCreateModal";
 import ServiceDeleteModal from "@/components/admin/services/ServiceDeleteModal";
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
 
 import {
   ServiceDto,
@@ -116,6 +118,7 @@ const fallbackServices: ServiceDto[] = [
 ];
 
 export default function ServicesManagementPage() {
+  const { t } = useI18n();
   const [categories, setCategories] = useState<ServiceCategoryDto[]>(fallbackCategories);
   const [services, setServices] = useState<ServiceDto[]>(fallbackServices);
   const [loading, setLoading] = useState<boolean>(true);
@@ -279,17 +282,17 @@ export default function ServicesManagementPage() {
           </Button>
 
           <Button
-            className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-sm border border-transparent"
+            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
             onClick={() => setCreateModalOpen(true)}
           >
-            <Plus size={18} className="mr-1" />
-            {"Thêm Dịch vụ"}
+            <Plus size={16} />
+            <span>{"Thêm Dịch vụ"}</span>
           </Button>
         </div>
       </div>
 
       {/* Main List */}
-      <div className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
@@ -311,12 +314,16 @@ export default function ServicesManagementPage() {
               <Table.ScrollContainer>
                 <Table.Content>
                   <Table.Header className="bg-slate-50 dark:bg-black/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <Table.Column isRowHeader className="px-6 py-4">ID</Table.Column>
-                    <Table.Column className="px-6 py-4">{"Tên Tour / Dịch vụ"}</Table.Column>
-                    <Table.Column className="px-6 py-4">{"Danh mục"}</Table.Column>
-                    <Table.Column className="px-6 py-4">{"Giá gốc"}</Table.Column>
-                    <Table.Column className="px-6 py-4">{"Trạng thái"}</Table.Column>
-                    <Table.Column className="px-6 py-4 text-right">{"Thao tác"}</Table.Column>
+                    {headerColumns.services(t).map((col) => (
+                      <Table.Column
+                        key={col.id}
+                        id={col.id}
+                        isRowHeader={col.isRowHeader}
+                        className={col.className}
+                      >
+                        {col.value}
+                      </Table.Column>
+                    ))}
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {filteredServices.map((svc) => {
@@ -373,41 +380,70 @@ export default function ServicesManagementPage() {
                             <StatusChip status={svc.status} type="publish" />
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => {
-                                  setSelectedService(svc);
-                                  setDetailsModalOpen(true);
-                                }}
-                                title={"Xem Chi Tiết"}
-                                aria-label={"Xem Chi Tiết"}
-                              >
-                                <Eye size={16} />
-                              </button>
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => {
-                                  setSelectedService(svc);
-                                  setDetailsDefaultEditMode(true);
-                                  setDetailsModalOpen(true);
-                                }}
-                                title={"Chỉnh Sửa"}
-                                aria-label={"Chỉnh Sửa"}
-                              >
-                                <Edit3 size={16} />
-                              </button>
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-350 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => {
-                                  setSelectedService(svc);
-                                  setDeleteModalOpen(true);
-                                }}
-                                title={"Xóa"}
-                                aria-label={"Xóa"}
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="tertiary"
+                                    aria-label="Xem chi tiết"
+                                    onPress={() => {
+                                      setSelectedService(svc);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Xem chi tiết
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa"
+                                    onPress={() => {
+                                      setSelectedService(svc);
+                                      setDetailsDefaultEditMode(true);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa"
+                                    onPress={() => {
+                                      setSelectedService(svc);
+                                      setDeleteModalOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa
+                                </Tooltip.Content>
+                              </Tooltip>
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -422,7 +458,7 @@ export default function ServicesManagementPage() {
       </div>
 
       {/* Render separated modals */}
-      <ServiceDetailsModal
+      <ServiceDetailModal
         isOpen={detailsModalOpen}
         onClose={() => {
           setDetailsModalOpen(false);

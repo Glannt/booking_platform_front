@@ -16,7 +16,7 @@ import { Eye, Mail, Phone, Shield, User as UserIcon, MessageSquare, Edit3 } from
 import { AdminUserDto } from "@/lib/api/users";
 import { useAuthStore } from "@/lib/store/authStore";
 
-interface UserDetailsModalProps {
+interface UserDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: AdminUserDto | null;
@@ -36,7 +36,7 @@ const statusColors: Record<string, string> = {
   blocked: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
-export default function UserDetailsModal({ isOpen, onClose, user, onEdit }: UserDetailsModalProps) {
+export default function UserDetailModal({ isOpen, onClose, user, onEdit }: UserDetailModalProps) {
   const { user: currentUser } = useAuthStore();
   if (!user) return null;
 
@@ -50,22 +50,10 @@ export default function UserDetailsModal({ isOpen, onClose, user, onEdit }: User
           <ModalDialog className="max-w-md bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
             <ModalCloseTrigger aria-label="Đóng chi tiết user" />
             <ModalHeader className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[var(--bg-page)]/40 py-4 px-6">
-              <div className="flex items-center justify-between w-full">
-                <span id="user-details-title" className="text-lg font-extrabold text-neutral-900 dark:text-white flex items-center gap-2">
-                  <Eye className="text-accent" size={20} />
-                  Chi tiết User
-                </span>
-                {!isSelf && (
-                  <Button
-                    size="sm"
-                    aria-label="Chỉnh sửa thông tin người dùng"
-                    onClick={onEdit}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Edit3 size={14} /> {isModerator ? "Đổi trạng thái" : "Chỉnh sửa"}
-                  </Button>
-                )}
-              </div>
+              <span id="user-details-title" className="text-lg font-extrabold text-neutral-900 dark:text-white flex items-center gap-2">
+                <Eye className="text-accent" size={20} />
+                Chi tiết User
+              </span>
             </ModalHeader>
 
             <ModalBody className="p-6 space-y-4">
@@ -145,14 +133,26 @@ export default function UserDetailsModal({ isOpen, onClose, user, onEdit }: User
               </div>
             </ModalBody>
 
-            <ModalFooter className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[var(--bg-page)]/40 py-3 px-6 justify-end">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
+                variant="outline"
                 aria-label="Đóng cửa sổ chi tiết user"
-                className="rounded-xl font-bold bg-neutral-200 dark:bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 onClick={onClose}
               >
                 Đóng
               </Button>
+              {!isSelf && (
+                <Button
+                  type="button"
+                  aria-label="Chỉnh sửa thông tin người dùng"
+                  onClick={onEdit}
+                  className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Edit3 size={15} className="mr-1.5" />
+                  {isModerator ? "Đổi trạng thái" : "Chỉnh sửa"}
+                </Button>
+              )}
             </ModalFooter>
           </ModalDialog>
         </ModalContainer>

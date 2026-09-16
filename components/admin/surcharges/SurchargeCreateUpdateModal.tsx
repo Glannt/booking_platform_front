@@ -9,6 +9,7 @@ import {
   ModalCloseTrigger,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   Button,
   Input,
   Label,
@@ -24,12 +25,12 @@ import {
   toast,
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { X, Sparkles, Code2 } from "lucide-react";
+import { X, Sparkles, Code2, RefreshCw, Save } from "lucide-react";
 import { SurchargeRuleDto } from "@/lib/api/surcharge";
 import { formatTimeToString, parseTimeString } from "@/lib/format";
 import { useI18n } from "@/context/LanguageContext";
 
-interface SurchargeFormModalProps {
+interface SurchargeCreateUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (dto: Partial<SurchargeRuleDto>) => Promise<void>;
@@ -47,13 +48,13 @@ const DAYS_OF_WEEK = [
   { key: "SUNDAY", label: "CN (Sun)" },
 ];
 
-export function SurchargeFormModal({
+export function SurchargeCreateUpdateModal({
   isOpen,
   onClose,
   onSubmit,
   initialData,
   loading = false,
-}: SurchargeFormModalProps) {
+}: SurchargeCreateUpdateModalProps) {
   const { t } = useI18n();
   const tr = t.surchargeEngine;
 
@@ -207,9 +208,9 @@ export function SurchargeFormModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <ModalBackdrop>
         <ModalContainer>
-          <ModalDialog className="w-full max-w-2xl bg-white dark:bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <ModalDialog className="w-full max-w-2xl bg-white dark:bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
             <ModalCloseTrigger />
-            <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                   {initialData ? tr.editRule : tr.createRule}
@@ -217,53 +218,53 @@ export function SurchargeFormModal({
               </div>
             </ModalHeader>
 
-            <ModalBody className="p-6 max-h-[80vh] overflow-y-auto">
-              <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <ModalBody className="p-6 space-y-5 overflow-y-auto max-h-[60vh]">
                 {/* Row 1: Code + Name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
-                      {tr.code} <span className="text-rose-500">*</span>
+                    <Label isRequired className="text-xs font-bold mb-1 block">
+                      {tr.code}
                     </Label>
                     <Input
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="VD: SPRING_SURCHARGE, NIGHT_FEE"
                       required
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-sm font-semibold uppercase text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-sm font-semibold uppercase text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
-                      {tr.name} <span className="text-rose-500">*</span>
+                    <Label isRequired className="text-xs font-bold mb-1 block">
+                      {tr.name}
                     </Label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="VD: Phụ thu Tết Nguyên Đán, Phụ thu đêm"
                       required
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
                   </div>
                 </div>
 
                 {/* Description */}
                 <div>
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                  <Label className="text-xs font-bold mb-1 block">
                     {tr.descriptionLabel}
                   </Label>
                   <Input
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Mô tả chi tiết mục đích và phạm vi áp dụng..."
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
                 </div>
 
                 {/* Calculation Type & Base */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                    <Label className="text-xs font-bold mb-1 block">
                       {tr.calcType}
                     </Label>
                     <Select
@@ -273,11 +274,11 @@ export function SurchargeFormModal({
                       }}
                       className="w-full"
                     >
-                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
                           <ListBox.Item key="PERCENT" id="PERCENT" textValue={tr.percent} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                             {tr.percent}
@@ -292,7 +293,7 @@ export function SurchargeFormModal({
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                    <Label className="text-xs font-bold mb-1 block">
                       {tr.calcBase}
                     </Label>
                     <Select
@@ -302,11 +303,11 @@ export function SurchargeFormModal({
                       }}
                       className="w-full"
                     >
-                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
                           <ListBox.Item key="BASE_PRICE" id="BASE_PRICE" textValue={tr.basePrice} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                             {tr.basePrice}
@@ -325,8 +326,8 @@ export function SurchargeFormModal({
                 {/* Value + Currency + Priority */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
-                      {tr.value} ({calculationType === "PERCENT" ? "%" : currency}) <span className="text-rose-500">*</span>
+                    <Label isRequired className="text-xs font-bold mb-1 block">
+                      {tr.value} ({calculationType === "PERCENT" ? "%" : currency})
                     </Label>
                     <NumberField
                       minValue={0}
@@ -334,7 +335,7 @@ export function SurchargeFormModal({
                       onChange={(val) => setValue(val ?? 0)}
                       isRequired
                     >
-                      <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
+                      <NumberField.Group className="flex items-center w-full rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
                         <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100 outline-none border-none h-full cursor-text" />
                         <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer bg-transparent">
                           ▲
@@ -346,18 +347,18 @@ export function SurchargeFormModal({
                     </NumberField>
                   </div>
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                    <Label className="text-xs font-bold mb-1 block">
                       Đơn vị tiền tệ
                     </Label>
                     <Input
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
                       placeholder="VND"
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none uppercase"
+                      className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none uppercase"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                    <Label className="text-xs font-bold mb-1 block">
                       {tr.priority}
                     </Label>
                     <NumberField
@@ -366,7 +367,7 @@ export function SurchargeFormModal({
                       value={priority}
                       onChange={(val) => setPriority(val ?? 0)}
                     >
-                      <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
+                      <NumberField.Group className="flex items-center w-full rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-10">
                         <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none border-none h-full cursor-text" />
                         <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer bg-transparent">
                           ▲
@@ -399,7 +400,7 @@ export function SurchargeFormModal({
 
                   {isRawJsonMode ? (
                     <div>
-                      <Label className="text-[11px] text-slate-500 mb-1 block">
+                      <Label className="text-[11px] mb-1 block">
                         {tr.conditionJson}
                       </Label>
                       <textarea
@@ -407,13 +408,13 @@ export function SurchargeFormModal({
                         onChange={(e) => setRawJson(e.target.value)}
                         placeholder='{"type": "date_range", "from": "01-20", "to": "02-15"}'
                         rows={4}
-                        className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] font-mono text-xs text-slate-800 dark:text-slate-100 outline-none"
+                        className="w-full p-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] font-mono text-xs text-slate-800 dark:text-slate-100 outline-none"
                       />
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <Label className="text-xs text-slate-600 dark:text-slate-300 mb-1 block">
+                        <Label className="text-xs mb-1 block">
                           {tr.conditionType}
                         </Label>
                         <Select
@@ -423,11 +424,11 @@ export function SurchargeFormModal({
                           }}
                           className="w-full"
                         >
-                          <Select.Trigger className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold flex items-center justify-between cursor-pointer h-[36px]">
+                          <Select.Trigger className="w-full px-3 py-2 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold flex items-center justify-between cursor-pointer h-[36px]">
                             <Select.Value />
                             <Select.Indicator />
                           </Select.Trigger>
-                          <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                          <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                             <ListBox>
                               <ListBox.Item key="date_range" id="date_range" textValue={tr.dateRange} className="px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                                 {tr.dateRange}
@@ -449,25 +450,25 @@ export function SurchargeFormModal({
                       {condType === "date_range" && (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-[11px] text-slate-500 mb-1 block">
+                            <Label className="text-[11px] mb-1 block">
                               {tr.fromDate} (MM-dd hoặc YYYY-MM-DD)
                             </Label>
                             <Input
                               value={fromDate}
                               onChange={(e) => setFromDate(e.target.value)}
                               placeholder="01-20"
-                              className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none"
+                              className="w-full h-9 px-3 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none"
                             />
                           </div>
                           <div>
-                            <Label className="text-[11px] text-slate-500 mb-1 block">
+                            <Label className="text-[11px] mb-1 block">
                               {tr.toDate} (MM-dd hoặc YYYY-MM-DD)
                             </Label>
                             <Input
                               value={toDate}
                               onChange={(e) => setToDate(e.target.value)}
                               placeholder="02-15"
-                              className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none"
+                              className="w-full h-9 px-3 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none"
                             />
                           </div>
                         </div>
@@ -476,7 +477,7 @@ export function SurchargeFormModal({
                       {condType === "time_range" && (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <Label className="text-[11px] text-slate-500 mb-1 block">
+                            <Label className="text-[11px] mb-1 block">
                               {tr.fromTime} (HH:mm)
                             </Label>
                             <TimeField
@@ -484,7 +485,7 @@ export function SurchargeFormModal({
                               onChange={(val) => setFromTime(formatTimeToString(val))}
                               aria-label={tr.fromTime}
                             >
-                              <TimeField.Group className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center">
+                              <TimeField.Group className="w-full h-9 px-3 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center">
                                 <TimeField.Input className="w-full bg-transparent outline-none text-xs font-semibold">
                                   {(segment) => <TimeField.Segment segment={segment} />}
                                 </TimeField.Input>
@@ -492,7 +493,7 @@ export function SurchargeFormModal({
                             </TimeField>
                           </div>
                           <div>
-                            <Label className="text-[11px] text-slate-500 mb-1 block">
+                            <Label className="text-[11px] mb-1 block">
                               {tr.toTime} (HH:mm)
                             </Label>
                             <TimeField
@@ -500,7 +501,7 @@ export function SurchargeFormModal({
                               onChange={(val) => setToTime(formatTimeToString(val))}
                               aria-label={tr.toTime}
                             >
-                              <TimeField.Group className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center">
+                              <TimeField.Group className="w-full h-9 px-3 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center">
                                 <TimeField.Input className="w-full bg-transparent outline-none text-xs font-semibold">
                                   {(segment) => <TimeField.Segment segment={segment} />}
                                 </TimeField.Input>
@@ -512,7 +513,7 @@ export function SurchargeFormModal({
 
                       {condType === "day_of_week" && (
                         <div>
-                          <Label className="text-[11px] text-slate-500 mb-1 block">
+                          <Label className="text-[11px] mb-1 block">
                             {tr.days}
                           </Label>
                           <div className="flex flex-wrap gap-2 pt-1">
@@ -540,7 +541,7 @@ export function SurchargeFormModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 block">
+                      <Label className="text-xs font-bold block">
                         Hiệu lực từ ngày (Tùy chọn)
                       </Label>
                       {effectiveFrom && (
@@ -563,7 +564,7 @@ export function SurchargeFormModal({
                         }
                       }}
                     >
-                      <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700 rounded-xl px-3 flex items-center justify-between">
+                      <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)] border-1 border-separator rounded-xl px-3 flex items-center justify-between">
                         <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                           {(segment) => <DateField.Segment segment={segment} />}
                         </DateField.Input>
@@ -593,7 +594,7 @@ export function SurchargeFormModal({
                               {(date) => (
                                 <Calendar.Cell
                                   date={date}
-                                  className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
+                                  className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-accent-foreground"
                                 />
                               )}
                             </Calendar.GridBody>
@@ -614,7 +615,7 @@ export function SurchargeFormModal({
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 block">
+                      <Label className="text-xs font-bold block">
                         Hiệu lực đến ngày (Tùy chọn)
                       </Label>
                       {effectiveTo && (
@@ -637,7 +638,7 @@ export function SurchargeFormModal({
                         }
                       }}
                     >
-                      <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-700 rounded-xl px-3 flex items-center justify-between">
+                      <DateField.Group fullWidth className="h-10 bg-slate-50 dark:bg-[var(--bg-surface)] border-1 border-separator rounded-xl px-3 flex items-center justify-between">
                         <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
                           {(segment) => <DateField.Segment segment={segment} />}
                         </DateField.Input>
@@ -667,7 +668,7 @@ export function SurchargeFormModal({
                               {(date) => (
                                 <Calendar.Cell
                                   date={date}
-                                  className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
+                                  className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-accent-foreground"
                                 />
                               )}
                             </Calendar.GridBody>
@@ -707,26 +708,31 @@ export function SurchargeFormModal({
                   </Checkbox>
                 </div>
 
-                {/* Submit Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onPress={onClose}
-                    className="px-4 py-2 text-xs font-semibold rounded-xl"
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    type="submit"
-                    isDisabled={loading}
-                    className="px-5 py-2 text-xs font-bold bg-primary text-white rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
-                  >
-                    {loading ? "Đang lưu..." : "Lưu quy tắc"}
-                  </Button>
-                </div>
-              </form>
-            </ModalBody>
+              </ModalBody>
+
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onPress={onClose}
+                  className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  isDisabled={loading}
+                  className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
+                >
+                  {loading ? (
+                    <RefreshCw size={15} className="animate-spin mr-1.5" />
+                  ) : (
+                    <Save size={15} className="mr-1.5" />
+                  )}
+                  {initialData ? "Lưu thay đổi" : "Lưu quy tắc"}
+                </Button>
+              </ModalFooter>
+            </form>
           </ModalDialog>
         </ModalContainer>
       </ModalBackdrop>

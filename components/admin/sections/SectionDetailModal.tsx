@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, Button, Label, Switch } from "@heroui/react";
+import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter, Button, Label, Switch } from "@heroui/react";
 import { SectionDto } from "@/lib/api/sections";
 import { StatusChip } from "@/components/StatusChip";
-import { Pencil, Trash2, ImageOff } from "lucide-react";
+import { Edit3, Trash2, ImageOff } from "lucide-react";
 import { ContentDataViewer } from "./ContentDataViewer";
 
-interface SectionDetailsModalProps {
+interface SectionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   section: SectionDto | null;
@@ -27,12 +27,12 @@ const SECTION_TYPES: Record<string, string> = {
   BANNER: "Banner",
 };
 
-export default function SectionDetailsModal({
+export default function SectionDetailModal({
   isOpen,
   onClose,
   section,
   onEdit,
-}: SectionDetailsModalProps) {
+}: SectionDetailModalProps) {
   if (!section) return null;
 
   const viTrans = section.translations.find((t) => t.locale === "vi") || section.translations[0];
@@ -41,28 +41,12 @@ export default function SectionDetailsModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="section-details-title">
       <ModalBackdrop className="bg-black/50 backdrop-blur-sm">
         <ModalContainer className="max-w-4xl w-full">
-          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-divider shadow-2xl overflow-hidden animate-scale-up w-full max-w-4xl relative">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-divider shadow-2xl overflow-hidden w-full max-w-4xl flex flex-col max-h-[90vh]">
             <ModalCloseTrigger />
-            <ModalHeader className="flex flex-row items-center justify-between px-6 py-4 border-b border-divider bg-default-50 dark:bg-[var(--bg-page)]/50">
+            <ModalHeader className="flex flex-row items-center justify-between px-6 py-4 border-b border-divider bg-default-50 dark:bg-[var(--bg-surface)] shrink-0">
               <span id="section-details-title" className="text-lg font-extrabold text-foreground">Chi tiết Section</span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  className="rounded-xl font-bold bg-default-100 hover:bg-default-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-foreground border-divider px-4 py-2 h-9 text-xs"
-                >
-                  Đóng
-                </Button>
-                <Button
-                  className="rounded-xl font-bold bg-accent hover:bg-accent-hover text-white flex items-center gap-1.5 h-9 px-4 py-2 text-xs shadow-sm border-none"
-                  onClick={onEdit}
-                >
-                  <Pencil size={14} />
-                  Chỉnh sửa
-                </Button>
-              </div>
             </ModalHeader>
-            <ModalBody className="space-y-6 max-h-[75vh] overflow-y-auto p-6">
+            <ModalBody className="space-y-6 max-h-[60vh] overflow-y-auto p-6">
         {/* Basic Info */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -195,7 +179,25 @@ export default function SectionDetailsModal({
           )}
         </div>
       </ModalBody>
-          </ModalDialog>
+      <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+        >
+          Đóng
+        </Button>
+        <Button
+          type="button"
+          onClick={onEdit}
+          className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+        >
+          <Edit3 size={15} className="mr-1.5" />
+          Chỉnh sửa
+        </Button>
+      </ModalFooter>
+    </ModalDialog>
         </ModalContainer>
       </ModalBackdrop>
     </Modal>

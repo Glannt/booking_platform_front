@@ -6,7 +6,7 @@ export const profile = {
   phone: "Số điện thoại",
   emailReadOnly: "Email là trường định danh, không thể thay đổi",
   editButton: "Chỉnh sửa",
-  saveButton: "Lưu thay đổi",
+  saveButton: "Lưu",
   cancelButton: "Hủy",
   updateSuccess: "Cập nhật hồ sơ thành công!",
   updateError: "Có lỗi xảy ra khi cập nhật hồ sơ",

@@ -10,7 +10,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Button
+  Button,
+  Label,
 } from "@heroui/react";
 import { Trash2, AlertCircle, RefreshCw, ShieldAlert, Ban } from "lucide-react";
 import { BookingDto, deleteBooking } from "@/lib/api/bookings";
@@ -79,7 +80,7 @@ export default function BookingDeleteModal({
         <ModalContainer size="sm">
           <ModalDialog className="max-w-md bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full flex flex-col">
             <ModalCloseTrigger />
-            <ModalHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] py-4 px-6 flex items-center justify-between shrink-0">
+            <ModalHeader className="border-b border-slate-100 dark:border-slate-800 py-4 px-6 flex items-center justify-between shrink-0">
               <span id="booking-delete-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 {isPaidOrDeposited ? (
                   <ShieldAlert className="text-amber-500" size={22} />
@@ -91,7 +92,7 @@ export default function BookingDeleteModal({
             </ModalHeader>
 
             <ModalBody className="p-6 text-sm text-slate-600 dark:text-slate-300 space-y-4">
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 flex flex-col gap-1.5">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-border flex flex-col gap-1.5">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-500">{t.booking?.title || "Mã đơn"}:</span>
                   <span className="font-mono font-bold text-primary text-sm">{booking.bookingCode}</span>
@@ -129,43 +130,45 @@ export default function BookingDeleteModal({
                   </p>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                      <span>{tb.deletionReason}</span>
-                      <span className="text-rose-500">*</span>
-                    </label>
+                    <Label isRequired className="text-xs font-bold block mb-1.5">
+                      {tb.deletionReason}
+                    </Label>
                     <textarea
                       rows={3}
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       placeholder={tb.deletionReasonPlaceholder}
-                      className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400"
+                      className="w-full text-xs rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-card)] p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400"
                     />
                   </div>
                 </>
               )}
             </ModalBody>
 
-            <ModalFooter className="border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] py-3 px-6 justify-end gap-2.5 shrink-0">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
-                className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 cursor-pointer"
+                type="button"
+                variant="outline"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 onClick={onClose}
                 isDisabled={loading}
               >
                 {tb.cancel}
               </Button>
               <Button
-                className={`rounded-xl font-bold text-white shadow-sm border border-transparent ${
+                type="button"
+                className={`rounded-xl font-bold text-xs h-10 px-5 text-white shadow-sm border-none transition-colors ${
                   isPaidOrDeposited || !reason.trim()
-                    ? "bg-slate-400 dark:bg-slate-700 cursor-not-allowed"
+                    ? "bg-slate-300 dark:bg-[var(--bg-elevated)] text-slate-500 dark:text-slate-400 cursor-not-allowed"
                     : "bg-rose-600 hover:bg-rose-700 cursor-pointer"
                 }`}
                 onClick={handleDelete}
                 isDisabled={loading || isPaidOrDeposited || !reason.trim()}
               >
                 {loading ? (
-                  <RefreshCw className="animate-spin" size={16} />
+                  <RefreshCw className="animate-spin" size={15} />
                 ) : (
-                  <Trash2 size={16} className="mr-1.5" />
+                  <Trash2 size={15} className="mr-1.5" />
                 )}
                 {isPaidOrDeposited ? tb.cannotDeleteWithFunds : tb.confirmDelete}
               </Button>

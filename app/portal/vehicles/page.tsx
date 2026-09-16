@@ -12,15 +12,15 @@ import {
   Edit3
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Pagination, SearchField, Spinner, Table, Tabs, toast } from "@heroui/react";
+import { Button, Pagination, SearchField, Spinner, Table, Tabs, toast, Tooltip } from "@heroui/react";
 
 import { StatusChip } from "@/components/StatusChip";
 import { ImageGrid } from "@/components/ImageGallery";
 import VehicleCreateModal from "@/components/admin/vehicles/VehicleCreateModal";
-import VehicleDetailsModal from "@/components/admin/vehicles/VehicleDetailsModal";
+import VehicleDetailModal from "@/components/admin/vehicles/VehicleDetailModal";
 
 import VehicleCategoryCreateModal from "@/components/admin/vehicles/VehicleCategoryCreateModal";
-import VehicleCategoryDetailsModal from "@/components/admin/vehicles/VehicleCategoryDetailsModal";
+import VehicleCategoryDetailModal from "@/components/admin/vehicles/VehicleCategoryDetailModal";
 
 import {
   getVehicles,
@@ -34,12 +34,13 @@ import {
 import { backendUrl } from "@/lib/api/client";
 import { resolveImageUrls } from "@/lib/api/media";
 import { ColumnInterface } from "@/lib/interface/column.interface";
-
-
-const PAGE_SIZE = 8;
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
 
 
 export default function VehiclesManagementPage() {
+  const { t } = useI18n();
 
 
   /**
@@ -47,6 +48,7 @@ export default function VehiclesManagementPage() {
    */
   const [activeTab, setActiveTab] =
     useState<"vehicles" | "categories">("vehicles");
+  const [pageSize, setPageSize] = useState<number>(10);
 
 
   /**
@@ -418,15 +420,7 @@ export default function VehiclesManagementPage() {
   const [vehiclePage, setVehiclePage] =
     useState<number>(1);
 
-  const vehicleColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "images", label: "Hình ảnh", sortable: false },
-    { id: "brandModel", label: "Thương hiệu / Mẫu", sortable: false },
-    { id: "type", label: "Loại xe", sortable: true },
-    { id: "luggage", label: "Hành lý", sortable: false },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Hành Động", sortable: false },
-  ];
+  const vehicleColumns = headerColumns.vehicles(t);
 
   const sortedVehicles = useMemo(() => {
 
@@ -459,14 +453,14 @@ export default function VehiclesManagementPage() {
   }, [filteredVehicles, vehicleSort]);
 
   const vehiclePageCount =
-    Math.max(1, Math.ceil(sortedVehicles.length / PAGE_SIZE));
+    Math.max(1, Math.ceil(sortedVehicles.length / pageSize));
 
   const paginatedVehicles = useMemo(
     () => sortedVehicles.slice(
-      (vehiclePage - 1) * PAGE_SIZE,
-      vehiclePage * PAGE_SIZE
+      (vehiclePage - 1) * pageSize,
+      vehiclePage * pageSize
     ),
-    [sortedVehicles, vehiclePage]
+    [sortedVehicles, vehiclePage, pageSize]
   );
 
   const vehiclePages = Array.from(
@@ -477,10 +471,10 @@ export default function VehiclesManagementPage() {
   const vehicleStart =
     sortedVehicles.length === 0
       ? 0
-      : (vehiclePage - 1) * PAGE_SIZE + 1;
+      : (vehiclePage - 1) * pageSize + 1;
 
   const vehicleEnd = Math.min(
-    vehiclePage * PAGE_SIZE,
+    vehiclePage * pageSize,
     sortedVehicles.length
   );
 
@@ -500,19 +494,7 @@ export default function VehiclesManagementPage() {
   const [categoryPage, setCategoryPage] =
     useState<number>(1);
 
-  const categoryColumns: {
-    id: string;
-    label: string;
-    sortable: boolean;
-    isRowHeader?: boolean;
-  }[] = [
-      { id: "id", label: "ID", sortable: true, isRowHeader: true },
-      { id: "name", label: "Name", sortable: true },
-      { id: "code", label: "Code", sortable: true },
-      { id: "seats", label: "Seats", sortable: false },
-      { id: "active", label: "Status", sortable: true },
-      { id: "actions", label: "Actions", sortable: false },
-    ];
+  const categoryColumns = headerColumns.vehicleCategories(t);
 
   const sortedCategories = useMemo(() => {
 
@@ -547,14 +529,14 @@ export default function VehiclesManagementPage() {
   }, [filteredCategories, categorySort]);
 
   const categoryPageCount =
-    Math.max(1, Math.ceil(sortedCategories.length / PAGE_SIZE));
+    Math.max(1, Math.ceil(sortedCategories.length / pageSize));
 
   const paginatedCategories = useMemo(
     () => sortedCategories.slice(
-      (categoryPage - 1) * PAGE_SIZE,
-      categoryPage * PAGE_SIZE
+      (categoryPage - 1) * pageSize,
+      categoryPage * pageSize
     ),
-    [sortedCategories, categoryPage]
+    [sortedCategories, categoryPage, pageSize]
   );
 
   const categoryPages = Array.from(
@@ -565,10 +547,10 @@ export default function VehiclesManagementPage() {
   const categoryStart =
     sortedCategories.length === 0
       ? 0
-      : (categoryPage - 1) * PAGE_SIZE + 1;
+      : (categoryPage - 1) * pageSize + 1;
 
   const categoryEnd = Math.min(
-    categoryPage * PAGE_SIZE,
+    categoryPage * pageSize,
     sortedCategories.length
   );
 
@@ -614,24 +596,22 @@ export default function VehiclesManagementPage() {
 
           }}
         >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="Fleet tabs" className="dark:bg-black/10 border">
-              <Tabs.Tab id="vehicles">
-                <span className="flex items-center gap-2">
-                  <Car size={16} />
-                  Danh sách xe
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-              <Tabs.Tab id="categories">
-                <span className="flex items-center gap-2">
-                  <Layers size={16} />
-                  Danh mục xe
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
+          <Tabs.List aria-label="Fleet tabs" className="dark:bg-black/10 border">
+            <Tabs.Tab id="vehicles">
+              <span className="flex items-center gap-2">
+                <Car size={16} />
+                Danh sách xe
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="categories">
+              <span className="flex items-center gap-2">
+                <Layers size={16} />
+                Danh mục xe
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+          </Tabs.List>
         </Tabs>
       </div>
 
@@ -656,6 +636,17 @@ export default function VehiclesManagementPage() {
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
+        <PageSizeSelect
+          value={pageSize}
+          onChange={(size) => {
+            setPageSize(size);
+            if (activeTab === "vehicles") {
+              setVehiclePage(1);
+            } else {
+              setCategoryPage(1);
+            }
+          }}
+        />
         <div className="flex gap-3">
           <Button
             variant="outline"
@@ -668,42 +659,34 @@ export default function VehiclesManagementPage() {
             Làm mới
 
           </Button>
-          {
-            activeTab === "vehicles"
-            &&
+          {activeTab === "vehicles" && (
             <Button
-              onClick={() =>
-                setCreateModalOpen(true)
-              }
-            >
-
-              <Plus size={16} />
-
-              Thêm xe
-
-            </Button>
-          }
-          {
-            activeTab === "categories"
-            &&
-            <Button
-              onClick={() =>
-                setCatCreateModalOpen(true)
-              }
+              onClick={() => setCreateModalOpen(true)}
+              className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
             >
               <Plus size={16} />
-              Thêm danh mục
+              <span>Thêm Xe</span>
             </Button>
-          }
+          )}
+          {activeTab === "categories" && (
+            <Button
+              onClick={() => setCatCreateModalOpen(true)}
+              className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+            >
+              <Plus size={16} />
+              <span>Thêm Danh mục</span>
+            </Button>
+          )}
         </div>
       </div>
       {/* Content */}
       <div
         className="
           bg-white
-          dark:bg-black/10
+          dark:bg-[var(--bg-surface)]
           rounded-2xl
           border
+          border-separator
           overflow-hidden
         "
       >
@@ -789,44 +772,70 @@ export default function VehiclesManagementPage() {
                                 <StatusChip status={String(vehicle.active)} type="active" />
                               </Table.Cell>
                               <Table.Cell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="ghost"
-                                    aria-label="Xem chi tiết xe"
-                                    onPress={() => {
-                                      setSelectedVehicle(vehicle);
-                                      setDefaultEditMode(false);
-                                      setDetailsModalOpen(true);
-                                    }}
-                                  >
-                                    <Eye size={16} />
-                                  </Button>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="ghost"
-                                    aria-label="Sửa xe"
-                                    onPress={() => {
-                                      setSelectedVehicle(vehicle);
-                                      setDefaultEditMode(true);
-                                      setDetailsModalOpen(true);
-                                    }}
-                                  >
-                                    <Edit3 size={16} />
-                                  </Button>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="ghost"
-                                    aria-label="Xóa xe"
-                                    onPress={() => {
-                                      handleDeleteVehicle(vehicle.id);
-                                    }}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
+                                <div className="flex items-center gap-1.5">
+                                  <Tooltip delay={300} closeDelay={100}>
+                                    <Tooltip.Trigger>
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="tertiary"
+                                        aria-label="Xem chi tiết xe"
+                                        onPress={() => {
+                                          setSelectedVehicle(vehicle);
+                                          setDefaultEditMode(false);
+                                          setDetailsModalOpen(true);
+                                        }}
+                                      >
+                                        <Eye size={16} />
+                                      </Button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      <Tooltip.Arrow />
+                                      Xem chi tiết
+                                    </Tooltip.Content>
+                                  </Tooltip>
+
+                                  <Tooltip delay={300} closeDelay={100}>
+                                    <Tooltip.Trigger>
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="secondary"
+                                        aria-label="Sửa xe"
+                                        onPress={() => {
+                                          setSelectedVehicle(vehicle);
+                                          setDefaultEditMode(true);
+                                          setDetailsModalOpen(true);
+                                        }}
+                                      >
+                                        <Edit3 size={16} />
+                                      </Button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      <Tooltip.Arrow />
+                                      Chỉnh sửa
+                                    </Tooltip.Content>
+                                  </Tooltip>
+
+                                  <Tooltip delay={300} closeDelay={100}>
+                                    <Tooltip.Trigger>
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        variant="danger"
+                                        aria-label="Xóa xe"
+                                        onPress={() => {
+                                          handleDeleteVehicle(vehicle.id);
+                                        }}
+                                      >
+                                        <Trash2 size={16} />
+                                      </Button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                      <Tooltip.Arrow />
+                                      Xóa xe
+                                    </Tooltip.Content>
+                                  </Tooltip>
                                 </div>
                               </Table.Cell>
                             </Table.Row>
@@ -934,44 +943,70 @@ export default function VehiclesManagementPage() {
                                   <StatusChip status={String(category.active)} type="active" />
                                 </Table.Cell>
                                 <Table.Cell>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="ghost"
-                                      aria-label="Xem chi tiết danh mục"
-                                      onPress={() => {
-                                        setSelectedCategory(category);
-                                        setCatDefaultEditMode(false);
-                                        setCatDetailsModalOpen(true);
-                                      }}
-                                    >
-                                      <Eye size={16} />
-                                    </Button>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="ghost"
-                                      aria-label="Sửa danh mục"
-                                      onPress={() => {
-                                        setSelectedCategory(category);
-                                        setCatDefaultEditMode(true);
-                                        setCatDetailsModalOpen(true);
-                                      }}
-                                    >
-                                      <Edit3 size={16} />
-                                    </Button>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="ghost"
-                                      aria-label="Xóa danh mục"
-                                      onPress={() => {
-                                        handleDeleteCategory(category.id);
-                                      }}
-                                    >
-                                      <Trash2 size={16} />
-                                    </Button>
+                                  <div className="flex items-center gap-1.5">
+                                    <Tooltip delay={300} closeDelay={100}>
+                                      <Tooltip.Trigger>
+                                        <Button
+                                          isIconOnly
+                                          size="sm"
+                                          variant="tertiary"
+                                          aria-label="Xem chi tiết danh mục"
+                                          onPress={() => {
+                                            setSelectedCategory(category);
+                                            setCatDefaultEditMode(false);
+                                            setCatDetailsModalOpen(true);
+                                          }}
+                                        >
+                                          <Eye size={16} />
+                                        </Button>
+                                      </Tooltip.Trigger>
+                                      <Tooltip.Content>
+                                        <Tooltip.Arrow />
+                                        Xem chi tiết
+                                      </Tooltip.Content>
+                                    </Tooltip>
+
+                                    <Tooltip delay={300} closeDelay={100}>
+                                      <Tooltip.Trigger>
+                                        <Button
+                                          isIconOnly
+                                          size="sm"
+                                          variant="secondary"
+                                          aria-label="Sửa danh mục"
+                                          onPress={() => {
+                                            setSelectedCategory(category);
+                                            setCatDefaultEditMode(true);
+                                            setCatDetailsModalOpen(true);
+                                          }}
+                                        >
+                                          <Edit3 size={16} />
+                                        </Button>
+                                      </Tooltip.Trigger>
+                                      <Tooltip.Content>
+                                        <Tooltip.Arrow />
+                                        Chỉnh sửa
+                                      </Tooltip.Content>
+                                    </Tooltip>
+
+                                    <Tooltip delay={300} closeDelay={100}>
+                                      <Tooltip.Trigger>
+                                        <Button
+                                          isIconOnly
+                                          size="sm"
+                                          variant="danger"
+                                          aria-label="Xóa danh mục"
+                                          onPress={() => {
+                                            handleDeleteCategory(category.id);
+                                          }}
+                                        >
+                                          <Trash2 size={16} />
+                                        </Button>
+                                      </Tooltip.Trigger>
+                                      <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                        <Tooltip.Arrow />
+                                        Xóa danh mục
+                                      </Tooltip.Content>
+                                    </Tooltip>
                                   </div>
                                 </Table.Cell>
                               </Table.Row>
@@ -1058,7 +1093,7 @@ export default function VehiclesManagementPage() {
 
 
 
-      <VehicleDetailsModal
+      <VehicleDetailModal
 
         isOpen={detailsModalOpen}
 
@@ -1129,7 +1164,7 @@ export default function VehiclesManagementPage() {
 
 
 
-      <VehicleCategoryDetailsModal
+      <VehicleCategoryDetailModal
 
 
         isOpen={catDetailsModalOpen}

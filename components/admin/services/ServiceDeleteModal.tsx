@@ -60,9 +60,9 @@ export default function ServiceDeleteModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="service-delete-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
-          <ModalDialog className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-w-md">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-w-md">
             <ModalCloseTrigger />
-            <ModalHeader className="flex gap-2 items-center text-rose-600 dark:text-rose-400 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40">
+            <ModalHeader className="flex gap-2 items-center text-rose-600 dark:text-rose-400 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] shrink-0">
               <AlertTriangle size={22} />
               <span id="service-delete-title" className="font-extrabold text-lg">
                 {language === "vi" ? "Xác nhận xóa" : "Confirm Deletion"}
@@ -86,24 +86,26 @@ export default function ServiceDeleteModal({
                 </span>
               </div>
             </ModalBody>
-            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
+                type="button"
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-250 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 onClick={onClose}
                 isDisabled={loading}
               >
                 {language === "vi" ? "Hủy" : "Cancel"}
               </Button>
               <Button
+                type="button"
                 onClick={handleDelete}
                 isDisabled={loading}
-                className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md border-none"
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-rose-600 hover:bg-rose-700 text-white shadow-sm cursor-pointer border-none transition-colors"
               >
                 {loading ? (
-                  <RefreshCw size={16} className="animate-spin mr-1.5" />
+                  <RefreshCw size={15} className="animate-spin mr-1.5" />
                 ) : (
-                  <Trash2 size={16} className="mr-1.5" />
+                  <Trash2 size={15} className="mr-1.5" />
                 )}
                 {language === "vi" ? "Xóa vĩnh viễn" : "Delete Permanently"}
               </Button>

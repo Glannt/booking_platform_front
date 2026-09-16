@@ -18,13 +18,13 @@ import {
   Select,
   ListBox
 } from "@heroui/react";
-import { Save, Edit, RefreshCw, Eye } from "lucide-react";
+import { Save, Edit3, RefreshCw, Eye } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import clsx from "clsx";
 
 import { updateCategory, ServiceCategoryDto, ServiceCategoryTranslationDto } from "@/lib/api/categories";
 
-interface CategoryDetailsModalProps {
+interface CategoryDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   category: ServiceCategoryDto | null;
@@ -35,7 +35,7 @@ interface CategoryDetailsModalProps {
   defaultEditMode?: boolean;
 }
 
-export default function CategoryDetailsModal({
+export default function CategoryDetailModal({
   isOpen,
   onClose,
   category,
@@ -44,7 +44,7 @@ export default function CategoryDetailsModal({
   onSaveSuccess,
   showToast,
   defaultEditMode
-}: CategoryDetailsModalProps) {
+}: CategoryDetailModalProps) {
   const [activeFormLocale, setActiveFormLocale] = useState<string>("vi");
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
@@ -182,7 +182,7 @@ export default function CategoryDetailsModal({
                     />
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      <Label className="block text-xs font-bold uppercase tracking-wider">
                         {language === "vi" ? "Ảnh Biểu Tượng Danh Mục" : "Category Icon Image"}
                       </Label>
                       <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
@@ -195,7 +195,7 @@ export default function CategoryDetailsModal({
                 {/* Basic config fields */}
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                       {language === "vi" ? "Trạng thái hiển thị" : "Status"}
                     </Label>
                     {isEditMode ? (
@@ -204,11 +204,11 @@ export default function CategoryDetailsModal({
                         selectedKey={formData.status || "published"}
                         onSelectionChange={(key) => setFormData(prev => ({ ...prev, status: key as string }))}
                       >
-                        <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
+                        <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox>
                             <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị" : "Published"}>
                               {language === "vi" ? "Kích hoạt hiển thị" : "Published"}
@@ -243,7 +243,7 @@ export default function CategoryDetailsModal({
                 {/* Translation Content tab section */}
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <Label className="block text-xs font-extrabold uppercase tracking-wider">
                       {language === "vi" ? "Nội dung dịch thuật danh mục" : "Category Translations"}
                     </Label>
                     {/* Language selection tabs */}
@@ -268,7 +268,7 @@ export default function CategoryDetailsModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                      <Label className="block text-xs font-bold mb-1.5">
                         {language === "vi" ? "Tên Danh Mục" : "Category Name"} ({activeFormLocale.toUpperCase()})
                       </Label>
                       {isEditMode ? (
@@ -281,7 +281,7 @@ export default function CategoryDetailsModal({
                             placeholder="e.g. Thuê Xe Tự Lái"
                             value={currentTranslation?.name || ""}
                             onChange={(e) => handleTranslationChange("name", e.target.value)}
-                            className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                            className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                           />
                         </TextField>
                       ) : (
@@ -292,7 +292,7 @@ export default function CategoryDetailsModal({
                     </div>
 
                     <div>
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                      <Label className="block text-xs font-bold mb-1.5">
                         {language === "vi" ? "Đường dẫn (Slug)" : "SEO Slug"} ({activeFormLocale.toUpperCase()})
                       </Label>
                       {isEditMode ? (
@@ -305,7 +305,7 @@ export default function CategoryDetailsModal({
                             placeholder="thue-xe-tu-lai"
                             value={currentTranslation?.slug || ""}
                             onChange={(e) => handleTranslationChange("slug", e.target.value)}
-                            className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                            className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                           />
                         </TextField>
                       ) : (
@@ -317,13 +317,13 @@ export default function CategoryDetailsModal({
                   </div>
 
                   <div>
-                    <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    <Label className="block text-xs font-bold mb-1.5">
                       {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
                     </Label>
                     {isEditMode ? (
                       <textarea
                         rows={3}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+                        className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                         placeholder="Short description summary for search card results..."
                         value={currentTranslation?.description || ""}
                         onChange={(e) => handleTranslationChange("description", e.target.value)}
@@ -337,12 +337,13 @@ export default function CategoryDetailsModal({
                 </div>
               </ModalBody>
 
-              <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                 {isEditMode ? (
                   <>
                     <Button
+                      type="button"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={() => setIsEditMode(false)}
                       isDisabled={loading}
                     >
@@ -351,21 +352,22 @@ export default function CategoryDetailsModal({
                     <Button
                       type="submit"
                       isDisabled={loading}
-                      className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8912a] text-white shadow-md border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                     >
                       {loading ? (
-                        <RefreshCw size={16} className="animate-spin mr-1.5" />
+                        <RefreshCw size={15} className="animate-spin mr-1.5" />
                       ) : (
-                        <Save size={16} className="mr-1.5" />
+                        <Save size={15} className="mr-1.5" />
                       )}
-                      {language === "vi" ? "Lưu Thay Đổi" : "Save Changes"}
+                      {language === "vi" ? "Lưu" : "Save Changes"}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button
+                      type="button"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={onClose}
                     >
                       {language === "vi" ? "Đóng" : "Close"}
@@ -373,9 +375,9 @@ export default function CategoryDetailsModal({
                     <Button
                       type="button"
                       onClick={() => setIsEditMode(true)}
-                      className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8912a] text-white shadow-md border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
                     >
-                      <Edit size={16} className="mr-1.5" />
+                      <Edit3 size={15} className="mr-1.5" />
                       {language === "vi" ? "Chỉnh sửa" : "Edit"}
                     </Button>
                   </>

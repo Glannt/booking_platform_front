@@ -13,7 +13,8 @@ import {
   KeyRound,
   CheckCircle2,
 } from "lucide-react";
-import { Button, Input, toast } from "@heroui/react";
+import { Button, Input, Label, toast } from "@heroui/react";
+import clsx from "clsx";
 import { useAuthStore } from "@/lib/store/authStore";
 import { updateProfile, changePassword } from "@/lib/api/auth";
 import { useI18n } from "@/context/LanguageContext";
@@ -132,15 +133,16 @@ export default function PortalSettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 bg-white dark:bg-[var(--bg-surface)] p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm w-fit">
+      <div className="flex items-center gap-1.5 bg-white dark:bg-[var(--bg-surface)] p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm w-fit">
         <button
           type="button"
           onClick={() => setActiveTab("profile")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={clsx(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none",
             activeTab === "profile"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-          }`}
+              ? "bg-accent text-accent-foreground shadow-xs"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-transparent"
+          )}
         >
           <UserIcon size={15} />
           <span>{t.profile.title}</span>
@@ -149,11 +151,12 @@ export default function PortalSettingsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("security")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={clsx(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border-none",
             activeTab === "security"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-          }`}
+              ? "bg-accent text-accent-foreground shadow-xs"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-transparent"
+          )}
         >
           <KeyRound size={15} />
           <span>{t.auth.changePasswordTitle}</span>
@@ -165,7 +168,7 @@ export default function PortalSettingsPage() {
         <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-[var(--bg-elevated)] flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-lg">
+              <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent flex items-center justify-center font-black text-lg">
                 {(user?.fullname || user?.email || "U").charAt(0).toUpperCase()}
               </div>
               <div>
@@ -190,16 +193,16 @@ export default function PortalSettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Full Name */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  {t.profile.fullname} <span className="text-red-500">*</span>
-                </label>
+                <Label isRequired className="block text-xs font-bold mb-1.5">
+                  {t.profile.fullname}
+                </Label>
                 <div className="relative">
                   <UserIcon className="absolute left-3 top-3 text-slate-400" size={16} />
                   <Input
                     type="text"
                     value={fullname}
                     onChange={(e) => setFullname(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                     placeholder={t.profile.fullname}
                   />
                 </div>
@@ -207,7 +210,7 @@ export default function PortalSettingsPage() {
 
               {/* Email (Read-only) */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-300">
                   {t.profile.email}
                 </label>
                 <div className="relative">
@@ -224,7 +227,7 @@ export default function PortalSettingsPage() {
 
               {/* Phone */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-300">
                   {t.profile.phone}
                 </label>
                 <div className="relative">
@@ -233,7 +236,7 @@ export default function PortalSettingsPage() {
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                     placeholder={t.profile.phone}
                   />
                 </div>
@@ -241,7 +244,7 @@ export default function PortalSettingsPage() {
 
               {/* Zalo ID */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-300">
                   {t.profile.zaloId}
                 </label>
                 <div className="relative">
@@ -250,7 +253,7 @@ export default function PortalSettingsPage() {
                     type="text"
                     value={zaloId}
                     onChange={(e) => setZaloId(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                     placeholder={t.profile.zaloIdPlaceholder}
                   />
                 </div>
@@ -258,7 +261,7 @@ export default function PortalSettingsPage() {
 
               {/* KakaoTalk ID */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-300">
                   {t.profile.kakaoTalkId}
                 </label>
                 <div className="relative">
@@ -267,7 +270,7 @@ export default function PortalSettingsPage() {
                     type="text"
                     value={kakaoTalkId}
                     onChange={(e) => setKakaoTalkId(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                     placeholder={t.profile.kakaoTalkPlaceholder}
                   />
                 </div>
@@ -275,7 +278,7 @@ export default function PortalSettingsPage() {
 
               {/* WhatsApp */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-300">
                   {t.profile.whatsapp}
                 </label>
                 <div className="relative">
@@ -284,7 +287,7 @@ export default function PortalSettingsPage() {
                     type="text"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                     placeholder={t.profile.whatsappPlaceholder}
                   />
                 </div>
@@ -295,12 +298,12 @@ export default function PortalSettingsPage() {
               <Button
                 type="submit"
                 isDisabled={savingProfile}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl border-none cursor-pointer text-xs"
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors flex items-center gap-1.5"
               >
                 {savingProfile ? (
-                  <RotateCw size={15} className="animate-spin mr-1.5" />
+                  <RotateCw size={15} className="animate-spin" />
                 ) : (
-                  <Save size={15} className="mr-1.5" />
+                  <Save size={15} />
                 )}
                 {t.profile.saveButton}
               </Button>
@@ -314,7 +317,7 @@ export default function PortalSettingsPage() {
         <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-6">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Shield size={16} className="text-blue-600 dark:text-blue-400" />
+              <Shield size={16} className="text-accent" />
               <span>{t.auth.changePasswordTitle}</span>
             </h3>
             <p className="text-xs text-slate-400 font-semibold mt-1">
@@ -330,32 +333,32 @@ export default function PortalSettingsPage() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                {t.auth.newPassword} <span className="text-red-500">*</span>
-              </label>
+              <Label isRequired className="block text-xs font-bold mb-1.5">
+                {t.auth.newPassword}
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-slate-400" size={16} />
                 <Input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   placeholder={t.auth.newPassword}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                {t.auth.confirmPassword} <span className="text-red-500">*</span>
-              </label>
+              <Label isRequired className="block text-xs font-bold mb-1.5">
+                {t.auth.confirmPassword}
+              </Label>
               <div className="relative">
                 <CheckCircle2 className="absolute left-3 top-3 text-slate-400" size={16} />
                 <Input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors"
                   placeholder={t.auth.confirmPassword}
                 />
               </div>
@@ -365,12 +368,12 @@ export default function PortalSettingsPage() {
               <Button
                 type="submit"
                 isDisabled={savingPassword}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl border-none cursor-pointer text-xs"
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors flex items-center gap-1.5"
               >
                 {savingPassword ? (
-                  <RotateCw size={15} className="animate-spin mr-1.5" />
+                  <RotateCw size={15} className="animate-spin" />
                 ) : (
-                  <Lock size={15} className="mr-1.5" />
+                  <Lock size={15} />
                 )}
                 {t.auth.changePasswordSubmit}
               </Button>

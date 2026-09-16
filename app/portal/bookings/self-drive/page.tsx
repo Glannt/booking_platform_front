@@ -25,9 +25,11 @@ import {
   toast,
   Label,
   Select,
-  ListBox
+  ListBox,
+  Tooltip
 } from "@heroui/react";
 import clsx from "clsx";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
 
 import { StatusChip } from "@/components/StatusChip";
 import BookingEditModal from "@/components/admin/bookings/BookingEditModal";
@@ -40,18 +42,22 @@ import {
   BookingStatus
 } from "@/lib/api/bookings";
 
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
+
 interface RentalBookingItem {
   booking: BookingDto;
   item: BookingItemDto;
 }
 
 export default function SelfDriveBookingsPage() {
+  const { t } = useI18n();
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const rowsPerPage = 10;
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -113,10 +119,10 @@ export default function SelfDriveBookingsPage() {
     });
   }, [rentalItems, searchTerm, statusFilter]);
 
-  const totalPages = Math.ceil(filteredItems.length / rowsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
 
   useEffect(() => {
@@ -163,7 +169,7 @@ export default function SelfDriveBookingsPage() {
   return (
     <div className="w-full space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-black p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+      <div className="bg-white dark:bg-black p-6 rounded-2xl border border-separator shadow-sm">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
             <Car className="text-violet-600 dark:text-violet-400" size={20} />
@@ -185,22 +191,29 @@ export default function SelfDriveBookingsPage() {
               <Input
                 type="text"
                 placeholder="Tìm mã đặt chỗ, khách hàng, SĐT..."
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
+            <PageSizeSelect
+              value={pageSize}
+              onChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
             <Select
               selectedKey={statusFilter}
               onSelectionChange={(key) => setStatusFilter(key as string)}
               className="w-48"
             >
-              <Select.Trigger className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold cursor-pointer h-[42px] flex items-center justify-between min-w-[170px]">
+              <Select.Trigger className="px-4 py-2.5 rounded-xl border border-border bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold cursor-pointer h-[42px] flex items-center justify-between min-w-[170px]">
                 <Select.Value />
                 <Select.Indicator />
               </Select.Trigger>
-              <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+              <Select.Popover className="bg-white dark:bg-black border border-border-secondary rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                 <ListBox>
                   <ListBox.Item id="all" textValue="Tất cả trạng thái">
                     Tất cả trạng thái
@@ -241,7 +254,7 @@ export default function SelfDriveBookingsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-black rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
@@ -262,16 +275,14 @@ export default function SelfDriveBookingsPage() {
             <Table aria-label="Bảng quản lý đơn đặt xe tự lái" className="w-full text-left">
               <Table.ScrollContainer>
                 <Table.Content>
-                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-card)] border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <Table.Column isRowHeader className="px-6 py-4">ID</Table.Column>
-                    <Table.Column className="px-6 py-4">Mã đặt chỗ</Table.Column>
-                    <Table.Column className="px-6 py-4">Khách hàng</Table.Column>
-                    <Table.Column className="px-6 py-4">Tài chính</Table.Column>
-                    <Table.Column className="px-6 py-4">Thanh toán & Xe</Table.Column>
-                    <Table.Column className="px-6 py-4">Trạng thái</Table.Column>
-                    <Table.Column className="px-6 py-4 text-right">Thao tác</Table.Column>
+                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-card)] border-b border-separator text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    {headerColumns.bookingSelfDrive(t).map((col) => (
+                      <Table.Column key={col.id} id={col.id} isRowHeader={col.isRowHeader} className={col.className}>
+                        {col.value}
+                      </Table.Column>
+                    ))}
                   </Table.Header>
-                  <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <Table.Body className="divide-y divide-separator">
                     {paginatedItems.map((ri) => {
                       const deposit = ri.booking.depositAmount ?? 0;
                       const received = ri.booking.receivedAmount ?? 0;
@@ -326,7 +337,7 @@ export default function SelfDriveBookingsPage() {
                                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                                 : ri.booking.paymentStatus === "REFUNDED"
                                 ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-                                : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20"
+                                : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-border/50"
                             }`}>
                               {ri.booking.paymentStatus === "PAID" ? "Đã thanh toán" : ri.booking.paymentStatus === "DEPOSITED" ? "Đã đặt cọc" : ri.booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Chưa thanh toán"}
                             </span>
@@ -341,21 +352,42 @@ export default function SelfDriveBookingsPage() {
                           <StatusChip status={ri.booking.bookingStatus} type="booking" />
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                              onClick={() => handleViewDetail(ri)}
-                              title="Xem chi tiết"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            <button
-                              className="p-2 text-slate-600 dark:text-slate-350 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                              onClick={() => handleOpenEdit(ri)}
-                              title="Cập nhật trạng thái"
-                            >
-                              <Edit3 size={16} />
-                            </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="tertiary"
+                                  aria-label="Xem chi tiết đơn tự lái"
+                                  onPress={() => handleViewDetail(ri)}
+                                >
+                                  <Eye size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Xem chi tiết
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="secondary"
+                                  aria-label="Cập nhật trạng thái"
+                                  onPress={() => handleOpenEdit(ri)}
+                                >
+                                  <Edit3 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Cập nhật trạng thái
+                              </Tooltip.Content>
+                            </Tooltip>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -367,17 +399,17 @@ export default function SelfDriveBookingsPage() {
           </div>
         )}
 
-        {!loading && filteredItems.length > rowsPerPage && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+        {!loading && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-separator">
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-              Hiển thị {(currentPage - 1) * rowsPerPage + 1}-{Math.min(currentPage * rowsPerPage, filteredItems.length)} / {filteredItems.length} kết quả
+              Hiển thị {filteredItems.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredItems.length)} / {filteredItems.length} kết quả
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 className="rounded-lg font-bold text-xs"
-                isDisabled={currentPage === 1}
+                isDisabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               >
                 Trước
@@ -389,7 +421,7 @@ export default function SelfDriveBookingsPage() {
                   size="sm"
                   className={clsx(
                     "rounded-lg font-bold text-xs min-w-[32px]",
-                    page === currentPage && "bg-[#C9A227] text-white"
+                    page === currentPage && "bg-accent text-accent-foreground"
                   )}
                   onClick={() => setCurrentPage(page)}
                 >
@@ -400,7 +432,7 @@ export default function SelfDriveBookingsPage() {
                 variant="outline"
                 size="sm"
                 className="rounded-lg font-bold text-xs"
-                isDisabled={currentPage === totalPages}
+                isDisabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               >
                 Sau
@@ -414,9 +446,9 @@ export default function SelfDriveBookingsPage() {
       <Modal isOpen={detailModalOpen} onOpenChange={(open) => { if (!open) { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); } }} aria-labelledby="self-drive-detail-title">
         <ModalBackdrop>
           <ModalContainer size="lg">
-            <ModalDialog>
+            <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
               <ModalCloseTrigger />
-              <ModalHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <div className="flex flex-col gap-1">
                   <h2 id="self-drive-detail-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                     Chi tiết đơn đặt xe tự lái
@@ -425,18 +457,8 @@ export default function SelfDriveBookingsPage() {
                     {selectedBooking?.bookingCode}
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setDetailModalOpen(false);
-                    if (selectedItem) handleOpenEdit(selectedItem);
-                  }}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
-                >
-                  <Edit3 size={14} /> Chỉnh sửa
-                </Button>
               </ModalHeader>
-              <ModalBody className="py-6">
+              <ModalBody className="p-6 overflow-y-auto">
                 {selectedBooking && selectedItem && (
                   <div className="space-y-6">
                     {/* Booking Info */}
@@ -488,13 +510,24 @@ export default function SelfDriveBookingsPage() {
                   </div>
                 )}
               </ModalBody>
-              <ModalFooter className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                 <Button
                   variant="outline"
-                  className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200"
                   onClick={() => { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); }}
+                  className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 >
                   Đóng
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    if (selectedItem) handleOpenEdit(selectedItem);
+                  }}
+                  className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Edit3 size={15} className="mr-1.5" />
+                  Chỉnh sửa
                 </Button>
               </ModalFooter>
             </ModalDialog>

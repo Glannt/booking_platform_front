@@ -7,4 +7,6 @@ export const status = {
   inactive: "비활성",
   published: "게시됨",
   draft: "임시저장",
+  paused: "일시 중지",
+  hidden: "숨김",
 };

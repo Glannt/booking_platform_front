@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Trash2, Eye, Edit3, RefreshCw, Coins, AlertCircle, CheckCircle, XCircle, Plus
 } from "lucide-react";
-import { Button, SearchField, Table, toast } from "@heroui/react";
+import { Button, SearchField, Table, toast, Tooltip, Pagination } from "@heroui/react";
 import clsx from "clsx";
 
 import {
@@ -12,13 +12,20 @@ import {
   CurrencyDto
 } from "@/lib/api/currencies";
 import CurrencyCreateModal from "@/components/admin/currencies/CurrencyCreateModal";
-import CurrencyDetailsModal from "@/components/admin/currencies/CurrencyDetailsModal";
+import CurrencyDetailModal from "@/components/admin/currencies/CurrencyDetailModal";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
+import { AppStatusChip } from "@/components/common/AppStatusChip";
 
 export default function CurrenciesPage() {
+  const { t } = useI18n();
   const [currencies, setCurrencies] = useState<CurrencyDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -82,6 +89,19 @@ export default function CurrenciesPage() {
     );
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedCurrencies = useMemo(
+    () => filtered.slice((page - 1) * pageSize, page * pageSize),
+    [filtered, page, pageSize]
+  );
+  const startItem = filtered.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, filtered.length);
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
   const getLocalizedName = (c: CurrencyDto) => {
     const trans = c.translations.find(t => t.locale === "vi") || c.translations[0];
     return trans?.name || c.code;
@@ -107,14 +127,15 @@ export default function CurrenciesPage() {
           </Button>
           <Button
             onClick={() => { setSelectedCurrency(null); setCreateModalOpen(true); }}
-            className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 border-none cursor-pointer"
+            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
           >
-            <Plus size={14} /> Thêm mới
+            <Plus size={16} />
+            <span>Thêm Tiền tệ</span>
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex-1 max-w-md">
           <SearchField
             name="search_currency"
@@ -130,6 +151,13 @@ export default function CurrenciesPage() {
             </SearchField.Group>
           </SearchField>
         </div>
+        <PageSizeSelect
+          value={pageSize}
+          onChange={(val) => {
+            setPageSize(val);
+            setPage(1);
+          }}
+        />
       </div>
 
       {loading ? (
@@ -145,15 +173,14 @@ export default function CurrenciesPage() {
             <Table.ScrollContainer>
               <Table.Content aria-label="Currencies table">
                 <Table.Header>
-                  <Table.Column id="code" isRowHeader>Mã</Table.Column>
-                  <Table.Column id="symbol">Ký hiệu</Table.Column>
-                  <Table.Column id="name">Tên (VI)</Table.Column>
-                  <Table.Column id="rate">1 Đơn vị = VND</Table.Column>
-                  <Table.Column id="status">Trạng thái</Table.Column>
-                  <Table.Column id="actions" width={120}>Thao tác</Table.Column>
+                  {headerColumns.currencies(t).map((col) => (
+                    <Table.Column key={col.id} id={col.id} isRowHeader={col.isRowHeader} className={col.className}>
+                      {col.value}
+                    </Table.Column>
+                  ))}
                 </Table.Header>
                 <Table.Body>
-                  {filtered.map((c) => (
+                  {paginatedCurrencies.map((c) => (
                     <Table.Row key={c.id} id={String(c.id)}>
                       <Table.Cell>
                         <span className="font-mono font-bold text-sm">{c.code}</span>
@@ -170,36 +197,63 @@ export default function CurrenciesPage() {
                         </span>
                       </Table.Cell>
                       <Table.Cell>
-                        {c.active ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
-                            <CheckCircle size={10} /> Hoạt động
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                            <XCircle size={10} /> Tắt
-                          </span>
-                        )}
+                        <AppStatusChip status={c.active} />
                       </Table.Cell>
-                      <Table.Cell>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(false); setDetailsModalOpen(true); }}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 cursor-pointer border-none bg-transparent"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button
-                            onClick={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(true); setDetailsModalOpen(true); }}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-amber-500 cursor-pointer border-none bg-transparent"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(c.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                      <Table.Cell className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Tooltip delay={300} closeDelay={100}>
+                            <Tooltip.Trigger>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="tertiary"
+                                aria-label="Xem chi tiết"
+                                onPress={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(false); setDetailsModalOpen(true); }}
+                              >
+                                <Eye size={16} />
+                              </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Tooltip.Arrow />
+                              Xem chi tiết
+                            </Tooltip.Content>
+                          </Tooltip>
+
+                          <Tooltip delay={300} closeDelay={100}>
+                            <Tooltip.Trigger>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="secondary"
+                                aria-label="Chỉnh sửa"
+                                onPress={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(true); setDetailsModalOpen(true); }}
+                              >
+                                <Edit3 size={16} />
+                              </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Tooltip.Arrow />
+                              Chỉnh sửa
+                            </Tooltip.Content>
+                          </Tooltip>
+
+                          <Tooltip delay={300} closeDelay={100}>
+                            <Tooltip.Trigger>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="danger"
+                                aria-label="Xóa"
+                                onPress={() => handleDelete(c.id)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                              <Tooltip.Arrow />
+                              Xóa
+                            </Tooltip.Content>
+                          </Tooltip>
                         </div>
                       </Table.Cell>
                     </Table.Row>
@@ -207,6 +261,41 @@ export default function CurrenciesPage() {
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
+            <Table.Footer>
+              <Pagination size="sm">
+                <Pagination.Summary>
+                  {startItem} - {endItem} / {filtered.length} kết quả
+                </Pagination.Summary>
+                <Pagination.Content>
+                  <Pagination.Item>
+                    <Pagination.Previous
+                      isDisabled={page <= 1}
+                      onPress={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      <Pagination.PreviousIcon /> Trước
+                    </Pagination.Previous>
+                  </Pagination.Item>
+                  {pages.map((p) => (
+                    <Pagination.Item key={p}>
+                      <Pagination.Link
+                        isActive={p === page}
+                        onPress={() => setPage(p)}
+                      >
+                        {p}
+                      </Pagination.Link>
+                    </Pagination.Item>
+                  ))}
+                  <Pagination.Item>
+                    <Pagination.Next
+                      isDisabled={page >= totalPages}
+                      onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      Sau <Pagination.NextIcon />
+                    </Pagination.Next>
+                  </Pagination.Item>
+                </Pagination.Content>
+              </Pagination>
+            </Table.Footer>
           </Table>
         </div>
       )}
@@ -223,7 +312,7 @@ export default function CurrenciesPage() {
       />
 
       {selectedCurrency && (
-        <CurrencyDetailsModal
+        <CurrencyDetailModal
           isOpen={detailsModalOpen}
           onClose={() => { setDetailsModalOpen(false); setSelectedCurrency(null); }}
           currency={selectedCurrency}

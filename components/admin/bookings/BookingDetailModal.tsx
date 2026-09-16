@@ -35,13 +35,14 @@ import {
   Layers,
   Calculator,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Edit3
 } from "lucide-react";
-import { BookingDto, BookingTimelineDto, getBookingTimeline } from "@/lib/api/bookings";
+import { BookingDto, BookingTimelineDto, getBookingTimeline, DepositType } from "@/lib/api/bookings";
 import { useI18n } from "@/context/LanguageContext";
 import clsx from "clsx";
 
-interface BookingDetailsModalProps {
+interface BookingDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   booking: BookingDto | null;
@@ -49,12 +50,12 @@ interface BookingDetailsModalProps {
   onEdit?: () => void;
 }
 
-export default function BookingDetailsModal({
+export default function BookingDetailModal({
   isOpen,
   onClose,
   booking,
   onEdit
-}: BookingDetailsModalProps) {
+}: BookingDetailModalProps) {
   const { t } = useI18n();
   const tb = t.adminBookings;
 
@@ -128,7 +129,7 @@ export default function BookingDetailsModal({
         return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20";
       case "UNPAID":
       default:
-        return "bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20";
+        return "bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-border/50";
     }
   };
 
@@ -152,7 +153,7 @@ export default function BookingDetailsModal({
 
     if (!data || typeof data !== "object") {
       return (
-        <div className="p-3 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+        <div className="p-3 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-border text-xs text-slate-700 dark:text-slate-300">
           <span className="block font-bold text-slate-500 uppercase text-[10px] mb-1">
             {tb.serviceSpecs}
           </span>
@@ -162,8 +163,8 @@ export default function BookingDetailsModal({
     }
 
     return (
-      <div className="p-4 bg-slate-50/70 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="p-4 bg-slate-50/70 dark:bg-[var(--bg-card)] rounded-xl border border-border space-y-3">
+        <div className="flex items-center justify-between border-b border-separator pb-2">
           <span className="font-bold text-slate-500 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
             <Info size={13} className="text-primary" />
             {tb.serviceSpecs}
@@ -203,7 +204,7 @@ export default function BookingDetailsModal({
               </span>
             )}
             {data.vehicleCategoryId && (
-              <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+              <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1.5 border border-border">
                 <Car size={12} className="text-primary" />
                 Hạng xe ID: #{data.vehicleCategoryId}
               </span>
@@ -260,7 +261,7 @@ export default function BookingDetailsModal({
 
         {/* Return Leg */}
         {(data.returnPickupTime || data.returnDate || data.returnPickupAddress || data.returnFlightNumber || data.endTime) && (
-          <div className="space-y-2 text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
+          <div className="space-y-2 text-xs pt-2 border-t border-separator">
             <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
               <span className="flex items-center gap-1 text-secondary">
                 <ArrowRight size={13} />
@@ -307,7 +308,7 @@ export default function BookingDetailsModal({
 
         {/* Pricing meta breakdown */}
         {(data.basePrice || data.surchargeAmount || data.deposit) && (
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3 text-xs">
+          <div className="pt-2 border-t border-separator flex flex-wrap items-center gap-3 text-xs">
             {data.basePrice && (
               <span className="text-slate-500">
                 {tb.basePrice}: <strong className="text-slate-800 dark:text-slate-200">{formatPrice(Number(data.basePrice))}</strong>
@@ -335,7 +336,7 @@ export default function BookingDetailsModal({
         <ModalContainer>
           <ModalDialog className="max-w-3xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full">
             <ModalCloseTrigger />
-            <ModalHeader className="border-b border-slate-100 dark:border-slate-800 py-4 px-6 flex flex-row items-center justify-between shrink-0 bg-slate-50 dark:bg-[var(--bg-card)]">
+            <ModalHeader className="border-b border-slate-100 dark:border-slate-800 py-4 px-6 flex flex-row items-center justify-between shrink-0">
               <div className="flex flex-col gap-0.5">
                 <span id="booking-details-title" className="text-lg font-black text-slate-900 dark:text-white">
                   {tb.bookingDetails}
@@ -375,29 +376,26 @@ export default function BookingDetailsModal({
                     <span>{tb.timeline}</span>
                   </button>
                 </div>
-
-                {onEdit && (
-                  <Button
-                    size="sm"
-                    onClick={onEdit}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5 shadow-sm"
-                  >
-                    {tb.editBooking}
-                  </Button>
-                )}
               </div>
             </ModalHeader>
 
             <ModalBody className="p-6 space-y-6 overflow-y-auto max-h-[65vh]">
               {/* Top Operational Financial Dashboard (4 KPIs) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 flex flex-col">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-border flex flex-col">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{tb.totalAmount}</span>
                   <span className="text-base font-black text-slate-900 dark:text-white mt-1">{formatPrice(total)}</span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex flex-col">
-                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">{tb.depositAmount}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">{tb.depositAmount}</span>
+                    {booking.depositType && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 font-bold uppercase">
+                        {booking.depositType === DepositType.RATE && booking.depositRate != null ? `${booking.depositRate}%` : booking.depositType}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-base font-black text-amber-600 dark:text-amber-400 mt-1">{formatPrice(deposit)}</span>
                 </div>
 
@@ -427,7 +425,7 @@ export default function BookingDetailsModal({
                       Đang tải dữ liệu dòng thời gian...
                     </div>
                   ) : timelineEvents.length === 0 ? (
-                    <div className="py-10 text-center text-xs text-slate-400 italic bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="py-10 text-center text-xs text-slate-400 italic bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-border">
                       {tb.noTimelineEvents}
                     </div>
                   ) : (
@@ -435,7 +433,7 @@ export default function BookingDetailsModal({
                       {timelineEvents.map((evt) => (
                         <div key={evt.id} className="relative group">
                           <div className="absolute -left-6 top-1.5 w-3.5 h-3.5 rounded-full bg-primary ring-4 ring-white dark:ring-[var(--bg-surface)]" />
-                          <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-1.5">
+                          <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-border shadow-xs space-y-1.5">
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-black text-slate-900 dark:text-white">
                                 {evt.title}
@@ -487,7 +485,7 @@ export default function BookingDetailsModal({
                       <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                         {t.booking?.step3 || "Thông tin khách hàng"}
                       </h3>
-                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
+                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-border space-y-2.5">
                         <div className="flex items-center gap-3 text-sm text-slate-900 dark:text-white">
                           <User size={16} className="text-slate-400 shrink-0" />
                           <span className="font-bold">{booking.customerName}</span>
@@ -501,7 +499,7 @@ export default function BookingDetailsModal({
                           <span className="font-medium">{booking.customerPhone}</span>
                         </div>
                         {(booking.zaloId || booking.kakaoTalkId || booking.whatsapp) && (
-                          <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                          <div className="flex flex-wrap gap-1.5 pt-2 border-t border-separator">
                             {booking.zaloId && (
                               <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-[11px] font-bold">
                                 Zalo: {booking.zaloId}
@@ -526,7 +524,7 @@ export default function BookingDetailsModal({
                       <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                         {tb.orderInfo}
                       </h3>
-                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5">
+                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-border space-y-2.5">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-slate-500 font-medium">{tb.bookingStatus}:</span>
                           <span className={clsx("px-2.5 py-0.5 rounded-full text-xs font-bold capitalize", getStatusBadge(booking.bookingStatus))}>
@@ -557,12 +555,12 @@ export default function BookingDetailsModal({
                       <Car size={13} />
                       <span>{tb.dispatch}</span>
                     </h3>
-                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[var(--bg-surface)] border border-slate-200/70 dark:border-slate-800">
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-border grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[var(--bg-surface)] border border-separator">
                         <span className="text-slate-500 font-medium">{tb.assignedDriver}:</span>
                         <span className="font-bold text-slate-900 dark:text-white">{booking.assignedDriver || "Chưa phân công"}</span>
                       </div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[var(--bg-surface)] border border-slate-200/70 dark:border-slate-800">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[var(--bg-surface)] border border-separator">
                         <span className="text-slate-500 font-medium">{tb.assignedVehicle}:</span>
                         <span className="font-bold text-slate-900 dark:text-white font-mono">{booking.assignedVehicle || "Chưa phân công"}</span>
                       </div>
@@ -577,7 +575,7 @@ export default function BookingDetailsModal({
                           <FileText size={13} />
                           <span>{tb.customerNotes}</span>
                         </h3>
-                        <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 font-medium whitespace-pre-wrap">
+                        <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-border text-xs text-slate-800 dark:text-slate-200 font-medium whitespace-pre-wrap">
                           {booking.customerNotes}
                         </div>
                       </div>
@@ -611,7 +609,7 @@ export default function BookingDetailsModal({
                             (item.serviceOptionId ? `Gói dịch vụ #${item.serviceOptionId}` : null);
 
                           return (
-                            <div key={idx} className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+                            <div key={idx} className="bg-white dark:bg-[var(--bg-card)] border border-border rounded-2xl p-5 shadow-xs space-y-4">
                               <div className="flex justify-between items-start gap-4">
                                 <div>
                                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs mb-1.5">
@@ -629,7 +627,7 @@ export default function BookingDetailsModal({
                                 </div>
                               </div>
 
-                              <Separator className="bg-slate-100 dark:bg-slate-800" />
+                              <Separator className="bg-slate-100 dark:bg-[var(--bg-elevated)]" />
 
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                 {item.startDate && (
@@ -697,13 +695,25 @@ export default function BookingDetailsModal({
               )}
             </ModalBody>
 
-            <ModalFooter className="border-t border-slate-100 dark:border-slate-800 py-3 px-6 justify-end shrink-0 bg-slate-50 dark:bg-[var(--bg-surface)]">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
-                className="rounded-xl font-bold bg-slate-200 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200 cursor-pointer"
+                type="button"
+                variant="outline"
                 onClick={onClose}
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 {tb.close}
               </Button>
+              {onEdit && (
+                <Button
+                  type="button"
+                  onClick={onEdit}
+                  className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Edit3 size={15} className="mr-1.5" />
+                  {tb.editBooking}
+                </Button>
+              )}
             </ModalFooter>
           </ModalDialog>
         </ModalContainer>

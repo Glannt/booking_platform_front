@@ -21,13 +21,14 @@ import {
   FieldError,
   Description
 } from "@heroui/react";
-import { Save, RefreshCw, Edit } from "lucide-react";
+import { Save, RefreshCw, Edit, Edit3 } from "lucide-react";
 import clsx from "clsx";
 import ImageUpload from "@/components/ImageUpload";
+import ExpandableTextArea from "@/components/admin/common/ExpandableTextArea";
 
 import { updateVehicleCategory, VehicleCategoryDto, VehicleCategoryTranslationDto } from "@/lib/api/fleet";
 
-interface VehicleCategoryDetailsModalProps {
+interface VehicleCategoryDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   category: VehicleCategoryDto | null;
@@ -38,7 +39,7 @@ interface VehicleCategoryDetailsModalProps {
   defaultEditMode?: boolean;
 }
 
-export default function VehicleCategoryDetailsModal({
+export default function VehicleCategoryDetailModal({
   isOpen,
   onClose,
   category,
@@ -47,7 +48,7 @@ export default function VehicleCategoryDetailsModal({
   onSaveSuccess,
   showToast,
   defaultEditMode
-}: VehicleCategoryDetailsModalProps) {
+}: VehicleCategoryDetailModalProps) {
   const [activeFormLocale, setActiveFormLocale] = useState<string>("vi");
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -230,8 +231,8 @@ export default function VehicleCategoryDetailsModal({
                 {!isEditMode ? (
                   <div className="space-y-6">
                     {/* Category Thumbnail Preview */}
-                    <div className="bg-slate-50 dark:bg-black/30 p-4 rounded-2xl border border-divider flex flex-col gap-2">
-                      <Label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-divider flex flex-col gap-2">
+                      <Label className="block text-xs font-bold uppercase tracking-wider">
                         {language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail"}
                       </Label>
                       {category.thumbnailUrl ? (
@@ -250,7 +251,7 @@ export default function VehicleCategoryDetailsModal({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-slate-50 dark:bg-black/30 p-3 rounded-xl border border-divider">
+                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {language === "vi" ? "Mã danh mục (Code)" : "Category Code"}
                         </span>
@@ -259,7 +260,7 @@ export default function VehicleCategoryDetailsModal({
                         </span>
                       </div>
 
-                      <div className="bg-slate-50 dark:bg-black/30 p-3 rounded-xl border border-divider">
+                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {language === "vi" ? "Số chỗ ngồi" : "Seats"}
                         </span>
@@ -268,7 +269,7 @@ export default function VehicleCategoryDetailsModal({
                         </span>
                       </div>
 
-                      <div className="bg-slate-50 dark:bg-black/30 p-3 rounded-xl border border-divider">
+                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                           {language === "vi" ? "Số lượng hành lý" : "Luggage limit"}
                         </span>
@@ -300,7 +301,7 @@ export default function VehicleCategoryDetailsModal({
                         <span className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
                           {"Bản dịch hiện tại"}
                         </span>
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-black p-1 rounded-xl w-fit">
+                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-surface)] p-1 rounded-xl w-fit">
                           {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
                             <button
                               key={lang}
@@ -319,7 +320,7 @@ export default function VehicleCategoryDetailsModal({
                         </div>
                       </div>
 
-                      <div className="bg-slate-50 dark:bg-black/30 p-4 rounded-xl border border-divider space-y-3">
+                      <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-divider space-y-3">
                         <div>
                           <span className="block text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                             Tên Danh Mục
@@ -351,7 +352,7 @@ export default function VehicleCategoryDetailsModal({
                   // Edit Mode View
                   <div className="space-y-6">
                     {/* Category Thumbnail Image Upload */}
-                    <div className="bg-slate-50 dark:bg-black/30 p-4 rounded-2xl border border-divider">
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-divider">
                       <ImageUpload
                         label={language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail Image"}
                         value={thumbnailId}
@@ -362,7 +363,7 @@ export default function VehicleCategoryDetailsModal({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <TextField isRequired isInvalid={isCodeInvalid} className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider"> Mã danh mục (Code)</Label>
-                        <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SEDAN_4" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                        <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SEDAN_4" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                         {isCodeInvalid && (
                           <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
                             {language === "vi" ? "Mã danh mục không được để trống." : "Category code is required."}
@@ -372,7 +373,7 @@ export default function VehicleCategoryDetailsModal({
 
                       <TextField className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider"> Đơn vị hành lý</Label>
-                        <Input type="text" value={unitLuggage} onChange={(e) => setUnitLuggage(e.target.value)} placeholder="e.g. kiện, kg" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                        <Input type="text" value={unitLuggage} onChange={(e) => setUnitLuggage(e.target.value)} placeholder="e.g. kiện, kg" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                       </TextField>
                     </div>
 
@@ -386,10 +387,10 @@ export default function VehicleCategoryDetailsModal({
                           isInvalid={isMinSeatInvalid}
                           fullWidth
                         >
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             Ghế tối thiểu
                           </Label>
-                          <NumberField.Group>
+                          <NumberField.Group className="border-1 border-separator">
                             <NumberField.DecrementButton />
                             <NumberField.Input />
                             <NumberField.IncrementButton />
@@ -411,10 +412,10 @@ export default function VehicleCategoryDetailsModal({
                           isInvalid={isMaxSeatInvalid}
                           fullWidth
                         >
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             Ghế tối đa
                           </Label>
-                          <NumberField.Group>
+                          <NumberField.Group className="border-1 border-separator">
                             <NumberField.DecrementButton />
                             <NumberField.Input />
                             <NumberField.IncrementButton />
@@ -436,10 +437,10 @@ export default function VehicleCategoryDetailsModal({
                           isRequired
                           isInvalid={isMinLuggageInvalid}
                         >
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             Hành lý tối thiểu
                           </Label>
-                          <NumberField.Group>
+                          <NumberField.Group className="border-1 border-separator">
                             <NumberField.DecrementButton />
                             <NumberField.Input />
                             <NumberField.IncrementButton />
@@ -461,10 +462,10 @@ export default function VehicleCategoryDetailsModal({
                           isRequired
                           isInvalid={isMaxLuggageInvalid}
                         >
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             Hành lý tối đa
                           </Label>
-                          <NumberField.Group>
+                          <NumberField.Group className="border-1 border-separator">
                             <NumberField.DecrementButton />
                             <NumberField.Input />
                             <NumberField.IncrementButton />
@@ -492,7 +493,7 @@ export default function VehicleCategoryDetailsModal({
                             </Checkbox.Control>
                           </Checkbox.Content>
                         </Checkbox>
-                        <Label htmlFor="category-active" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                        <Label htmlFor="category-active" className="text-sm font-bold cursor-pointer select-none">
                           {language === "vi" ? "Kích hoạt danh mục" : "Active / Available"}
                         </Label>
                       </div>
@@ -510,7 +511,7 @@ export default function VehicleCategoryDetailsModal({
                             </Checkbox.Control>
                           </Checkbox.Content>
                         </Checkbox>
-                        <Label htmlFor="category-default" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                        <Label htmlFor="category-default" className="text-sm font-bold cursor-pointer select-none">
                           {language === "vi" ? "Danh mục mặc định" : "Default category"}
                         </Label>
                       </div>
@@ -520,10 +521,10 @@ export default function VehicleCategoryDetailsModal({
 
                     <div className="space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <Label className="block text-xs font-extrabold text-slate-550 uppercase tracking-wider">
+                        <Label className="block text-xs font-extrabold uppercase tracking-wider">
                           {language === "vi" ? "Nội dung dịch thuật Danh mục *" : "Category Translations *"}
                         </Label>
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-black p-1 rounded-xl w-fit">
+                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-surface)] p-1 rounded-xl w-fit">
                           {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
                             <button
                               key={lang}
@@ -545,7 +546,7 @@ export default function VehicleCategoryDetailsModal({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <TextField isRequired isInvalid={isNameInvalid} className="w-full">
                           <Label className="text-xs font-bold uppercase tracking-wider">Tên Danh Mục ({activeFormLocale.toUpperCase()})</Label>
-                          <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.name || ""} onChange={(e) => handleTranslationChange("name", e.target.value)} placeholder="e.g. Xe 4 chỗ (Sedan)" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                          <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.name || ""} onChange={(e) => handleTranslationChange("name", e.target.value)} placeholder="e.g. Xe 4 chỗ (Sedan)" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                           {isNameInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
                               {language === "vi" ? "Tên danh mục không được để trống." : "Category name is required."}
@@ -555,7 +556,7 @@ export default function VehicleCategoryDetailsModal({
 
                         <TextField isRequired isInvalid={isSlugInvalid} className="w-full">
                           <Label className="text-xs font-bold uppercase tracking-wider">Đường dẫn (Slug) ({activeFormLocale.toUpperCase()})</Label>
-                          <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.slug || ""} onChange={(e) => handleTranslationChange("slug", e.target.value)} placeholder="xe-4-cho-sedan" className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800" />
+                          <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.slug || ""} onChange={(e) => handleTranslationChange("slug", e.target.value)} placeholder="xe-4-cho-sedan" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                           {isSlugInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
                               {language === "vi" ? "Đường dẫn không được để trống." : "Slug is required."}
@@ -565,15 +566,18 @@ export default function VehicleCategoryDetailsModal({
                       </div>
 
                       <div>
-                        <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-                          Mô tả ngắn ({activeFormLocale.toUpperCase()})
-                        </Label>
-                        <TextArea
+                        <ExpandableTextArea
+                          label={
+                            <Label className="block text-xs font-bold mb-1.5">
+                              Mô tả ngắn ({activeFormLocale.toUpperCase()})
+                            </Label>
+                          }
                           rows={2}
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
                           placeholder="Short description summary..."
                           value={translations[activeFormLocale as keyof typeof translations]?.description || ""}
-                          onChange={(e) => handleTranslationChange("description", e.target.value)}
+                          onChange={(val) => handleTranslationChange("description", val)}
+                          modalTitle={`Mô tả ngắn (${activeFormLocale.toUpperCase()})`}
+                          language={language}
                         />
                       </div>
                     </div>
@@ -581,13 +585,13 @@ export default function VehicleCategoryDetailsModal({
                 )}
               </ModalBody>
 
-              <ModalFooter className="px-6 py-4 border-t border-divider bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 flex-shrink-0">
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                 {!isEditMode ? (
                   <>
                     <Button
                       key="btn-close"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={onClose}
                     >
                       {language === "vi" ? "Đóng" : "Close"}
@@ -596,14 +600,14 @@ export default function VehicleCategoryDetailsModal({
                       aria-label="Chỉnh sửa"
                       key="btn-edit"
                       type="button"
-                      className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8921d] text-white shadow-md border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setIsEditMode(true);
                       }}
                     >
-                      <Edit size={16} className="mr-1.5" />
+                      <Edit3 size={15} className="mr-1.5" />
                       {language === "vi" ? "Chỉnh sửa" : "Edit"}
                     </Button>
                   </>
@@ -612,22 +616,22 @@ export default function VehicleCategoryDetailsModal({
                     <Button
                       key="btn-back"
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={() => setIsEditMode(false)}
                       isDisabled={loading}
                     >
-                      {language === "vi" ? "Quay lại" : "Back"}
+                      {language === "vi" ? "Hủy" : "Cancel"}
                     </Button>
                     <Button
                       key="btn-save"
                       type="submit"
                       isDisabled={loading}
-                      className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8921d] text-white shadow-md border-none"
+                      className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                     >
                       {loading ? (
-                        <RefreshCw size={16} className="animate-spin mr-1.5" />
+                        <RefreshCw size={15} className="animate-spin mr-1.5" />
                       ) : (
-                        <Save size={16} className="mr-1.5" />
+                        <Save size={15} className="mr-1.5" />
                       )}
                       {language === "vi" ? "Lưu thay đổi" : "Save changes"}
                     </Button>

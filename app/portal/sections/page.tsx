@@ -22,25 +22,27 @@ import {
   Table,
   toast,
   Select,
-  ListBox
+  ListBox,
+  Tooltip
 } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
 import SectionCreateModal from "@/components/admin/sections/SectionCreateModal";
-import SectionDetailsModal from "@/components/admin/sections/SectionDetailsModal";
+import SectionDetailModal from "@/components/admin/sections/SectionDetailModal";
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
 import {
   getSectionsByPagePath,
   deleteSection,
   SectionDto,
 } from "@/lib/api/sections";
-
-const PAGE_SIZE = 8;
+import PageSizeSelect from "@/components/common/PageSizeSelect";
 
 const PAGE_PATHS = [
   { value: "/", label: "Trang chủ" },
   { value: "/tours", label: "Tour" },
   { value: "/self-drive", label: "Thuê xe tự lái" },
   { value: "/airport-transfer", label: "Đưa đón sân bay" },
-  { value: "/rent-car", label: "Thuê xe có tài xế" },
+  { value: "/intercity", label: "Thuê xe có tài xế / Đi tỉnh (Intercity)" },
 ];
 
 const SECTION_TYPES = [
@@ -53,6 +55,7 @@ const SECTION_TYPES = [
 ];
 
 export default function SectionsManagementPage() {
+  const { t } = useI18n();
   const [sections, setSections] = useState<SectionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -118,15 +121,7 @@ export default function SectionsManagementPage() {
     direction: "ascending",
   });
 
-  const columns = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "sectionType", label: "Loại", sortable: true },
-    { id: "sectionName", label: "Tên section", sortable: false },
-    { id: "title", label: "Tiêu đề (VI)", sortable: false },
-    { id: "orderIndex", label: "Thứ tự", sortable: true },
-    { id: "status", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Hành động", sortable: false },
-  ];
+  const columns = headerColumns.sections(t);
 
   const sorted = useMemo(() => {
     const { column, direction } = sort;
@@ -150,12 +145,13 @@ export default function SectionsManagementPage() {
     });
   }, [filtered, sort]);
 
+  const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const paginated = useMemo(
-    () => sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [sorted, page]
+    () => sorted.slice((page - 1) * pageSize, page * pageSize),
+    [sorted, page, pageSize]
   );
-  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
   const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
 
   useEffect(() => {
@@ -189,6 +185,14 @@ export default function SectionsManagementPage() {
               <SearchField.ClearButton />
             </SearchField.Group>
           </SearchField>
+
+          <PageSizeSelect
+            value={pageSize}
+            onChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
 
           <Select
             selectedKey={filterPagePath}
@@ -225,20 +229,20 @@ export default function SectionsManagementPage() {
             Làm mới
           </Button>
           <Button
-            className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-sm border border-transparent"
+            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
             onClick={() => {
               setSelectedSection(null);
               setCreateModalOpen(true);
             }}
           >
-            <Plus size={18} className="mr-1" />
-            Thêm Section
+            <Plus size={16} />
+            <span>Thêm Section</span>
           </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-black/10 rounded-2xl border-1 border-yellow-100 dark:border-yellow-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
@@ -314,45 +318,68 @@ export default function SectionsManagementPage() {
                             />
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                isIconOnly
-                                variant="ghost"
-                                aria-label="Xem chi tiết section"
-                                className="text-slate-500 hover:text-primary"
-                                onClick={(e: React.MouseEvent) => {
-                                  e.stopPropagation();
-                                  setSelectedSection(s);
-                                  setDetailsModalOpen(true);
-                                }}
-                              >
-                                <Eye size={16} />
-                              </Button>
-                              <Button
-                                isIconOnly
-                                variant="ghost"
-                                aria-label="Chỉnh sửa section"
-                                className="text-slate-500 hover:text-amber-500"
-                                onClick={(e: React.MouseEvent) => {
-                                  e.stopPropagation();
-                                  setSelectedSection(s);
-                                  setCreateModalOpen(true);
-                                }}
-                              >
-                                <Edit3 size={16} />
-                              </Button>
-                              <Button
-                                isIconOnly
-                                variant="ghost"
-                                aria-label="Xóa section"
-                                className="text-slate-400 hover:text-red-500"
-                                onClick={(e: React.MouseEvent) => {
-                                  e.stopPropagation();
-                                  if (s.id) handleDelete(s.id);
-                                }}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
+                            <div className="flex items-center gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="tertiary"
+                                    aria-label="Xem chi tiết section"
+                                    onPress={() => {
+                                      setSelectedSection(s);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Xem chi tiết section
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa section"
+                                    onPress={() => {
+                                      setSelectedSection(s);
+                                      setCreateModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa section
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa section"
+                                    onPress={() => {
+                                      if (s.id) handleDelete(s.id);
+                                    }}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa section
+                                </Tooltip.Content>
+                              </Tooltip>
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -366,33 +393,31 @@ export default function SectionsManagementPage() {
         )}
 
         {/* Pagination */}
-        {sorted.length > PAGE_SIZE && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800">
-            <p className="text-xs text-slate-500">
-              Hiển thị {(page - 1) * PAGE_SIZE + 1}–
-              {Math.min(page * PAGE_SIZE, sorted.length)} / {sorted.length}
-            </p>
-            <Pagination size="sm">
-              <Pagination.Content>
-                <Pagination.Item>
-                  <Pagination.Previous isDisabled={page <= 1} onPress={() => setPage(p => Math.max(1, p - 1))}>
-                    <Pagination.PreviousIcon />
-                  </Pagination.Previous>
+        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-500">
+            Hiển thị {sorted.length === 0 ? 0 : (page - 1) * pageSize + 1}–
+            {Math.min(page * pageSize, sorted.length)} / {sorted.length}
+          </p>
+          <Pagination size="sm">
+            <Pagination.Content>
+              <Pagination.Item>
+                <Pagination.Previous isDisabled={page <= 1} onPress={() => setPage(p => Math.max(1, p - 1))}>
+                  <Pagination.PreviousIcon />
+                </Pagination.Previous>
+              </Pagination.Item>
+              {pages.map(p => (
+                <Pagination.Item key={p}>
+                  <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
                 </Pagination.Item>
-                {pages.map(p => (
-                  <Pagination.Item key={p}>
-                    <Pagination.Link isActive={p === page} onPress={() => setPage(p)}>{p}</Pagination.Link>
-                  </Pagination.Item>
-                ))}
-                <Pagination.Item>
-                  <Pagination.Next isDisabled={page >= pageCount} onPress={() => setPage(p => Math.min(pageCount, p + 1))}>
-                    <Pagination.NextIcon />
-                  </Pagination.Next>
-                </Pagination.Item>
-              </Pagination.Content>
-            </Pagination>
-          </div>
-        )}
+              ))}
+              <Pagination.Item>
+                <Pagination.Next isDisabled={page >= pageCount} onPress={() => setPage(p => Math.min(pageCount, p + 1))}>
+                  <Pagination.NextIcon />
+                </Pagination.Next>
+              </Pagination.Item>
+            </Pagination.Content>
+          </Pagination>
+        </div>
       </div>
 
       {/* Modals */}
@@ -414,7 +439,7 @@ export default function SectionsManagementPage() {
         pagePath={filterPagePath}
         initialData={selectedSection}
       />
-      <SectionDetailsModal
+      <SectionDetailModal
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
         section={selectedSection}

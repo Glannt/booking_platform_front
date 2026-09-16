@@ -16,7 +16,7 @@ import {
   ListBox,
   Label,
 } from "@heroui/react";
-import { UserPlus, RefreshCw, Edit3, Shield } from "lucide-react";
+import { UserPlus, RefreshCw, Edit3, Shield, Save } from "lucide-react";
 import { createUser, updateUser, AdminUserDto, AdminCreateUserRequest, AdminUpdateUserRequest } from "@/lib/api/users";
 import { useAuthStore } from "@/lib/store/authStore";
 
@@ -205,7 +205,7 @@ export default function UserCreateModal({
                 )}
 
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider">Email *</Label>
+                  <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">Email</Label>
                   <Input
                     type="email"
                     aria-label="Địa chỉ Email"
@@ -213,13 +213,14 @@ export default function UserCreateModal({
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="user@example.com"
                     disabled={!!editingUser || isModerator}
+                    className="border-1 border-separator"
                   />
                 </div>
 
                 {!isModerator && (
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider">
-                      {editingUser ? "Mật khẩu mới (Tùy chọn)" : "Mật khẩu *"}
+                    <Label isRequired={!editingUser} className="text-[10px] font-bold uppercase tracking-wider">
+                      {editingUser ? "Mật khẩu mới (Tùy chọn)" : "Mật khẩu"}
                     </Label>
                     <Input
                       type="password"
@@ -227,18 +228,20 @@ export default function UserCreateModal({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={editingUser ? "Để trống nếu không muốn đổi" : "Tối thiểu 8 ký tự, 1 hoa, 1 đặc biệt"}
+                      className="border-1 border-separator"
                     />
                   </div>
                 )}
 
                 <div className="flex flex-col gap-1.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider">Họ và tên *</Label>
+                  <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">Họ và tên</Label>
                   <Input
                     aria-label="Họ và tên"
                     value={fullname}
                     onChange={(e) => setFullname(e.target.value)}
                     placeholder="Nguyễn Văn A"
                     disabled={isModerator}
+                    className="border-1 border-separator"
                   />
                 </div>
 
@@ -250,17 +253,18 @@ export default function UserCreateModal({
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0901 234 567"
                     disabled={isModerator}
+                    className="border-1 border-separator"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider">Vai trò *</Label>
+                  <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">Vai trò</Label>
                   <Select aria-label="Chọn vai trò" selectedKey={role} onSelectionChange={(key) => { if (key) setRole(key as string); }} isDisabled={isModerator}>
-                    <Select.Trigger className="h-10 px-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[var(--bg-card)] text-xs font-bold cursor-pointer">
+                    <Select.Trigger className="h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold cursor-pointer">
                       <Select.Value />
                       <Select.Indicator />
                     </Select.Trigger>
-                    <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-1 z-50">
+                    <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 z-50">
                       <ListBox>
                         <ListBox.Item key="ADMIN" id="ADMIN" textValue="Admin">Admin<ListBox.ItemIndicator /></ListBox.Item>
                         <ListBox.Item key="STAFF" id="STAFF" textValue="Staff">Staff<ListBox.ItemIndicator /></ListBox.Item>
@@ -272,13 +276,13 @@ export default function UserCreateModal({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label className="text-[10px] font-bold uppercase tracking-wider">Trạng thái *</Label>
+                  <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">Trạng thái</Label>
                   <Select aria-label="Chọn trạng thái" selectedKey={status} onSelectionChange={(key) => { if (key) setStatus(key as string); }}>
-                    <Select.Trigger className="h-10 px-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[var(--bg-card)] text-xs font-bold cursor-pointer">
+                    <Select.Trigger className="h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold cursor-pointer">
                       <Select.Value />
                       <Select.Indicator />
                     </Select.Trigger>
-                    <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-1 z-50">
+                    <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 z-50">
                       <ListBox>
                         <ListBox.Item key="active" id="active" textValue="Active">Hoạt động<ListBox.ItemIndicator /></ListBox.Item>
                         <ListBox.Item key="inactive" id="inactive" textValue="Inactive">Tạm khóa<ListBox.ItemIndicator /></ListBox.Item>
@@ -298,7 +302,7 @@ export default function UserCreateModal({
                       value={reasonInactive}
                       onChange={(e) => setReasonInactive(e.target.value)}
                       placeholder="Nhập lý do tài khoản bị tạm khóa hoặc chặn..."
-                      className="w-full"
+                      className="w-full border-1 border-separator"
                     />
                   </div>
                 )}
@@ -312,6 +316,7 @@ export default function UserCreateModal({
                     onChange={(e) => setZaloId(e.target.value)}
                     placeholder="0901234567"
                     disabled={isModerator}
+                    className="border-1 border-separator"
                   />
                 </div>
 
@@ -323,6 +328,7 @@ export default function UserCreateModal({
                     onChange={(e) => setKakaoTalkId(e.target.value)}
                     placeholder="kakaouser"
                     disabled={isModerator}
+                    className="border-1 border-separator"
                   />
                 </div>
 
@@ -334,15 +340,17 @@ export default function UserCreateModal({
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="+84901234567"
                     disabled={isModerator}
+                    className="border-1 border-separator"
                   />
                 </div>
               </div>
             </ModalBody>
 
-            <ModalFooter className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[var(--bg-page)]/40 py-3 px-6 justify-end gap-2.5 shrink-0">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
+                variant="outline"
                 aria-label="Hủy thao tác"
-                className="rounded-xl font-bold bg-neutral-200 dark:bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 onClick={() => { resetForm(); onClose(); }}
                 isDisabled={loading}
               >
@@ -350,18 +358,18 @@ export default function UserCreateModal({
               </Button>
               <Button
                 aria-label={editingUser ? "Lưu thông tin user" : "Tạo user mới"}
-                className="rounded-xl font-bold bg-accent hover:bg-accent-hover text-white shadow-sm border border-transparent"
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                 onClick={handleSave}
                 isDisabled={loading}
               >
                 {loading ? (
-                  <RefreshCw className="animate-spin" size={16} />
+                  <RefreshCw className="animate-spin mr-1.5" size={15} />
                 ) : editingUser ? (
-                  <Edit3 size={16} className="mr-1.5" />
+                  <Save size={15} className="mr-1.5" />
                 ) : (
-                  <UserPlus size={16} className="mr-1.5" />
+                  <UserPlus size={15} className="mr-1.5" />
                 )}
-                {editingUser ? "Lưu" : "Tạo User"}
+                {editingUser ? "Lưu thay đổi" : "Tạo User"}
               </Button>
             </ModalFooter>
           </ModalDialog>

@@ -72,10 +72,11 @@ export default function UserDeleteModal({
               </p>
             </ModalBody>
 
-            <ModalFooter className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[var(--bg-page)]/40 py-3 px-6 justify-end gap-2.5">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
+                variant="outline"
                 aria-label="Hủy thao tác xóa user"
-                className="rounded-xl font-bold bg-neutral-200 dark:bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-200"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 onClick={onClose}
                 isDisabled={loading}
               >
@@ -83,14 +84,14 @@ export default function UserDeleteModal({
               </Button>
               <Button
                 aria-label="Xác nhận xóa user"
-                className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm border border-transparent"
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-rose-600 hover:bg-rose-700 text-white shadow-sm cursor-pointer border-none transition-colors"
                 onClick={handleDelete}
                 isDisabled={loading}
               >
                 {loading ? (
-                  <RefreshCw className="animate-spin" size={16} />
+                  <RefreshCw className="animate-spin mr-1.5" size={15} />
                 ) : (
-                  <Trash2 size={16} className="mr-1.5" />
+                  <Trash2 size={15} className="mr-1.5" />
                 )}
                 Xóa User
               </Button>

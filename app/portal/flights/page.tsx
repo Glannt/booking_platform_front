@@ -17,13 +17,16 @@ import {
   type FlightTracking,
   type OpenSkyFlightState,
 } from "@/lib/api/bookings";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
 
-const PAGE_SIZE = 10;
 const SOURCE_KEY = "flight_tracking_source";
 
 type FlightSource = "aviationstack" | "opensky";
 
-export default function FlightsTrackingPage() {
+export default function FlightTrackingPage() {
+  const { t } = useI18n();
   const [source, setSource] = useState<FlightSource>(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem(SOURCE_KEY) as FlightSource) || "aviationstack";
@@ -41,6 +44,7 @@ export default function FlightsTrackingPage() {
   const [history, setHistory] = useState<FlightTracking[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyPage, setHistoryPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") toast.success(message);
@@ -113,15 +117,15 @@ export default function FlightsTrackingPage() {
   const paginatedHistory = useMemo(
     () =>
       filteredHistory.slice(
-        (historyPage - 1) * PAGE_SIZE,
-        historyPage * PAGE_SIZE
+        (historyPage - 1) * pageSize,
+        historyPage * pageSize
       ),
-    [filteredHistory, historyPage]
+    [filteredHistory, historyPage, pageSize]
   );
 
   const historyPageCount = Math.max(
     1,
-    Math.ceil(filteredHistory.length / PAGE_SIZE)
+    Math.ceil(filteredHistory.length / pageSize)
   );
   const historyPages = Array.from(
     { length: historyPageCount },
@@ -130,9 +134,9 @@ export default function FlightsTrackingPage() {
   const historyStart =
     filteredHistory.length === 0
       ? 0
-      : (historyPage - 1) * PAGE_SIZE + 1;
+      : (historyPage - 1) * pageSize + 1;
   const historyEnd = Math.min(
-    historyPage * PAGE_SIZE,
+    historyPage * pageSize,
     filteredHistory.length
   );
 
@@ -203,7 +207,7 @@ export default function FlightsTrackingPage() {
   return (
     <div className="w-full space-y-6">
       {/* Source Toggle */}
-      <div className="flex items-center gap-2 bg-white dark:bg-black p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm w-fit">
+      <div className="flex items-center gap-2 bg-white dark:bg-[var(--bg-card)] p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm w-fit">
         <button
           onClick={() => switchSource("aviationstack")}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
@@ -229,7 +233,7 @@ export default function FlightsTrackingPage() {
       </div>
 
       {/* Search Section */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white dark:bg-black p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white dark:bg-[var(--bg-card)] p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 flex-grow max-w-4xl">
           <div className="relative flex-grow min-w-[240px]">
             {source === "aviationstack" ? (
@@ -244,14 +248,14 @@ export default function FlightsTrackingPage() {
                   ? "Nhập số hiệu chuyến bay (e.g., VN123, VJ301)..."
                   : "Nhập số hiệu (callsign) (e.g., VN123, VJ301)..."
               }
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleTrack(); }}
             />
           </div>
           <Button
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl border-none cursor-pointer"
+            className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
             onPress={handleTrack}
             isDisabled={searching || !query.trim()}
           >
@@ -277,7 +281,7 @@ export default function FlightsTrackingPage() {
 
       {/* Aviationstack Result Card */}
       {source === "aviationstack" && aviationResult && (
-        <div className="bg-white dark:bg-black rounded-2xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -335,7 +339,7 @@ export default function FlightsTrackingPage() {
             Tìm thấy {openSkyResults.length} kết quả cho "{query.trim().toUpperCase()}"
           </p>
           {openSkyResults.map((s, i) => (
-            <div key={`${s.icao24}-${i}`} className="bg-white dark:bg-black rounded-2xl border border-blue-200 dark:border-blue-900/50 shadow-sm overflow-hidden">
+            <div key={`${s.icao24}-${i}`} className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-blue-200 dark:border-blue-900/50 shadow-sm overflow-hidden">
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -426,9 +430,16 @@ export default function FlightsTrackingPage() {
       )}
 
       {/* History Table */}
-      <div className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Lịch sử tra cứu</h3>
+          <PageSizeSelect
+            value={pageSize}
+            onChange={(val) => {
+              setPageSize(val);
+              setHistoryPage(1);
+            }}
+          />
         </div>
         {loadingHistory ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -446,13 +457,12 @@ export default function FlightsTrackingPage() {
             <Table aria-label="Lịch sử tra cứu chuyến bay" className="w-full text-left">
               <Table.ScrollContainer>
                 <Table.Content>
-                  <Table.Header className="bg-slate-50 dark:bg-black/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <Table.Column isRowHeader className="px-6 py-4">Số hiệu</Table.Column>
-                    <Table.Column className="px-6 py-4">Hãng bay</Table.Column>
-                    <Table.Column className="px-6 py-4">Lộ trình</Table.Column>
-                    <Table.Column className="px-6 py-4">Giờ khởi hành</Table.Column>
-                    <Table.Column className="px-6 py-4">Trạng thái</Table.Column>
-                    <Table.Column className="px-6 py-4">Tra cứu lúc</Table.Column>
+                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-muted)] border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    {headerColumns.flights(t).map((col) => (
+                      <Table.Column key={col.id} id={col.id} isRowHeader={col.isRowHeader} className={col.className}>
+                        {col.value}
+                      </Table.Column>
+                    ))}
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {paginatedHistory.map((f) => (

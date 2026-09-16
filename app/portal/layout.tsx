@@ -25,6 +25,7 @@ import {
   Search,
   Percent,
   KeyRound,
+  Tag,
 } from "lucide-react";
 import {
   Drawer,
@@ -124,6 +125,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           label: "Tra cứu chuyến bay",
           path: "/portal/flights",
           icon: <Search size={20} />,
+        },
+        {
+          key: "discounts-mgmt",
+          label: t.discounts.title,
+          path: "/portal/discounts",
+          icon: <Tag size={20} />,
         },
       ],
     },
@@ -337,8 +344,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
 
         {/* Content Area */}
-        <main className="flex-grow p-4 md:p-8 overflow-y-auto">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <main className="flex-grow p-4 md:p-6 lg:p-8 overflow-y-auto">
+          <div className="w-full max-w-[1720px] mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">

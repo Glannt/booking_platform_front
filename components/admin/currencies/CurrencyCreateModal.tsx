@@ -5,7 +5,7 @@ import {
   Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter,
   Button, TextField, Input, Label, Switch
 } from "@heroui/react";
-import { Save } from "lucide-react";
+import { Save, RefreshCw } from "lucide-react";
 
 import { createCurrency, CurrencyDto, CurrencyTranslationDto } from "@/lib/api/currencies";
 
@@ -93,13 +93,13 @@ export default function CurrencyCreateModal({
             </ModalHeader>
             <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
               <div className="grid grid-cols-2 gap-3">
-                <TextField>
-                  <Label className="text-xs font-bold">Mã tiền tệ *</Label>
+                <TextField isRequired>
+                  <Label className="text-xs font-bold">Mã tiền tệ</Label>
                   <Input
                     placeholder="USD"
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    className="font-mono"
+                    className="font-mono border-1 border-separator"
                   />
                 </TextField>
                 <TextField>
@@ -112,14 +112,14 @@ export default function CurrencyCreateModal({
                 </TextField>
               </div>
 
-              <TextField>
-                <Label className="text-xs font-bold">1 Đơn vị = VND *</Label>
+              <TextField isRequired>
+                <Label className="text-xs font-bold">1 Đơn vị = VND</Label>
                 <Input
                   type="number"
                   placeholder="25000"
                   value={rateToVnd}
                   onChange={(e) => setRateToVnd(e.target.value)}
-                  className="font-mono"
+                  className="font-mono border-1 border-separator"
                 />
               </TextField>
 
@@ -138,8 +138,8 @@ export default function CurrencyCreateModal({
                       onClick={() => setActiveFormLocale(loc)}
                       className={`px-3 py-1 rounded-lg text-[10px] font-bold border-none cursor-pointer transition-all ${
                         activeFormLocale === loc
-                          ? "bg-accent text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-slate-100 dark:bg-[var(--bg-elevated)] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                       }`}
                     >
                       {LOCALE_FLAGS[loc]} {loc.toUpperCase()}
@@ -158,21 +158,28 @@ export default function CurrencyCreateModal({
                 </TextField>
               </div>
             </ModalBody>
-            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0 bg-white dark:bg-[var(--bg-surface)]">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
-                variant="ghost"
+                type="button"
+                variant="outline"
                 onClick={onClose}
-                className="text-xs font-bold"
+                isDisabled={loading}
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 Hủy
               </Button>
               <Button
+                type="button"
                 onClick={handleSave}
                 isDisabled={loading}
-                className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 border-none cursor-pointer disabled:opacity-50"
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
               >
-                <Save size={14} />
-                {loading ? "Đang lưu..." : "Tạo mới"}
+                {loading ? (
+                  <RefreshCw size={15} className="animate-spin mr-1.5" />
+                ) : (
+                  <Save size={15} className="mr-1.5" />
+                )}
+                Tạo mới
               </Button>
             </ModalFooter>
           </ModalDialog>

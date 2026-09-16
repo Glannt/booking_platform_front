@@ -40,7 +40,7 @@ import {
   ServiceOptionTypeDto
 } from "@/lib/api/serviceOptionTypes";
 
-interface ServiceDetailsModalProps {
+interface ServiceDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   service: ServiceDto | null;
@@ -115,15 +115,15 @@ const TimelineEditor = ({
                 handleItemChange(idx, "time", nextTime);
               }}
             >
-              <TimeField.Group className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-black rounded-lg px-2 flex items-center h-8 w-24 shrink-0">
+              <TimeField.Group className="border-1 border-separator bg-white dark:bg-black rounded-lg px-2 flex items-center h-8 w-24 shrink-0">
                 <TimeField.Input className="text-[11px] bg-transparent border-none outline-none font-bold">
                   {(segment) => <TimeField.Segment segment={segment} />}
                 </TimeField.Input>
               </TimeField.Group>
             </TimeField>
-            
+
             <span className="text-slate-400 font-bold text-xs shrink-0">-</span>
-            
+
             <TimeField
               aria-label="End Time"
               value={times.end}
@@ -132,7 +132,7 @@ const TimelineEditor = ({
                 handleItemChange(idx, "time", nextTime);
               }}
             >
-              <TimeField.Group className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-black rounded-lg px-2 flex items-center h-8 w-24 shrink-0">
+              <TimeField.Group className="border-1 border-separator bg-white dark:bg-black rounded-lg px-2 flex items-center h-8 w-24 shrink-0">
                 <TimeField.Input className="text-[11px] bg-transparent border-none outline-none font-bold">
                   {(segment) => <TimeField.Segment segment={segment} />}
                 </TimeField.Input>
@@ -140,20 +140,20 @@ const TimelineEditor = ({
             </TimeField>
             <Input
               type="text"
-              className="flex-grow px-2 py-1 text-xs rounded-xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+              className="flex-grow px-2 py-1 text-xs rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
               placeholder={language === "vi" ? "Nội dung hoạt động..." : "Activity content..."}
               value={item.content}
               onChange={(e) => handleItemChange(idx, "content", e.target.value)}
             />
-          <button
-            type="button"
-            onClick={() => handleRemoveItem(idx)}
-            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer border-none bg-transparent"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-      );
+            <button
+              type="button"
+              onClick={() => handleRemoveItem(idx)}
+              className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer border-none bg-transparent"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        );
       })}
       <Button
         type="button"
@@ -167,7 +167,7 @@ const TimelineEditor = ({
   );
 };
 
-export default function ServiceDetailsModal({
+export default function ServiceDetailModal({
   isOpen,
   onClose,
   service,
@@ -177,7 +177,7 @@ export default function ServiceDetailsModal({
   onSaveSuccess,
   showToast,
   defaultEditMode
-}: ServiceDetailsModalProps) {
+}: ServiceDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -642,12 +642,12 @@ export default function ServiceDetailsModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="service-details-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="lg">
-          <ModalDialog className="max-w-4xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
+          <ModalDialog className="max-w-4xl bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] flex flex-col">
             <ModalCloseTrigger />
             {isEditing ? (
               /* ───────────── EDIT MODE FORM ───────────── */
               <form onSubmit={handleSaveChanges} className="flex flex-col h-full overflow-hidden">
-                <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
+                <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-[var(--bg-surface)] py-4 px-6 flex flex-col gap-0.5 shrink-0">
                   <span id="service-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                     {language === "vi" ? "Chỉnh sửa Thông tin Tour" : "Edit Tour / Service"}
                   </span>
@@ -664,7 +664,7 @@ export default function ServiceDetailsModal({
                     <div className="md:col-span-2 space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             {language === "vi" ? "Danh mục dịch vụ" : "Service Category"}
                           </Label>
                           <Select
@@ -672,11 +672,11 @@ export default function ServiceDetailsModal({
                             selectedKey={formData.categoryId ? String(formData.categoryId) : undefined}
                             onSelectionChange={(key) => setFormData({ ...formData, categoryId: Number(key) })}
                           >
-                            <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
+                            <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
                               <Select.Value />
                               <Select.Indicator />
                             </Select.Trigger>
-                            <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                            <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                               <ListBox>
                                 {categories.map((c) => {
                                   const tr = c.translations.find((t) => t.locale === language) || c.translations[0];
@@ -696,7 +696,7 @@ export default function ServiceDetailsModal({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             {language === "vi" ? "Trạng thái hiển thị" : "Status"}
                           </Label>
                           <Select
@@ -704,11 +704,11 @@ export default function ServiceDetailsModal({
                             selectedKey={formData.status || "published"}
                             onSelectionChange={(key) => setFormData({ ...formData, status: key as string })}
                           >
-                            <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
+                            <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
                               <Select.Value />
                               <Select.Indicator />
                             </Select.Trigger>
-                            <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                            <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                               <ListBox>
                                 <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"}>
                                   {language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"}
@@ -743,7 +743,7 @@ export default function ServiceDetailsModal({
                       {/* Service Option Type Selector & Creator */}
                       <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-black/10 space-y-4 mt-4">
                         <div className="flex items-center justify-between">
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                          <Label className="block text-xs font-bold uppercase tracking-wider">
                             {language === "vi" ? "Phân loại / Loại tính giá vé" : "Ticket / Pricing Option Type"}
                           </Label>
                           <Button
@@ -771,11 +771,11 @@ export default function ServiceDetailsModal({
                               });
                             }}
                           >
-                            <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
+                            <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold h-[42px] flex items-center justify-between cursor-pointer">
                               <Select.Value />
                               <Select.Indicator />
                             </Select.Trigger>
-                            <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                            <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                               <ListBox>
                                 {optionTypes.map((ot) => {
                                   const tr = ot.translations.find((t) => t.locale === language) || ot.translations[0];
@@ -800,11 +800,11 @@ export default function ServiceDetailsModal({
                                   value={newOptionTypeCode}
                                   onChange={(e) => setNewOptionTypeCode(e.target.value.toUpperCase())}
                                   placeholder="E.g. TICKET_HEIGHT, CAR_SEAT"
-                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                 />
                               </TextField>
                               <div>
-                                <Label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                                <Label className="block text-[10px] font-bold uppercase mb-1">
                                   {language === "vi" ? "Kiểu cấu hình" : "System Type"}
                                 </Label>
                                 <Select
@@ -812,11 +812,11 @@ export default function ServiceDetailsModal({
                                   selectedKey={newOptionTypeSystemType}
                                   onSelectionChange={(key) => setNewOptionTypeSystemType(key as string)}
                                 >
-                                  <Select.Trigger className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs bg-slate-50 dark:bg-black font-bold h-[32px] flex items-center justify-between cursor-pointer">
+                                  <Select.Trigger className="w-full px-2 py-1.5 rounded-lg border-1 border-separator text-xs bg-slate-50 dark:bg-black font-bold h-[32px] flex items-center justify-between cursor-pointer">
                                     <Select.Value />
                                     <Select.Indicator />
                                   </Select.Trigger>
-                                  <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                                  <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                                     <ListBox>
                                       <ListBox.Item id="PERSON" textValue={language === "vi" ? "Theo đầu người (Person)" : "By Person"}>
                                         {language === "vi" ? "Theo đầu người (Person)" : "By Person"}
@@ -839,7 +839,7 @@ export default function ServiceDetailsModal({
                                   value={newOptionTypeNameVi}
                                   onChange={(e) => setNewOptionTypeNameVi(e.target.value)}
                                   placeholder={newOptionTypeSystemType === "VEHICLE" ? "Giá vé theo loại xe / số chỗ" : "Vé theo chiều cao / độ tuổi"}
-                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                 />
                               </TextField>
                               <TextField className="w-full">
@@ -849,7 +849,7 @@ export default function ServiceDetailsModal({
                                   value={newOptionTypeNameEn}
                                   onChange={(e) => setNewOptionTypeNameEn(e.target.value)}
                                   placeholder={newOptionTypeSystemType === "VEHICLE" ? "Pricing by vehicle specs" : "Tickets by height / age"}
-                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                 />
                               </TextField>
                             </div>
@@ -896,7 +896,7 @@ export default function ServiceDetailsModal({
                                   );
                                 }
                               }}
-                              className="w-full py-1.5 px-3 rounded-lg bg-[#C9A227] text-white text-xs font-bold hover:bg-[#b8921f] transition-colors"
+                              className="w-full py-1.5 px-3 rounded-lg bg-accent hover:bg-accent-hover text-accent-foreground text-xs font-bold transition-colors cursor-pointer border-none"
                             >
                               {language === "vi" ? "Lưu loại vé" : "Save Type"}
                             </Button>
@@ -920,7 +920,7 @@ export default function ServiceDetailsModal({
                   {/* Translation tabs selector */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                      <Label className="block text-xs font-extrabold uppercase tracking-wider">
                         {language === "vi" ? "Thông tin chi tiết (Đa ngôn ngữ)" : "Detailed Content Translations"}
                       </Label>
                       <div className="flex bg-slate-100 dark:bg-black p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
@@ -951,18 +951,18 @@ export default function ServiceDetailsModal({
                             placeholder={language === "vi" ? "e.g. Tour Bà Nà Hills..." : "e.g. Ba Na Hills Day Tour..."}
                             value={editActiveTrans.name || ""}
                             onChange={(e) => handleTranslationChange("name", e.target.value)}
-                            className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                            className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                           />
                         </TextField>
                       </div>
 
                       <div>
-                        <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                           {language === "vi" ? "Mô tả ngắn gọn" : "Short Description"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <textarea
                           rows={2}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
                           placeholder={language === "vi" ? "Mô tả tổng quan về chuyến đi..." : "Overview description of the trip..."}
                           value={editActiveTrans.description || ""}
                           onChange={(e) => handleTranslationChange("description", e.target.value)}
@@ -970,12 +970,12 @@ export default function ServiceDetailsModal({
                       </div>
 
                       <div>
-                        <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                           {language === "vi" ? "Nội dung chi tiết dịch vụ" : "Full Content details"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <textarea
                           rows={4}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
                           placeholder={language === "vi" ? "Bao gồm xe đưa đón, ăn uống buffet, lịch trình..." : "Includes transport details, tickets, buffet meals..."}
                           value={editActiveTrans.content || ""}
                           onChange={(e) => handleTranslationChange("content", e.target.value)}
@@ -990,7 +990,7 @@ export default function ServiceDetailsModal({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                        <Label className="block text-xs font-extrabold uppercase tracking-wider">
                           {language === "vi" ? "Tùy chọn vé & phân hạng giá bán" : "Pricing Options & Vehicle Classes"}
                         </Label>
                       </div>
@@ -1057,10 +1057,10 @@ export default function ServiceDetailsModal({
                                           formatOptions={{ style: "decimal", useGrouping: true }}
                                           fullWidth
                                         >
-                                          <Label className="block text-[11px] font-bold text-slate-400 mb-1">
+                                          <Label className="block text-[11px] font-bold mb-1">
                                             {language === "vi" ? "Giá áp dụng (VND)" : "Price (VND)"}
                                           </Label>
-                                          <NumberField.Group>
+                                          <NumberField.Group className="border-1 border-separator">
                                             <NumberField.Input />
                                           </NumberField.Group>
                                         </NumberField>
@@ -1076,7 +1076,7 @@ export default function ServiceDetailsModal({
                                             placeholder="e.g. Toyota Innova"
                                             value={opt.vehicleBrand || ""}
                                             onChange={(e) => handleOptionChange(idx, "vehicleBrand", e.target.value)}
-                                            className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                            className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                           />
                                         </TextField>
                                       </div>
@@ -1088,10 +1088,10 @@ export default function ServiceDetailsModal({
                                           onChange={(val) => handleOptionChange(idx, "seatCapacity", val)}
                                           fullWidth
                                         >
-                                          <Label className="block text-[11px] font-bold text-slate-400 mb-1">
+                                          <Label className="block text-[11px] font-bold mb-1">
                                             {language === "vi" ? "Số chỗ ngồi" : "Seat Capacity"}
                                           </Label>
-                                          <NumberField.Group>
+                                          <NumberField.Group className="border-1 border-separator">
                                             <NumberField.DecrementButton />
                                             <NumberField.Input />
                                             <NumberField.IncrementButton />
@@ -1106,10 +1106,10 @@ export default function ServiceDetailsModal({
                                           onChange={(val) => handleOptionChange(idx, "maxLuggage", val)}
                                           fullWidth
                                         >
-                                          <Label className="block text-[11px] font-bold text-slate-400 mb-1">
+                                          <Label className="block text-[11px] font-bold mb-1">
                                             {language === "vi" ? "Hành lý tối đa (kg)" : "Max Luggage (kg)"}
                                           </Label>
-                                          <NumberField.Group>
+                                          <NumberField.Group className="border-1 border-separator">
                                             <NumberField.DecrementButton />
                                             <NumberField.Input />
                                             <NumberField.IncrementButton />
@@ -1122,11 +1122,10 @@ export default function ServiceDetailsModal({
                                       {["vi", "en", "ko", "ru"].map(loc => (
                                         <button key={loc} type="button"
                                           onClick={() => setActiveOptionsLocale(loc)}
-                                          className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
-                                            activeOptionsLocale === loc
+                                          className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${activeOptionsLocale === loc
                                               ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                                          }`}
+                                            }`}
                                         >
                                           {loc === "vi" ? "🇻🇳" : loc === "en" ? "🇬🇧" : loc === "ko" ? "🇰🇷" : "🇷🇺"} {loc.toUpperCase()}
                                         </button>
@@ -1143,7 +1142,7 @@ export default function ServiceDetailsModal({
                                           placeholder={activeOptionsLocale === "vi" ? "e.g. SUV 5 chỗ" : "e.g. SUV 5-Seater"}
                                           value={opt.translations.find(t => t.locale === activeOptionsLocale)?.name || ""}
                                           onChange={(e) => handleOptionChange(idx, "name", e.target.value, activeOptionsLocale)}
-                                          className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                          className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                         />
                                       </TextField>
 
@@ -1156,7 +1155,7 @@ export default function ServiceDetailsModal({
                                           placeholder={activeOptionsLocale === "vi" ? "e.g. Xe tự lái/có tài xế SUV" : "e.g. Self-drive SUV"}
                                           value={opt.translations.find(t => t.locale === activeOptionsLocale)?.description || ""}
                                           onChange={(e) => handleOptionChange(idx, "description", e.target.value, activeOptionsLocale)}
-                                          className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                          className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                         />
                                       </TextField>
                                     </div>
@@ -1181,10 +1180,10 @@ export default function ServiceDetailsModal({
                                         formatOptions={{ style: "decimal", useGrouping: true }}
                                         fullWidth
                                       >
-                                        <Label className="block text-[11px] font-bold text-slate-400 mb-1">
+                                        <Label className="block text-[11px] font-bold mb-1">
                                           {language === "vi" ? "Giá vé áp dụng (VND)" : "Price (VND)"}
                                         </Label>
-                                        <NumberField.Group>
+                                        <NumberField.Group className="border-1 border-separator">
                                           <NumberField.Input />
                                         </NumberField.Group>
                                       </NumberField>
@@ -1194,11 +1193,10 @@ export default function ServiceDetailsModal({
                                         {["vi", "en", "ko", "ru"].map(loc => (
                                           <button key={loc} type="button"
                                             onClick={() => setActiveOptionsLocale(loc)}
-                                            className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
-                                              activeOptionsLocale === loc
+                                            className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${activeOptionsLocale === loc
                                                 ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                                 : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                                            }`}
+                                              }`}
                                           >
                                             {loc === "vi" ? "🇻🇳" : loc === "en" ? "🇬🇧" : loc === "ko" ? "🇰🇷" : "🇷🇺"} {loc.toUpperCase()}
                                           </button>
@@ -1217,7 +1215,7 @@ export default function ServiceDetailsModal({
                                         placeholder={activeOptionsLocale === "vi" ? "e.g. Trẻ em (< 1m)" : activeOptionsLocale === "en" ? "e.g. Child (< 1m)" : activeOptionsLocale === "ko" ? "e.g. 어린이 (< 1m)" : "e.g. Дети (< 1m)"}
                                         value={opt.translations.find(t => t.locale === activeOptionsLocale)?.name || ""}
                                         onChange={(e) => handleOptionChange(idx, "name", e.target.value, activeOptionsLocale)}
-                                        className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                        className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                       />
                                     </TextField>
 
@@ -1230,7 +1228,7 @@ export default function ServiceDetailsModal({
                                         placeholder={activeOptionsLocale === "vi" ? "e.g. < 1m miễn phí..." : "e.g. Under 1m free..."}
                                         value={opt.translations.find(t => t.locale === activeOptionsLocale)?.description || ""}
                                         onChange={(e) => handleOptionChange(idx, "description", e.target.value, activeOptionsLocale)}
-                                        className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                        className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                       />
                                     </TextField>
                                   </div>
@@ -1249,7 +1247,7 @@ export default function ServiceDetailsModal({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                        <Label className="block text-xs font-extrabold uppercase tracking-wider">
                           {language === "vi" ? "Lịch trình hoạt động chi tiết" : "Daily Itinerary Day Schedule"}
                         </Label>
                       </div>
@@ -1295,11 +1293,10 @@ export default function ServiceDetailsModal({
                                 {["vi", "en", "ko", "ru"].map(loc => (
                                   <button key={loc} type="button"
                                     onClick={() => setActiveItinLocale(loc)}
-                                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
-                                      activeItinLocale === loc
+                                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${activeItinLocale === loc
                                         ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                         : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                                    }`}
+                                      }`}
                                   >
                                     {loc === "vi" ? "🇻🇳" : loc === "en" ? "🇬🇧" : loc === "ko" ? "🇰🇷" : "🇷🇺"} {loc.toUpperCase()}
                                   </button>
@@ -1317,13 +1314,13 @@ export default function ServiceDetailsModal({
                                   placeholder={activeItinLocale === "vi" ? "e.g. Đón sân bay & nhận phòng" : activeItinLocale === "en" ? "e.g. Airport Arrival & Check-in" : activeItinLocale === "ko" ? "e.g. 공항 도착 & 체크인" : "e.g. Прибытие & заселение"}
                                   value={itin.translations.find(t => t.locale === activeItinLocale)?.dayTitle || ""}
                                   onChange={(e) => handleItineraryChange(idx, "dayTitle", e.target.value, activeItinLocale)}
-                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                 />
                               </TextField>
                             </div>
 
                             <div>
-                              <Label className="block text-[11px] font-bold text-slate-400 mb-1">
+                              <Label className="block text-[11px] font-bold mb-1">
                                 {language === "vi" ? `Lịch trình chi tiết (${activeItinLocale.toUpperCase()})` : `Timeline Events (${activeItinLocale.toUpperCase()})`}
                               </Label>
                               <TimelineEditor
@@ -1344,7 +1341,7 @@ export default function ServiceDetailsModal({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                        <Label className="block text-xs font-extrabold uppercase tracking-wider">
                           {language === "vi" ? "Câu hỏi thường gặp (FAQs)" : "Frequently Asked Questions (FAQs)"}
                         </Label>
                         <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1393,11 +1390,10 @@ export default function ServiceDetailsModal({
                                 {["vi", "en", "ko", "ru"].map(loc => (
                                   <button key={loc} type="button"
                                     onClick={() => setActiveFaqLocale(loc)}
-                                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${
-                                      activeFaqLocale === loc
+                                    className={`px-2.5 py-1 text-[10px] font-extrabold rounded-lg transition-all ${activeFaqLocale === loc
                                         ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
                                         : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                                    }`}
+                                      }`}
                                   >
                                     {loc === "vi" ? "🇻🇳" : loc === "en" ? "🇬🇧" : loc === "ko" ? "🇰🇷" : "🇷🇺"} {loc.toUpperCase()}
                                   </button>
@@ -1415,16 +1411,16 @@ export default function ServiceDetailsModal({
                                   placeholder={activeFaqLocale === "vi" ? "e.g. Xe đưa đón ở đâu?" : "e.g. Where is the pickup point?"}
                                   value={faq.translations.find(t => t.locale === activeFaqLocale)?.question || ""}
                                   onChange={(e) => handleFaqChange(idx, "question", e.target.value, activeFaqLocale)}
-                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
+                                  className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
                                 />
                               </TextField>
                               <div>
-                                <Label className="block text-[11px] font-bold text-slate-400 mb-1">
+                                <Label className="block text-[11px] font-bold mb-1">
                                   {language === "vi" ? `Trả lời (${activeFaqLocale.toUpperCase()})` : `Answer (${activeFaqLocale.toUpperCase()})`}
                                 </Label>
                                 <textarea
                                   rows={2}
-                                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-xs focus:outline-none"
+                                  className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-xs focus:outline-none"
                                   placeholder={activeFaqLocale === "vi" ? "e.g. Xe đón tại sảnh khách sạn..." : "e.g. We pick you up at hotel lobby..."}
                                   value={faq.translations.find(t => t.locale === activeFaqLocale)?.answer || ""}
                                   onChange={(e) => handleFaqChange(idx, "answer", e.target.value, activeFaqLocale)}
@@ -1438,10 +1434,11 @@ export default function ServiceDetailsModal({
                   </div>
                 </ModalBody>
 
-                <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex items-center justify-end gap-3 flex-shrink-0">
+                <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                   <Button
+                    type="button"
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                     onClick={() => setIsEditing(false)}
                     isDisabled={loading}
                   >
@@ -1450,14 +1447,14 @@ export default function ServiceDetailsModal({
                   <Button
                     type="submit"
                     isDisabled={loading}
-                    className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8921f] text-white shadow-md border-none"
+                    className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                   >
                     {loading ? (
-                      <RefreshCw size={16} className="animate-spin mr-1.5" />
+                      <RefreshCw size={15} className="animate-spin mr-1.5" />
                     ) : (
-                      <Save size={16} className="mr-1.5" />
+                      <Save size={15} className="mr-1.5" />
                     )}
-                    {language === "vi" ? "Lưu thay đổi" : "Save Changes"}
+                    {language === "vi" ? "Lưu" : "Save Changes"}
                   </Button>
                 </ModalFooter>
               </form>
@@ -1734,19 +1731,21 @@ export default function ServiceDetailsModal({
                   </div>
                 </ModalBody>
 
-                <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex items-center justify-between flex-shrink-0">
+                <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                   <Button
+                    type="button"
                     variant="outline"
-                    className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                    className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
                     {language === "vi" ? "Đóng lại" : "Close"}
                   </Button>
                   <Button
+                    type="button"
                     onClick={() => setIsEditing(true)}
-                    className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8921f] text-white shadow-md border-none"
+                    className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
                   >
-                    <Edit3 size={16} className="mr-1.5" />
+                    <Edit3 size={15} className="mr-1.5" />
                     {language === "vi" ? "Chỉnh sửa thông tin" : "Edit Tour Details"}
                   </Button>
                 </ModalFooter>

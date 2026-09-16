@@ -23,7 +23,7 @@ import {
   updateDepartureTime,
   deleteDepartureTime,
   type IntercityDepartureTimeDto,
-} from "@/lib/api/rental";
+} from "@/lib/api/intercity";
 
 interface IntercityDepartureTimeModalProps {
   routeId: number;
@@ -120,9 +120,9 @@ export function IntercityDepartureTimeModal({
     >
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm">
         <ModalContainer size="sm">
-          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-800">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md p-6 border border-border-secondary">
             <ModalCloseTrigger />
-            <ModalHeader className="p-0 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <ModalHeader className="p-0 pb-4 border-b border-separator">
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-accent" />
                 <h3 id="departure-time-title" className="text-base font-bold text-slate-900 dark:text-white">
@@ -166,13 +166,13 @@ export function IntercityDepartureTimeModal({
                   type="time"
                   value={newTime}
                   onChange={(e) => setNewTime(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 border-1 border-separator"
                   placeholder="HH:MM"
                 />
                 <Button
                   onClick={handleAdd}
                   isDisabled={saving || !newTime}
-                  className="bg-accent hover:bg-accent-hover text-white border-none font-bold text-xs cursor-pointer flex items-center gap-1"
+                  className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors flex items-center gap-1"
                 >
                   <Plus size={14} />
                   Thêm
@@ -183,7 +183,7 @@ export function IntercityDepartureTimeModal({
               {loading ? (
                 <div className="text-center py-8 text-sm text-slate-400">Đang tải...</div>
               ) : filteredTimes.length === 0 ? (
-                <div className="text-center py-8 text-xs text-slate-400 italic bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="text-center py-8 text-xs text-slate-400 italic bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-border">
                   Chưa có khung giờ cố định nào cho {direction === "OUTBOUND" ? "Chiều đi" : "Chiều về"}.
                 </div>
               ) : (
@@ -193,8 +193,8 @@ export function IntercityDepartureTimeModal({
                       key={dt.id}
                       className={`flex items-center justify-between p-3 rounded-xl border ${
                         dt.active
-                          ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)]"
-                          : "border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] opacity-60"
+                          ? "border-border bg-white dark:bg-[var(--bg-card)]"
+                          : "border-border bg-slate-50 dark:bg-[var(--bg-surface)] opacity-60"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -230,10 +230,11 @@ export function IntercityDepartureTimeModal({
               )}
             </ModalBody>
 
-            <ModalFooter className="p-0 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
+                variant="outline"
                 onClick={onClose}
-                className="bg-slate-100 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 Đóng
               </Button>

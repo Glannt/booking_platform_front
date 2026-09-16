@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@heroui/react";
-import * as Icons from "@/lib/utils/icons";
+import { SvgIconPickerField } from "@/components/common/SvgIconPickerField";
 import {
   Plus,
   X,
@@ -402,7 +402,7 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
                   key={k}
                   type="button"
                   onClick={() => addKeyWithTemplate(k)}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-accent/10 hover:bg-accent hover:text-white px-2.5 py-1 rounded-md transition-all cursor-pointer border border-accent/20"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-accent bg-accent/10 hover:bg-accent hover:text-accent-foreground px-2.5 py-1 rounded-md transition-all cursor-pointer border border-accent/20"
                 >
                   <Sparkles size={11} /> + {k} (Schema)
                 </button>
@@ -425,7 +425,7 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
               />
               <Button
                 size="sm"
-                className="bg-[#C9A227] hover:bg-[#B8911F] text-white font-bold text-xs rounded-md"
+                className="bg-accent hover:bg-accent-hover text-accent-foreground font-bold text-xs rounded-xl border-none shadow-sm cursor-pointer"
                 onClick={() => addKey()}
               >
                 Thêm
@@ -459,7 +459,7 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
             onChange={(e) => handleJsonChange(e.target.value)}
             rows={12}
             placeholder='{ "key": "value" }'
-            className="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-xs font-mono resize-y focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full px-3 py-2 rounded-md border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-xs font-mono resize-y focus:outline-none focus:ring-1 focus:ring-accent"
           />
           {jsonError && (
             <p className="text-[10px] font-bold text-red-500 flex items-center gap-1">
@@ -501,7 +501,7 @@ function TypeSelector({ value, onChange, className = "" }: TypeSelectorProps) {
           <span className="text-[6px] opacity-70">▼</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="p-1 w-24 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-xl">
+      <PopoverContent className="p-1 w-24 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-md shadow-xl">
         <div className="flex flex-col gap-0.5">
           {types.map((t) => (
             <button
@@ -763,7 +763,7 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
                     type="button"
                     onClick={() => addPresetItem(preset.factory)}
                     title={preset.description}
-                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-accent/10 text-accent hover:bg-accent hover:text-white transition-all cursor-pointer border border-accent/20"
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-accent/10 text-accent hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer border border-accent/20"
                   >
                     <Sparkles size={10} />
                     + {preset.label}
@@ -950,13 +950,13 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
                 <ColorArea.Thumb />
               </ColorArea>
               <ColorSlider aria-label="Tông màu (Hue)" channel="hue" className="w-full" colorSpace="hsb">
-                <Label className="text-[10px] font-bold text-slate-450 dark:text-slate-400">Tông màu (Hue)</Label>
+                <Label className="text-[10px] font-bold">Tông màu (Hue)</Label>
                 <ColorSlider.Track>
                   <ColorSlider.Thumb />
                 </ColorSlider.Track>
               </ColorSlider>
               <ColorSlider aria-label="Độ mờ (Opacity)" channel="alpha" className="w-full">
-                <Label className="text-[10px] font-bold text-slate-450 dark:text-slate-400">Độ mờ (Opacity)</Label>
+                <Label className="text-[10px] font-bold">Độ mờ (Opacity)</Label>
                 <ColorSlider.Track>
                   <ColorSlider.Thumb />
                 </ColorSlider.Track>
@@ -988,52 +988,18 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
           {value ? "Có" : "Không"}
         </button>
       ) : nodeKey === "icon" && (vType === "string" || vType === "empty") ? (
-        <Autocomplete
-          className="flex-1 min-w-[200px]"
-          placeholder="Chọn icon..."
-          selectionMode="single"
-          value={tmpVal}
-          onChange={(val) => {
-            setTmpVal(String(val ?? ""));
-            commitValue(String(val ?? ""));
-          }}
-          aria-label="Chọn icon"
-        >
-          <Label className="sr-only">Icon</Label>
-          <Autocomplete.Trigger>
-            <Autocomplete.Value className="text-xs font-semibold" />
-            <Autocomplete.ClearButton />
-            <Autocomplete.Indicator />
-          </Autocomplete.Trigger>
-          <Autocomplete.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-md p-3 shadow-xl z-50">
-            <Autocomplete.Filter filter={contains}>
-              <SearchField autoFocus name="search" variant="secondary">
-                <SearchField.Group>
-                  <SearchField.SearchIcon />
-                  <SearchField.Input placeholder="Tìm kiếm icon..." />
-                  <SearchField.ClearButton />
-                </SearchField.Group>
-              </SearchField>
-              <ListBox
-                className="max-h-[200px] overflow-y-auto"
-                renderEmptyState={() => <EmptyState>Không tìm thấy icon nào</EmptyState>}
-              >
-                {Object.keys(Icons).map((name) => {
-                  const IconComp = (Icons as any)[name];
-                  return (
-                    <ListBox.Item key={name} id={name} textValue={name}>
-                      <div className="flex items-center gap-2 py-1">
-                        {IconComp && <IconComp size={16} className="text-slate-600 dark:text-slate-400" />}
-                        <span className="text-xs font-medium text-slate-800 dark:text-slate-200">{name}</span>
-                      </div>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  );
-                })}
-              </ListBox>
-            </Autocomplete.Filter>
-          </Autocomplete.Popover>
-        </Autocomplete>
+        <div className="flex-1 min-w-[240px]">
+          <SvgIconPickerField
+            value={tmpVal}
+            onChange={(val) => {
+              setTmpVal(val);
+              commitValue(val);
+            }}
+            compact={true}
+            label="Biểu tượng (Raw SVG text)"
+            placeholder="Dán mã SVG (<svg ...>...</svg>) vào đây..."
+          />
+        </div>
       ) : vType === "image" ? (
         <div className="flex-1 flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -1079,7 +1045,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="px-2.5 h-8 rounded-md bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent hover:text-white dark:hover:bg-accent text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+                className="px-2.5 h-8 rounded-md bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
                 title="Tải ảnh từ máy tính"
               >
                 {uploading ? <Loader2 size={12} className="animate-spin text-accent" /> : <Upload size={12} />}
@@ -1148,7 +1114,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
           onChange={(e) => setTmpVal(e.target.value)}
           onBlur={() => commitValue()}
           rows={rows}
-          className="flex-1 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-transparent text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-accent min-w-0"
+          className="flex-1 px-2 py-1 rounded-md border-1 border-separator bg-transparent text-xs font-mono resize-none focus:outline-none focus:ring-1 focus:ring-accent min-w-0"
         />
       ) : (
         <Input

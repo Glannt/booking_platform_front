@@ -7,4 +7,6 @@ export const status = {
   inactive: "Неактивно",
   published: "Опубликовано",
   draft: "Черновик",
+  paused: "Приостановлено",
+  hidden: "Скрыто",
 };

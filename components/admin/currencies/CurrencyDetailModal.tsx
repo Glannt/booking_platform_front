@@ -5,11 +5,11 @@ import {
   Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, ModalHeader, ModalBody, ModalFooter,
   Button, TextField, Input, Label, Switch
 } from "@heroui/react";
-import { Save, Trash2, Edit3 } from "lucide-react";
+import { Save, Trash2, Edit3, RefreshCw } from "lucide-react";
 
 import { updateCurrency, deleteCurrency, CurrencyDto, CurrencyTranslationDto } from "@/lib/api/currencies";
 
-interface CurrencyDetailsModalProps {
+interface CurrencyDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   currency: CurrencyDto;
@@ -22,10 +22,10 @@ interface CurrencyDetailsModalProps {
 const LOCALES = ["vi", "en", "ko", "ru"];
 const LOCALE_FLAGS: Record<string, string> = { vi: "🇻🇳", en: "🇬🇧", ko: "🇰🇷", ru: "🇷🇺" };
 
-export default function CurrencyDetailsModal({
+export default function CurrencyDetailModal({
   isOpen, onClose, currency, defaultEditMode = false,
   onSaveSuccess, onDeleteSuccess, showToast
-}: CurrencyDetailsModalProps) {
+}: CurrencyDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeFormLocale, setActiveFormLocale] = useState("vi");
@@ -115,20 +115,13 @@ export default function CurrencyDetailsModal({
                   {isEditMode ? "Chỉnh sửa" : "Chi tiết"} — {currency.code}
                 </h2>
                 {!isEditMode && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setIsEditMode(true)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-400 hover:text-amber-500 cursor-pointer border-none bg-transparent"
-                    >
-                      <Edit3 size={14} />
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleDelete}
+                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 cursor-pointer border-none bg-transparent"
+                    title="Xóa loại tiền tệ"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 )}
               </div>
             </ModalHeader>
@@ -140,7 +133,7 @@ export default function CurrencyDetailsModal({
                     <Input
                       value={code}
                       onChange={(e) => setCode(e.target.value.toUpperCase())}
-                      className="font-mono"
+                      className="font-mono border-1 border-separator"
                     />
                   ) : (
                     <div className="h-10 px-3 flex items-center font-mono font-bold text-sm bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200 dark:border-slate-800">
@@ -154,6 +147,7 @@ export default function CurrencyDetailsModal({
                     <Input
                       value={symbol}
                       onChange={(e) => setSymbol(e.target.value)}
+                      className="border-1 border-separator"
                     />
                   ) : (
                     <div className="h-10 px-3 flex items-center text-lg bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200 dark:border-slate-800">
@@ -170,7 +164,7 @@ export default function CurrencyDetailsModal({
                     type="number"
                     value={rateToVnd}
                     onChange={(e) => setRateToVnd(e.target.value)}
-                    className="font-mono"
+                    className="font-mono border-1 border-separator"
                   />
                 ) : (
                   <div className="h-10 px-3 flex items-center font-mono font-bold text-sm text-amber-600 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200 dark:border-slate-800">
@@ -185,7 +179,7 @@ export default function CurrencyDetailsModal({
                   <Switch isSelected={active} onChange={() => setActive(!active)} size="sm" />
                 ) : (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    active ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40" : "text-slate-400 bg-slate-100 dark:bg-slate-800"
+                    active ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40" : "text-slate-400 bg-slate-100 dark:bg-[var(--bg-elevated)]"
                   }`}>
                     {active ? "Hoạt động" : "Tắt"}
                   </span>
@@ -202,8 +196,8 @@ export default function CurrencyDetailsModal({
                       onClick={() => setActiveFormLocale(loc)}
                       className={`px-3 py-1 rounded-lg text-[10px] font-bold border-none cursor-pointer transition-all ${
                         activeFormLocale === loc
-                          ? "bg-accent text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-slate-100 dark:bg-[var(--bg-elevated)] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                       }`}
                     >
                       {LOCALE_FLAGS[loc]} {loc.toUpperCase()}
@@ -227,23 +221,50 @@ export default function CurrencyDetailsModal({
                 </TextField>
               </div>
             </ModalBody>
-            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0 bg-white dark:bg-[var(--bg-surface)]">
-              <Button
-                variant="ghost"
-                onClick={onClose}
-                className="text-xs font-bold"
-              >
-                {isEditMode ? "Hủy" : "Đóng"}
-              </Button>
-              {isEditMode && (
-                <Button
-                  onClick={handleSave}
-                  isDisabled={loading}
-                  className="bg-accent hover:bg-accent-hover text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 border-none cursor-pointer disabled:opacity-50"
-                >
-                  <Save size={14} />
-                  {loading ? "Đang lưu..." : "Lưu"}
-                </Button>
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+              {isEditMode ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditMode(false)}
+                    className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSave}
+                    isDisabled={loading}
+                    className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
+                  >
+                    {loading ? (
+                      <RefreshCw size={15} className="animate-spin mr-1.5" />
+                    ) : (
+                      <Save size={15} className="mr-1.5" />
+                    )}
+                    Lưu
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                  >
+                    Đóng
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setIsEditMode(true)}
+                    className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Edit3 size={15} className="mr-1.5" />
+                    Chỉnh sửa
+                  </Button>
+                </>
               )}
             </ModalFooter>
           </ModalDialog>

@@ -565,10 +565,10 @@ export default function ServiceCreateModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="service-create-title">
       <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
         <ModalContainer size="lg">
-          <ModalDialog className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] max-w-4xl flex flex-col">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden focus:outline-none w-full max-h-[90vh] max-w-4xl flex flex-col">
             <ModalCloseTrigger />
             <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
-              <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex flex-col gap-0.5">
+              <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-[var(--bg-surface)] py-4 px-6 flex flex-col gap-0.5 shrink-0">
                 <span id="service-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                   {language === "vi" ? "Thêm mới Tour Du Lịch" : "Register New Tour"}
                 </span>
@@ -778,7 +778,7 @@ export default function ServiceCreateModal({
                           </div>
                           <Button
                             type="button"
-                            className="w-full py-1.5 px-3 rounded-lg bg-[#C9A227] hover:bg-[#B8911F] text-white text-xs font-bold transition-colors"
+                            className="w-full py-1.5 px-3 rounded-lg bg-accent hover:bg-accent-hover text-accent-foreground text-xs font-bold transition-colors cursor-pointer border-none"
                             onClick={async () => {
                               if (!newOptionTypeCode.trim() || !newOptionTypeNameVi.trim() || !newOptionTypeNameEn.trim()) {
                                 showToast(
@@ -1377,10 +1377,11 @@ export default function ServiceCreateModal({
                 </div>
               </ModalBody>
 
-              <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-4 px-6 flex items-center justify-end gap-3 flex-shrink-0">
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                 <Button
+                  type="button"
                   variant="outline"
-                  className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none"
+                  className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   onClick={onClose}
                   isDisabled={loading}
                 >
@@ -1389,12 +1390,12 @@ export default function ServiceCreateModal({
                 <Button
                   type="submit"
                   isDisabled={loading}
-                  className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none"
+                  className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                 >
                   {loading ? (
-                    <RefreshCw size={16} className="animate-spin mr-1.5" />
+                    <RefreshCw size={15} className="animate-spin mr-1.5" />
                   ) : (
-                    <Save size={16} className="mr-1.5" />
+                    <Save size={15} className="mr-1.5" />
                   )}
                   {language === "vi" ? "Tạo Tour Mới" : "Create Tour"}
                 </Button>

@@ -10,8 +10,10 @@ import {
   Percent,
   Layers,
   Sparkles,
+  Filter,
+  X,
 } from "lucide-react";
-import { SurchargeFormModal } from "@/components/admin/surcharges/SurchargeFormModal";
+import { SurchargeCreateUpdateModal } from "@/components/admin/surcharges/SurchargeCreateUpdateModal";
 import { SurchargeDetailModal } from "@/components/admin/surcharges/SurchargeDetailModal";
 import { MappingModal } from "@/components/admin/surcharges/MappingModal";
 import {
@@ -25,7 +27,10 @@ import {
   Select,
   ListBox,
   toast,
+  Tooltip,
   type SortDescriptor,
+  Popover,
+  Checkbox,
 } from "@heroui/react";
 import {
   getSurchargeRules,
@@ -42,8 +47,10 @@ import {
 } from "@/lib/api/surcharge";
 import { ColumnInterface } from "@/lib/interface/column.interface";
 import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
+import { AppStatusChip } from "@/components/common/AppStatusChip";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
 
-const PAGE_SIZE = 10;
 type TabKey = "rules" | "mappings";
 
 export default function SurchargesAdminPage() {
@@ -51,13 +58,48 @@ export default function SurchargesAdminPage() {
   const tr = t.surchargeEngine;
 
   const [activeTab, setActiveTab] = useState<TabKey>("rules");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Rules State
   const [rules, setRules] = useState<SurchargeRuleDto[]>([]);
   const [ruleSearch, setRuleSearch] = useState("");
   const [rulePage, setRulePage] = useState(1);
   const [ruleSort, setRuleSort] = useState<SortDescriptor>({ column: "code", direction: "ascending" });
+
+  // Rule Multi-select Filters
+  const [selectedRuleStatuses, setSelectedRuleStatuses] = useState<string[]>([]);
+  const [selectedCalcTypes, setSelectedCalcTypes] = useState<string[]>([]);
+  const [selectedConditionTypes, setSelectedConditionTypes] = useState<string[]>([]);
+
+  const toggleRuleStatus = (status: string) => {
+    setSelectedRuleStatuses(prev =>
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    );
+  };
+
+  const toggleCalcType = (type: string) => {
+    setSelectedCalcTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const toggleConditionType = (type: string) => {
+    setSelectedConditionTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const resetRuleFilters = () => {
+    setSelectedRuleStatuses([]);
+    setSelectedCalcTypes([]);
+    setSelectedConditionTypes([]);
+  };
+
+  const activeRuleFilterCount =
+    selectedRuleStatuses.length +
+    selectedCalcTypes.length +
+    selectedConditionTypes.length;
 
   // Mappings State
   const [mappings, setMappings] = useState<ModuleSurchargeMappingDto[]>([]);
@@ -108,37 +150,44 @@ export default function SurchargesAdminPage() {
   }, []);
 
   // Columns Definitions
-  const ruleColumns: ColumnInterface[] = [
-    { id: "code", label: "Mã & Tên", sortable: true, isRowHeader: true },
-    { id: "calculationType", label: "Loại tính toán", sortable: true },
-    { id: "value", label: "Giá trị", sortable: true },
-    { id: "condition", label: "Điều kiện", sortable: false },
-    { id: "effective", label: "Hiệu lực", sortable: false },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
-
-  const mappingColumns: ColumnInterface[] = [
-    { id: "moduleCode", label: "Module", sortable: true, isRowHeader: true },
-    { id: "ruleName", label: "Quy tắc phụ thu", sortable: true },
-    { id: "value", label: "Giá trị", sortable: false },
-    { id: "applyOrder", label: "Thứ tự (Order)", sortable: true },
-    { id: "isOptional", label: "Tùy chọn", sortable: true },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
+  const ruleColumns = headerColumns.surchargeRules(t);
+  const mappingColumns = headerColumns.surchargeMappings(t);
 
   // Filtered & Sorted Rules
   const filteredRules = useMemo(() => {
-    if (!ruleSearch.trim()) return rules;
-    const term = ruleSearch.toLowerCase();
-    return rules.filter(
-      (r) =>
+    const term = ruleSearch.toLowerCase().trim();
+    return rules.filter((r) => {
+      const matchSearch =
+        !term ||
         r.code.toLowerCase().includes(term) ||
         r.name.toLowerCase().includes(term) ||
-        (r.description && r.description.toLowerCase().includes(term))
-    );
-  }, [rules, ruleSearch]);
+        (r.description && r.description.toLowerCase().includes(term));
+
+      const matchStatus =
+        selectedRuleStatuses.length === 0 ||
+        (selectedRuleStatuses.includes("active") && r.active) ||
+        (selectedRuleStatuses.includes("inactive") && !r.active);
+
+      const matchCalcType =
+        selectedCalcTypes.length === 0 ||
+        selectedCalcTypes.includes(r.calculationType);
+
+      const condType = (r.condition && typeof r.condition === "object" && (r.condition as any).type)
+        ? (r.condition as any).type
+        : "always";
+      const matchCondType =
+        selectedConditionTypes.length === 0 ||
+        selectedConditionTypes.some(ct => {
+          if (ct === "time_range") return condType === "time_range";
+          if (ct === "date_range") return condType === "date_range" || condType === "seasonal";
+          if (ct === "day_of_week") return condType === "day_of_week";
+          if (ct === "always") return condType === "always" || !r.condition;
+          return false;
+        });
+
+      return matchSearch && matchStatus && matchCalcType && matchCondType;
+    });
+  }, [rules, ruleSearch, selectedRuleStatuses, selectedCalcTypes, selectedConditionTypes]);
 
   const sortedRules = useMemo(() => {
     const { column, direction } = ruleSort;
@@ -156,11 +205,11 @@ export default function SurchargesAdminPage() {
     });
   }, [filteredRules, ruleSort]);
 
-  const rulePageCount = Math.max(1, Math.ceil(sortedRules.length / PAGE_SIZE));
-  const paginatedRules = useMemo(() => sortedRules.slice((rulePage - 1) * PAGE_SIZE, rulePage * PAGE_SIZE), [sortedRules, rulePage]);
+  const rulePageCount = Math.max(1, Math.ceil(sortedRules.length / pageSize));
+  const paginatedRules = useMemo(() => sortedRules.slice((rulePage - 1) * pageSize, rulePage * pageSize), [sortedRules, rulePage, pageSize]);
   const rulePages = Array.from({ length: rulePageCount }, (_, i) => i + 1);
-  const ruleStart = sortedRules.length === 0 ? 0 : (rulePage - 1) * PAGE_SIZE + 1;
-  const ruleEnd = Math.min(rulePage * PAGE_SIZE, sortedRules.length);
+  const ruleStart = sortedRules.length === 0 ? 0 : (rulePage - 1) * pageSize + 1;
+  const ruleEnd = Math.min(rulePage * pageSize, sortedRules.length);
 
   // Filtered & Sorted Mappings
   const filteredMappings = useMemo(() => {
@@ -197,11 +246,11 @@ export default function SurchargesAdminPage() {
     });
   }, [filteredMappings, mappingSort]);
 
-  const mappingPageCount = Math.max(1, Math.ceil(sortedMappings.length / PAGE_SIZE));
-  const paginatedMappings = useMemo(() => sortedMappings.slice((mappingPage - 1) * PAGE_SIZE, mappingPage * PAGE_SIZE), [sortedMappings, mappingPage]);
+  const mappingPageCount = Math.max(1, Math.ceil(sortedMappings.length / pageSize));
+  const paginatedMappings = useMemo(() => sortedMappings.slice((mappingPage - 1) * pageSize, mappingPage * pageSize), [sortedMappings, mappingPage, pageSize]);
   const mappingPages = Array.from({ length: mappingPageCount }, (_, i) => i + 1);
-  const mappingStart = sortedMappings.length === 0 ? 0 : (mappingPage - 1) * PAGE_SIZE + 1;
-  const mappingEnd = Math.min(mappingPage * PAGE_SIZE, sortedMappings.length);
+  const mappingStart = sortedMappings.length === 0 ? 0 : (mappingPage - 1) * pageSize + 1;
+  const mappingEnd = Math.min(mappingPage * pageSize, sortedMappings.length);
 
   // Rule Handlers
   const handleCreateRule = () => {
@@ -397,99 +446,357 @@ export default function SurchargesAdminPage() {
         </div>
 
         <Tabs selectedKey={activeTab} onSelectionChange={(k) => { setActiveTab(k as TabKey); setRuleSearch(""); }}>
-          <Tabs.ListContainer>
-            <Tabs.List className="w-full">
-              <Tabs.Tab id="rules">
-                <span className="flex items-center gap-2">
-                  <Sparkles size={16} />
-                  {tr.rulesTab} ({rules.length})
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-              <Tabs.Tab id="mappings">
-                <span className="flex items-center gap-2">
-                  <Layers size={16} />
-                  {tr.mappingsTab} ({mappings.length})
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
+          <Tabs.List className="w-full">
+            <Tabs.Tab id="rules">
+              <span className="flex items-center gap-2">
+                <Sparkles size={16} />
+                {tr.rulesTab} ({rules.length})
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="mappings">
+              <span className="flex items-center gap-2">
+                <Layers size={16} />
+                {tr.mappingsTab} ({mappings.length})
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+          </Tabs.List>
         </Tabs>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col lg:flex-row justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black/10">
-        <SearchField
-          name="search"
-          value={ruleSearch}
-          onChange={(val: string) => {
-            setRuleSearch(val);
-            if (activeTab === "rules") setRulePage(1);
-            else setMappingPage(1);
-          }}
-          fullWidth
-          className="min-w-[200px]"
-        >
-          <SearchField.Group className="rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
-            <SearchField.SearchIcon />
-            <SearchField.Input
-              className="w-full"
-              placeholder={activeTab === "rules" ? tr.filterByCode : "Tìm theo mã module hoặc tên quy tắc..."}
-            />
-            <SearchField.ClearButton />
-          </SearchField.Group>
-        </SearchField>
-
-        {activeTab === "mappings" && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Module:</span>
-            <Select
-              selectedKey={selectedModuleFilter}
-              onSelectionChange={(key) => {
-                if (key) {
-                  setSelectedModuleFilter(key as string);
-                  setMappingPage(1);
-                }
+      <div className="flex flex-col gap-4 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black/10">
+        <div className="flex flex-col lg:flex-row justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 flex-grow max-w-2xl">
+            <SearchField
+              name="search"
+              value={ruleSearch}
+              onChange={(val: string) => {
+                setRuleSearch(val);
+                if (activeTab === "rules") setRulePage(1);
+                else setMappingPage(1);
               }}
-              className="w-48"
+              className="w-full sm:w-80 min-w-[200px]"
             >
-              <Select.Trigger className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center justify-between cursor-pointer">
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
-                <ListBox>
-                  <ListBox.Item key="ALL" id="ALL" textValue={tr.allModules} className="px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                    {tr.allModules}
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                  {modules.map((m) => (
-                    <ListBox.Item key={m.moduleCode} id={m.moduleCode} textValue={`${m.moduleName} (${m.moduleCode})`} className="px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                      {m.moduleName} ({m.moduleCode})
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
+              <SearchField.Group className="rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
+                <SearchField.SearchIcon />
+                <SearchField.Input
+                  className="w-full"
+                  placeholder={activeTab === "rules" ? tr.filterByCode : "Tìm theo mã module hoặc tên quy tắc..."}
+                />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+
+            {activeTab === "rules" && (
+              <Popover>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`rounded-xl font-bold text-xs h-10 px-3.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2 cursor-pointer ${
+                    activeRuleFilterCount > 0 ? "border-accent/60 bg-accent/5 text-accent dark:text-accent font-extrabold" : ""
+                  }`}
+                >
+                  <Filter size={15} className={activeRuleFilterCount > 0 ? "text-accent" : "text-slate-500"} />
+                  <span>{t.common.filter}</span>
+                  {activeRuleFilterCount > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-accent text-accent-foreground text-[10px] font-black flex items-center justify-center">
+                      {activeRuleFilterCount}
+                    </span>
+                  )}
+                </Button>
+                <Popover.Content
+                  placement="bottom start"
+                  className="w-80 p-0 rounded-2xl bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden"
+                >
+                  <Popover.Dialog className="p-4 space-y-4 outline-none max-h-[80vh] overflow-y-auto">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Filter size={15} className="text-accent" />
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {t.common.filterTitle}
+                        </span>
+                        {activeRuleFilterCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent font-bold text-[10px]">
+                            {activeRuleFilterCount}
+                          </span>
+                        )}
+                      </div>
+                      {activeRuleFilterCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={resetRuleFilters}
+                          className="text-xs font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                        >
+                          {t.common.filterReset}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Trạng thái hoạt động */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-black tracking-wider uppercase text-slate-400 dark:text-slate-500 block">
+                        Trạng thái
+                      </span>
+                      <div className="space-y-1">
+                        <Checkbox
+                          isSelected={selectedRuleStatuses.includes("active")}
+                          onChange={() => toggleRuleStatus("active")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Đang hoạt động</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedRuleStatuses.includes("inactive")}
+                          onChange={() => toggleRuleStatus("inactive")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Tạm ngưng</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </div>
+                    </div>
+
+                    {/* Loại tính toán */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-black tracking-wider uppercase text-slate-400 dark:text-slate-500 block">
+                        Loại tính toán
+                      </span>
+                      <div className="space-y-1">
+                        <Checkbox
+                          isSelected={selectedCalcTypes.includes("PERCENTAGE")}
+                          onChange={() => toggleCalcType("PERCENTAGE")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Tỷ lệ (%)</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedCalcTypes.includes("FIXED_AMOUNT")}
+                          onChange={() => toggleCalcType("FIXED_AMOUNT")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Cố định (VNĐ)</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedCalcTypes.includes("PER_KM")}
+                          onChange={() => toggleCalcType("PER_KM")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Theo km</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </div>
+                    </div>
+
+                    {/* Loại điều kiện */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-black tracking-wider uppercase text-slate-400 dark:text-slate-500 block">
+                        Loại điều kiện
+                      </span>
+                      <div className="space-y-1">
+                        <Checkbox
+                          isSelected={selectedConditionTypes.includes("time_range")}
+                          onChange={() => toggleConditionType("time_range")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Khung giờ</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedConditionTypes.includes("date_range")}
+                          onChange={() => toggleConditionType("date_range")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Khoảng ngày / Mùa</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedConditionTypes.includes("day_of_week")}
+                          onChange={() => toggleConditionType("day_of_week")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Ngày trong tuần</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedConditionTypes.includes("always")}
+                          onChange={() => toggleConditionType("always")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Mọi trường hợp</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </div>
+                    </div>
+                  </Popover.Dialog>
+                </Popover.Content>
+              </Popover>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <PageSizeSelect
+              value={pageSize}
+              onChange={(size) => {
+                setPageSize(size);
+                setRulePage(1);
+                setMappingPage(1);
+              }}
+            />
+
+            {activeTab === "mappings" && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Module:</span>
+                <Select
+                  selectedKey={selectedModuleFilter}
+                  onSelectionChange={(key) => {
+                    if (key) {
+                      setSelectedModuleFilter(key as string);
+                      setMappingPage(1);
+                    }
+                  }}
+                  className="w-48"
+                >
+                  <Select.Trigger className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center justify-between cursor-pointer">
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                    <ListBox>
+                      <ListBox.Item key="ALL" id="ALL" textValue={tr.allModules} className="px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                        {tr.allModules}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      {modules.map((m) => (
+                        <ListBox.Item key={m.moduleCode} id={m.moduleCode} textValue={`${m.moduleName} (${m.moduleCode})`} className="px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                          {m.moduleName} ({m.moduleCode})
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+            )}
+
+            <Button variant="outline" onClick={loadData} isDisabled={loading}>
+              <RefreshCw size={16} className={`mr-2 ${loading ? "animate-spin" : ""}`} />
+              {tr.refresh}
+            </Button>
+            <Button
+              onClick={activeTab === "rules" ? handleCreateRule : handleCreateMapping}
+              className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+            >
+              <Plus size={16} />
+              <span>{activeTab === "rules" ? tr.createRule : tr.assignModule}</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Active Rules Chips */}
+        {activeTab === "rules" && activeRuleFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 w-full">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+              {t.common.appliedFilters}:
+            </span>
+            {selectedRuleStatuses.map((st) => (
+              <span
+                key={`rst-${st}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{st === "active" ? "Đang hoạt động" : "Tạm ngưng"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleRuleStatus(st)}
+                  className="w-3.5 h-3.5 rounded-full hover:bg-accent/20 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {selectedCalcTypes.map((ct) => (
+              <span
+                key={`ct-${ct}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{ct === "PERCENTAGE" ? "Tỷ lệ (%)" : ct === "FIXED_AMOUNT" ? "Cố định (VNĐ)" : "Theo km"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleCalcType(ct)}
+                  className="w-3.5 h-3.5 rounded-full hover:bg-accent/20 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {selectedConditionTypes.map((cond) => (
+              <span
+                key={`cond-${cond}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{cond === "time_range" ? "Khung giờ" : cond === "date_range" ? "Khoảng ngày / Mùa" : cond === "day_of_week" ? "Ngày trong tuần" : "Mọi trường hợp"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleConditionType(cond)}
+                  className="w-3.5 h-3.5 rounded-full hover:bg-accent/20 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={resetRuleFilters}
+              className="text-xs font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 underline transition-colors cursor-pointer ml-1"
+            >
+              {t.common.clearAll}
+            </button>
           </div>
         )}
-
-        <div className="flex gap-3 shrink-0">
-          <Button variant="outline" onClick={loadData} isDisabled={loading}>
-            <RefreshCw size={16} className={`mr-2 ${loading ? "animate-spin" : ""}`} />
-            {tr.refresh}
-          </Button>
-          <Button onClick={activeTab === "rules" ? handleCreateRule : handleCreateMapping}>
-            <Plus size={16} />
-            {activeTab === "rules" ? tr.createRule : tr.assignModule}
-          </Button>
-        </div>
       </div>
 
       {/* Content Table Container */}
-      <div className="bg-white dark:bg-black/10 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Spinner size="md" className="mr-1.5" />
@@ -568,29 +875,58 @@ export default function SurchargesAdminPage() {
                         </Table.Cell>
 
                         <Table.Cell>
-                          <Chip
-                            variant="soft"
-                            color={rule.active ? "success" : "danger"}
-                            className="text-[10px] font-bold"
-                          >
-                            {rule.active ? tr.active : tr.inactive}
-                          </Chip>
+                          <AppStatusChip status={rule.active} />
                         </Table.Cell>
 
                         <Table.Cell>
-                          <div className="flex gap-1.5">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Gán module" onPress={() => handleAssignModuleForRule(rule)}>
-                              <Layers size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleViewRule(rule)}>
-                              <Eye size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Chỉnh sửa" onPress={() => handleEditRule(rule)}>
-                              <Edit3 size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => rule.id && handleDeleteRule(rule.id)}>
-                              <Trash2 size={16} />
-                            </Button>
+                          <div className="flex items-center gap-1.5">
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button isIconOnly size="sm" variant="tertiary" aria-label="Gán module" onPress={() => handleAssignModuleForRule(rule)}>
+                                  <Layers size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Gán module
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button isIconOnly size="sm" variant="tertiary" aria-label="Xem chi tiết" onPress={() => handleViewRule(rule)}>
+                                  <Eye size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Xem chi tiết
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button isIconOnly size="sm" variant="secondary" aria-label="Chỉnh sửa" onPress={() => handleEditRule(rule)}>
+                                  <Edit3 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Chỉnh sửa
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button isIconOnly size="sm" variant="danger" aria-label="Xóa" onPress={() => rule.id && handleDeleteRule(rule.id)}>
+                                  <Trash2 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                <Tooltip.Arrow />
+                                Xóa
+                              </Tooltip.Content>
+                            </Tooltip>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -700,23 +1036,34 @@ export default function SurchargesAdminPage() {
                         </Table.Cell>
 
                         <Table.Cell>
-                          <Chip
-                            variant="soft"
-                            color={m.active ? "success" : "danger"}
-                            className="text-[10px] font-bold"
-                          >
-                            {m.active ? tr.active : tr.inactive}
-                          </Chip>
+                          <AppStatusChip status={m.active} />
                         </Table.Cell>
 
                         <Table.Cell>
-                          <div className="flex gap-1.5">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Chỉnh sửa" onPress={() => handleEditMapping(m)}>
-                              <Edit3 size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Gỡ ánh xạ" onPress={() => m.id && handleDeleteMapping(m.id)}>
-                              <Trash2 size={16} />
-                            </Button>
+                          <div className="flex items-center gap-1.5">
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button isIconOnly size="sm" variant="secondary" aria-label="Chỉnh sửa" onPress={() => handleEditMapping(m)}>
+                                  <Edit3 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Chỉnh sửa
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button isIconOnly size="sm" variant="danger" aria-label="Gỡ ánh xạ" onPress={() => m.id && handleDeleteMapping(m.id)}>
+                                  <Trash2 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                <Tooltip.Arrow />
+                                Gỡ ánh xạ
+                              </Tooltip.Content>
+                            </Tooltip>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -755,7 +1102,7 @@ export default function SurchargesAdminPage() {
       </div>
 
       {/* Modals */}
-      <SurchargeFormModal
+      <SurchargeCreateUpdateModal
         isOpen={isRuleFormOpen}
         onClose={() => setIsRuleFormOpen(false)}
         onSubmit={handleRuleSubmit}

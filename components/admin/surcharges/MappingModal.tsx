@@ -9,6 +9,7 @@ import {
   ModalCloseTrigger,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   Button,
   Input,
   Label,
@@ -17,7 +18,7 @@ import {
   Checkbox,
   toast,
 } from "@heroui/react";
-import { Layers, Trash2, X } from "lucide-react";
+import { Layers, Trash2, X, Save, RefreshCw } from "lucide-react";
 import {
   ModuleDescriptorDto,
   ModuleSurchargeMappingDto,
@@ -265,9 +266,9 @@ export function MappingModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <ModalBackdrop>
         <ModalContainer>
-          <ModalDialog className="w-full max-w-lg bg-white dark:bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <ModalDialog className="w-full max-w-lg bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
             <ModalCloseTrigger />
-            <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
@@ -276,8 +277,8 @@ export function MappingModal({
               </div>
             </ModalHeader>
 
-            <ModalBody className="p-6 max-h-[80vh] overflow-y-auto">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
                 {/* ── CASE 1: EDIT MODE (Single Module + Single Rule) ── */}
                 {mode === "EDIT" && (
                   <>
@@ -292,14 +293,14 @@ export function MappingModal({
                         }}
                         isRequired
                       >
-                        <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                        <Label className="text-xs font-bold mb-1 block">
                           {tr.moduleCode}
                         </Label>
-                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox selectionMode="single">
                             {modules.map((m) => (
                               <ListBox.Item
@@ -328,14 +329,14 @@ export function MappingModal({
                         }}
                         isRequired
                       >
-                        <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                        <Label className="text-xs font-bold mb-1 block">
                           {tr.rulesTab}
                         </Label>
-                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox selectionMode="single">
                             {rules.map((r) => {
                               const label = `${r.name} (${r.code} - ${r.calculationType === "PERCENT" ? `${r.value}%` : `${r.value} ${r.currency}`})`;
@@ -372,14 +373,14 @@ export function MappingModal({
                         }}
                         isRequired
                       >
-                        <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                        <Label className="text-xs font-bold mb-1 block">
                           {tr.rulesTab}
                         </Label>
-                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox selectionMode="single">
                             {rules.map((r) => {
                               const label = `${r.name} (${r.code} - ${r.calculationType === "PERCENT" ? `${r.value}%` : `${r.value} ${r.currency}`})`;
@@ -401,7 +402,7 @@ export function MappingModal({
                     </div>
 
                     <div>
-                      <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                      <Label className="text-xs font-bold mb-1 block">
                         {tr.moduleCode} (tích chọn các module áp dụng)
                       </Label>
 
@@ -420,7 +421,7 @@ export function MappingModal({
                               }`}
                             >
                               <div className="flex items-center gap-2 text-xs">
-                                <span className={`w-2 h-2 rounded-full ${isSelected ? "bg-primary" : "bg-slate-300 dark:bg-slate-600"}`} />
+                                <span className={`w-2 h-2 rounded-full ${isSelected ? "bg-primary" : "bg-slate-300 dark:bg-[var(--bg-elevated)]"}`} />
                                 <span>{m.moduleName}</span>
                                 <span className="text-[10px] text-slate-400">({m.moduleCode})</span>
                               </div>
@@ -486,14 +487,14 @@ export function MappingModal({
                         }}
                         isRequired
                       >
-                        <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                        <Label className="text-xs font-bold mb-1 block">
                           {tr.moduleCode}
                         </Label>
-                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox selectionMode="single">
                             {modules.map((m) => (
                               <ListBox.Item
@@ -512,7 +513,7 @@ export function MappingModal({
                     </div>
 
                     <div>
-                      <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                      <Label className="text-xs font-bold mb-1 block">
                         {tr.rulesTab} (tích chọn các quy tắc phụ thu áp dụng)
                       </Label>
 
@@ -532,7 +533,7 @@ export function MappingModal({
                               }`}
                             >
                               <div className="flex items-center gap-2 text-xs min-w-0 pr-2">
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? "bg-primary" : "bg-slate-300 dark:bg-slate-600"}`} />
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? "bg-primary" : "bg-slate-300 dark:bg-[var(--bg-elevated)]"}`} />
                                 <div className="truncate">
                                   <span>{r.name}</span>
                                   <span className="text-[10px] text-slate-400 ml-1">
@@ -590,7 +591,7 @@ export function MappingModal({
 
                 {/* Apply Order */}
                 <div>
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">
+                  <Label className="text-xs font-bold mb-1 block">
                     {tr.applyOrder}
                   </Label>
                   <Input
@@ -598,7 +599,7 @@ export function MappingModal({
                     value={applyOrder}
                     onChange={(e) => setApplyOrder(parseInt(e.target.value) || 0)}
                     placeholder="0"
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-800 dark:text-slate-100 outline-none"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     Thứ tự áp dụng khi tính toán (số nhỏ hơn áp dụng trước).
@@ -643,26 +644,31 @@ export function MappingModal({
                   </Checkbox>
                 </div>
 
-                {/* Submit Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onPress={onClose}
-                    className="px-4 py-2 text-xs font-semibold rounded-xl"
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    type="submit"
-                    isDisabled={loading}
-                    className="px-5 py-2 text-xs font-bold bg-primary text-white rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
-                  >
-                    {loading ? "Đang lưu..." : "Lưu ánh xạ"}
-                  </Button>
-                </div>
-              </form>
-            </ModalBody>
+              </ModalBody>
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onPress={onClose}
+                  isDisabled={loading}
+                  className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  isDisabled={loading}
+                  className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
+                >
+                  {loading ? (
+                    <RefreshCw size={15} className="animate-spin mr-1.5" />
+                  ) : (
+                    <Save size={15} className="mr-1.5" />
+                  )}
+                  Lưu ánh xạ
+                </Button>
+              </ModalFooter>
+            </form>
           </ModalDialog>
         </ModalContainer>
       </ModalBackdrop>

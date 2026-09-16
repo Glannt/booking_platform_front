@@ -33,7 +33,7 @@ import {
   updateSection,
 } from "@/lib/api/sections";
 import { uploadMedia, deleteMedia, type MediaDto } from "@/lib/api/media";
-import { ImagePlus, X, Upload, Shuffle } from "lucide-react";
+import { ImagePlus, X, Upload, Shuffle, Save, RefreshCw } from "lucide-react";
 import { KeyValueEditor } from "./KeyValueEditor";
 
 interface SectionCreateModalProps {
@@ -247,7 +247,7 @@ export default function SectionCreateModal({
             placeholder="Tiêu đề banner..."
             value={data.title}
             onChange={(e) => setter({ ...data, title: e.target.value })}
-            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+            className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground"
           />
         </div>
         <div className="space-y-1">
@@ -256,7 +256,7 @@ export default function SectionCreateModal({
             placeholder="Tiêu đề phụ..."
             value={data.subtitle}
             onChange={(e) => setter({ ...data, subtitle: e.target.value })}
-            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+            className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground"
           />
         </div>
       </div>
@@ -267,7 +267,7 @@ export default function SectionCreateModal({
           value={data.description}
           onChange={(e) => setter({ ...data, description: e.target.value })}
           rows={4}
-          className="w-full px-3 py-2.5 rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-sm text-foreground resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2.5 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-sm text-foreground resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -277,7 +277,7 @@ export default function SectionCreateModal({
             placeholder="VD: Hotline: 0764 971 971"
             value={data.btnText}
             onChange={(e) => setter({ ...data, btnText: e.target.value })}
-            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+            className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground"
           />
         </div>
         <div className="space-y-1">
@@ -286,7 +286,7 @@ export default function SectionCreateModal({
             placeholder="VD: tel:0764971971 hoặc /dat-xe"
             value={data.btnLink}
             onChange={(e) => setter({ ...data, btnLink: e.target.value })}
-            className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-surface)] text-foreground"
+            className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground"
           />
         </div>
       </div>
@@ -310,26 +310,26 @@ export default function SectionCreateModal({
                 <h4 className="text-xs font-bold text-foreground/60 uppercase tracking-wider">Thông tin cơ bản</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-foreground">Tên section *</Label>
+                    <Label isRequired className="text-xs font-bold text-foreground">Tên section</Label>
                     <Input
                       value={sectionName}
                       onChange={(e) => setSectionName(e.target.value)}
                       placeholder="VD: Hero Banner Homepage"
-                      className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground"
+                      className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-foreground"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-foreground">Loại section *</Label>
+                    <Label isRequired className="text-xs font-bold text-foreground">Loại section</Label>
                     <Select
                       fullWidth
                       selectedKey={sectionType}
                       onSelectionChange={(key) => { if (key) setSectionType(String(key)); }}
                     >
-                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground text-sm h-[38px] cursor-pointer">
+                      <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-foreground text-sm h-[38px] cursor-pointer">
                         <Select.Value />
                         <Select.Indicator />
                       </Select.Trigger>
-                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-divider rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                      <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
                           {SECTION_TYPES.map((t) => (
                             <ListBox.Item key={t.value} id={t.value} textValue={t.label} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-default-100 dark:hover:bg-[var(--bg-elevated)] text-foreground flex items-center justify-between">
@@ -347,7 +347,7 @@ export default function SectionCreateModal({
                   <div className="space-y-1.5 max-w-[120px]">
                     <Label className="text-xs font-bold text-foreground">Thứ tự</Label>
                     <NumberField value={orderIndex} onChange={(val) => setOrderIndex(val || 0)} minValue={0}>
-                      <NumberField.Group className="flex items-center w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
+                      <NumberField.Group className="flex items-center w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[38px]">
                         <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm text-foreground outline-none border-none h-full" />
                         <div className="flex h-full flex-col border-l border-divider">
                           <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-foreground/60 hover:bg-default-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
@@ -438,11 +438,11 @@ export default function SectionCreateModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-bold text-foreground">CSS Class</Label>
-                    <Input value={cssClass} onChange={(e) => setCssClass(e.target.value)} placeholder="hero-home" className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground" />
+                    <Input value={cssClass} onChange={(e) => setCssClass(e.target.value)} placeholder="hero-home" className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-foreground" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-bold text-foreground">Link URL</Label>
-                    <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="/tours" className="w-full rounded-xl border border-divider bg-white dark:bg-[var(--bg-card)] text-foreground" />
+                    <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="/tours" className="w-full rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-foreground" />
                   </div>
                 </div>
 
@@ -517,16 +517,28 @@ export default function SectionCreateModal({
                 {renderTranslationFields("ru", transRu, setTransRu)}
               </div>
             </ModalBody>
-            <ModalFooter className="px-6 py-4 border-t border-divider bg-default-50 dark:bg-[var(--bg-page)]/50 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={onClose} className="rounded-xl border-divider">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                isDisabled={submitting}
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+              >
                 Hủy
               </Button>
               <Button
-                className="rounded-xl font-bold bg-accent hover:bg-accent-hover text-white shadow-sm"
+                type="button"
                 onClick={handleSubmit}
                 isDisabled={submitting}
+                className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
               >
-                {submitting ? "Đang lưu..." : isEdit ? "Cập nhật" : "Tạo mới"}
+                {submitting ? (
+                  <RefreshCw size={15} className="animate-spin mr-1.5" />
+                ) : (
+                  <Save size={15} className="mr-1.5" />
+                )}
+                {isEdit ? "Cập nhật" : "Tạo mới"}
               </Button>
             </ModalFooter>
           </ModalDialog>

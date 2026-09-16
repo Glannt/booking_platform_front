@@ -100,7 +100,7 @@ export default function RolePermissionsTab() {
     try {
       setSaving(true);
       await updateRolePermissions(selectedRole, Array.from(editingPermissions));
-      
+
       setRoles(prev => prev.map(r => r.name === selectedRole ? { ...r, permissions: Array.from(editingPermissions) } : r));
       toast.success(`Đã cập nhật quyền cho vai trò ${selectedRole}!`);
     } catch {
@@ -169,19 +169,17 @@ export default function RolePermissionsTab() {
                 type="button"
                 aria-label={`Chọn vai trò ${role.name}`}
                 onClick={() => handleSelectRole(role.name)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-accent text-white border-accent shadow-sm"
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer ${isSelected
+                    ? "bg-accent text-accent-foreground border-accent shadow-sm"
                     : "bg-neutral-50 dark:bg-[var(--bg-card)] text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800 hover:border-accent/40"
-                }`}
+                  }`}
               >
                 <Users size={14} />
                 <span>{role.name}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                  isSelected
-                    ? "bg-white/20 text-white"
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isSelected
+                    ? "bg-black/10 dark:bg-white/20 text-accent-foreground"
                     : "bg-neutral-200 dark:bg-[var(--bg-elevated)] text-neutral-600 dark:text-neutral-300"
-                }`}>
+                  }`}>
                   {role.permissions.length} quyền
                 </span>
               </button>
@@ -223,10 +221,10 @@ export default function RolePermissionsTab() {
               </Button>
               <Button
                 size="sm"
-                aria-label="Lưu thay đổi phân quyền"
+                aria-label="Lưu phân quyền"
                 onClick={savePermissions}
                 isDisabled={saving}
-                className="bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm border border-transparent cursor-pointer flex items-center gap-1.5"
+                className="bg-accent hover:bg-accent-hover text-accent-foreground font-bold text-xs rounded-xl shadow-sm border border-transparent cursor-pointer flex items-center gap-1.5"
               >
                 {saving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
                 Lưu quyền hạn
@@ -268,11 +266,10 @@ export default function RolePermissionsTab() {
                           type="button"
                           aria-label={`Quyền ${perm.name} (${perm.code})`}
                           onClick={() => togglePerm(perm.code)}
-                          className={`flex items-center justify-between p-3 rounded-xl text-xs font-bold border transition-all text-left cursor-pointer ${
-                            active
+                          className={`flex items-center justify-between p-3 rounded-xl text-xs font-bold border transition-all text-left cursor-pointer ${active
                               ? "bg-white dark:bg-[var(--bg-surface)] text-accent border-accent/40 shadow-xs ring-1 ring-accent/20"
                               : "bg-white dark:bg-[var(--bg-surface)] text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
-                          }`}
+                            }`}
                         >
                           <div className="flex flex-col pr-2">
                             <span className={active ? "text-neutral-900 dark:text-white" : ""}>
@@ -282,11 +279,10 @@ export default function RolePermissionsTab() {
                               {perm.code}
                             </span>
                           </div>
-                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${
-                            active
-                              ? "bg-accent text-white"
+                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${active
+                              ? "bg-accent text-accent-foreground"
                               : "bg-neutral-100 dark:bg-[var(--bg-elevated)] text-neutral-400"
-                          }`}>
+                            }`}>
                             {active ? <Check size={12} strokeWidth={3} /> : <X size={12} />}
                           </div>
                         </button>
@@ -301,13 +297,13 @@ export default function RolePermissionsTab() {
           {/* Bottom Save bar */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
             <Button
-              aria-label="Lưu thay đổi phân quyền"
+              aria-label="Lưu phân quyền"
               onClick={savePermissions}
               isDisabled={saving}
-              className="bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm border border-transparent px-6 py-2.5 cursor-pointer flex items-center gap-1.5"
+              className="bg-accent hover:bg-accent-hover text-accent-foreground font-bold text-xs rounded-xl shadow-sm border border-transparent px-6 py-2.5 cursor-pointer flex items-center gap-1.5"
             >
               {saving ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
-              Lưu thay đổi phân quyền
+              Lưu phân quyền
             </Button>
           </div>
         </div>

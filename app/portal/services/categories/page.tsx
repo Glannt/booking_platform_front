@@ -14,10 +14,12 @@ import {
   Layers,
   AlertCircle
 } from "lucide-react";
-import { Button, Input, Table, toast } from "@heroui/react";
+import { Button, Input, Table, toast, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import CategoryCreateModal from "@/components/admin/categories/CategoryCreateModal";
-import CategoryDetailsModal from "@/components/admin/categories/CategoryDetailsModal";
+import CategoryDetailModal from "@/components/admin/categories/CategoryDetailModal";
+import { headerColumns } from "@/config/headerColumns";
+import { AppStatusChip } from "@/components/common/AppStatusChip";
 
 import { getCategories, deleteCategory, ServiceCategoryDto, ServiceCategoryTranslationDto } from "@/lib/api/categories";
 import { backendUrl } from "@/lib/api/client";
@@ -49,7 +51,7 @@ const fallbackCategories: ServiceCategoryDto[] = [
 ];
 
 export default function ServiceCategoriesPage() {
-  const { language } = useI18n();
+  const { language, t } = useI18n();
 
   const [categories, setCategories] = useState<ServiceCategoryDto[]>(fallbackCategories);
   const [loading, setLoading] = useState<boolean>(true);
@@ -151,17 +153,17 @@ export default function ServiceCategoriesPage() {
           </Button>
 
           <Button
-            className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-sm border border-transparent"
+            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
             onClick={() => setCreateModalOpen(true)}
           >
-            <Plus size={18} className="mr-1" />
-            "Thêm Danh Mục"
+            <Plus size={16} />
+            <span>{"Thêm Danh Mục"}</span>
           </Button>
         </div>
       </div>
 
       {/* Category List Card/Table */}
-      <div className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
@@ -182,13 +184,17 @@ export default function ServiceCategoriesPage() {
             <Table aria-label="Bảng quản lý danh mục" className="w-full text-left">
               <Table.ScrollContainer>
                 <Table.Content>
-                  <Table.Header className="bg-slate-50 dark:bg-black/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <Table.Column isRowHeader className="px-6 py-4">ID</Table.Column>
-                    <Table.Column className="px-6 py-4">"Tên Danh Mục"</Table.Column>
-                    <Table.Column className="px-6 py-4">Slug</Table.Column>
-                    <Table.Column className="px-6 py-4">"Mã Biểu Tượng"</Table.Column>
-                    <Table.Column className="px-6 py-4">"Trạng thái"</Table.Column>
-                    <Table.Column className="px-6 py-4 text-right">"Thao tác"</Table.Column>
+                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-card)]/20 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    {headerColumns.serviceCategories(t).map((col) => (
+                      <Table.Column
+                        key={col.id}
+                        id={col.id}
+                        isRowHeader={col.isRowHeader}
+                        className={col.className}
+                      >
+                        {col.value}
+                      </Table.Column>
+                    ))}
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {filteredCategories.map((cat) => {
@@ -210,49 +216,70 @@ export default function ServiceCategoriesPage() {
                             {cat.iconImageId ? `#${cat.iconImageId}` : "—"}
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4">
-                            <span
-                              className={clsx(
-                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold",
-                                cat.status === "published"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/50"
-                                  : "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-900/50"
-                              )}
-                            >
-                              {cat.status === "published"
-                                ? "Hoạt động"
-                                : "Bản nháp"}
-                            </span>
+                            <AppStatusChip status={cat.status} category="publish" />
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => {
-                                  setSelectedCategory(cat);
-                                  setDetailsModalOpen(true);
-                                }}
-                                title="Xem Chi Tiết"
-                              >
-                                <Eye size={16} />
-                              </button>
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-305 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => handleDeleteCategory(cat.id)}
-                                title="Xóa"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => {
-                                  setSelectedCategory(cat);
-                                  setDetailsDefaultEditMode(true);
-                                  setDetailsModalOpen(true);
-                                }}
-                                title="Chỉnh Sửa"
-                              >
-                                <Edit3 size={16} />
-                              </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="tertiary"
+                                    aria-label="Xem chi tiết"
+                                    onPress={() => {
+                                      setSelectedCategory(cat);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Xem chi tiết
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa"
+                                    onPress={() => {
+                                      setSelectedCategory(cat);
+                                      setDetailsDefaultEditMode(true);
+                                      setDetailsModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa"
+                                    onPress={() => handleDeleteCategory(cat.id)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa
+                                </Tooltip.Content>
+                              </Tooltip>
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -276,7 +303,7 @@ export default function ServiceCategoriesPage() {
         showToast={showToast}
       />
 
-      <CategoryDetailsModal
+      <CategoryDetailModal
         isOpen={detailsModalOpen}
         onClose={() => {
           setDetailsModalOpen(false);

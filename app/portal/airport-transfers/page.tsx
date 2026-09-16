@@ -12,7 +12,7 @@ import {
   Edit3
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Chip, Pagination, SearchField, Spinner, Table, Tabs, toast } from "@heroui/react";
+import { Button, Chip, Pagination, SearchField, Spinner, Table, Tabs, toast, Tooltip } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
 import clsx from "clsx";
 
@@ -35,13 +35,16 @@ import {
 } from "@/lib/api/fleet";
 
 import { ColumnInterface } from "@/lib/interface/column.interface";
-
-const PAGE_SIZE = 8;
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
 
 export default function AirportTransferManagementPage() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"airports" | "routes" | "transfers">("airports");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const [categories, setCategories] = useState<VehicleCategoryDto[]>([]);
   const [airports, setAirports] = useState<AirportDto[]>([]);
@@ -141,14 +144,7 @@ export default function AirportTransferManagementPage() {
   const [airportSort, setAirportSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
   const [airportPage, setAirportPage] = useState(1);
 
-  const airportColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "code", label: "Mã", sortable: true },
-    { id: "name", label: "Tên", sortable: true },
-    { id: "location", label: "Vị trí", sortable: false },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
+  const airportColumns = headerColumns.airports(t);
 
   const filteredAirports = useMemo(() => {
     const kw = searchTerm.toLowerCase();
@@ -173,25 +169,18 @@ export default function AirportTransferManagementPage() {
     });
   }, [filteredAirports, airportSort]);
 
-  const airportPageCount = Math.max(1, Math.ceil(sortedAirports.length / PAGE_SIZE));
-  const paginatedAirports = useMemo(() => sortedAirports.slice((airportPage - 1) * PAGE_SIZE, airportPage * PAGE_SIZE), [sortedAirports, airportPage]);
+  const airportPageCount = Math.max(1, Math.ceil(sortedAirports.length / pageSize));
+  const paginatedAirports = useMemo(() => sortedAirports.slice((airportPage - 1) * pageSize, airportPage * pageSize), [sortedAirports, airportPage, pageSize]);
   const airportPages = Array.from({ length: airportPageCount }, (_, i) => i + 1);
-  const airportStart = sortedAirports.length === 0 ? 0 : (airportPage - 1) * PAGE_SIZE + 1;
-  const airportEnd = Math.min(airportPage * PAGE_SIZE, sortedAirports.length);
+  const airportStart = sortedAirports.length === 0 ? 0 : (airportPage - 1) * pageSize + 1;
+  const airportEnd = Math.min(airportPage * pageSize, sortedAirports.length);
   useEffect(() => { if (airportPage > airportPageCount) setAirportPage(airportPageCount); }, [airportPage, airportPageCount]);
 
   // ── Routes ──
   const [routeSort, setRouteSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
   const [routePage, setRoutePage] = useState(1);
 
-  const routeColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "code", label: "Mã tuyến", sortable: true },
-    { id: "airport", label: "Sân bay", sortable: false },
-    { id: "distanceKm", label: "Km", sortable: true },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
+  const routeColumns = headerColumns.airportRoutes(t);
 
   const filteredRoutes = useMemo(() => {
     const kw = searchTerm.toLowerCase();
@@ -214,28 +203,18 @@ export default function AirportTransferManagementPage() {
     });
   }, [filteredRoutes, routeSort]);
 
-  const routePageCount = Math.max(1, Math.ceil(sortedRoutes.length / PAGE_SIZE));
-  const paginatedRoutes = useMemo(() => sortedRoutes.slice((routePage - 1) * PAGE_SIZE, routePage * PAGE_SIZE), [sortedRoutes, routePage]);
+  const routePageCount = Math.max(1, Math.ceil(sortedRoutes.length / pageSize));
+  const paginatedRoutes = useMemo(() => sortedRoutes.slice((routePage - 1) * pageSize, routePage * pageSize), [sortedRoutes, routePage, pageSize]);
   const routePages = Array.from({ length: routePageCount }, (_, i) => i + 1);
-  const routeStart = sortedRoutes.length === 0 ? 0 : (routePage - 1) * PAGE_SIZE + 1;
-  const routeEnd = Math.min(routePage * PAGE_SIZE, sortedRoutes.length);
+  const routeStart = sortedRoutes.length === 0 ? 0 : (routePage - 1) * pageSize + 1;
+  const routeEnd = Math.min(routePage * pageSize, sortedRoutes.length);
   useEffect(() => { if (routePage > routePageCount) setRoutePage(routePageCount); }, [routePage, routePageCount]);
 
   // ── Transfers ──
   const [transferSort, setTransferSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
   const [transferPage, setTransferPage] = useState(1);
 
-  const transferColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "route", label: "Tuyến", sortable: true },
-    { id: "category", label: "Loại xe", sortable: true },
-    { id: "baseKm", label: "Km cơ bản", sortable: true },
-    { id: "zoneBufferKm", label: "Vùng đệm Zone", sortable: true },
-    { id: "baseAmount", label: "Giá trong km", sortable: true },
-    { id: "perKmAmount", label: "Giá / km thêm", sortable: true },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
+  const transferColumns = headerColumns.airportTransfers(t);
 
   const filteredTransfers = useMemo(() => {
     const kw = searchTerm.toLowerCase();
@@ -275,54 +254,52 @@ export default function AirportTransferManagementPage() {
     });
   }, [filteredTransfers, transferSort, routes, categories]);
 
-  const transferPageCount = Math.max(1, Math.ceil(sortedTransfers.length / PAGE_SIZE));
-  const paginatedTransfers = useMemo(() => sortedTransfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE), [sortedTransfers, transferPage]);
+  const transferPageCount = Math.max(1, Math.ceil(sortedTransfers.length / pageSize));
+  const paginatedTransfers = useMemo(() => sortedTransfers.slice((transferPage - 1) * pageSize, transferPage * pageSize), [sortedTransfers, transferPage, pageSize]);
   const transferPages = Array.from({ length: transferPageCount }, (_, i) => i + 1);
-  const transferStart = sortedTransfers.length === 0 ? 0 : (transferPage - 1) * PAGE_SIZE + 1;
-  const transferEnd = Math.min(transferPage * PAGE_SIZE, sortedTransfers.length);
+  const transferStart = sortedTransfers.length === 0 ? 0 : (transferPage - 1) * pageSize + 1;
+  const transferEnd = Math.min(transferPage * pageSize, sortedTransfers.length);
   useEffect(() => { if (transferPage > transferPageCount) setTransferPage(transferPageCount); }, [transferPage, transferPageCount]);
 
   return (
     <div className="w-full space-y-6">
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-black/10 gap-6">
+      <div className="flex border-b border-separator gap-6">
         <Tabs
           className="w-full"
           selectedKey={activeTab}
           onSelectionChange={(key) => { setActiveTab(key as "airports" | "routes" | "transfers"); setSearchTerm(""); }}
         >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="Airport transfer tabs" className="dark:bg-black/10 border">
-              <Tabs.Tab id="airports">
-                <span className="flex items-center gap-2">
-                  <Plane size={16} />
-                  Sân bay
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-              <Tabs.Tab id="routes">
-                <span className="flex items-center gap-2">
-                  <Route size={16} />
-                  Tuyến đường
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-              <Tabs.Tab id="transfers">
-                <span className="flex items-center gap-2">
-                  <DollarSign size={16} />
-                  Bảng giá
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
+          <Tabs.List aria-label="Airport transfer tabs" className="dark:bg-black/10 border">
+            <Tabs.Tab id="airports">
+              <span className="flex items-center gap-2">
+                <Plane size={16} />
+                Sân bay
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="routes">
+              <span className="flex items-center gap-2">
+                <Route size={16} />
+                Tuyến đường
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="transfers">
+              <span className="flex items-center gap-2">
+                <DollarSign size={16} />
+                Bảng giá
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+          </Tabs.List>
         </Tabs>
       </div>
 
       {/* Toolbar */}
       <div className="flex flex-col lg:flex-row justify-between gap-4 p-6 rounded-2xl border">
         <SearchField name="search" value={searchTerm} onChange={(e: string) => setSearchTerm(e)} fullWidth className="min-w-[200px]">
-          <SearchField.Group className="rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
+          <SearchField.Group className="rounded-xl border border-border bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
             <SearchField.SearchIcon />
             <SearchField.Input className="w-full" placeholder={
               activeTab === "airports"
@@ -334,20 +311,32 @@ export default function AirportTransferManagementPage() {
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
+        <PageSizeSelect
+          value={pageSize}
+          onChange={(size) => {
+            setPageSize(size);
+            setAirportPage(1);
+            setRoutePage(1);
+            setTransferPage(1);
+          }}
+        />
         <div className="flex gap-3">
           <Button variant="outline" onClick={fetchData}>
             <RefreshCw size={16} className="mr-2" />
             Làm mới
           </Button>
-          <Button onClick={handleAdd}>
+          <Button
+            onClick={handleAdd}
+            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+          >
             <Plus size={16} />
-            {getAddLabel()}
+            <span>{getAddLabel()}</span>
           </Button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="bg-white dark:bg-black/10 rounded-2xl border overflow-hidden">
+      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Spinner size="md" className="mr-1.5" />
@@ -369,7 +358,13 @@ export default function AirportTransferManagementPage() {
                 >
                   <Table.Header>
                     {airportColumns.map((col) => (
-                      <Table.Column key={col.id} id={col.id} allowsSorting={col.sortable} isRowHeader={col.isRowHeader}>
+                      <Table.Column
+                        key={col.id}
+                        id={col.id}
+                        allowsSorting={col.sortable}
+                        isRowHeader={col.isRowHeader}
+                        className={col.id === "actions" ? "text-right" : undefined}
+                      >
                         {col.sortable
                           ? ({ sortDirection }) => (<Table.SortableColumnHeader sortDirection={sortDirection}>{col.label}</Table.SortableColumnHeader>)
                           : col.label}
@@ -386,17 +381,61 @@ export default function AirportTransferManagementPage() {
                         <Table.Cell>
                           <StatusChip status={String(a.active)} type="active" />
                         </Table.Cell>
-                        <Table.Cell>
-                          <div className="flex gap-2">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(false); setAirportModalOpen(true); }}>
-                              <Eye size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(true); setAirportModalOpen(true); }}>
-                              <Edit3 size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteAirport(a.id!)}>
-                              <Trash2 size={16} />
-                            </Button>
+                        <Table.Cell className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="tertiary"
+                                  aria-label="Xem sân bay"
+                                  onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(false); setAirportModalOpen(true); }}
+                                >
+                                  <Eye size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Xem chi tiết
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="secondary"
+                                  aria-label="Chỉnh sửa sân bay"
+                                  onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(true); setAirportModalOpen(true); }}
+                                >
+                                  <Edit3 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Chỉnh sửa
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="danger"
+                                  aria-label="Xóa sân bay"
+                                  onPress={() => handleDeleteAirport(a.id!)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                <Tooltip.Arrow />
+                                Xóa
+                              </Tooltip.Content>
+                            </Tooltip>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -447,7 +486,13 @@ export default function AirportTransferManagementPage() {
                 >
                   <Table.Header>
                     {routeColumns.map((col) => (
-                      <Table.Column key={col.id} id={col.id} allowsSorting={col.sortable} isRowHeader={col.isRowHeader}>
+                      <Table.Column
+                        key={col.id}
+                        id={col.id}
+                        allowsSorting={col.sortable}
+                        isRowHeader={col.isRowHeader}
+                        className={col.id === "actions" ? "text-right" : undefined}
+                      >
                         {col.sortable
                           ? ({ sortDirection }) => (<Table.SortableColumnHeader sortDirection={sortDirection}>{col.label}</Table.SortableColumnHeader>)
                           : col.label}
@@ -464,17 +509,61 @@ export default function AirportTransferManagementPage() {
                         <Table.Cell>
                           <StatusChip status={String(r.active)} type="active" />
                         </Table.Cell>
-                        <Table.Cell>
-                          <div className="flex gap-2">
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(false); setRouteModalOpen(true); }}>
-                              <Eye size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(true); setRouteModalOpen(true); }}>
-                              <Edit3 size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteRoute(r.id!)}>
-                              <Trash2 size={16} />
-                            </Button>
+                        <Table.Cell className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="tertiary"
+                                  aria-label="Xem tuyến sân bay"
+                                  onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(false); setRouteModalOpen(true); }}
+                                >
+                                  <Eye size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Xem chi tiết
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="secondary"
+                                  aria-label="Chỉnh sửa tuyến sân bay"
+                                  onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(true); setRouteModalOpen(true); }}
+                                >
+                                  <Edit3 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content>
+                                <Tooltip.Arrow />
+                                Chỉnh sửa
+                              </Tooltip.Content>
+                            </Tooltip>
+
+                            <Tooltip delay={300} closeDelay={100}>
+                              <Tooltip.Trigger>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="danger"
+                                  aria-label="Xóa tuyến sân bay"
+                                  onPress={() => handleDeleteRoute(r.id!)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </Tooltip.Trigger>
+                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                <Tooltip.Arrow />
+                                Xóa
+                              </Tooltip.Content>
+                            </Tooltip>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -525,7 +614,13 @@ export default function AirportTransferManagementPage() {
                 >
                   <Table.Header>
                     {transferColumns.map((col) => (
-                      <Table.Column key={col.id} id={col.id} allowsSorting={col.sortable} isRowHeader={col.isRowHeader}>
+                      <Table.Column
+                        key={col.id}
+                        id={col.id}
+                        allowsSorting={col.sortable}
+                        isRowHeader={col.isRowHeader}
+                        className={col.id === "actions" ? "text-right" : undefined}
+                      >
                         {col.sortable
                           ? ({ sortDirection }) => (<Table.SortableColumnHeader sortDirection={sortDirection}>{col.label}</Table.SortableColumnHeader>)
                           : col.label}
@@ -567,17 +662,61 @@ export default function AirportTransferManagementPage() {
                           <Table.Cell>
                             <StatusChip status={String(t.active)} type="active" />
                           </Table.Cell>
-                          <Table.Cell>
-                            <div className="flex gap-2">
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem" onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(false); setTransferModalOpen(true); }}>
-                                <Eye size={16} />
-                              </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(true); setTransferModalOpen(true); }}>
-                                <Edit3 size={16} />
-                              </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteTransfer(t.id!)}>
-                                <Trash2 size={16} />
-                              </Button>
+                          <Table.Cell className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="tertiary"
+                                    aria-label="Xem bảng giá đưa đón"
+                                    onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(false); setTransferModalOpen(true); }}
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Xem chi tiết
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa bảng giá đưa đón"
+                                    onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(true); setTransferModalOpen(true); }}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa bảng giá đưa đón"
+                                    onPress={() => handleDeleteTransfer(t.id!)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa
+                                </Tooltip.Content>
+                              </Tooltip>
                             </div>
                           </Table.Cell>
                         </Table.Row>

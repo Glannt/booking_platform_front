@@ -7,15 +7,18 @@ import {
 import {
   Button, Table, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger,
   ModalHeader, ModalBody, ModalFooter, Separator, toast,
-  Input, TextField, Label, NumberField, Select, ListBox
+  Input, TextField, Label, NumberField, Select, ListBox, Tooltip
 } from "@heroui/react";
 import clsx from "clsx";
 import {
   getAllFeedbacks, createFeedback, updateFeedback, deleteFeedback,
   FeedbackDto
 } from "@/lib/api/feedback";
+import { useI18n } from "@/context/LanguageContext";
+import { headerColumns } from "@/config/headerColumns";
 
 export default function AdminFeedbackPage() {
+  const { t } = useI18n();
 
   const [feedbacks, setFeedbacks] = useState<FeedbackDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,15 +202,18 @@ export default function AdminFeedbackPage() {
             <RefreshCw size={16} className="mr-1.5" />
             Làm mới
           </Button>
-          <Button className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8922a] text-white shadow-sm border-none" onClick={handleOpenCreate}>
-            <Plus size={18} className="mr-1" />
-            Thêm Feedback
+          <Button
+            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            <span>Thêm Feedback</span>
           </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
@@ -229,11 +235,16 @@ export default function AdminFeedbackPage() {
               <Table.ScrollContainer>
                 <Table.Content>
                   <Table.Header className="bg-slate-50 dark:bg-black/50 border-b border-slate-100 dark:border-slate-800 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                    <Table.Column isRowHeader className="px-6 py-4 w-16">Rating</Table.Column>
-                    <Table.Column className="px-6 py-4">Tác giả</Table.Column>
-                    <Table.Column className="px-6 py-4">Đánh giá</Table.Column>
-                    <Table.Column className="px-6 py-4 w-24">Hiện trang chủ</Table.Column>
-                    <Table.Column className="px-6 py-4 text-right w-28">Thao tác</Table.Column>
+                    {headerColumns.serviceFaqs(t).map((col) => (
+                      <Table.Column
+                        key={col.id}
+                        id={col.id}
+                        isRowHeader={col.isRowHeader}
+                        className={col.className}
+                      >
+                        {col.value}
+                      </Table.Column>
+                    ))}
                   </Table.Header>
                   <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {filtered.map((fb, idx) => {
@@ -267,7 +278,7 @@ export default function AdminFeedbackPage() {
                               onClick={() => handleToggleIndex(fb)}
                               className={clsx(
                                 "relative inline-flex w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none cursor-pointer",
-                                fb.showOnIndex ? "bg-[#C9A227]" : "bg-slate-200 dark:bg-[var(--bg-elevated)]"
+                                fb.showOnIndex ? "bg-accent" : "bg-slate-200 dark:bg-[var(--bg-elevated)]"
                               )}
                             >
                               <span className={clsx(
@@ -277,21 +288,42 @@ export default function AdminFeedbackPage() {
                             </button>
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => handleOpenEdit(fb)}
-                                title="Edit"
-                              >
-                                <Edit size={15} />
-                              </button>
-                              <button
-                                className="p-2 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] rounded-lg transition-colors"
-                                onClick={() => handleDelete(fb.id)}
-                                title="Delete"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa"
+                                    onPress={() => handleOpenEdit(fb)}
+                                  >
+                                    <Edit size={15} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa"
+                                    onPress={() => handleDelete(fb.id)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa
+                                </Tooltip.Content>
+                              </Tooltip>
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -309,10 +341,10 @@ export default function AdminFeedbackPage() {
       <Modal isOpen={modalOpen} onOpenChange={open => { if (!open) setModalOpen(false); }} aria-labelledby="faq-modal-title">
         <ModalBackdrop className="bg-slate-950/40 backdrop-blur-sm" isDismissable={false}>
           <ModalContainer size="lg">
-            <ModalDialog className="max-w-3xl bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl w-full max-h-[90vh] flex flex-col focus:outline-none">
+            <ModalDialog className="max-w-3xl bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xl w-full max-h-[90vh] flex flex-col focus:outline-none overflow-hidden">
               <ModalCloseTrigger />
               <form onSubmit={handleSave} className="flex flex-col h-full overflow-hidden">
-                <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-black/40 py-4 px-6">
+                <ModalHeader className="border-b border-divider bg-slate-50/60 dark:bg-[var(--bg-surface)] py-4 px-6 shrink-0">
                   <span id="faq-modal-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
                     {modalMode === "create" ? "Thêm Feedback mới" : "Chỉnh sửa Feedback"}
                   </span>
@@ -323,12 +355,12 @@ export default function AdminFeedbackPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <TextField isRequired className="w-full">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider mb-2">
                           Tên tác giả *
                         </Label>
                         <Input
                           type="text"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
                           placeholder="David L."
                           value={form.author || ""}
                           onChange={e => setForm(prev => ({ ...prev, author: e.target.value, avatarText: e.target.value.substring(0, 2).toUpperCase() }))}
@@ -337,12 +369,12 @@ export default function AdminFeedbackPage() {
                     </div>
                     <div>
                       <TextField className="w-full">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider mb-2">
                           Tuyến đường
                         </Label>
                         <Input
                           type="text"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-medium focus:outline-none"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-medium focus:outline-none"
                           placeholder="Hà Nội ➔ Nội Bài"
                           value={form.route || ""}
                           onChange={e => setForm(prev => ({ ...prev, route: e.target.value }))}
@@ -350,7 +382,7 @@ export default function AdminFeedbackPage() {
                       </TextField>
                     </div>
                     <div>
-                      <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                         Rating (1–5)
                       </Label>
                       <Select
@@ -358,11 +390,11 @@ export default function AdminFeedbackPage() {
                         selectedKey={form.rating ? String(form.rating) : "5"}
                         onSelectionChange={(key) => setForm(prev => ({ ...prev, rating: Number(key) }))}
                       >
-                        <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-850 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none h-[42px] flex items-center justify-between cursor-pointer">
+                        <Select.Trigger className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-850 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none h-[42px] flex items-center justify-between cursor-pointer">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox>
                             {[1, 2, 3, 4, 5].map((n) => {
                               const label = `${"⭐".repeat(n)} (${n})`;
@@ -378,23 +410,24 @@ export default function AdminFeedbackPage() {
                       </Select>
                     </div>
                     <div>
-                      <NumberField className="w-full">
-                        <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Thứ tự hiển thị
+                      <TextField className="w-full">
+                        <Label className="text-xs font-bold uppercase tracking-wider mb-2">
+                          Quốc gia / Cờ (Emoji hoặc Text)
                         </Label>
-                        <NumberField.Group className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none">
-                          <NumberField.Input
-                            value={form.orderIndex ?? 0}
-                            onChange={val => setForm(prev => ({ ...prev, orderIndex: Number(val) }))}
-                          />
-                        </NumberField.Group>
-                      </NumberField>
+                        <Input
+                          type="text"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                          placeholder="🇺🇸 United States"
+                          value={form.country || ""}
+                          onChange={e => setForm(prev => ({ ...prev, country: e.target.value }))}
+                        />
+                      </TextField>
                     </div>
                   </div>
 
                   {/* Avatar Color */}
                   <div>
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                       Màu avatar
                     </Label>
                     <div className="flex flex-wrap gap-2">
@@ -411,7 +444,7 @@ export default function AdminFeedbackPage() {
                           type="button"
                           onClick={() => setForm(prev => ({ ...prev, avatarBg: color }))}
                           className={clsx(
-                            "w-9 h-9 rounded-full text-xs font-extrabold flex items-center justify-center border-2 transition-all",
+                            "w-9 h-9 rounded-full text-xs font-extrabold flex items-center justify-center border-2 transition-all cursor-pointer",
                             color,
                             form.avatarBg === color ? "border-primary scale-110" : "border-transparent"
                           )}
@@ -429,7 +462,7 @@ export default function AdminFeedbackPage() {
                       onClick={() => setForm(prev => ({ ...prev, showOnIndex: !prev.showOnIndex }))}
                       className={clsx(
                         "relative inline-flex w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none cursor-pointer",
-                        form.showOnIndex ? "bg-[#C9A227]" : "bg-slate-200 dark:bg-[var(--bg-elevated)]"
+                        form.showOnIndex ? "bg-accent" : "bg-slate-200 dark:bg-[var(--bg-elevated)]"
                       )}
                     >
                       <span className={clsx(
@@ -437,7 +470,7 @@ export default function AdminFeedbackPage() {
                         form.showOnIndex ? "translate-x-5" : "translate-x-0.5"
                       )} />
                     </button>
-                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <Label className="text-sm font-bold">
                       Hiển thị trên trang chủ
                     </Label>
                   </div>
@@ -447,19 +480,19 @@ export default function AdminFeedbackPage() {
                   {/* Translations */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                      <Label className="block text-xs font-extrabold uppercase tracking-wider">
                         Nội dung đánh giá (Đa ngôn ngữ)
                       </Label>
-                      <div className="flex bg-slate-100 dark:bg-black p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
+                      <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                         {["vi", "en", "ko", "ru"].map(loc => (
                           <button
                             key={loc}
                             type="button"
                             onClick={() => setActiveLocale(loc)}
                             className={clsx(
-                              "px-3 py-1 text-xs font-bold rounded-lg transition-all",
+                              "px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
                               activeLocale === loc
-                                ? "bg-white dark:bg-[var(--bg-card)] text-primary shadow-sm"
+                                ? "bg-white dark:bg-[var(--bg-surface)] text-primary shadow-sm"
                                 : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                             )}
                           >
@@ -468,15 +501,15 @@ export default function AdminFeedbackPage() {
                         ))}
                       </div>
                     </div>
-                    <div className="bg-slate-50/40 dark:bg-black/20 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-4">
+                    <div className="bg-slate-50/40 dark:bg-[var(--bg-card)]/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-4">
                       <div>
                         <TextField className="w-full">
-                          <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                             Tiêu đề đánh giá ({activeLocale.toUpperCase()})
                           </Label>
                           <Input
                             type="text"
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
                             placeholder={activeLocale === "vi" ? "VD: Dịch vụ tuyệt vời!" : "E.g. Excellent service!"}
                             value={activeTrans?.title || ""}
                             onChange={e => handleTranslationChange(activeLocale, "title", e.target.value)}
@@ -484,12 +517,12 @@ export default function AdminFeedbackPage() {
                         </TextField>
                       </div>
                       <div>
-                        <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                           Nội dung nhận xét ({activeLocale.toUpperCase()})
                         </Label>
                         <textarea
                           rows={4}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
                           placeholder={activeLocale === "vi" ? "Nhập nội dung đánh giá..." : "Enter review content..."}
                           value={activeTrans?.review || ""}
                           onChange={e => handleTranslationChange(activeLocale, "review", e.target.value)}
@@ -499,12 +532,19 @@ export default function AdminFeedbackPage() {
                   </div>
                 </ModalBody>
 
-                <ModalFooter className="border-t border-divider bg-slate-50 dark:bg-black/40 py-3 px-6 flex justify-end gap-3">
-                  <Button variant="outline" className="rounded-xl font-bold bg-white hover:bg-slate-50 border border-slate-200 dark:border-slate-800 dark:bg-black dark:hover:bg-[var(--bg-card)] text-slate-700 dark:text-slate-300" onClick={() => setModalOpen(false)}>
-                    Hủy bỏ
+                <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+                  <Button
+                    variant="outline"
+                    onClick={() => setModalOpen(false)}
+                    className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                  >
+                    Hủy
                   </Button>
-                  <Button type="submit" className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#b8922a] text-white shadow-sm border-none">
-                    Lưu lại
+                  <Button
+                    type="submit"
+                    className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
+                  >
+                    Lưu
                   </Button>
                 </ModalFooter>
               </form>

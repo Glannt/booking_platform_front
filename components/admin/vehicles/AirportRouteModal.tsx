@@ -6,7 +6,7 @@ import {
   ModalBody, ModalFooter, Button, Checkbox, Label, TextField, Input,
   Select, ListBox, SearchField, NumberField, Spinner
 } from "@heroui/react";
-import { Save, RefreshCw, MapPin, Pencil, Plus, Eye, Trash2, DollarSign } from "lucide-react";
+import { Save, RefreshCw, MapPin, Pencil, Edit3, Plus, Eye, Trash2, DollarSign } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import {
@@ -251,8 +251,8 @@ export default function AirportRouteModal({
           }
         }}
       >
-        <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">{label}</Label>
-        <SearchField.Group>
+        <Label className="block text-xs font-bold mb-1">{label}</Label>
+        <SearchField.Group className="border-1 border-separator">
           <SearchField.SearchIcon />
           <SearchField.Input placeholder="Nhập và chọn địa điểm..." className="px-3 py-2 rounded-xl text-sm w-full" />
           <SearchField.ClearButton onClick={() => { setResults([]); setShowDropdown(false); }} />
@@ -261,7 +261,7 @@ export default function AirportRouteModal({
       {showDropdown && results.length > 0 && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-          <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-[var(--bg-surface)] border border-border rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-separator">
             {results.map((item) => (
               <div
                 key={item.id}
@@ -289,7 +289,7 @@ export default function AirportRouteModal({
     if (!route?.id) return null;
 
     return (
-      <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
+      <div className="border-t border-separator pt-5 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
@@ -302,7 +302,7 @@ export default function AirportRouteModal({
           </div>
           <Button
             size="sm"
-            className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-sm border-none cursor-pointer flex items-center gap-1 text-xs"
+            className="rounded-xl font-bold text-xs h-9 px-3 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors flex items-center gap-1"
             onPress={() => {
               setSelectedTransfer(null);
               setTransferDefaultEditMode(true);
@@ -319,7 +319,7 @@ export default function AirportRouteModal({
             <Spinner size="sm" />
           </div>
         ) : routePrices.length === 0 ? (
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-dashed border-slate-200 dark:border-slate-800 text-center">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-dashed border-border text-center">
             <p className="text-xs text-slate-500">Tuyến đường này chưa có cấu hình giá nào. Bấm &quot;Thêm giá vé&quot; để thiết lập.</p>
           </div>
         ) : (
@@ -333,7 +333,7 @@ export default function AirportRouteModal({
               return (
                 <div
                   key={p.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/70 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors gap-2"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator hover:border-primary/50 transition-colors gap-2"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
@@ -408,9 +408,9 @@ export default function AirportRouteModal({
       <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="airport-route-title">
         <ModalBackdrop className="bg-slate-950/45 backdrop-blur-[2px]">
           <ModalContainer>
-            <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden w-full max-w-3xl flex flex-col max-h-[90vh]">
+            <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-border-secondary shadow-2xl overflow-hidden w-full max-w-3xl flex flex-col max-h-[90vh]">
               <ModalCloseTrigger />
-              <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <ModalHeader className="px-6 py-4 border-b border-separator flex items-center justify-between shrink-0">
                 <h2 id="airport-route-title" className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
                   {isView ? "Chi Tiết Tuyến Đường" : route ? "Chỉnh Sửa Tuyến Đường" : "Tạo Tuyến Đường Mới"}
                 </h2>
@@ -421,44 +421,44 @@ export default function AirportRouteModal({
                   <ModalBody className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Mã Tuyến Đường"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Mã Tuyến Đường"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{code || "—"}</p>
                       </div>
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Tên Tuyến Đường"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Tên Tuyến Đường"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{name || "—"}</p>
                       </div>
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Sân Bay"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Sân Bay"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{selectedAirport ? `${selectedAirport.name} (${selectedAirport.code})` : "—"}</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Khoảng cách"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Khoảng cách"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{distanceKm ? `${distanceKm} km` : "—"}</p>
                       </div>
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Trạng Thái"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Trạng Thái"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{active ? "Hoạt động" : "Ngừng hoạt động"}</p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-separator pt-4">
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Điểm đi (Origin)"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Điểm đi (Origin)"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{originLabel || "—"}</p>
                       </div>
                       <div>
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">{"Điểm đến (Destination)"}</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider">{"Điểm đến (Destination)"}</Label>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{destinationLabel || "—"}</p>
                       </div>
                     </div>
 
                     {(originLat && originLng && destinationLat && destinationLng) && (
-                      <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-                        <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">{"Bản đồ lộ trình"}</Label>
+                      <div className="border-t border-separator pt-4">
+                        <Label className="block text-xs font-bold mb-2 uppercase tracking-wider">{"Bản đồ lộ trình"}</Label>
                         <RouteMap
                           originLat={originLat}
                           originLng={originLng}
@@ -475,19 +475,20 @@ export default function AirportRouteModal({
                     {renderPricesSection()}
                   </ModalBody>
 
-                  <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 shrink-0">
+                  <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                     <Button
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none cursor-pointer"
+                      className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={onClose}
                     >
                       {"Đóng"}
                     </Button>
                     <Button
-                      className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none cursor-pointer"
+                      type="button"
+                      className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
                       onPress={() => setMode("edit")}
                     >
-                      <Pencil size={16} className="mr-1.5" />
+                      <Edit3 size={15} className="mr-1.5" />
                       {"Chỉnh sửa tuyến"}
                     </Button>
                   </ModalFooter>
@@ -496,7 +497,7 @@ export default function AirportRouteModal({
                 <form onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
                   <ModalBody className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     <TextField isRequired className="w-full">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                      <Label className="text-xs font-bold uppercase tracking-wider">
                         {"Mã Tuyến Đường"}
                       </Label>
                       <Input
@@ -504,12 +505,12 @@ export default function AirportRouteModal({
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         placeholder="e.g. CXR-NT-CENTER"
-                        className="w-full p-2.5 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900"
+                        className="w-full p-2.5 rounded-xl text-sm font-semibold border-1 border-separator bg-slate-50 dark:bg-zinc-900"
                       />
                     </TextField>
 
                     <TextField className="w-full">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                      <Label className="text-xs font-bold uppercase tracking-wider">
                         {"Tên Tuyến Đường"}
                       </Label>
                       <Input
@@ -517,12 +518,12 @@ export default function AirportRouteModal({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Sân bay Cam Ranh ⇌ Nha Trang (Trung tâm)"
-                        className="w-full p-2.5 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900"
+                        className="w-full p-2.5 rounded-xl text-sm font-semibold border-1 border-separator bg-slate-50 dark:bg-zinc-900"
                       />
                     </TextField>
 
                     <div>
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <Label className="block text-xs font-bold mb-1">
                         {"Sân Bay *"}
                       </Label>
                       <Select
@@ -531,11 +532,11 @@ export default function AirportRouteModal({
                         selectedKey={airportId ? String(airportId) : undefined}
                         onSelectionChange={(key) => { if (key) setAirportId(Number(key)); }}
                       >
-                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
+                        <Select.Trigger className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-slate-50 dark:bg-zinc-900 text-slate-800 dark:text-slate-100 text-sm font-bold flex items-center justify-between cursor-pointer h-[40px]">
                           <Select.Value />
                           <Select.Indicator />
                         </Select.Trigger>
-                        <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+                        <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-border-secondary rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                           <ListBox>
                             {airports.map((a) => (
                               <ListBox.Item
@@ -555,7 +556,7 @@ export default function AirportRouteModal({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {airportHasCoords ? (
-                        <div className="p-3 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs">
+                        <div className="p-3 bg-slate-50 dark:bg-[var(--bg-card)] rounded-xl border border-border text-xs">
                           <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{"Điểm đi (Origin)"}</p>
                           <p className="mt-1 font-semibold text-slate-800 dark:text-slate-100">{originLabel}</p>
                           {originLat != null && originLng != null && (
@@ -608,12 +609,12 @@ export default function AirportRouteModal({
                       minValue={0}
                       className="w-full md:max-w-xs"
                     >
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Khoảng cách (km)</Label>
-                      <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-zinc-900 overflow-hidden h-[40px]">
+                      <Label className="block text-xs font-bold mb-1">Khoảng cách (km)</Label>
+                      <NumberField.Group className="flex items-center w-full rounded-xl border-1 border-separator bg-slate-50 dark:bg-zinc-900 overflow-hidden h-[40px]">
                         <NumberField.Input placeholder="Tự động tính khi chọn 2 điểm" className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-semibold" />
-                        <div className="flex h-full flex-col border-l border-slate-200 dark:border-slate-800">
+                        <div className="flex h-full flex-col border-l border-border">
                           <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs">▲</NumberField.IncrementButton>
-                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs border-t border-slate-200 dark:border-slate-800">▼</NumberField.DecrementButton>
+                          <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center border-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer bg-transparent text-xs border-t border-border">▼</NumberField.DecrementButton>
                         </div>
                       </NumberField.Group>
                     </NumberField>
@@ -634,7 +635,7 @@ export default function AirportRouteModal({
                       <Checkbox isSelected={active} onChange={(val: boolean) => setActive(val)}>
                         <Checkbox.Content><Checkbox.Control><Checkbox.Indicator /></Checkbox.Control></Checkbox.Content>
                       </Checkbox>
-                      <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                      <Label className="text-sm font-bold cursor-pointer select-none">
                         {"Kích hoạt"}
                       </Label>
                     </div>
@@ -643,10 +644,10 @@ export default function AirportRouteModal({
                     {renderPricesSection()}
                   </ModalBody>
 
-                  <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-black/40 flex items-center justify-end gap-3 shrink-0">
+                  <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                     <Button
                       variant="outline"
-                      className="rounded-xl font-bold bg-slate-200 hover:bg-slate-300 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 border-none cursor-pointer"
+                      className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={onClose}
                       isDisabled={loading}
                     >
@@ -655,10 +656,10 @@ export default function AirportRouteModal({
                     <Button
                       type="submit"
                       isDisabled={loading}
-                      className="rounded-xl font-bold bg-[#C9A227] hover:bg-[#B8911F] text-white shadow-md border-none cursor-pointer"
+                      className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                     >
-                      {loading ? <RefreshCw size={16} className="animate-spin mr-1.5" /> : <Save size={16} className="mr-1.5" />}
-                      {"Lưu"}
+                      {loading ? <RefreshCw size={15} className="animate-spin mr-1.5" /> : <Save size={15} className="mr-1.5" />}
+                      {route ? "Lưu thay đổi" : "Tạo tuyến đường"}
                     </Button>
                   </ModalFooter>
                 </form>

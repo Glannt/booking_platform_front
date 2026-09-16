@@ -7,4 +7,6 @@ export const status = {
   inactive: "Inactive",
   published: "Published",
   draft: "Draft",
+  paused: "Paused",
+  hidden: "Hidden",
 };

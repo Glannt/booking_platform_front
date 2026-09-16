@@ -9,6 +9,7 @@ import {
   ModalCloseTrigger,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   Button,
   Chip,
   Input,
@@ -74,9 +75,9 @@ export function SurchargeDetailModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <ModalBackdrop>
         <ModalContainer>
-          <ModalDialog className="w-full max-w-2xl bg-white dark:bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <ModalDialog className="w-full max-w-2xl bg-white dark:bg-[var(--bg-card)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
             <ModalCloseTrigger />
-            <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+            <ModalHeader className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
@@ -85,7 +86,7 @@ export function SurchargeDetailModal({
               </div>
             </ModalHeader>
 
-            <ModalBody className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+            <ModalBody className="p-6 space-y-5 overflow-y-auto max-h-[65vh]">
               {/* Header info */}
               <div className="flex items-start justify-between">
                 <div>
@@ -107,20 +108,20 @@ export function SurchargeDetailModal({
 
               {/* Description */}
               <div>
-                <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 block">
+                <Label className="text-xs font-bold mb-1 block">
                   {tr.descriptionLabel}
                 </Label>
                 <Input
                   readOnly
                   value={rule.description || "Không có mô tả."}
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-xs text-slate-700 dark:text-slate-300 outline-none cursor-default"
+                  className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-xs text-slate-700 dark:text-slate-300 outline-none cursor-default"
                 />
               </div>
 
               {/* Pricing details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 block">
+                  <Label className="text-xs font-bold mb-1 block">
                     {tr.calcType} & Mức phụ thu
                   </Label>
                   <Input
@@ -130,17 +131,17 @@ export function SurchargeDetailModal({
                         ? `+${rule.value}% (${tr.percent})`
                         : `+${Number(rule.value).toLocaleString()} ${rule.currency} (${tr.fixed})`
                     }
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-bold text-emerald-600 dark:text-emerald-400 outline-none cursor-default"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-bold text-emerald-600 dark:text-emerald-400 outline-none cursor-default"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 block">
+                  <Label className="text-xs font-bold mb-1 block">
                     {tr.calcBase}
                   </Label>
                   <Input
                     readOnly
                     value={rule.calculationBase === "BASE_PRICE" ? tr.basePrice : tr.runningTotal}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-default"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-default"
                   />
                 </div>
               </div>
@@ -155,13 +156,13 @@ export function SurchargeDetailModal({
                 </div>
 
                 <div>
-                  <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                  <Label className="text-[11px] font-semibold mb-1 block">
                     {tr.conditionType}
                   </Label>
                   <Input
                     readOnly
                     value={getConditionTypeLabel(condType)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
                   />
                 </div>
 
@@ -169,23 +170,23 @@ export function SurchargeDetailModal({
                 {(condType === "date_range" || condType === "seasonal") && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                      <Label className="text-[11px] font-semibold mb-1 block">
                         {tr.fromDate}
                       </Label>
                       <Input
                         readOnly
                         value={cond.from || "—"}
-                        className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
+                        className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
                       />
                     </div>
                     <div>
-                      <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                      <Label className="text-[11px] font-semibold mb-1 block">
                         {tr.toDate}
                       </Label>
                       <Input
                         readOnly
                         value={cond.to || "—"}
-                        className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
+                        className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
                       />
                     </div>
                   </div>
@@ -195,23 +196,23 @@ export function SurchargeDetailModal({
                 {condType === "time_range" && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                      <Label className="text-[11px] font-semibold mb-1 block">
                         {tr.fromTime}
                       </Label>
                       <Input
                         readOnly
                         value={cond.from || "—"}
-                        className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
+                        className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
                       />
                     </div>
                     <div>
-                      <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                      <Label className="text-[11px] font-semibold mb-1 block">
                         {tr.toTime}
                       </Label>
                       <Input
                         readOnly
                         value={cond.to || "—"}
-                        className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
+                        className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
                       />
                     </div>
                   </div>
@@ -220,7 +221,7 @@ export function SurchargeDetailModal({
                 {/* Day of week details */}
                 {condType === "day_of_week" && (
                   <div>
-                    <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                    <Label className="text-[11px] font-semibold mb-1 block">
                       {tr.days}
                     </Label>
                     <div className="flex flex-wrap gap-2 pt-1">
@@ -239,13 +240,13 @@ export function SurchargeDetailModal({
                 {/* Zone details */}
                 {condType === "zone" && (
                   <div>
-                    <Label className="text-[11px] font-semibold text-slate-500 mb-1 block">
+                    <Label className="text-[11px] font-semibold mb-1 block">
                       Khu vực áp dụng
                     </Label>
                     <Input
                       readOnly
                       value={cond.zone || (cond.in || []).join(", ") || "—"}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
+                      className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none cursor-default"
                     />
                   </div>
                 )}
@@ -253,7 +254,7 @@ export function SurchargeDetailModal({
                 {/* Composite or Custom condition summary */}
                 {(condType === "and" || condType === "or") && (
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-semibold text-slate-500 block">
+                    <Label className="text-[11px] font-semibold block">
                       Danh sách điều kiện con ({cond.conditions?.length || 0})
                     </Label>
                     {(cond.conditions || []).map((sub: any, idx: number) => (
@@ -276,7 +277,7 @@ export function SurchargeDetailModal({
               {/* Effective dates & Priority */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 block">
+                  <Label className="text-xs font-bold mb-1 block">
                     {tr.effectiveDates}
                   </Label>
                   <Input
@@ -286,17 +287,17 @@ export function SurchargeDetailModal({
                         ? `${rule.effectiveFrom || "..."} ➔ ${rule.effectiveTo || "..."}`
                         : "Không thời hạn"
                     }
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-default"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-default"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1 block">
+                  <Label className="text-xs font-bold mb-1 block">
                     {tr.priority}
                   </Label>
                   <Input
                     readOnly
                     value={String(rule.priority ?? 0)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-default"
+                    className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-slate-50 dark:bg-[var(--bg-surface)] text-xs font-bold text-slate-800 dark:text-slate-200 outline-none cursor-default"
                   />
                 </div>
               </div>
@@ -318,7 +319,7 @@ export function SurchargeDetailModal({
                         onClose();
                         onAssignModule(rule);
                       }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold bg-primary text-white rounded-lg shadow-sm"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-accent hover:bg-accent-hover text-accent-foreground rounded-lg shadow-sm border-none cursor-pointer transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>{tr.assignModule}</span>
@@ -346,7 +347,7 @@ export function SurchargeDetailModal({
                           <button
                             type="button"
                             onClick={() => onDeleteMapping(m.id!)}
-                            className="text-slate-400 hover:text-rose-500 transition-colors p-0.5 rounded ml-1"
+                            className="text-slate-400 hover:text-rose-500 transition-colors p-0.5 rounded ml-1 cursor-pointer"
                             title={`Gỡ khỏi module ${m.moduleCode}`}
                           >
                             <X className="w-3.5 h-3.5" />
@@ -357,17 +358,17 @@ export function SurchargeDetailModal({
                   </div>
                 )}
               </div>
-
-              <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
-                <Button
-                  variant="secondary"
-                  onPress={onClose}
-                  className="px-5 py-2 text-xs font-semibold rounded-xl"
-                >
-                  Đóng
-                </Button>
-              </div>
             </ModalBody>
+
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+              <Button
+                variant="outline"
+                onPress={onClose}
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+              >
+                Đóng
+              </Button>
+            </ModalFooter>
           </ModalDialog>
         </ModalContainer>
       </ModalBackdrop>

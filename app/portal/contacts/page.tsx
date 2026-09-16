@@ -69,11 +69,18 @@ export default function ContactsSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black p-6 md:p-8 shadow-sm">
+    <div className="max-w-2xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] p-6 md:p-8 shadow-sm">
+      <div className="mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">Cấu hình Liên hệ</h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Thông tin liên lạc sẽ hiển thị trên hệ thống và các kênh hỗ trợ khách hàng
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-5">
           <TextField isRequired className="w-full">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            <Label className="text-xs font-bold uppercase tracking-wider mb-2 block text-slate-700 dark:text-slate-300">
               Số điện thoại *
             </Label>
             <div className="relative">
@@ -82,7 +89,7 @@ export default function ContactsSettingsPage() {
               </span>
               <Input
                 type="text"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-accent/20 focus:border-accent text-xs font-semibold focus:outline-none transition-colors"
                 placeholder="Nhập số điện thoại..."
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -91,7 +98,7 @@ export default function ContactsSettingsPage() {
           </TextField>
 
           <TextField isRequired className="w-full">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            <Label className="text-xs font-bold uppercase tracking-wider mb-2 block text-slate-700 dark:text-slate-300">
               Đường dẫn Zalo *
             </Label>
             <div className="relative">
@@ -100,7 +107,7 @@ export default function ContactsSettingsPage() {
               </span>
               <Input
                 type="text"
-                className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-accent/20 focus:border-accent text-xs font-semibold focus:outline-none transition-colors"
                 placeholder="Nhập link hoặc số điện thoại Zalo..."
                 value={zalo}
                 onChange={(e) => setZalo(e.target.value)}
@@ -109,7 +116,7 @@ export default function ContactsSettingsPage() {
           </TextField>
 
           <TextField className="w-full">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            <Label className="text-xs font-bold uppercase tracking-wider mb-2 block text-slate-700 dark:text-slate-300">
               KakaoTalk ID / Link
             </Label>
             <div className="relative">
@@ -118,7 +125,7 @@ export default function ContactsSettingsPage() {
               </span>
               <Input
                 type="text"
-                className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                className="w-full pl-12 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-accent/20 focus:border-accent text-xs font-semibold focus:outline-none transition-colors"
                 placeholder="Nhập link hoặc ID KakaoTalk..."
                 value={kakaotalk}
                 onChange={(e) => setKakaotalk(e.target.value)}
@@ -127,7 +134,7 @@ export default function ContactsSettingsPage() {
           </TextField>
 
           <TextField className="w-full">
-            <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            <Label className="text-xs font-bold uppercase tracking-wider mb-2 block text-slate-700 dark:text-slate-300">
               WhatsApp Link
             </Label>
             <div className="relative">
@@ -136,7 +143,7 @@ export default function ContactsSettingsPage() {
               </span>
               <Input
                 type="text"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm font-bold focus:outline-none"
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-accent/20 focus:border-accent text-xs font-semibold focus:outline-none transition-colors"
                 placeholder="Nhập link WhatsApp..."
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
@@ -148,9 +155,10 @@ export default function ContactsSettingsPage() {
         <div className="flex justify-end pt-4">
           <Button
             type="submit"
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 rounded-xl border-none cursor-pointer"
+            isDisabled={saving}
+            className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors flex items-center gap-1.5"
           >
-            {saving ? <Spinner size="sm" /> : <Save size={16} />}
+            {saving ? <Spinner size="sm" /> : <Save size={15} />}
             <span>Lưu cấu hình</span>
           </Button>
         </div>
