@@ -11,14 +11,22 @@ import {
   Edit3,
   Clock,
   Eye,
+  Bus,
+  Building2,
+  Filter,
+  X,
 } from "lucide-react";
-import { RouteFormModal } from "@/components/admin/intercity/RouteFormModal";
+import { RouteCreateUpdateModal } from "@/components/admin/intercity/RouteCreateUpdateModal";
 import { RouteDetailModal } from "@/components/admin/intercity/RouteDetailModal";
-import { PriceFormModal } from "@/components/admin/intercity/PriceFormModal";
+import { PriceCreateUpdateModal } from "@/components/admin/intercity/PriceCreateUpdateModal";
 import { PriceDetailModal } from "@/components/admin/intercity/PriceDetailModal";
+import { SharedRouteModal } from "@/components/admin/intercity/SharedRouteModal";
+import { SharedOfficeModal } from "@/components/admin/intercity/SharedOfficeModal";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Typography } from "@heroui/react";
+import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Tooltip, Typography, Popover } from "@heroui/react";
 import clsx from "clsx";
+import { useI18n } from "@/context/LanguageContext";
+import { AppStatusChip } from "@/components/common/AppStatusChip";
 
 import {
   getIntercityRoutes,
@@ -30,9 +38,19 @@ import {
   createIntercityRoutePrice,
   updateIntercityRoutePrice,
   deleteIntercityRoutePrice,
+  IntercityPricingType,
   IntercityRouteDto,
   IntercityRoutePriceDto,
-} from "@/lib/api/rental";
+} from "@/lib/api/intercity";
+
+import {
+  getSharedRoutes,
+  deleteSharedRoute,
+  type SharedRouteDto,
+  getSharedOffices,
+  deleteSharedOffice,
+  type SharedOfficeDto,
+} from "@/lib/api/sharedRoute";
 
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
 import { calcIntercityPrice, calcIntercityPrivatePrice } from "@/lib/pricing";
@@ -41,15 +59,51 @@ import { backendUrl } from "@/lib/api/client";
 import { IntercityDepartureTimeModal } from "@/components/admin/vehicles/IntercityDepartureTimeModal";
 
 import { ColumnInterface } from "@/lib/interface/column.interface";
+import { headerColumns } from "@/config/headerColumns";
+import PageSizeSelect from "@/components/common/PageSizeSelect";
 
-const PAGE_SIZE = 8;
-
-type TabKey = "routes" | "prices";
+type TabKey = "routes" | "prices" | "shared_routes" | "offices";
 
 export default function IntercityManagementPage() {
+  const { t, language } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>("routes");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  // Route Filters
+  const [selectedRouteStatuses, setSelectedRouteStatuses] = useState<string[]>([]);
+  const [selectedRouteTypes, setSelectedRouteTypes] = useState<string[]>([]);
+  const [selectedDistanceRanges, setSelectedDistanceRanges] = useState<string[]>([]);
+
+  const toggleRouteStatus = (status: string) => {
+    setSelectedRouteStatuses(prev =>
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    );
+  };
+
+  const toggleRouteType = (type: string) => {
+    setSelectedRouteTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const toggleDistanceRange = (range: string) => {
+    setSelectedDistanceRanges(prev =>
+      prev.includes(range) ? prev.filter(r => r !== range) : [...prev, range]
+    );
+  };
+
+  const resetRouteFilters = () => {
+    setSelectedRouteStatuses([]);
+    setSelectedRouteTypes([]);
+    setSelectedDistanceRanges([]);
+  };
+
+  const activeRouteFilterCount =
+    selectedRouteStatuses.length +
+    selectedRouteTypes.length +
+    selectedDistanceRanges.length;
 
   const [routes, setRoutes] = useState<IntercityRouteDto[]>([]);
   const [totalRoutes, setTotalRoutes] = useState(0);
@@ -80,6 +134,16 @@ export default function IntercityManagementPage() {
 
   // Prices tab route selector
   const [selectedPriceRouteId, setSelectedPriceRouteId] = useState<number | null>(null);
+
+  // Shared routes state
+  const [sharedRoutes, setSharedRoutes] = useState<SharedRouteDto[]>([]);
+  const [sharedRouteModalOpen, setSharedRouteModalOpen] = useState(false);
+  const [editingSharedRoute, setEditingSharedRoute] = useState<SharedRouteDto | null>(null);
+
+  // Shared offices state
+  const [sharedOffices, setSharedOffices] = useState<SharedOfficeDto[]>([]);
+  const [sharedOfficeModalOpen, setSharedOfficeModalOpen] = useState(false);
+  const [editingSharedOffice, setEditingSharedOffice] = useState<SharedOfficeDto | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") toast.success(message);
@@ -122,10 +186,56 @@ export default function IntercityManagementPage() {
     }
   };
 
+  const fetchSharedRoutes = async () => {
+    try {
+      const data = await getSharedRoutes();
+      setSharedRoutes(data);
+    } catch {
+      showToast("Không thể tải tuyến xe ghép.", "error");
+    }
+  };
+
+  const fetchSharedOffices = async () => {
+    try {
+      const data = await getSharedOffices();
+      setSharedOffices(data);
+    } catch {
+      showToast("Không thể tải danh sách văn phòng.", "error");
+    }
+  };
+
+  const handleDeleteSharedRoute = async (id: number) => {
+    if (!window.confirm("Xóa tuyến xe ghép này?")) return;
+    try {
+      await deleteSharedRoute(id);
+      showToast("Đã xóa tuyến xe ghép!", "success");
+      fetchSharedRoutes();
+    } catch {
+      showToast("Xóa thất bại.", "error");
+    }
+  };
+
+  const handleDeleteSharedOffice = async (id: number) => {
+    if (!window.confirm("Xóa văn phòng này?")) return;
+    try {
+      await deleteSharedOffice(id);
+      showToast("Đã xóa văn phòng!", "success");
+      fetchSharedOffices();
+    } catch {
+      showToast("Xóa thất bại.", "error");
+    }
+  };
+
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      await Promise.allSettled([fetchRoutes(), fetchCategories()]);
+      await Promise.allSettled([
+        fetchRoutes(),
+        fetchCategories(),
+        fetchPricesForRoute(null),
+        fetchSharedRoutes(),
+        fetchSharedOffices(),
+      ]);
     } finally {
       setLoading(false);
     }
@@ -235,7 +345,14 @@ export default function IntercityManagementPage() {
 
   const handleAdd = () => {
     if (activeTab === "routes") handleAddRoute();
-    else handleAddPrice();
+    else if (activeTab === "prices") handleAddPrice();
+    else if (activeTab === "shared_routes") {
+      setEditingSharedRoute(null);
+      setSharedRouteModalOpen(true);
+    } else if (activeTab === "offices") {
+      setEditingSharedOffice(null);
+      setSharedOfficeModalOpen(true);
+    }
   };
 
   // ── Helpers ──
@@ -252,8 +369,11 @@ export default function IntercityManagementPage() {
   };
 
   const getAddLabel = () => {
-    if (activeTab === "routes") return "Thêm Tuyến Đường";
-    return "Thêm Giá";
+    if (activeTab === "routes") return "Thêm Tuyến Đường Riêng";
+    if (activeTab === "prices") return "Thêm Bảng Giá Xe Riêng";
+    if (activeTab === "shared_routes") return "Thêm Tuyến Xe Ghép";
+    if (activeTab === "offices") return "Thêm Văn Phòng";
+    return "Thêm";
   };
 
 
@@ -262,23 +382,41 @@ export default function IntercityManagementPage() {
   const [routeSort, setRouteSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
   const [routePage, setRoutePage] = useState(1);
 
-  const routeColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "name", label: "Tên tuyến", sortable: true },
-    { id: "shared", label: "Vé xe ghép", sortable: false },
-    { id: "distance", label: "Khoảng cách (km)", sortable: true },
-    { id: "hours", label: "Thời gian (h)", sortable: true },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
+  const routeColumns = headerColumns.intercityRoutes(t);
 
   const filteredRoutes = useMemo(() => {
     const kw = searchTerm.toLowerCase();
     return routes.filter(r => {
       const name = getRouteName(r).toLowerCase();
-      return name.includes(kw) || r.originCity.toLowerCase().includes(kw) || r.destinationCity.toLowerCase().includes(kw);
+      const matchSearch =
+        name.includes(kw) ||
+        r.originCity.toLowerCase().includes(kw) ||
+        r.destinationCity.toLowerCase().includes(kw);
+
+      const matchStatus =
+        selectedRouteStatuses.length === 0 ||
+        (selectedRouteStatuses.includes("active") && r.active) ||
+        (selectedRouteStatuses.includes("inactive") && !r.active);
+
+      const hasShared = r.linkedSharedRouteId != null;
+      const matchType =
+        selectedRouteTypes.length === 0 ||
+        (selectedRouteTypes.includes("shared") && hasShared) ||
+        (selectedRouteTypes.includes("private_only") && !hasShared);
+
+      const dist = r.distanceKm ?? 0;
+      const matchDistance =
+        selectedDistanceRanges.length === 0 ||
+        selectedDistanceRanges.some(range => {
+          if (range === "<50") return dist < 50;
+          if (range === "50-150") return dist >= 50 && dist <= 150;
+          if (range === ">150") return dist > 150;
+          return false;
+        });
+
+      return matchSearch && matchStatus && matchType && matchDistance;
     });
-  }, [routes, searchTerm]);
+  }, [routes, searchTerm, selectedRouteStatuses, selectedRouteTypes, selectedDistanceRanges, language]);
 
   const sortedRoutes = useMemo(() => {
     const { column, direction } = routeSort;
@@ -297,28 +435,18 @@ export default function IntercityManagementPage() {
     });
   }, [filteredRoutes, routeSort]);
 
-  const routePageCount = Math.max(1, Math.ceil(sortedRoutes.length / PAGE_SIZE));
-  const paginatedRoutes = useMemo(() => sortedRoutes.slice((routePage - 1) * PAGE_SIZE, routePage * PAGE_SIZE), [sortedRoutes, routePage]);
+  const routePageCount = Math.max(1, Math.ceil(sortedRoutes.length / pageSize));
+  const paginatedRoutes = useMemo(() => sortedRoutes.slice((routePage - 1) * pageSize, routePage * pageSize), [sortedRoutes, routePage, pageSize]);
   const routePages = Array.from({ length: routePageCount }, (_, i) => i + 1);
-  const routeStart = sortedRoutes.length === 0 ? 0 : (routePage - 1) * PAGE_SIZE + 1;
-  const routeEnd = Math.min(routePage * PAGE_SIZE, sortedRoutes.length);
+  const routeStart = sortedRoutes.length === 0 ? 0 : (routePage - 1) * pageSize + 1;
+  const routeEnd = Math.min(routePage * pageSize, sortedRoutes.length);
   useEffect(() => { if (routePage > routePageCount) setRoutePage(routePageCount); }, [routePage, routePageCount]);
 
   // ── Prices tab: sort + local pagination ──
   const [priceSort, setPriceSort] = useState<SortDescriptor>({ column: "id", direction: "ascending" });
   const [pricePage, setPricePage] = useState(1);
 
-  const priceColumns: ColumnInterface[] = [
-    { id: "id", label: "ID", sortable: true, isRowHeader: true },
-    { id: "route", label: "Tuyến đường", sortable: false },
-    { id: "category", label: "Loại xe", sortable: false },
-    { id: "pricingType", label: "Hình thức", sortable: false },
-    { id: "perKm", label: "Giá / km", sortable: true },
-    { id: "oneWay", label: "1 chiều", sortable: false },
-    { id: "roundTrip", label: "Khứ hồi", sortable: false },
-    { id: "active", label: "Trạng thái", sortable: true },
-    { id: "actions", label: "Thao tác", sortable: false },
-  ];
+  const priceColumns = headerColumns.intercityPrices(t);
 
   const filteredPrices = useMemo(() => {
     const kw = searchTerm.toLowerCase();
@@ -326,7 +454,7 @@ export default function IntercityManagementPage() {
       const cat = categories.find(c => c.id === p.vehicleCategoryId);
       const matchesSearch = getCategoryName(cat).toLowerCase().includes(kw);
       if (selectedPriceRouteId != null) {
-        return p.routeId === selectedPriceRouteId && matchesSearch;
+        return (p.routeId === selectedPriceRouteId || Number(p.scopeRefId) === selectedPriceRouteId) && matchesSearch;
       }
       return matchesSearch;
     });
@@ -339,7 +467,6 @@ export default function IntercityManagementPage() {
       let cmp = 0;
       switch (column) {
         case "id": cmp = (a.id ?? 0) - (b.id ?? 0); break;
-        case "perKm": case "oneWay": case "roundTrip": cmp = (a.perKmAmount ?? 0) - (b.perKmAmount ?? 0); break;
         case "active": cmp = Number(a.active) - Number(b.active); break;
         default: cmp = 0;
       }
@@ -347,11 +474,11 @@ export default function IntercityManagementPage() {
     });
   }, [filteredPrices, priceSort]);
 
-  const pricePageCount = Math.max(1, Math.ceil(sortedPrices.length / PAGE_SIZE));
-  const paginatedPrices = useMemo(() => sortedPrices.slice((pricePage - 1) * PAGE_SIZE, pricePage * PAGE_SIZE), [sortedPrices, pricePage]);
+  const pricePageCount = Math.max(1, Math.ceil(sortedPrices.length / pageSize));
+  const paginatedPrices = useMemo(() => sortedPrices.slice((pricePage - 1) * pageSize, pricePage * pageSize), [sortedPrices, pricePage, pageSize]);
   const pricePages = Array.from({ length: pricePageCount }, (_, i) => i + 1);
-  const priceStart = sortedPrices.length === 0 ? 0 : (pricePage - 1) * PAGE_SIZE + 1;
-  const priceEnd = Math.min(pricePage * PAGE_SIZE, sortedPrices.length);
+  const priceStart = sortedPrices.length === 0 ? 0 : (pricePage - 1) * pageSize + 1;
+  const priceEnd = Math.min(pricePage * pageSize, sortedPrices.length);
   useEffect(() => { if (pricePage > pricePageCount) setPricePage(pricePageCount); }, [pricePage, pricePageCount]);
 
   // Surcharges removed
@@ -390,70 +517,347 @@ export default function IntercityManagementPage() {
     </div>
   );
 
+  const filteredSharedRoutes = useMemo(() => {
+    const kw = (searchTerm || "").toLowerCase().trim();
+    if (!Array.isArray(sharedRoutes)) return [];
+    return sharedRoutes.filter(
+      (r) =>
+        Boolean(r && (
+          (r.name && r.name.toLowerCase().includes(kw)) ||
+          (r.vehicleName && r.vehicleName.toLowerCase().includes(kw))
+        ))
+    );
+  }, [sharedRoutes, searchTerm]);
+
+  const filteredOffices = useMemo(() => {
+    const kw = (searchTerm || "").toLowerCase().trim();
+    if (!Array.isArray(sharedOffices)) return [];
+    return sharedOffices.filter(
+      (o) =>
+        Boolean(o && (
+          (o.name && o.name.toLowerCase().includes(kw)) ||
+          (o.city && o.city.toLowerCase().includes(kw)) ||
+          (o.address && o.address.toLowerCase().includes(kw))
+        ))
+    );
+  }, [sharedOffices, searchTerm]);
+
   return (
     <div className="w-full space-y-6">
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-black/10 gap-6">
+      <div className="flex border-b border-separator gap-6">
         <Tabs
           className="w-full"
           selectedKey={activeTab}
           onSelectionChange={(key) => { setActiveTab(key as TabKey); setSearchTerm(""); setRouteFormOpen(false); setPriceFormOpen(false); }}
         >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="Intercity tabs" className="dark:bg-black/10 border">
-              <Tabs.Tab id="routes">
-                <span className="flex items-center gap-2">
-                  <Route size={16} />
-                  Tuyến đường
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-              <Tabs.Tab id="prices">
-                <span className="flex items-center gap-2">
-                  <DollarSign size={16} />
-                  Bảng giá
-                </span>
-                <Tabs.Indicator className="bg-[#ffcc00a4]" />
-              </Tabs.Tab>
-              {/* Surcharges tab removed */}
-            </Tabs.List>
-          </Tabs.ListContainer>
+          <Tabs.List aria-label="Intercity tabs" className="">
+            <Tabs.Tab id="routes">
+              <span className="flex items-center gap-2">
+                <Route size={16} />
+                Tuyến xe riêng
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="prices">
+              <span className="flex items-center gap-2">
+                <DollarSign size={16} />
+                Bảng giá xe riêng
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="shared_routes">
+              <span className="flex items-center gap-2">
+                <Bus size={16} />
+                Tuyến xe ghép (Shared)
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+            <Tabs.Tab id="offices">
+              <span className="flex items-center gap-2">
+                <Building2 size={16} />
+                Văn phòng đón/trả
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
+          </Tabs.List>
         </Tabs>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col lg:flex-row justify-between gap-4 p-6 rounded-2xl border">
-        <SearchField name="search" value={searchTerm} onChange={(e: string) => setSearchTerm(e)} fullWidth className="min-w-[200px]">
-          <SearchField.Group className="rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
-            <SearchField.SearchIcon />
-            <SearchField.Input className="w-full" placeholder={
-              activeTab === "routes"
-                ? "Tìm tuyến đường..."
-                : activeTab === "prices"
-                  ? "Tìm loại xe..."
-                  : "Tìm mùa..."
-            } />
-            <SearchField.ClearButton />
-          </SearchField.Group>
-        </SearchField>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={fetchAllData}>
-            <RefreshCw size={16} className="mr-2" />
-            Làm mới
-          </Button>
-          <Button onClick={handleAdd}>
-            <Plus size={16} />
-            {getAddLabel()}
-          </Button>
+      <div className="flex flex-col gap-3 p-4 sm:p-5 rounded-2xl border bg-white dark:bg-[var(--bg-card)] shadow-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 flex-grow max-w-xl">
+            <SearchField name="search" value={searchTerm} onChange={(e: string) => setSearchTerm(e)} className="w-full sm:w-80 max-w-md">
+              <SearchField.Group className="rounded-xl border border-border bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-semibold h-10">
+                <SearchField.SearchIcon />
+                <SearchField.Input className="w-full" placeholder={
+                  activeTab === "routes"
+                    ? "Tìm tuyến xe riêng..."
+                    : activeTab === "prices"
+                      ? "Tìm loại xe..."
+                      : activeTab === "shared_routes"
+                        ? "Tìm tuyến xe ghép..."
+                        : "Tìm văn phòng, thành phố..."
+                } />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+
+            {activeTab === "routes" && (
+              <Popover>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`rounded-xl font-bold text-xs h-10 px-3.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2 cursor-pointer ${
+                    activeRouteFilterCount > 0 ? "border-accent/60 bg-accent/5 text-accent dark:text-accent font-extrabold" : ""
+                  }`}
+                >
+                  <Filter size={15} className={activeRouteFilterCount > 0 ? "text-accent" : "text-slate-500"} />
+                  <span>{t.common.filter}</span>
+                  {activeRouteFilterCount > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-accent text-accent-foreground text-[10px] font-black flex items-center justify-center">
+                      {activeRouteFilterCount}
+                    </span>
+                  )}
+                </Button>
+                <Popover.Content
+                  placement="bottom start"
+                  className="w-80 p-0 rounded-2xl bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden"
+                >
+                  <Popover.Dialog className="p-4 space-y-4 outline-none max-h-[80vh] overflow-y-auto">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Filter size={15} className="text-accent" />
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {t.common.filterTitle}
+                        </span>
+                        {activeRouteFilterCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent font-bold text-[10px]">
+                            {activeRouteFilterCount}
+                          </span>
+                        )}
+                      </div>
+                      {activeRouteFilterCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={resetRouteFilters}
+                          className="text-xs font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                        >
+                          {t.common.filterReset}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Trạng thái hoạt động */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-black tracking-wider uppercase text-slate-400 dark:text-slate-500 block">
+                        Trạng thái
+                      </span>
+                      <div className="space-y-1">
+                        <Checkbox
+                          isSelected={selectedRouteStatuses.includes("active")}
+                          onChange={() => toggleRouteStatus("active")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Đang hoạt động</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedRouteStatuses.includes("inactive")}
+                          onChange={() => toggleRouteStatus("inactive")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Tạm dừng</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </div>
+                    </div>
+
+                    {/* Loại hình phục vụ */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-black tracking-wider uppercase text-slate-400 dark:text-slate-500 block">
+                        Loại hình dịch vụ
+                      </span>
+                      <div className="space-y-1">
+                        <Checkbox
+                          isSelected={selectedRouteTypes.includes("shared")}
+                          onChange={() => toggleRouteType("shared")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Có vé xe ghép (Shared)</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedRouteTypes.includes("private_only")}
+                          onChange={() => toggleRouteType("private_only")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Chỉ xe riêng</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </div>
+                    </div>
+
+                    {/* Khoảng cách */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <span className="text-[11px] font-black tracking-wider uppercase text-slate-400 dark:text-slate-500 block">
+                        Khoảng cách lộ trình
+                      </span>
+                      <div className="space-y-1">
+                        <Checkbox
+                          isSelected={selectedDistanceRanges.includes("<50")}
+                          onChange={() => toggleDistanceRange("<50")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Dưới 50 km</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedDistanceRanges.includes("50-150")}
+                          onChange={() => toggleDistanceRange("50-150")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>50 - 150 km</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                        <Checkbox
+                          isSelected={selectedDistanceRanges.includes(">150")}
+                          onChange={() => toggleDistanceRange(">150")}
+                          className="w-full flex items-center cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[var(--bg-elevated)] transition-colors"
+                        >
+                          <Checkbox.Content className="flex items-center gap-2 cursor-pointer w-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span>Trên 150 km</span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      </div>
+                    </div>
+                  </Popover.Dialog>
+                </Popover.Content>
+              </Popover>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <PageSizeSelect
+              value={pageSize}
+              onChange={(size) => {
+                setPageSize(size);
+                setRoutePage(1);
+                setPricePage(1);
+              }}
+            />
+            <Button variant="outline" onClick={fetchAllData} className="font-bold text-xs h-10 px-4 rounded-xl cursor-pointer">
+              <RefreshCw size={15} className="mr-1.5" />
+              Làm mới
+            </Button>
+            <Button
+              onClick={handleAdd}
+              className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+            >
+              <Plus size={16} />
+              <span>{getAddLabel()}</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Active Filter Chips */}
+        {activeTab === "routes" && activeRouteFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 w-full">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500">
+              {t.common.appliedFilters}:
+            </span>
+            {selectedRouteStatuses.map((st) => (
+              <span
+                key={`rst-${st}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{st === "active" ? "Đang hoạt động" : "Tạm dừng"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleRouteStatus(st)}
+                  className="w-3.5 h-3.5 rounded-full hover:bg-accent/20 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {selectedRouteTypes.map((tp) => (
+              <span
+                key={`rtp-${tp}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{tp === "shared" ? "Có vé xe ghép" : "Chỉ xe riêng"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleRouteType(tp)}
+                  className="w-3.5 h-3.5 rounded-full hover:bg-accent/20 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {selectedDistanceRanges.map((d) => (
+              <span
+                key={`dist-${d}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-xs font-bold text-slate-800 dark:text-slate-200"
+              >
+                <span>{d === "<50" ? "Dưới 50 km" : d === "50-150" ? "50 - 150 km" : "Trên 150 km"}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleDistanceRange(d)}
+                  className="w-3.5 h-3.5 rounded-full hover:bg-accent/20 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              onClick={resetRouteFilters}
+              className="text-xs font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 underline transition-colors cursor-pointer ml-1"
+            >
+              {t.common.clearAll}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Prices tab route selector */}
       {activeTab === "prices" && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border bg-white dark:bg-black/10">
-          <span className="text-sm font-bold whitespace-nowrap">Tuyến đường:</span>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 rounded-xl border bg-white dark:bg-[var(--bg-card)] shadow-xs">
+          <span className="text-sm font-bold whitespace-nowrap text-slate-700 dark:text-slate-200">
+            Lọc theo tuyến:
+          </span>
           <Select
-            fullWidth
+            className="w-full sm:w-80 md:w-96"
             selectedKey={selectedPriceRouteId != null ? String(selectedPriceRouteId) : "__all__"}
             onSelectionChange={(key) => {
               if (key === "__all__") {
@@ -465,11 +869,11 @@ export default function IntercityManagementPage() {
               setAllPrices([]);
             }}
           >
-            <Select.Trigger className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-sm h-[38px]">
+            <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-border bg-white dark:bg-[var(--bg-surface)] text-sm h-[40px] cursor-pointer">
               <Select.Value />
               <Select.Indicator />
             </Select.Trigger>
-            <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+            <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-border-secondary rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
               <ListBox>
                 <ListBox.Item id="__all__" textValue="Tất cả tuyến" className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
                   Tất cả tuyến
@@ -495,21 +899,27 @@ export default function IntercityManagementPage() {
           </div>
         ) : activeTab === "routes" ? (
           <>
-            
+
             {filteredRoutes.length === 0 ? (
               renderEmptyState(<Route className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Không tìm thấy kết quả")
             ) : (
-              <Table>
+              <Table key="routes-table">
                 <Table.ScrollContainer>
                   <Table.Content
                     aria-label="Routes table"
-                    className="min-w-[700px]"
+                    className="min-w-[700px] w-full"
                     sortDescriptor={routeSort}
                     onSortChange={setRouteSort}
                   >
                     <Table.Header>
                       {routeColumns.map((col) => (
-                        <Table.Column key={col.id} id={col.id} allowsSorting={col.sortable} isRowHeader={col.isRowHeader}>
+                        <Table.Column
+                          key={col.id}
+                          id={col.id}
+                          allowsSorting={col.sortable}
+                          isRowHeader={col.isRowHeader}
+                          className={col.id === "actions" ? "text-right" : undefined}
+                        >
                           {col.sortable
                             ? ({ sortDirection }) => (<Table.SortableColumnHeader sortDirection={sortDirection}>{col.label}</Table.SortableColumnHeader>)
                             : col.label}
@@ -522,37 +932,81 @@ export default function IntercityManagementPage() {
                           <Table.Cell>#{r.id}</Table.Cell>
                           <Table.Cell className="font-bold">{getRouteName(r)}</Table.Cell>
                           <Table.Cell>
-                            {r.supportsShared ? (
+                            {r.hasSharedRoute || r.linkedSharedRouteId ? (
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                  {r.sharedVehicleName || "Dcar Limousine"}
+                                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                  <Bus size={13} /> Có vé xe ghép
                                 </span>
-                                <span className="text-[11px] text-slate-500 font-medium">
-                                  {r.sharedPriceOneWay ? `${r.sharedPriceOneWay.toLocaleString()} VND/vé` : "Chưa đặt giá"}
-                                </span>
+                                {r.linkedSharedRouteId && (
+                                  <span className="text-[10px] text-slate-500 font-medium">
+                                    ID ghép: #{r.linkedSharedRouteId}
+                                  </span>
+                                )}
                               </div>
                             ) : (
-                              <span className="text-xs text-slate-400 italic">Không hỗ trợ</span>
+                              <span className="text-xs text-slate-400 italic">Chưa liên kết</span>
                             )}
                           </Table.Cell>
                           <Table.Cell>{r.distanceKm ?? "N/A"}</Table.Cell>
                           <Table.Cell>{r.estimatedHours ?? "N/A"}</Table.Cell>
                           <Table.Cell>
-                            <Chip size="sm" color={r.active ? "success" : "warning"}>
-                              {r.active ? "Hoạt động" : "Ngưng"}
-                            </Chip>
+                            <AppStatusChip status={r.active} />
                           </Table.Cell>
-                          <Table.Cell>
-                            <div className="flex gap-2">
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleOpenRouteDetail(r)}>
-                                <Eye size={16} />
-                              </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditRoute(r)}>
-                                <Edit3 size={16} />
-                              </Button>
-                              <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeleteRoute(r.id!)}>
-                                <Trash2 size={16} />
-                              </Button>
+                          <Table.Cell className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="tertiary"
+                                    aria-label="Xem chi tiết"
+                                    onPress={() => handleOpenRouteDetail(r)}
+                                  >
+                                    <Eye size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Xem chi tiết
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa"
+                                    onPress={() => handleEditRoute(r)}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa"
+                                    onPress={() => handleDeleteRoute(r.id!)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa
+                                </Tooltip.Content>
+                              </Tooltip>
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -566,21 +1020,27 @@ export default function IntercityManagementPage() {
           </>
         ) : activeTab === "prices" ? (
           <>
-            
+
             {filteredPrices.length === 0 ? (
               renderEmptyState(<DollarSign className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Không có giá dịch vụ nào được tìm thấy")
             ) : (
-              <Table>
+              <Table key="prices-table">
                 <Table.ScrollContainer>
                   <Table.Content
                     aria-label="Prices table"
-                    className="min-w-[800px]"
+                    className="min-w-[800px] w-full"
                     sortDescriptor={priceSort}
                     onSortChange={setPriceSort}
                   >
                     <Table.Header>
                       {priceColumns.map((col) => (
-                        <Table.Column key={col.id} id={col.id} allowsSorting={col.sortable} isRowHeader={col.isRowHeader}>
+                        <Table.Column
+                          key={col.id}
+                          id={col.id}
+                          allowsSorting={col.sortable}
+                          isRowHeader={col.isRowHeader}
+                          className={col.id === "actions" ? "text-right" : undefined}
+                        >
                           {col.sortable
                             ? ({ sortDirection }) => (<Table.SortableColumnHeader sortDirection={sortDirection}>{col.label}</Table.SortableColumnHeader>)
                             : col.label}
@@ -589,26 +1049,13 @@ export default function IntercityManagementPage() {
                     </Table.Header>
                     <Table.Body>
                       {paginatedPrices.map((p) => {
-                        const cat = categories.find(c => c.id === p.vehicleCategoryId);
-                        const r = routes.find(route => route.id === p.routeId);
-                        const oneWay = calcIntercityPrivatePrice({
-                          distanceKm: r?.distanceKm,
-                          pricingType: p.pricingType,
-                          perKmAmount: p.perKmAmount,
-                          fixedPriceOneWay: p.fixedPriceOneWay,
-                          fixedPriceRoundTrip: p.fixedPriceRoundTrip,
-                          roundTripPrice: p.roundTripPrice,
-                          roundTripPerKmAmount: p.roundTripPerKmAmount,
-                        }, false);
-                        const roundTrip = calcIntercityPrivatePrice({
-                          distanceKm: r?.distanceKm,
-                          pricingType: p.pricingType,
-                          perKmAmount: p.perKmAmount,
-                          fixedPriceOneWay: p.fixedPriceOneWay,
-                          fixedPriceRoundTrip: p.fixedPriceRoundTrip,
-                          roundTripPrice: p.roundTripPrice,
-                          roundTripPerKmAmount: p.roundTripPerKmAmount,
-                        }, true);
+                        const cat = categories.find((c) => c.id === p.vehicleCategoryId);
+                        const r = routes.find((route) => route.id === (p.routeId || Number(p.scopeRefId)));
+                        const isDaily = p.priceTypeCode === "DAILY_RATE" || p.priceTypeCategory === "DAILY_RATE";
+                        const isRoundTripType = p.priceTypeCode === "ROUND_TRIP_SAME_DAY";
+                        const oneWay = p.oneWayPrice || p.fixedPriceOneWay || (!isDaily && !isRoundTripType ? p.basePrice : 0) || 0;
+                        const roundTrip = p.roundTripPrice || p.fixedPriceRoundTrip || (isRoundTripType ? p.basePrice : (oneWay > 0 ? oneWay * 2 : 0)) || 0;
+                        const dailyRate = p.dailyRatePrice || p.dailyRate || (isDaily ? p.basePrice : 0) || 0;
 
                         return (
                           <Table.Row key={p.id} id={String(p.id)}>
@@ -618,35 +1065,100 @@ export default function IntercityManagementPage() {
                               <Chip size="sm" color="accent">{getCategoryName(cat)}</Chip>
                             </Table.Cell>
                             <Table.Cell>
-                              <Chip size="sm" color={p.pricingType === "FIXED" ? "accent" : "default"}>
-                                {p.pricingType === "FIXED" ? "Trọn gói (Fixed)" : "Theo km (Per-km)"}
-                              </Chip>
-                            </Table.Cell>
-                            <Table.Cell className="font-semibold text-slate-600 dark:text-slate-300">
-                              {p.pricingType === "FIXED" ? "—" : (p.perKmAmount > 0 ? `${p.perKmAmount.toLocaleString()} ${p.currency}` : "—")}
+                              {isDaily ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                  <Calendar size={12} /> Thuê theo ngày
+                                </span>
+                              ) : isRoundTripType ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                                  <Clock size={12} /> Khứ hồi trong ngày
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                  <Clock size={12} /> Một chiều trong ngày
+                                </span>
+                              )}
                             </Table.Cell>
                             <Table.Cell className="font-black text-amber-500">
-                              {oneWay > 0 ? `${oneWay.toLocaleString()} ${p.currency}` : "—"}
+                              {isDaily ? (
+                                <div className="flex flex-col">
+                                  <span>{dailyRate > 0 ? `${dailyRate.toLocaleString()} ${p.currency || "VND"}/ngày` : "—"}</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">Tối thiểu {p.minDays || p.minimumDays || 1} ngày</span>
+                                </div>
+                              ) : (
+                                <span>{oneWay > 0 ? `${oneWay.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
+                              )}
                             </Table.Cell>
                             <Table.Cell className="font-black text-amber-500">
-                              {roundTrip > 0 ? `${roundTrip.toLocaleString()} ${p.currency}` : "—"}
+                              {isDaily ? (
+                                <span className="text-xs text-slate-400 font-normal italic">Áp dụng theo ngày</span>
+                              ) : (
+                                <div className="flex flex-col">
+                                  <span>{roundTrip > 0 ? `${roundTrip.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
+                                  {!p.roundTripPrice && !p.fixedPriceRoundTrip && !isRoundTripType && oneWay > 0 && (
+                                    <span className="text-[10px] text-slate-400 font-normal">(2× một chiều)</span>
+                                  )}
+                                </div>
+                              )}
                             </Table.Cell>
                             <Table.Cell>
-                              <Chip size="sm" color={p.active ? "success" : "warning"}>
-                                {p.active ? "Hoạt động" : "Ngưng"}
-                              </Chip>
+                              <AppStatusChip status={p.active} />
                             </Table.Cell>
-                            <Table.Cell>
-                              <div className="flex gap-2">
-                                <Button isIconOnly size="sm" variant="ghost" aria-label="Xem chi tiết" onPress={() => handleOpenPriceDetail(p)}>
-                                  <Eye size={16} />
-                                </Button>
-                                <Button isIconOnly size="sm" variant="ghost" aria-label="Sửa" onPress={() => handleEditPrice(p)}>
-                                  <Edit3 size={16} />
-                                </Button>
-                                <Button isIconOnly size="sm" variant="ghost" aria-label="Xóa" onPress={() => handleDeletePrice(p.id!)}>
-                                  <Trash2 size={16} />
-                                </Button>
+                            <Table.Cell className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="tertiary"
+                                      aria-label="Xem chi tiết"
+                                      onPress={() => handleOpenPriceDetail(p)}
+                                    >
+                                      <Eye size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content>
+                                    <Tooltip.Arrow />
+                                    Xem chi tiết
+                                  </Tooltip.Content>
+                                </Tooltip>
+
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="secondary"
+                                      aria-label="Chỉnh sửa"
+                                      onPress={() => handleEditPrice(p)}
+                                    >
+                                      <Edit3 size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content>
+                                    <Tooltip.Arrow />
+                                    Chỉnh sửa
+                                  </Tooltip.Content>
+                                </Tooltip>
+
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="danger"
+                                      aria-label="Xóa"
+                                      onPress={() => handleDeletePrice(p.id!)}
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                    <Tooltip.Arrow />
+                                    Xóa
+                                  </Tooltip.Content>
+                                </Tooltip>
                               </div>
                             </Table.Cell>
                           </Table.Row>
@@ -659,14 +1171,246 @@ export default function IntercityManagementPage() {
               </Table>
             )}
           </>
+        ) : activeTab === "shared_routes" ? (
+          <>
+            {filteredSharedRoutes.length === 0 ? (
+              renderEmptyState(<Bus className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Chưa có tuyến xe ghép nào")
+            ) : (
+              <Table key="shared-routes-table">
+                <Table.ScrollContainer>
+                  <Table.Content aria-label="Shared routes table" className="min-w-[800px] w-full">
+                    <Table.Header>
+                      <Table.Column id="id" isRowHeader>ID</Table.Column>
+                      <Table.Column id="name">Tên tuyến</Table.Column>
+                      <Table.Column id="vehicle">Dòng xe</Table.Column>
+                      <Table.Column id="outbound">Chiều đi (OUTBOUND)</Table.Column>
+                      <Table.Column id="return">Chiều về (RETURN)</Table.Column>
+                      <Table.Column id="status">Trạng thái</Table.Column>
+                      <Table.Column id="actions" className="text-right">Thao tác</Table.Column>
+                    </Table.Header>
+                    <Table.Body>
+                      {filteredSharedRoutes.map((r) => {
+                        const outDir = r.directions?.find((d) => d.directionType === "OUTBOUND");
+                        const retDir = r.directions?.find((d) => d.directionType === "RETURN");
+                        return (
+                          <Table.Row key={r.id} id={String(r.id)}>
+                            <Table.Cell>#{r.id}</Table.Cell>
+                            <Table.Cell className="font-bold text-slate-800 dark:text-slate-100">{r.name}</Table.Cell>
+                            <Table.Cell className="text-xs font-semibold">{r.vehicleName || "Dcar Limousine"}</Table.Cell>
+                            <Table.Cell>
+                              {outDir ? (
+                                <div className="flex flex-col gap-0.5 text-xs">
+                                  <span className="font-bold text-accent">
+                                    {Number(outDir.price).toLocaleString()} VND/vé
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    {outDir.originCity} ➔ {outDir.destinationCity} ({outDir.distanceKm || "—"} km)
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">
+                                    {outDir.schedules?.length || 0} giờ chạy • {outDir.originOffices?.length || 0} VP đón
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">—</span>
+                              )}
+                            </Table.Cell>
+                            <Table.Cell>
+                              {retDir ? (
+                                <div className="flex flex-col gap-0.5 text-xs">
+                                  <span className="font-bold text-accent">
+                                    {Number(retDir.price).toLocaleString()} VND/vé
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    {retDir.originCity} ➔ {retDir.destinationCity} ({retDir.distanceKm || "—"} km)
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">
+                                    {retDir.schedules?.length || 0} giờ chạy • {retDir.originOffices?.length || 0} VP đón
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">—</span>
+                              )}
+                            </Table.Cell>
+                            <Table.Cell>
+                              <AppStatusChip status={r.active} />
+                            </Table.Cell>
+                            <Table.Cell className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="secondary"
+                                      aria-label="Chỉnh sửa"
+                                      onPress={() => {
+                                        setEditingSharedRoute(r);
+                                        setSharedRouteModalOpen(true);
+                                      }}
+                                    >
+                                      <Edit3 size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content>
+                                    <Tooltip.Arrow />
+                                    Chỉnh sửa
+                                  </Tooltip.Content>
+                                </Tooltip>
+
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="danger"
+                                      aria-label="Xóa"
+                                      onPress={() => handleDeleteSharedRoute(r.id!)}
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                    <Tooltip.Arrow />
+                                    Xóa
+                                  </Tooltip.Content>
+                                </Tooltip>
+                              </div>
+                            </Table.Cell>
+                          </Table.Row>
+                        );
+                      })}
+                    </Table.Body>
+                  </Table.Content>
+                </Table.ScrollContainer>
+              </Table>
+            )}
+          </>
+        ) : activeTab === "offices" ? (
+          <>
+            {filteredOffices.length === 0 ? (
+              renderEmptyState(<Building2 className="text-slate-300 dark:text-slate-700 mb-4" size={48} />, "Chưa có văn phòng đón/trả nào")
+            ) : (
+              <Table key="offices-table">
+                <Table.ScrollContainer>
+                  <Table.Content aria-label="Offices table" className="min-w-[700px] w-full">
+                    <Table.Header>
+                      <Table.Column id="id" isRowHeader>ID</Table.Column>
+                      <Table.Column id="name">Tên văn phòng</Table.Column>
+                      <Table.Column id="city">Thành phố</Table.Column>
+                      <Table.Column id="address">Địa chỉ</Table.Column>
+                      <Table.Column id="coords">Tọa độ</Table.Column>
+                      <Table.Column id="status">Trạng thái</Table.Column>
+                      <Table.Column id="actions" className="text-right">Thao tác</Table.Column>
+                    </Table.Header>
+                    <Table.Body>
+                      {filteredOffices.map((o) => (
+                        <Table.Row key={o.id} id={String(o.id)}>
+                          <Table.Cell>#{o.id}</Table.Cell>
+                          <Table.Cell className="font-bold text-slate-800 dark:text-slate-100">{o.name}</Table.Cell>
+                          <Table.Cell className="text-xs font-semibold">{o.city}</Table.Cell>
+                          <Table.Cell className="text-xs max-w-xs truncate">{o.address}</Table.Cell>
+                          <Table.Cell className="text-xs font-mono text-slate-500">
+                            {o.latitude != null && o.longitude != null
+                              ? `${Number(o.latitude).toFixed(4)}, ${Number(o.longitude).toFixed(4)}`
+                              : "—"}
+                          </Table.Cell>
+                          <Table.Cell>
+                            <AppStatusChip status={o.active} />
+                          </Table.Cell>
+                          <Table.Cell className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="secondary"
+                                    aria-label="Chỉnh sửa"
+                                    onPress={() => {
+                                      setEditingSharedOffice(o);
+                                      setSharedOfficeModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Tooltip.Arrow />
+                                  Chỉnh sửa
+                                </Tooltip.Content>
+                              </Tooltip>
+
+                              <Tooltip delay={300} closeDelay={100}>
+                                <Tooltip.Trigger>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    variant="danger"
+                                    aria-label="Xóa"
+                                    onPress={() => handleDeleteSharedOffice(o.id!)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                  <Tooltip.Arrow />
+                                  Xóa
+                                </Tooltip.Content>
+                              </Tooltip>
+                            </div>
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
+                    </Table.Body>
+                  </Table.Content>
+                </Table.ScrollContainer>
+              </Table>
+            )}
+          </>
         ) : null}
       </div>
 
+      {/* Shared Route Modal */}
+      {sharedRouteModalOpen && (
+        <SharedRouteModal
+          isOpen={sharedRouteModalOpen}
+          onClose={() => {
+            setSharedRouteModalOpen(false);
+            setEditingSharedRoute(null);
+          }}
+          editingRoute={editingSharedRoute}
+          offices={sharedOffices}
+          onSaveSuccess={() => {
+            fetchSharedRoutes();
+            fetchSharedOffices();
+          }}
+        />
+      )}
+
+      {/* Shared Office Modal */}
+      {sharedOfficeModalOpen && (
+        <SharedOfficeModal
+          isOpen={sharedOfficeModalOpen}
+          onClose={() => {
+            setSharedOfficeModalOpen(false);
+            setEditingSharedOffice(null);
+          }}
+          editingOffice={editingSharedOffice}
+          onSaveSuccess={() => {
+            fetchSharedOffices();
+            fetchSharedRoutes();
+          }}
+        />
+      )}
+
       {/* Route Form Modal */}
       {routeFormOpen && (
-        <RouteFormModal
+        <RouteCreateUpdateModal
           isOpen={routeFormOpen}
-          onClose={() => setRouteFormOpen(false)}
+          onClose={() => {
+            setRouteFormOpen(false);
+            setEditingRoute(null);
+          }}
           editingRoute={editingRoute}
           onSave={handleSaveRoute}
           categories={categories}
@@ -674,6 +1418,7 @@ export default function IntercityManagementPage() {
           onAddPrice={handleAddPrice}
           onEditPrice={handleEditPrice}
           onDeletePrice={handleDeletePrice}
+          onRefreshPrices={() => fetchPricesForRoute(null)}
         />
       )}
 
@@ -697,7 +1442,7 @@ export default function IntercityManagementPage() {
 
       {/* Price Form Modal */}
       {priceFormOpen && (
-        <PriceFormModal
+        <PriceCreateUpdateModal
           isOpen={priceFormOpen}
           onClose={() => setPriceFormOpen(false)}
           routeId={priceRouteId || undefined}

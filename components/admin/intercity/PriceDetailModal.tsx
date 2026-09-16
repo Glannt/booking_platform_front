@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Edit3, MapPin, DollarSign, Car, CheckCircle, XCircle } from "lucide-react";
+import { Edit3, MapPin, DollarSign, Car, CheckCircle, XCircle, Calendar, Clock, Gauge } from "lucide-react";
 import {
   Modal,
   ModalBackdrop,
@@ -14,9 +14,8 @@ import {
   Button,
   Typography,
 } from "@heroui/react";
-import type { IntercityRoutePriceDto, IntercityRouteDto } from "@/lib/api/rental";
+import { type IntercityRoutePriceDto, type IntercityRouteDto } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
-import { calcIntercityPrice, calcIntercityPrivatePrice } from "@/lib/pricing";
 
 interface PriceDetailModalProps {
   isOpen: boolean;
@@ -37,20 +36,41 @@ export function PriceDetailModal({
 }: PriceDetailModalProps) {
   if (!price) return null;
 
-  const routeObj = routes.find(r => r.id === price.routeId);
-  const catObj = categories.find(c => c.id === price.vehicleCategoryId);
+  const routeObj = routes.find((r) => r.id === (price.routeId || Number(price.scopeRefId)));
+  const catObj = categories.find((c) => c.id === price.vehicleCategoryId);
 
   const getRouteName = (r: IntercityRouteDto | undefined) => {
     if (!r) return "Áp dụng tất cả tuyến";
-    const t = r.translations?.find(t => t.locale === "vi") || r.translations?.[0];
+    const t = r.translations?.find((tr) => tr.locale === "vi") || r.translations?.[0];
     return t?.name || `${r.originCity} ⇌ ${r.destinationCity}`;
   };
 
   const getCategoryName = (c: VehicleCategoryDto | undefined) => {
     if (!c) return `ID: ${price.vehicleCategoryId}`;
-    const t = c.translations?.find(t => t.locale === "vi") || c.translations?.[0];
+    const t = c.translations?.find((tr) => tr.locale === "vi") || c.translations?.[0];
     return t?.name || c.code;
   };
+
+  const isDailyRate =
+    price.priceTypeCode === "DAILY_RATE" || price.priceTypeCategory === "DAILY_RATE";
+
+  const oneWayVal =
+    price.oneWayPrice ||
+    price.fixedPriceOneWay ||
+    (!isDailyRate && price.basePrice ? price.basePrice : 0);
+
+  const roundTripVal =
+    price.roundTripPrice ||
+    price.fixedPriceRoundTrip ||
+    (price.priceTypeCode === "ROUND_TRIP_SAME_DAY" && price.basePrice ? price.basePrice : oneWayVal * 2);
+
+  const isFallbackRoundTrip =
+    !price.roundTripPrice && !price.fixedPriceRoundTrip && price.priceTypeCode !== "ROUND_TRIP_SAME_DAY";
+
+  const dailyRateVal =
+    price.dailyRatePrice ||
+    price.dailyRate ||
+    (isDailyRate && price.basePrice ? price.basePrice : 0);
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -62,121 +82,180 @@ export function PriceDetailModal({
               <Typography type="h3" className="text-base font-bold text-slate-800 dark:text-slate-100">
                 Chi tiết cấu hình giá xe
               </Typography>
-              <Button
-                size="sm"
-                onClick={onEdit}
-                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5"
-              >
-                <Edit3 size={14} /> Chỉnh sửa
-              </Button>
             </ModalHeader>
 
             <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
               {/* Route detail */}
-              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Tuyến đường áp dụng</p>
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                  Tuyến đường áp dụng
+                </p>
                 <div className="flex items-center gap-2">
                   <MapPin size={16} className="text-accent" />
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{getRouteName(routeObj)}</span>
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {getRouteName(routeObj)}
+                  </span>
                 </div>
               </div>
 
               {/* Vehicle category detail */}
-              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Dòng xe áp dụng</p>
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                  Dòng xe áp dụng
+                </p>
                 <div className="flex items-center gap-2">
                   <Car size={16} className="text-blue-500" />
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{getCategoryName(catObj)}</span>
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {getCategoryName(catObj)}
+                  </span>
                 </div>
               </div>
 
               {/* Pricing Type Banner */}
-              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Hình thức tính giá</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                    Hình thức tính giá
+                  </p>
                   <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                    {price.pricingType === "FIXED" ? "Giá trọn gói cố định" : "Tính theo số KM"}
+                    {isDailyRate ? "Thuê theo ngày (DAILY_RATE)" : "Trong ngày (Một chiều / Khứ hồi)"}
                   </span>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent">
-                  {price.pricingType || "PER_KM"}
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-accent/10 text-accent flex items-center gap-1.5">
+                  {isDailyRate ? <Calendar size={13} /> : <Clock size={13} />}
+                  {price.priceTypeCode || (isDailyRate ? "DAILY_RATE" : "IN_DAY")}
                 </span>
               </div>
 
-              {/* Amounts detail */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                    {price.pricingType === "FIXED" ? "Đơn giá" : "Giá / km"}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-emerald-500" />
-                    <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                      {price.pricingType === "FIXED"
-                        ? "Trọn gói"
-                        : (price.perKmAmount > 0 ? `${price.perKmAmount.toLocaleString()} ${price.currency}` : "—")}
-                    </span>
+              {/* Pricing Details */}
+              {isDailyRate ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      Đơn giá / ngày
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={16} className="text-accent" />
+                      <span className="text-base font-extrabold text-amber-500">
+                        {dailyRateVal > 0 ? `${dailyRateVal.toLocaleString()} ${price.currency || "VND"}` : "—"}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Một chiều</p>
-                  <div className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-emerald-500" />
-                    <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                      {(() => {
-                        const calculated = calcIntercityPrivatePrice({
-                          distanceKm: routeObj?.distanceKm,
-                          pricingType: price.pricingType,
-                          perKmAmount: price.perKmAmount,
-                          fixedPriceOneWay: price.fixedPriceOneWay,
-                          fixedPriceRoundTrip: price.fixedPriceRoundTrip,
-                          roundTripPrice: price.roundTripPrice,
-                          roundTripPerKmAmount: price.roundTripPerKmAmount,
-                        }, false);
-                        return calculated > 0 ? `${calculated.toLocaleString()} ${price.currency}` : "—";
-                      })()}
+                  <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      Số ngày tối thiểu
+                    </p>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      {price.minDays || price.minimumDays || 1} ngày
                     </span>
                   </div>
-                </div>
 
-                <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Khứ hồi</p>
-                  <div className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-emerald-500" />
-                    <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                      {(() => {
-                        const calculated = calcIntercityPrivatePrice({
-                          distanceKm: routeObj?.distanceKm,
-                          pricingType: price.pricingType,
-                          perKmAmount: price.perKmAmount,
-                          fixedPriceOneWay: price.fixedPriceOneWay,
-                          fixedPriceRoundTrip: price.fixedPriceRoundTrip,
-                          roundTripPrice: price.roundTripPrice,
-                          roundTripPerKmAmount: price.roundTripPerKmAmount,
-                        }, true);
-                        return calculated > 0 ? `${calculated.toLocaleString()} ${price.currency}` : "—";
-                      })()}
-                    </span>
-                  </div>
+                  {price.kmIncludedPerDay != null && (
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                        Giới hạn km / ngày
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Gauge size={16} className="text-blue-500" />
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                          {price.kmIncludedPerDay} km / ngày
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {price.overagePricePerKm != null && (
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                        Phí vượt km
+                      </p>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                        {price.overagePricePerKm.toLocaleString()} {price.currency || "VND"} / km
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      Giá một chiều
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={16} className="text-emerald-500" />
+                      <span className="text-base font-extrabold text-amber-500">
+                        {oneWayVal > 0 ? `${oneWayVal.toLocaleString()} ${price.currency || "VND"}` : "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                        Giá khứ hồi
+                      </p>
+                      {isFallbackRoundTrip && (
+                        <span className="text-[10px] bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-bold">
+                          2× Một chiều
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={16} className="text-emerald-500" />
+                      <span className="text-base font-extrabold text-amber-500">
+                        {roundTripVal > 0 ? `${roundTripVal.toLocaleString()} ${price.currency || "VND"}` : "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {price.waitingFee != null && price.waitingFee > 0 && (
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator col-span-2">
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                        Phí chờ quá giờ
+                      </p>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                        {price.waitingFee.toLocaleString()} {price.currency || "VND"} / giờ
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Status detail */}
-              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Trạng thái kích hoạt</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                    Trạng thái kích hoạt
+                  </p>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
                     {price.active ? "Đang hoạt động" : "Tạm ngưng / Ẩn"}
                   </span>
                 </div>
-                {price.active ? <CheckCircle size={20} className="text-success" /> : <XCircle size={20} className="text-warning" />}
+                {price.active ? (
+                  <CheckCircle size={20} className="text-emerald-500" />
+                ) : (
+                  <XCircle size={20} className="text-amber-500" />
+                )}
               </div>
             </ModalBody>
 
-            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end shrink-0 bg-white dark:bg-[var(--bg-surface)]">
-              <Button size="sm" variant="ghost" onClick={onClose} className="rounded-xl font-bold cursor-pointer">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+              >
                 Đóng
+              </Button>
+              <Button
+                type="button"
+                onClick={onEdit}
+                className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+              >
+                <Edit3 size={15} className="mr-1.5" />
+                Chỉnh sửa
               </Button>
             </ModalFooter>
           </ModalDialog>
