@@ -12,4 +12,6 @@ export const nav = {
   dashboard: "대시보드",
   bookingHistory: "예약 내역",
   myProfile: "내 프로필",
+  promotions: "프로모션",
+  myVouchers: "내 쿠폰",
 };

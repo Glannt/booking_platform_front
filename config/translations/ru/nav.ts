@@ -12,4 +12,6 @@ export const nav = {
   dashboard: "Панель управления",
   bookingHistory: "История бронирований",
   myProfile: "Мой профиль",
+  promotions: "Акции",
+  myVouchers: "Мои купоны",
 };

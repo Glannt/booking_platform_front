@@ -26,6 +26,7 @@ import {
   Layers,
   MenuSquare,
   Home,
+  Tag,
 } from "lucide-react";
 import {
   Drawer,
@@ -134,6 +135,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           icon: <Briefcase size={20} />,
           badge: bookings.filter(b => b.status === "confirmed" || b.status === "pending").length,
           badgeColor: "warning" as const,
+        },
+        {
+          key: "discounts",
+          label: t.discounts?.customerDiscountsTitle || (language === "vi" ? "Mã giảm giá & Ưu đãi" : "Discounts & Vouchers"),
+          path: "/dashboard/discounts",
+          icon: <Tag size={20} />,
         },
       ],
     },
@@ -338,7 +345,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <Dropdown.Item id={`/${language}/airport-transfer`} key={`/${language}/airport-transfer`} textValue={t.nav.airportTransfer}>
                       <Label>{t.nav.airportTransfer}</Label>
                     </Dropdown.Item>
-                    <Dropdown.Item id={`/${language}/rent-car`} key={`/${language}/rent-car`} textValue={t.nav.rentCar}>
+                    <Dropdown.Item id={`/${language}/intercity`} key={`/${language}/intercity`} textValue={t.nav.rentCar}>
                       <Label>{t.nav.rentCar}</Label>
                     </Dropdown.Item>
                     <Dropdown.Item id={`/${language}/self-drive`} key={`/${language}/self-drive`} textValue={t.nav.selfDrive}>

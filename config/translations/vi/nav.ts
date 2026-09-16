@@ -12,4 +12,6 @@ export const nav = {
   dashboard: "Bảng điều khiển",
   bookingHistory: "Lịch sử đặt lịch",
   myProfile: "Hồ sơ cá nhân",
+  promotions: "Khuyến mãi",
+  myVouchers: "Ví voucher",
 };

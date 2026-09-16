@@ -120,12 +120,12 @@ export const Navbar = () => {
 
   const isTransparentRoute =
     pathname === `/${language}` ||
-    pathname === `/${language}/rent-car` ||
+    pathname === `/${language}/intercity` ||
     pathname === `/${language}/self-drive` ||
     pathname === `/${language}/airport-transfer` ||
     pathname === `/${language}/tours` ||
     pathname === "/" ||
-    pathname === "/rent-car" ||
+    pathname === "/intercity" ||
     pathname === "/self-drive" ||
     pathname === "/airport-transfer" ||
     pathname === "/tours";
@@ -150,11 +150,12 @@ export const Navbar = () => {
       isDropdown: true,
       items: [
         { label: t.nav.airportTransfer, href: prefixUrl("/airport-transfer") },
-        { label: t.nav.rentCar, href: prefixUrl("/rent-car") },
+        { label: t.nav.rentCar, href: prefixUrl("/intercity") },
         { label: t.nav.selfDrive, href: prefixUrl("/self-drive") },
         { label: t.nav.tour, href: prefixUrl("/tours") },
       ],
     },
+    { label: t.nav.promotions || "Khuyến mãi", href: prefixUrl("/promotions") },
     { label: t.nav.about, href: prefixUrl("/about") },
   ];
 
@@ -189,7 +190,7 @@ export const Navbar = () => {
         ? "bg-transparent border-transparent text-white"
         : "bg-background/70 backdrop-blur-lg border-separator text-foreground shadow-sm"
       }`}>
-      <header className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-6">
+      <header className="mx-auto flex h-16 max-w-[1536px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 xl:px-10">
         {/* Left branding and Desktop nav */}
         <div className="flex items-center gap-6">
           <NextLink className="flex items-center gap-2" href={prefixUrl("/")}>
@@ -278,7 +279,7 @@ export const Navbar = () => {
                         onMouseLeave={handleRentCarMouseLeave}
                       >
                         <NextLink
-                          href={prefixUrl("/rent-car")}
+                          href={prefixUrl("/intercity")}
                           onClick={() => {
                             setIsServicesOpen(false);
                             setIsRentCarSubOpen(false);
@@ -371,6 +372,9 @@ export const Navbar = () => {
                     <>
                       <Dropdown.Item id={`/${language}/dashboard/my-bookings`} key={`/${language}/dashboard/my-bookings`} textValue="Booking History">
                         <Label>{t.nav?.bookingHistory || "Booking History"}</Label>
+                      </Dropdown.Item>
+                      <Dropdown.Item id={`/${language}/dashboard/discounts`} key={`/${language}/dashboard/discounts`} textValue="My Vouchers">
+                        <Label>{t.nav?.myVouchers || "Mã giảm giá & Voucher"}</Label>
                       </Dropdown.Item>
                     </>
                   )}
@@ -506,15 +510,26 @@ export const Navbar = () => {
                   </li>
                 )}
                 {user.role === "CUSTOMER" && (
-                  <li>
-                    <NextLink
-                      className="block py-2.5 px-3 rounded-md text-base text-foreground hover:bg-default-50 no-underline font-semibold"
-                      href={`/${language}/dashboard/my-bookings`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {t.nav?.bookingHistory || "Booking History"}
-                    </NextLink>
-                  </li>
+                  <>
+                    <li>
+                      <NextLink
+                        className="block py-2.5 px-3 rounded-md text-base text-foreground hover:bg-default-50 no-underline font-semibold"
+                        href={`/${language}/dashboard/my-bookings`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {t.nav?.bookingHistory || "Booking History"}
+                      </NextLink>
+                    </li>
+                    <li>
+                      <NextLink
+                        className="block py-2.5 px-3 rounded-md text-base text-foreground hover:bg-default-50 no-underline font-semibold"
+                        href={`/${language}/dashboard/discounts`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {t.nav?.myVouchers || "Mã giảm giá & Voucher"}
+                      </NextLink>
+                    </li>
+                  </>
                 )}
                 <li>
                   <button

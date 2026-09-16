@@ -12,4 +12,6 @@ export const nav = {
   dashboard: "Dashboard",
   bookingHistory: "Booking History",
   myProfile: "My Profile",
+  promotions: "Promotions",
+  myVouchers: "My Vouchers",
 };
