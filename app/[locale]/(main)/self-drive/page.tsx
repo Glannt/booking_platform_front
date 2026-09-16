@@ -1,19 +1,16 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Skeleton,
   Select,
   ListBox,
-  DatePicker,
-  DateField,
-  Calendar,
+  RangeCalendar,
   Label,
   Form,
   FieldError,
   TextField,
   Input,
-  NumberField,
   Typography,
   Pagination
 } from "@heroui/react";
@@ -30,19 +27,26 @@ import {
   FileText,
   UserCheck,
   DollarSign,
-  CheckCircle
+  CheckCircle,
+  CalendarDays
 } from "lucide-react";
+import {
+  calculateRentalDays,
+  formatToIsoDate,
+  formatToDisplayDate,
+} from "@/lib/utils/rentalDate";
 
 import { useI18n } from "@/context/LanguageContext";
 import { getPublicServices } from "@/lib/api/services";
 import { getMediaDetails } from "@/lib/api/media";
 import { backendUrl } from "@/lib/api/client";
 import { getActiveSections, type SectionDto } from "@/lib/api/sections";
-import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto, type RentalDto } from "@/lib/api/rental";
-import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
+import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto, type RentalDto } from "@/lib/api/selfDrive";
+import { getVehicleCategories, getRentableVehiclesByCategory, type VehicleCategoryDto } from "@/lib/api/fleet";
 import { FormattedDescription } from "@/components/FormattedDescription";
 import { AutofillButton } from "@/components/AutofillButton";
 import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
+import { getCanonicalSlug } from "@/lib/slug-helpers";
 
 interface Vehicle {
   id: string;
@@ -88,10 +92,17 @@ export default function SelfDrivePage() {
   const [introSection, setIntroSection] = useState<SectionDto | null>(null);
 
   const [formVehicleId, setFormVehicleId] = useState<string>("");
-  const [formDate, setFormDate] = useState<string>("");
-  const [formDays, setFormDays] = useState<number>(1);
+  const [formDateRange, setFormDateRange] = useState<{ start: DateValue; end: DateValue } | null>(() => {
+    const t = today(getLocalTimeZone());
+    return { start: t, end: t };
+  });
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [formName, setFormName] = useState<string>("");
   const [formPhone, setFormPhone] = useState<string>("");
+
+  const formDays = useMemo(() => {
+    return calculateRentalDays(formDateRange?.start, formDateRange?.end);
+  }, [formDateRange]);
 
   const [vehicleCategories, setVehicleCategories] = useState<VehicleCategoryDto[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -158,17 +169,44 @@ export default function SelfDrivePage() {
         categories.forEach(c => catMap.set(c.id, c));
 
         try {
-          // Fetch rental prices for all self-drive rentals
-          const priceResults = await Promise.all(
-            rentals.filter(r => !r.driverRequired).map(r =>
-              getRentalPricesByRental(r.id).then(res => ({
-                rentalId: r.id,
-                prices: (res?.data || []) as RentalPriceDto[]
-              })).catch(() => ({ rentalId: r.id, prices: [] as RentalPriceDto[] }))
+          // Fetch rental prices and category thumbnails in parallel
+          const [priceResults, categoryThumbResults] = await Promise.all([
+            Promise.all(
+              rentals.filter(r => !r.driverRequired).map(r =>
+                getRentalPricesByRental(r.id).then(res => ({
+                  rentalId: r.id,
+                  prices: (res?.data || []) as RentalPriceDto[]
+                })).catch(() => ({ rentalId: r.id, prices: [] as RentalPriceDto[] }))
+              )
+            ),
+            Promise.all(
+              categories.map(async (c) => {
+                if (c.thumbnailUrl) {
+                  const url = c.thumbnailUrl.startsWith("http") ? c.thumbnailUrl : `${backendUrl}${c.thumbnailUrl}`;
+                  return { categoryId: c.id, thumbnailUrl: url };
+                }
+                try {
+                  const vehsRes = await getRentableVehiclesByCategory(c.id);
+                  const firstVehWithImg = (vehsRes?.data || []).find((v) => v.thumbnailUrl);
+                  if (firstVehWithImg?.thumbnailUrl) {
+                    const url = firstVehWithImg.thumbnailUrl.startsWith("http")
+                      ? firstVehWithImg.thumbnailUrl
+                      : `${backendUrl}${firstVehWithImg.thumbnailUrl}`;
+                    return { categoryId: c.id, thumbnailUrl: url };
+                  }
+                } catch {
+                  // ignore
+                }
+                return { categoryId: c.id, thumbnailUrl: "" };
+              })
             )
-          );
+          ]);
+
           const priceMap = new Map<number, RentalPriceDto[]>();
           priceResults.forEach(p => priceMap.set(p.rentalId, p.prices));
+
+          const catThumbMap = new Map<number, string>();
+          categoryThumbResults.forEach(ct => catThumbMap.set(ct.categoryId, ct.thumbnailUrl));
 
           vehiclesFromApi = rentals
             .filter(r => !r.driverRequired)
@@ -196,7 +234,8 @@ export default function SelfDrivePage() {
               const rentalPrices = priceMap.get(r.id) || [];
               const activePrice = rentalPrices.find(p => p.active && p.vehicleCategoryId === r.vehicleCategoryId);
               const dailyRate = activePrice ? Number(activePrice.amount) : 0;
-              const categorySlug = resolveLocalizedSlug(cat?.translations, language) || String(cat?.id || r.vehicleCategoryId);
+              const categorySlug = getCanonicalSlug(cat, language, "xe-tu-lai");
+              const imgUrl = catThumbMap.get(r.vehicleCategoryId) || "";
 
               return {
                 id: `${r.id}-${r.vehicleCategoryId}`,
@@ -213,8 +252,8 @@ export default function SelfDrivePage() {
                 featuresVi: features,
                 featuresEn: features,
                 capacity,
-                luggage: `${t.selfDrive.luggageMaxLabel}: ${luggageVal}kg`,
-                imgUrl: cat?.thumbnailUrl || "",
+                luggage: `${t.selfDrive.luggageMaxLabel}: ${luggageVal} ${t.selfDrive.bags || "vali"}`,
+                imgUrl,
               };
             });
         } catch (e) {
@@ -282,7 +321,7 @@ export default function SelfDrivePage() {
                     featuresVi: features,
                     featuresEn: features,
                     capacity: opt.seatCapacity?.toString() || "5",
-                    luggage: `${t.selfDrive.luggageMaxLabel}: ${opt.maxLuggage || 40}kg`,
+                    luggage: `${t.selfDrive.luggageMaxLabel}: ${opt.maxLuggage || 2} ${t.selfDrive.bags || "vali"}`,
                     imgUrl
                   };
                 })
@@ -296,7 +335,7 @@ export default function SelfDrivePage() {
                     maxSeat: 7,
                     minLuggage: 2,
                     maxLuggage: 4,
-                    unitLuggage: "kg",
+                    unitLuggage: "vali",
                     active: true,
                     default: true,
                     translations: [
@@ -349,19 +388,25 @@ export default function SelfDrivePage() {
     e.preventDefault();
     const vId = formVehicleId || vehicles[0]?.id;
     if (!vId) return;
-    const params = new URLSearchParams({ vehicleId: vId });
-    if (formDate) params.set("pickupDate", formDate);
-    if (formDays) params.set("days", String(formDays));
+    const targetVeh = vehicles.find((v) => v.id === vId) || vehicles[0];
+    const catSlug = targetVeh?.categorySlug || "xe-tu-lai";
+    const catId = targetVeh?.vehicleCategoryId;
+    const params = new URLSearchParams();
+    if (catId) params.set("id", String(catId));
+    params.set("vehicleId", vId);
+    if (formDateRange?.start) params.set("pickupDate", formatToIsoDate(formDateRange.start));
+    if (formDateRange?.end) params.set("returnDate", formatToIsoDate(formDateRange.end));
+    params.set("days", String(formDays));
     if (formName.trim()) params.set("customerName", formName.trim());
     if (formPhone.trim()) params.set("customerPhone", formPhone.trim());
-    router.push(`/${language}/self-drive/booking?${params.toString()}`);
+    router.push(`/${language}/self-drive/${catSlug}/confirm?${params.toString()}`);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
 
       {/* Hero Banner Section */}
-      <section className="relative w-full min-h-[340px] flex items-center pt-28 pb-14 px-6 [overflow:clip]">
+      <section className="relative w-full min-h-[340px] flex items-center pt-28 pb-14 px-4 sm:px-6 lg:px-8 xl:px-10 [overflow:clip]">
         <div
           className={`absolute inset-0 ${heroSection?.imageUrls?.[0] ? "bg-cover bg-center bg-no-repeat" : "bg-gradient-to-br from-slate-900 to-slate-800"}`}
           style={heroSection?.imageUrls?.[0] ? { backgroundImage: `url('${heroSection.imageUrls[0]}')` } : undefined}
@@ -369,7 +414,7 @@ export default function SelfDrivePage() {
           <div className="absolute inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-[1.5px]" />
         </div>
 
-        <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-8 relative z-10 text-white">
+        <div className="max-w-[1536px] mx-auto w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-8 relative z-10 text-white">
           <div className="space-y-4 max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-white/10 dark:bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
               <Sparkles size={13} className="text-accent" />
@@ -447,123 +492,77 @@ export default function SelfDrivePage() {
                 </Select>
               </div>
 
-              {/* Date */}
+              {/* Date Range Selection (HeroUI RangeCalendar) */}
               <div className="space-y-1">
-                <DatePicker
-                  isRequired
-                  className="w-full"
-                  value={formDate ? parseDate(formDate) : undefined}
-                  onChange={(val) => {
-                    if (val) {
-                      const d = val as DateValue;
-                      setFormDate(`${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`);
-                    } else {
-                      setFormDate("");
-                    }
-                  }}
-                  minValue={todayDate}
-                >
-                  <Label className="text-[0.625rem] font-bold uppercase tracking-wider block mb-1">{t.selfDrive.pickupDate}</Label>
-                  <DateField.Group fullWidth className="h-10 bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl px-3 flex items-center justify-between">
-                    <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none w-full">
-                      {(segment) => <DateField.Segment segment={segment} className=" focus:bg-accent/30" />}
-                    </DateField.Input>
-                    <DateField.Suffix>
-                      <DatePicker.Trigger className="cursor-pointer hover:text-accent">
-                        <DatePicker.TriggerIndicator />
-                      </DatePicker.Trigger>
-                    </DateField.Suffix>
-                  </DateField.Group>
-                  <DatePicker.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
-                    <Calendar aria-label="Pick date">
-                      <Calendar.Header className="flex items-center justify-between mb-2">
-                        <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
-                          <Calendar.YearPickerTriggerHeading />
-                          <Calendar.YearPickerTriggerIndicator />
-                        </Calendar.YearPickerTrigger>
-                        <div className="flex gap-1">
-                          <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
-                          <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
-                        </div>
-                      </Calendar.Header>
-                      <Calendar.Grid className="w-full">
-                        <Calendar.GridHeader className="text-slate-400 text-[10px] font-bold">
-                          {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
-                        </Calendar.GridHeader>
-                        <Calendar.GridBody>
-                          {(date) => (
-                            <Calendar.Cell
-                              date={date}
-                              className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
-                            />
-                          )}
-                        </Calendar.GridBody>
-                      </Calendar.Grid>
-                    </Calendar>
-                  </DatePicker.Popover>
-                  <FieldError className="text-[10px] text-red-500 font-bold mt-1">
-                    {t.selfDrive.selectDateError}
-                  </FieldError>
-                </DatePicker>
-              </div>
-
-              {/* Days */}
-              <div className="space-y-1">
-                <NumberField
-                  isRequired
-                  className="w-full"
-                  value={formDays}
-                  onChange={(val) => { if (val !== null && !isNaN(val)) setFormDays(val); }}
-                  minValue={1}
-                  name="days"
-                >
-                  <Label className="text-[10px] font-bold uppercase tracking-wider block mb-1">
-                    {t.selfDrive.rentalDays}
-                  </Label>
-                  <NumberField.Group className="flex items-center w-full h-10 bg-white/15 dark:bg-black/30 border border-white/20 dark:border-slate-700 rounded-xl overflow-hidden focus-within:border-accent transition-all">
-                    <NumberField.Input
-                      className="flex-1 bg-transparent px-3 text-xs font-semibold outline-none border-none h-full w-full"
-                      placeholder={t.selfDrive.rentalDaysPlaceholder}
-                    />
-                    <div className="flex h-full flex-col border-l border-white/20 dark:border-slate-700">
-                      <NumberField.IncrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent">
-                        <svg
-                          aria-hidden="true"
-                          height="9"
-                          viewBox="0 0 16 16"
-                          width="9"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            clipRule="evenodd"
-                            d="M13.03 10.53a.75.75 0 0 1-1.06 0L8 6.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06"
-                            fill="currentColor"
-                            fillRule="evenodd"
-                          />
-                        </svg>
-                      </NumberField.IncrementButton>
-                      <NumberField.DecrementButton className="flex h-1/2 w-6 items-center justify-center rounded-none border-0 hover:text-accent-foreground hover:bg-accent/10 cursor-pointer bg-transparent border-t border-white/20 dark:border-slate-700">
-                        <svg
-                          aria-hidden="true"
-                          height="9"
-                          viewBox="0 0 16 16"
-                          width="9"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            clipRule="evenodd"
-                            d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06"
-                            fill="currentColor"
-                            fillRule="evenodd"
-                          />
-                        </svg>
-                      </NumberField.DecrementButton>
+                <Label className="text-[0.625rem] font-bold uppercase tracking-wider block mb-1">
+                  {t.selfDrive.rentalPeriod}
+                </Label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                    className="w-full h-10 bg-white/15 dark:bg-black/30 hover:bg-white/20 dark:hover:bg-black/40 border border-white/20 dark:border-slate-700 rounded-xl px-3 flex items-center justify-between text-xs font-semibold cursor-pointer transition-all"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <CalendarDays size={15} className="text-accent shrink-0" />
+                      <span className="truncate">
+                        {formDateRange?.start && formDateRange?.end
+                          ? `${formatToDisplayDate(formDateRange.start)} - ${formatToDisplayDate(formDateRange.end)}`
+                          : t.selfDrive.rentalPeriod}
+                      </span>
                     </div>
-                  </NumberField.Group>
-                  <FieldError className="text-[10px] text-red-500 font-bold mt-1">
-                    {t.selfDrive.rentalDaysError}
-                  </FieldError>
-                </NumberField>
+                    <span className="px-2 py-0.5 rounded-md bg-accent/20 text-accent text-[10px] font-black shrink-0">
+                      {formDateRange?.start && formDateRange?.end && formDateRange.start.compare(formDateRange.end) === 0
+                        ? t.selfDrive.sameDayRental
+                        : t.selfDrive.calculatedDays.replace("{days}", String(formDays))}
+                    </span>
+                  </button>
+
+                  {isCalendarOpen && (
+                    <div className="absolute top-12 left-0 z-50 p-3 rounded-2xl bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 shadow-2xl">
+                      <RangeCalendar
+                        aria-label={t.selfDrive.rentalPeriod}
+                        firstDayOfWeek="mon"
+                        minValue={todayDate}
+                        value={formDateRange}
+                        onChange={(v) => {
+                          if (v) {
+                            setFormDateRange(v);
+                          }
+                        }}
+                        className="w-72"
+                      >
+                        <RangeCalendar.Header className="flex items-center justify-between mb-2">
+                          <RangeCalendar.Heading className="text-xs font-bold text-slate-900 dark:text-white" />
+                          <div className="flex items-center gap-1">
+                            <RangeCalendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer text-slate-600 dark:text-slate-300" />
+                            <RangeCalendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer text-slate-600 dark:text-slate-300" />
+                          </div>
+                        </RangeCalendar.Header>
+                        <RangeCalendar.Grid className="w-full">
+                          <RangeCalendar.GridHeader className="text-slate-400 dark:text-slate-500 text-[10px] font-bold">
+                            {(day) => <RangeCalendar.HeaderCell className="w-full text-center py-1">{day}</RangeCalendar.HeaderCell>}
+                          </RangeCalendar.GridHeader>
+                          <RangeCalendar.GridBody>
+                            {(date) => <RangeCalendar.Cell date={date} />}
+                          </RangeCalendar.GridBody>
+                        </RangeCalendar.Grid>
+                      </RangeCalendar>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800 mt-2">
+                        <span className="text-[10px] font-extrabold text-accent">
+                          {formDays} {t.selfDrive.dayUnit}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsCalendarOpen(false)}
+                          className="text-[11px] font-bold text-slate-500 hover:text-accent cursor-pointer"
+                        >
+                          Xong
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Customer Info Header with Autofill */}
@@ -628,7 +627,7 @@ export default function SelfDrivePage() {
       </section>
 
       {/* Main Layout Area */}
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 flex-1 space-y-8">
+      <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 flex-1 space-y-8">
         <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800/80 leading-relaxed font-semibold text-xs md:text-sm text-slate-600 dark:text-slate-300">
           <p>
             {introSection?.translations?.find(t => t.locale === language)?.description
@@ -647,9 +646,9 @@ export default function SelfDrivePage() {
             {t.selfDrive.vehicleListSubtitle}
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {vehiclesLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
+                Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="flex flex-col rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-black">
                     <Skeleton className="h-44 w-full rounded-none" />
                     <div className="p-5 space-y-3">
@@ -669,23 +668,36 @@ export default function SelfDrivePage() {
                 ))
               ) : paginatedVehicles.map((vehicle) => {
                 const isSelected = selectedVehicleId === vehicle.id;
+                const slug = vehicle.categorySlug || "xe-tu-lai";
+                const goToDetail = () => {
+                  router.push(`/${language}/self-drive/${slug}?id=${vehicle.vehicleCategoryId}`);
+                };
+
                 return (
                   <div
                     key={vehicle.id}
-                    onClick={() => setSelectedVehicleId(vehicle.id)}
+                    onClick={goToDetail}
                     className={`flex flex-col rounded-3xl overflow-hidden border cursor-pointer transition-all duration-300 bg-white dark:bg-black ${isSelected
                       ? "border-accent border-2 shadow-md ring-2 ring-accent/10"
                       : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm"
                       }`}
                   >
-                    <div className="relative h-44 overflow-hidden bg-slate-100 dark:bg-black">
-                      <img
-                        src={vehicle.imgUrl}
-                        alt={language === "vi" ? vehicle.nameVi : vehicle.nameEn}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                      />
+                    <div className="relative h-44 overflow-hidden bg-slate-100 dark:bg-[var(--bg-card)] flex items-center justify-center">
+                      {vehicle.imgUrl ? (
+                        <img
+                          src={vehicle.imgUrl}
+                          alt=""
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1.5 text-slate-400">
+                          <Car size={32} className="opacity-40" />
+                          <span className="text-[10px] font-semibold">{t.selfDrive.noPhotos}</span>
+                        </div>
+                      )}
                       <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full tracking-wider">
-                        {vehicle.pricePerDay.toLocaleString("vi-VN")}đ / {t.selfDrive.perTrip}
+                        {vehicle.pricePerDay.toLocaleString("vi-VN")}đ{t.selfDrive.perTrip.startsWith("/") ? t.selfDrive.perTrip : `/${t.selfDrive.perTrip}`}
                       </span>
                     </div>
 
@@ -719,7 +731,7 @@ export default function SelfDrivePage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/${language}/self-drive/booking?vehicleId=${vehicle.id}`);
+                            router.push(`/${language}/self-drive/${slug}/confirm?id=${vehicle.vehicleCategoryId}&vehicleId=${vehicle.id}`);
                           }}
                           className="flex-1 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer border-none"
                         >
@@ -729,11 +741,11 @@ export default function SelfDrivePage() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/${language}/self-drive/${vehicle.categorySlug || vehicle.vehicleCategoryId}`);
+                            goToDetail();
                           }}
-                          className="py-2.5 px-3 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer border-none"
+                          className="shrink-0 py-2.5 px-4 bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 rounded-xl text-xs font-extrabold transition-all cursor-pointer border-none whitespace-nowrap"
                         >
-                          {t.selfDrive.moreVehicles}
+                          {t.selfDrive.details || t.common.details || "Chi tiết"}
                         </button>
                       </div>
                     </div>
