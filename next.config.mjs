@@ -23,7 +23,27 @@ const nextConfig = {
       },
       {
         source: "/thue-xe-di-tinh",
-        destination: "/vi/rent-car",
+        destination: "/vi/intercity",
+        permanent: true,
+      },
+      {
+        source: "/:locale(vi|en|ko|ru)/rent-car/:path*",
+        destination: "/:locale/intercity/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:locale(vi|en|ko|ru)/rent-car",
+        destination: "/:locale/intercity",
+        permanent: true,
+      },
+      {
+        source: "/rent-car/:path*",
+        destination: "/vi/intercity/:path*",
+        permanent: true,
+      },
+      {
+        source: "/rent-car",
+        destination: "/vi/intercity",
         permanent: true,
       },
       {
@@ -38,7 +58,7 @@ const nextConfig = {
       },
       {
         source: "/xe-nha-trang-di-da-lat",
-        destination: "/vi/rent-car/xe-nha-trang-di-da-lat",
+        destination: "/vi/intercity/xe-nha-trang-di-da-lat",
         permanent: true,
       },
       {

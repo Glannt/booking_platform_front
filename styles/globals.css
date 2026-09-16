@@ -4,34 +4,75 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ponytail: override HeroUI accent to yellow (light) / brown-gold (dark) */
-:root {
+/* ponytail: override HeroUI accent to yellow (light) / brown-gold (dark) */
+:root,
+.light,
+[data-theme="light"] {
 	--accent: oklch(0.82 0.17 85);
 	--accent-foreground: oklch(0.18 0.02 70);
 	--accent-hover: oklch(0.75 0.18 85);
+	--accent-border: oklch(0.82 0.17 85);
+	--accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
+	--accent-soft-foreground: oklch(0.25 0.04 70);
+	--accent-soft-hover: color-mix(in oklab, var(--accent) 26%, transparent);
 	--bg-page: #fafafa;
 	--bg-surface: #ffffff;
 	--bg-card: #f4f4f5;
 	--bg-elevated: #e4e4e7;
 	--bg-muted: #f4f4f580;
+	--default: #d4d4d8;
 }
 
-.dark {
+.dark,
+[data-theme="dark"] {
 	--accent: oklch(0.65 0.15 75);
 	--accent-foreground: oklch(0.97 0.01 80);
 	--accent-hover: oklch(0.58 0.16 75);
+	--accent-border: oklch(0.52 0.13 75);
+	--accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+	--accent-soft-foreground: oklch(0.95 0.02 80);
+	--accent-soft-hover: color-mix(in oklab, var(--accent) 30%, transparent);
 	--bg-page: #09090b;
 	--bg-surface: #18181b;
 	--bg-card: #27272a;
 	--bg-elevated: #3f3f46;
 	--bg-muted: #27272a80;
+	--default: #3f3f46;
 }
 
 @theme {
-	--font-sans: "font", sans-serif;
+	--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Droid Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 	--font-mono: "monospace", monospace;
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent-hover: var(--accent-hover);
+	--color-accent-border: var(--accent-border);
+	--color-accent-soft: var(--accent-soft);
+	--color-accent-soft-foreground: var(--accent-soft-foreground);
+	--color-accent-soft-hover: var(--accent-soft-hover);
+}
+
+html,
+body {
+	font-family: var(--font-sans);
 }
 
 @layer components {
+	/* HeroUI isRequired label indicator */
+	.label--required::after,
+	[data-required="true"] > [data-slot="label"]::after,
+	[data-required="true"] label::after {
+		content: " *";
+		color: #f43f5e;
+		font-weight: 700;
+	}
+
+	.switch,
+	.switch__content,
+	.switch__control {
+		cursor: pointer !important;
+	}
+
 	.accordion {
 		@apply w-full rounded-2xl bg-white dark:bg-[var(--bg-surface)] border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden;
 		contain: none !important;
@@ -80,6 +121,18 @@
 
 	.accordion--outline {
 		@apply w-full shadow-lg border-2 border-slate-200 dark:border-slate-700;
+	}
+
+	.tooltip {
+		@apply bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl z-[999];
+	}
+
+	.tooltip__trigger {
+		@apply inline-flex;
+	}
+
+	.tooltip [data-slot="overlay-arrow"] {
+		@apply fill-white dark:fill-[var(--bg-card)] stroke-slate-200 dark:stroke-slate-800;
 	}
 }
 
@@ -194,33 +247,6 @@
 	animation: draw-checkmark 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards;
 }
 
-/* ponytail: Style inputs, textareas, selects, and checkbox controls inside admin modals and pages for better visibility */
-div[role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
-div[role="dialog"] textarea,
-div[role="dialog"] select,
-div[role="dialog"] .border,
-div[role="dialog"] .border-slate-200,
-div[role="dialog"] .border-slate-800,
-div[role="dialog"] [class*="border-slate-"],
-div[role="dialog"] .rounded-xl.border {
-	border-width: 2px !important;
-	border-color: #cbd5e1 !important;
-	/* slate-300 */
-	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-	/* shadow-sm */
-}
-
-.dark div[role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
-.dark div[role="dialog"] textarea,
-.dark div[role="dialog"] select,
-.dark div[role="dialog"] .border,
-.dark div[role="dialog"] .border-slate-800,
-.dark div[role="dialog"] [class*="border-slate-"],
-.dark div[role="dialog"] .rounded-xl.border {
-	border-color: #3f3f46 !important;
-	/* zinc-700 */
-}
-
 /* Checkbox control box border, shadow and custom state styling */
 div[role="dialog"] [data-custom="bar"] div,
 div[role="dialog"] div[role="checkbox"] [role="presentation"],
@@ -248,22 +274,134 @@ div[role="dialog"] span[role="checkbox"][data-selected="true"] [role="presentati
 	border-color: var(--accent) !important;
 }
 
-/* Admin Page Search Fields */
-.admin-layout div[role="search"]>div,
-.admin-layout .admin-search-field-group,
-.admin-layout [class*="border-slate-250"],
-.admin-layout [class*="border-slate-200"],
-.admin-layout [class*="border-slate-850"] {
-	border-width: 2px !important;
-	border-color: #cbd5e1 !important;
-	/* slate-300 */
-	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-	/* shadow-sm */
+/* HeroUI RangeCalendar Connected Range Strip (Yellow/Brown-gold Palette)
+.range-calendar {
+	user-select: none;
 }
 
-.dark .admin-layout div[role="search"]>div,
-.dark .admin-layout .admin-search-field-group,
-.dark .admin-layout [class*="border-slate-800"] {
-	border-color: #3f3f46 !important;
-	/* zinc-700 */
+.range-calendar table {
+	border-collapse: collapse;
+}
+
+.range-calendar td[role="gridcell"] {
+	padding: 2px 0;
+}
+
+.range-calendar [data-slot="range-calendar-cell"] {
+	width: 100% !important;
+	height: 2.25rem !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	position: relative !important;
+	border-radius: 0 !important;
+	background-color: transparent !important;
+	outline: none !important;
+}
+
+/* Continuous connecting drag-track on ::before */
+.range-calendar [data-slot="range-calendar-cell"][data-selected="true"]::before {
+	content: "" !important;
+	position: absolute !important;
+	top: 2px !important;
+	bottom: 2px !important;
+	left: 0 !important;
+	right: 0 !important;
+	z-index: 0 !important;
+	background-color: var(--accent-soft) !important;
+}
+
+/* Week row boundary rounding */
+.range-calendar td:first-child > [data-slot="range-calendar-cell"][data-selected="true"]::before {
+	border-top-left-radius: 9999px !important;
+	border-bottom-left-radius: 9999px !important;
+}
+
+.range-calendar td:last-child > [data-slot="range-calendar-cell"][data-selected="true"]::before {
+	border-top-right-radius: 9999px !important;
+	border-bottom-right-radius: 9999px !important;
+}
+
+/* Range start cap: track extends only to the right */
+.range-calendar [data-slot="range-calendar-cell"][data-selection-start="true"]:not([data-selection-end="true"])::before {
+	left: 50% !important;
+	right: 0 !important;
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+}
+
+/* Range end cap: track extends only from the left */
+.range-calendar [data-slot="range-calendar-cell"][data-selection-end="true"]:not([data-selection-start="true"])::before {
+	left: 0 !important;
+	right: 50% !important;
+	border-top-right-radius: 0 !important;
+	border-bottom-right-radius: 0 !important;
+}
+
+/* Single day selection: standalone circular badge without extended track */
+.range-calendar [data-slot="range-calendar-cell"][data-selection-start="true"][data-selection-end="true"]::before {
+	display: none !important;
+}
+
+/* Inner cell button */
+.range-calendar [data-slot="range-calendar-cell-button"] {
+	position: relative !important;
+	z-index: 1 !important;
+	width: 2rem !important;
+	height: 2rem !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border-radius: 9999px !important;
+	font-size: 0.75rem !important;
+	font-weight: 600 !important;
+	background-color: transparent !important;
+	transition: all 150ms ease !important;
+}
+
+/* In-between range text */
+.range-calendar [data-slot="range-calendar-cell"][data-selected="true"]:not([data-selection-start="true"]):not([data-selection-end="true"]) [data-slot="range-calendar-cell-button"] {
+	color: oklch(0.25 0.04 70) !important;
+	font-weight: 700 !important;
+}
+
+.dark .range-calendar [data-slot="range-calendar-cell"][data-selected="true"]:not([data-selection-start="true"]):not([data-selection-end="true"]) [data-slot="range-calendar-cell-button"] {
+	color: #ffffff !important;
+	font-weight: 700 !important;
+}
+
+/* Start and End selected date badges */
+.range-calendar [data-slot="range-calendar-cell"][data-selection-start="true"] [data-slot="range-calendar-cell-button"],
+.range-calendar [data-slot="range-calendar-cell"][data-selection-end="true"] [data-slot="range-calendar-cell-button"] {
+	background-color: var(--accent) !important;
+	color: var(--accent-foreground) !important;
+	font-weight: 800 !important;
+	box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.25) !important;
+	transform: scale(1.05) !important;
+}
+
+.dark .range-calendar [data-slot="range-calendar-cell"][data-selection-start="true"] [data-slot="range-calendar-cell-button"],
+.dark .range-calendar [data-slot="range-calendar-cell"][data-selection-end="true"] [data-slot="range-calendar-cell-button"] {
+	color: #ffffff !important;
+}
+
+/* Hover on unselected date */
+.range-calendar [data-slot="range-calendar-cell"]:not([data-selected="true"]):hover [data-slot="range-calendar-cell-button"] {
+	background-color: var(--accent-soft) !important;
+	color: var(--accent) !important;
+}
+
+/* Disabled and outside visible month dates */
+.range-calendar [data-slot="range-calendar-cell"][data-disabled="true"],
+.range-calendar [data-slot="range-calendar-cell"][data-outside-month="true"] {
+	opacity: 0.25 !important;
+	pointer-events: none !important;
+	cursor: not-allowed !important;
+}
+
+/* Hide unwanted HeroUI tabs scroll chevrons (< >) */
+.tabs__list-container__scroll-prev,
+.tabs__list-container__scroll-next,
+[data-slot="tabs-list-container"] > button {
+	display: none !important;
 }

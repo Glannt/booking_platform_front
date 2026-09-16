@@ -12,8 +12,8 @@
 	},
 	"dependencies": {
 		"@gravity-ui/icons": "^2.20.0",
-		"@heroui/react": "3.2.1",
-		"@heroui/styles": "3.2.1",
+		"@heroui/react": "3.2.5",
+		"@heroui/styles": "3.2.5",
 		"@hookform/resolvers": "^5.4.0",
 		"@internationalized/date": "^3.12.2",
 		"@tanstack/react-query": "^5.101.0",

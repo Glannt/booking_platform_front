@@ -9,6 +9,8 @@ import { Toast } from "@heroui/react";
 import { useAuthStore } from "@/lib/store/authStore";
 import { getWhoAmI } from "@/lib/api/auth";
 
+import { QueryProvider } from "@/lib/react-query/query-provider";
+
 export interface ProvidersProps {
   children: React.ReactNode;
   themeProps?: ThemeProviderProps;
@@ -35,11 +37,13 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   }, [isHydrated]);
 
   return (
-    <LanguageProvider>
-      <NextThemesProvider {...themeProps}>
-        {children}
-        <Toast.Provider />
-      </NextThemesProvider>
-    </LanguageProvider>
+    <QueryProvider>
+      <LanguageProvider>
+        <NextThemesProvider {...themeProps}>
+          {children}
+          <Toast.Provider />
+        </NextThemesProvider>
+      </LanguageProvider>
+    </QueryProvider>
   );
 }
