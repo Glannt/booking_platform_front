@@ -24,7 +24,7 @@ export default async function RoutesListingPage({ params }: { params: Promise<{ 
   const locale = rawLocale || "vi";
   let sections: SectionDto[] = [];
   try {
-    sections = await getActiveSectionsServer("/rent-car/routes", locale);
+    sections = await getActiveSectionsServer("/intercity/routes", locale);
   } catch {
     sections = [];
   }

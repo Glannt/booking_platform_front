@@ -8,7 +8,7 @@ export const Footer = () => {
 
   return (
     <footer className="w-full bg-slate-50 dark:bg-[var(--bg-page)] text-slate-600 dark:text-slate-400 py-16 border-t border-slate-200 dark:border-slate-900 transition-colors">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-10">
+      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 grid grid-cols-1 md:grid-cols-12 gap-10">
 
         {/* Col 1 – Brand & Company Info */}
         <div className="md:col-span-4 space-y-4">
@@ -104,7 +104,7 @@ export const Footer = () => {
               </Link>
             </li>
             <li>
-              <Link href="/rent-car" className="hover:text-slate-900 dark:hover:text-white transition-colors no-underline">
+              <Link href="/intercity" className="hover:text-slate-900 dark:hover:text-white transition-colors no-underline">
                 {t.footer.rentCar}
               </Link>
             </li>
@@ -148,7 +148,7 @@ export const Footer = () => {
       </div>
 
       {/* Bottom bar */}
-      <div className="max-w-7xl mx-auto px-6 border-t border-slate-200 dark:border-slate-900 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-4 transition-colors">
+      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 border-t border-slate-200 dark:border-slate-900 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-4 transition-colors">
         <span>&copy; {new Date().getFullYear()} {t.footer.copyright}</span>
         <span>{t.footer.companyFooter}</span>
         <span>Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-600 dark:hover:text-slate-300">OpenStreetMap</a> contributors</span>

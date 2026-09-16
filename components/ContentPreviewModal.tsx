@@ -66,8 +66,9 @@ export function ContentPreviewModal({
             <ModalFooter className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end shrink-0 bg-slate-50/50 dark:bg-[var(--bg-card)]/50">
               <Button
                 type="button"
+                variant="outline"
                 onClick={onClose}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-elevated)] dark:hover:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200 cursor-pointer border-none"
+                className="rounded-xl font-bold text-sm h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 {closeLabel}
               </Button>

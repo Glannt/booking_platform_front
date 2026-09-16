@@ -1,4 +1,7 @@
 import { apiFetch, ApiResponse } from "./client";
+import { DepositType } from "../pricing/deposit";
+
+export { DepositType };
 
 export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
@@ -40,6 +43,8 @@ export interface BookingDto {
   internalNotes?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  depositType?: DepositType;
+  depositRate?: number;
   paidAmount?: number;
   depositAmount?: number;
   receivedAmount?: number;
@@ -71,6 +76,9 @@ export interface CreateBookingRequest {
   customerEmail: string;
   customerPhone: string;
   totalAmount?: number;
+  depositType?: DepositType;
+  depositRate?: number;
+  depositAmount?: number;
   customerNotes?: string;
   idempotencyKey?: string;
   contactChannel?: string;
@@ -97,6 +105,8 @@ export interface UpdateBookingRequest {
   internalNotes?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  depositType?: DepositType;
+  depositRate?: number;
   paidAmount?: number;
   depositAmount?: number;
   receivedAmount?: number;

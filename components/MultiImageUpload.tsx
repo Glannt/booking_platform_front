@@ -162,7 +162,7 @@ export default function MultiImageUpload({
                       <Star size={14} fill={thumbnailId === img.id ? "currentColor" : "none"} />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content className="bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xl z-[999]">
+                  <Tooltip.Content className="bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-border shadow-xl z-[999]">
                     <Tooltip.Arrow className="fill-white dark:fill-[var(--bg-card)] stroke-slate-200 dark:stroke-slate-800" />
                     {thumbnailId === img.id ? "Ảnh chính hiện tại" : "Đặt làm ảnh chính"}
                   </Tooltip.Content>
@@ -179,7 +179,7 @@ export default function MultiImageUpload({
                       <X size={14} />
                     </button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content className="bg-white dark:bg-[var(--bg-card)] text-rose-600 dark:text-rose-400 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xl z-[999]">
+                  <Tooltip.Content className="bg-white dark:bg-[var(--bg-card)] text-rose-600 dark:text-rose-400 text-xs px-2.5 py-1.5 rounded-lg border border-border shadow-xl z-[999]">
                     <Tooltip.Arrow className="fill-white dark:fill-[var(--bg-card)] stroke-slate-200 dark:stroke-slate-800" />
                     Xóa ảnh này
                   </Tooltip.Content>
@@ -205,7 +205,7 @@ export default function MultiImageUpload({
               "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all",
               dragOver
                 ? "border-primary bg-primary/5"
-                : "border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)]/30"
+                : "border-border hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)]/30"
             )}
           >
             {loading ? (

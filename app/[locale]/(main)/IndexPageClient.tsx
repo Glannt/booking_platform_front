@@ -19,14 +19,14 @@ import { Button, Separator, Select, Label, ListBox, SearchField, DatePicker, Dat
 import { useI18n } from "@/context/LanguageContext";
 import { getPublicServices, ServiceDto } from "@/lib/api/services";
 import { getVehicleCategories, VehicleCategoryDto, getActiveAirports, type AirportDto } from "@/lib/api/fleet";
-import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/rental";
+import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/intercity";
 import { getTours, type TourDto } from "@/lib/api/tours";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { getActiveSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
 import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { FormattedDescription } from "@/components/FormattedDescription";
-import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
+import { getCanonicalSlug } from "@/lib/slug-helpers";
 
 export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
   const { language, t, contacts } = useI18n();
@@ -247,7 +247,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
       if (rentalSeats) params.set("seats", rentalSeats);
       if (rentalGuests) params.set("guests", String(rentalGuests));
 
-      router.push(`/${language}/self-drive/booking?${params.toString()}`);
+      router.push(`/${language}/self-drive?${params.toString()}`);
     } else {
       const params = new URLSearchParams();
       if (selectedIntercityRouteId) params.set("routeId", String(selectedIntercityRouteId));
@@ -257,7 +257,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
       if (rentalDropoff.trim()) params.set("dropoffAddress", rentalDropoff.trim());
       if (rentalSeats) params.set("seats", rentalSeats);
 
-      router.push(`/${language}/rent-car/confirm?${params.toString()}`);
+      router.push(`/${language}/intercity/confirm?${params.toString()}`);
     }
   };
 
@@ -265,7 +265,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
     e.preventDefault();
     if (!selectedTour) return;
     const dateStr = tourDate ? tourDate.toString() : "";
-    const tourSlug = resolveLocalizedSlug(selectedTour.translations, language) || selectedTour.id;
+    const tourSlug = getCanonicalSlug(selectedTour, language, "tour");
     router.push(`/${language}/tours/${tourSlug}/confirm?tourId=${selectedTour.id}&date=${dateStr}&guests=${tourGuests}&pickup=${encodeURIComponent(tourPickup)}`);
   };
 
@@ -317,7 +317,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
         )}
 
         {/* Hero Content Grid */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center h-full">
+        <div className="relative z-10 w-full max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center h-full">
           {/* Left: Branding & Message */}
           <div className="lg:col-span-7 text-left space-y-6 max-w-2xl">
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white tracking-tight leading-none drop-shadow-md">
@@ -443,7 +443,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <div className="w-2 h-2 rounded-full bg-accent" />
                         </div>
                         <div className="w-full text-left relative">
-                          <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                             {t.homePage.pickupLocation}
                           </label>
                           {direction === "to-nhatrang" ? (
@@ -497,7 +497,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                           <div className="w-2 h-2 rounded-full bg-emerald-500" />
                         </div>
                         <div className="w-full text-left relative">
-                          <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                             {t.homePage.destination}
                           </label>
                           {direction === "to-airport" ? (
@@ -550,7 +550,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         <CalendarIcon className="text-amber-500 shrink-0" size={20} />
                         <div className="w-full text-left grid grid-cols-12 gap-2 items-center">
                           <div className="col-span-7">
-                            <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                               {t.homePage.dateLabel}
                             </label>
                             <DatePicker
@@ -600,7 +600,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                             </DatePicker>
                           </div>
                           <div className="col-span-5 border-l border-slate-200 dark:border-slate-800 pl-2 flex flex-col justify-center">
-                            <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                               {t.homePage.time}
                             </label>
                             <TimePicker
@@ -728,7 +728,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                 if (key) setSelectedIntercityRouteId(Number(key));
                               }}
                             >
-                              <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                              <Label className="block text-[9px] font-extrabold uppercase tracking-wider mb-0.5">
                                 {t.rentCar.route}
                               </Label>
                               <Select.Trigger className="h-6 bg-transparent border-none flex items-center justify-between p-0 w-full outline-none cursor-pointer">
@@ -759,7 +759,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       <div className={`flex items-center gap-3 px-4 py-3 relative ${showRentalPickupSug ? "z-20" : "z-10"}`}>
                         <MapPin className="text-blue-500 shrink-0" size={20} />
                         <div className="w-full text-left relative">
-                          <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                             {t.homePage.pickupLocation}
                           </label>
                           <input
@@ -802,7 +802,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         <div className={`flex items-center gap-3 px-4 py-3 relative ${showRentalDropoffSug ? "z-20" : "z-10"}`}>
                           <MapPin className="text-red-500 shrink-0" size={20} />
                           <div className="w-full text-left relative">
-                            <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                               {t.homePage.destination}
                             </label>
                             <input
@@ -846,7 +846,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                         <CalendarIcon className="text-amber-500 shrink-0" size={20} />
                         <div className="w-full text-left grid grid-cols-12 gap-2">
                           <div className="col-span-6">
-                            <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                               {t.homePage.startDate}
                             </label>
                             <DatePicker
@@ -906,7 +906,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                                   if (key) setRentalTripType(key as "one-way" | "return");
                                 }}
                               >
-                                <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                                <Label className="block text-[9px] font-extrabold uppercase tracking-wider mb-0.5">
                                   {t.airportTransfer.tripType}
                                 </Label>
                                 <Select.Trigger className="h-6 bg-transparent border-none flex items-center justify-between p-0 w-full outline-none cursor-pointer">
@@ -929,7 +929,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                             </div>
                           ) : (
                             <div className="col-span-6 border-l border-slate-200 dark:border-slate-800 pl-2 flex flex-col justify-center">
-                              <label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                              <label className="block text-[9px] font-extrabold uppercase tracking-wider">
                                 {t.homePage.passengers}
                               </label>
                               <div className="flex items-center justify-between mt-0.5">
@@ -959,7 +959,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
                     {/* Seats selector */}
                     <div className="flex flex-col gap-1 text-left w-full">
-                      <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 pl-1 mb-1">
+                      <Label className="block text-[9px] font-extrabold uppercase tracking-wider pl-1 mb-1">
                         {t.homePage.requiredVehicle}
                       </Label>
                       <Select
@@ -1040,7 +1040,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       <div className={`flex items-center gap-3 px-4 py-3 relative ${showTourPickupSug ? "z-20" : "z-10"}`}>
                         <MapPin className="text-accent shrink-0" size={20} />
                         <div className="w-full text-left relative">
-                          <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                          <Label className="block text-[9px] font-extrabold uppercase tracking-wider mb-0.5">
                             {t.homePage.pickupLocation}
                           </Label>
                           <input
@@ -1102,7 +1102,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                               }
                             }}
                           >
-                            <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                            <Label className="block text-[9px] font-extrabold uppercase tracking-wider mb-0.5">
                               {t.homePage.searchTours}
                             </Label>
                             <Autocomplete.Trigger>
@@ -1155,7 +1155,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
                       <div className="flex items-center gap-3 px-4 py-3">
                         <CalendarIcon className="text-amber-500 shrink-0" size={20} />
                         <div className="w-full text-left">
-                          <Label className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                          <Label className="block text-[9px] font-extrabold uppercase tracking-wider mb-0.5">
                             {t.homePage.tourDate}
                           </Label>
                           <DatePicker
@@ -1264,7 +1264,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
         <SectionRenderer sections={featureSections} locale={language} />
       ) : (
         <section className="w-full py-16 bg-slate-50/50 dark:bg-black/20 border-b border-slate-100 dark:border-slate-900">
-          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Feature 1 */}
             <div className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white dark:hover:bg-[var(--bg-surface)]/50 transition-all duration-300">
               <div className="p-3 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
@@ -1311,7 +1311,7 @@ export default function IndexPage({ feedbacks }: { feedbacks?: any[] }) {
 
       {/* Dynamic Sections from Backend (CTA, Promo, Banner) */}
       {ctaSections.length > 0 && (
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
           <SectionRenderer sections={ctaSections} locale={language} />
         </div>
       )}

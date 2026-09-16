@@ -96,6 +96,11 @@ import { adminBookings as adminBookingsEn } from "./en/adminBookings";
 import { adminBookings as adminBookingsKo } from "./ko/adminBookings";
 import { adminBookings as adminBookingsRu } from "./ru/adminBookings";
 
+import { discounts as discountsVi } from "./vi/discounts";
+import { discounts as discountsEn } from "./en/discounts";
+import { discounts as discountsKo } from "./ko/discounts";
+import { discounts as discountsRu } from "./ru/discounts";
+
 const vi: TranslationDictionary = {
   nav: navVi,
   aboutPage: aboutPageVi,
@@ -119,6 +124,7 @@ const vi: TranslationDictionary = {
   myBookings: myBookingsVi,
   surchargeEngine: surchargeEngineVi,
   adminBookings: adminBookingsVi,
+  discounts: discountsVi,
 };
 
 const en: TranslationDictionary = {
@@ -144,6 +150,7 @@ const en: TranslationDictionary = {
   myBookings: myBookingsEn,
   surchargeEngine: surchargeEngineEn,
   adminBookings: adminBookingsEn,
+  discounts: discountsEn,
 };
 
 const ko: TranslationDictionary = {
@@ -169,6 +176,7 @@ const ko: TranslationDictionary = {
   myBookings: myBookingsKo,
   surchargeEngine: surchargeEngineKo,
   adminBookings: adminBookingsKo,
+  discounts: discountsKo,
 };
 
 const ru: TranslationDictionary = {
@@ -194,6 +202,7 @@ const ru: TranslationDictionary = {
   myBookings: myBookingsRu,
   surchargeEngine: surchargeEngineRu,
   adminBookings: adminBookingsRu,
+  discounts: discountsRu,
 };
 
 export const translations: Record<Language, TranslationDictionary> = { vi, en, ko, ru };

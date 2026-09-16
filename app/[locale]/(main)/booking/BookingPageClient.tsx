@@ -470,13 +470,20 @@ export default function BookingPageClient() {
               >
                 <div>
                   {/* Card Image */}
-                  <div className="relative h-32 w-full overflow-hidden">
-                    <img
-                      src={image}
-                      alt={getLocalizedName(srv)}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
+                  <div className="relative h-32 w-full overflow-hidden bg-slate-100 dark:bg-[var(--bg-card)] flex items-center justify-center">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt=""
+                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <Clock size={28} className="text-slate-300 dark:text-slate-600" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 pointer-events-none" />
                     <span className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[8px] font-extrabold uppercase bg-white/95 dark:bg-black/95 text-slate-800 dark:text-slate-200 rounded-md shadow-sm">
                       {categoryName}
                     </span>

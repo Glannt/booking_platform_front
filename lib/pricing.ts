@@ -4,6 +4,8 @@
  * IntercityPriceCalculator): results are rounded to the nearest 1000 VND.
  */
 
+import { IntercityPricingType } from "@/lib/api/intercity";
+
 export interface AirportPriceInput {
   baseKm: number;
   baseAmount: number;
@@ -11,6 +13,17 @@ export interface AirportPriceInput {
   zoneBufferKm?: number;
   fixedOvercharge?: boolean;
   feeOverchargeFixed?: number;
+}
+
+export interface IntercityPrivatePriceInput {
+  distanceKm?: number;
+  pricingType?: IntercityPricingType | string;
+  perKmAmount?: number;
+  fixedPriceOneWay?: number;
+  fixedPriceRoundTrip?: number;
+  roundTripPrice?: number;
+  roundTripPerKmAmount?: number;
+  basePrice?: number;
 }
 
 export function roundToThousand(value: number): number {
@@ -53,16 +66,6 @@ export function calcIntercityPrice(distanceKm: number | undefined, perKmAmount: 
   return roundTrip ? oneWay * 2 : oneWay;
 }
 
-export interface IntercityPrivatePriceInput {
-  distanceKm?: number;
-  pricingType?: "PER_KM" | "FIXED" | string;
-  perKmAmount?: number;
-  fixedPriceOneWay?: number;
-  fixedPriceRoundTrip?: number;
-  roundTripPrice?: number;
-  roundTripPerKmAmount?: number;
-}
-
 /**
  * Calculates private car trip price with FIXED or PER_KM pricing,
  * respecting roundTripPrice or fixedPriceRoundTrip overrides.
@@ -71,8 +74,12 @@ export function calcIntercityPrivatePrice(
   input: IntercityPrivatePriceInput,
   roundTrip: boolean
 ): number {
-  if (input.pricingType === "FIXED") {
-    const oneWay = Number(input.fixedPriceOneWay ?? 0);
+  const isFixed = input.pricingType === IntercityPricingType.FIXED ||
+    input.pricingType === "FIXED" ||
+    (!Number(input.perKmAmount ?? 0) && (Boolean(input.fixedPriceOneWay) || Boolean(input.basePrice)));
+
+  if (isFixed) {
+    const oneWay = Number(input.fixedPriceOneWay ?? input.basePrice ?? 0);
     if (roundTrip) {
       if (input.fixedPriceRoundTrip && Number(input.fixedPriceRoundTrip) > 0) {
         return Number(input.fixedPriceRoundTrip);
@@ -103,6 +110,19 @@ export function calcIntercityPrivatePrice(
 }
 
 /**
+ * Calculates intercity daily rate price: dailyRate * rentalDays
+ */
+export function calcIntercityDailyRatePrice(
+  dailyRate: number | undefined,
+  rentalDays: number | undefined,
+  minimumDays: number = 1
+): number {
+  const rate = Number(dailyRate ?? 0);
+  const days = Math.max(minimumDays, Number(rentalDays ?? 1));
+  return roundToThousand(rate * days);
+}
+
+/**
  * Calculates shared vehicle price per passenger,
  * supporting independent roundTrip pricing.
  */
@@ -122,3 +142,4 @@ export function calcSharedPrice(
   }
   return oneWay * pax;
 }
+

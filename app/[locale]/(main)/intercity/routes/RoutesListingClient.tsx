@@ -1,26 +1,30 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   MapPin,
   Clock,
   Search,
   ArrowUpDown,
+  Car,
+  Users,
 } from "lucide-react";
 import { Button, Skeleton, Input, Select, ListBox, Label, Pagination } from "@heroui/react";
 
 import { useI18n } from "@/context/LanguageContext";
-import { getActiveIntercityRoutes, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/rental";
+import { getActiveIntercityRoutes, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/intercity";
+import { getSharedRoutes, type SharedRouteDto } from "@/lib/api/sharedRoute";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
+import IntercityRouteCard from "@/components/intercity/IntercityRouteCard";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcIntercityPrice } from "@/lib/pricing";
 import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
 import { backendUrl } from "@/lib/api/client";
 import type { SectionDto } from "@/lib/api/sections";
 
-type Direction = "all" | "one-way" | "round-trip";
+type ServiceFilter = "all" | "private" | "shared";
 type SortPrice = "asc" | "desc" | null;
 
 const PAGE_SIZE = 6;
@@ -31,6 +35,7 @@ interface RoutesListingClientProps {
 
 export default function RoutesListingClient({ sections }: RoutesListingClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { language, t } = useI18n();
 
   const prefixUrl = (url: string) => {
@@ -41,13 +46,33 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
     return `/${language}${url === "/" ? "" : url}`;
   };
 
+  const serviceParam = searchParams.get("service") || searchParams.get("serviceType") || searchParams.get("tab");
+  const initialFilter: ServiceFilter =
+    serviceParam?.toLowerCase() === "shared"
+      ? "shared"
+      : serviceParam?.toLowerCase() === "private"
+      ? "private"
+      : "all";
+
   const [routes, setRoutes] = useState<IntercityRouteDto[]>([]);
+  const [sharedRoutes, setSharedRoutes] = useState<SharedRouteDto[]>([]);
   const [catMap, setCatMap] = useState<Map<number, VehicleCategoryDto>>(new Map());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [direction, setDirection] = useState<Direction>("all");
+  const [serviceFilter, setServiceFilter] = useState<ServiceFilter>(initialFilter);
   const [sortPrice, setSortPrice] = useState<SortPrice>(null);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const param = searchParams.get("service") || searchParams.get("serviceType") || searchParams.get("tab");
+    if (param?.toLowerCase() === "shared") {
+      setServiceFilter("shared");
+    } else if (param?.toLowerCase() === "private") {
+      setServiceFilter("private");
+    } else if (param?.toLowerCase() === "all") {
+      setServiceFilter("all");
+    }
+  }, [searchParams]);
 
   const formatPrice = (value: number) => _formatPrice(value, language);
 
@@ -61,16 +86,24 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
     let active = true;
     (async () => {
       try {
-        const [routesRes, catsRes] = await Promise.all([
+        const [routesRes, catsRes, sharedRes] = await Promise.allSettled([
           getActiveIntercityRoutes(),
           getVehicleCategories({ active: true, page: 0, size: 100 }),
+          getSharedRoutes(true),
         ]);
         if (!active) return;
-        setRoutes((routesRes?.data ?? []) as IntercityRouteDto[]);
-        const cats = (catsRes?.data?.content ?? []) as VehicleCategoryDto[];
-        const map = new Map<number, VehicleCategoryDto>();
-        cats.forEach((c) => map.set(c.id, c));
-        setCatMap(map);
+        if (routesRes.status === "fulfilled") {
+          setRoutes((routesRes.value?.data ?? []) as IntercityRouteDto[]);
+        }
+        if (catsRes.status === "fulfilled") {
+          const cats = (catsRes.value?.data?.content ?? []) as VehicleCategoryDto[];
+          const map = new Map<number, VehicleCategoryDto>();
+          cats.forEach((c) => map.set(c.id, c));
+          setCatMap(map);
+        }
+        if (sharedRes.status === "fulfilled") {
+          setSharedRoutes(sharedRes.value ?? []);
+        }
       } catch (err) {
         console.error("Failed to load routes:", err);
       } finally {
@@ -89,17 +122,22 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
   const getLowestRoundTrip = (r: IntercityRouteDto) => {
     const active = r.prices?.filter((p) => p.active) ?? [];
     if (active.length === 0) return Infinity;
-    return Math.min(...active.map((p) => calcIntercityPrice(r.distanceKm, p.perKmAmount, true)));
+    return Math.min(...active.map((p) => p.fixedPriceOneWay || p.oneWayPrice || p.basePrice || calcIntercityPrice(r.distanceKm, p.perKmAmount || 0, true)));
   };
 
   const getCheapestWithSeatInfo = (r: IntercityRouteDto) => {
     const active = r.prices?.filter((p) => p.active) ?? [];
     if (active.length === 0) return null;
-    const sorted = [...active].sort((a, b) => calcIntercityPrice(r.distanceKm, a.perKmAmount, false) - calcIntercityPrice(r.distanceKm, b.perKmAmount, false));
+    const sorted = [...active].sort((a, b) => {
+      const priceA = a.fixedPriceOneWay || a.oneWayPrice || a.basePrice || calcIntercityPrice(r.distanceKm, a.perKmAmount || 0, false);
+      const priceB = b.fixedPriceOneWay || b.oneWayPrice || b.basePrice || calcIntercityPrice(r.distanceKm, b.perKmAmount || 0, false);
+      return priceA - priceB;
+    });
     const cheapest = sorted[0];
     const cat = catMap.get(cheapest.vehicleCategoryId);
     const seatLabel = cat ? `${cat.minSeat}-${cat.maxSeat}` : null;
-    return { price: calcIntercityPrice(r.distanceKm, cheapest.perKmAmount, false), seatLabel, categoryId: cheapest.vehicleCategoryId };
+    const lowestPrice = cheapest.fixedPriceOneWay || cheapest.oneWayPrice || cheapest.basePrice || calcIntercityPrice(r.distanceKm, cheapest.perKmAmount || 0, false);
+    return { price: lowestPrice, seatLabel, categoryId: cheapest.vehicleCategoryId };
   };
 
   const filteredRoutes = useMemo(() => {
@@ -117,16 +155,19 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
       });
     }
 
-    if (direction === "one-way") {
+    if (serviceFilter === "private") {
       result = result.filter((r) => {
         const prices = r.prices?.filter((p) => p.active) ?? [];
-        return prices.some((p) => p.perKmAmount > 0);
+        return prices.length > 0;
       });
-    } else if (direction === "round-trip") {
-      result = result.filter((r) => {
-        const prices = r.prices?.filter((p) => p.active) ?? [];
-        return prices.some((p) => p.perKmAmount > 0);
-      });
+    } else if (serviceFilter === "shared") {
+      result = result.filter((r) =>
+        Boolean(
+          r.hasSharedRoute ||
+          r.linkedSharedRouteId ||
+          sharedRoutes.some((s) => s.linkedIntercityRouteId === r.id || s.id === r.linkedSharedRouteId)
+        )
+      );
     }
 
     if (sortPrice === "asc") {
@@ -136,7 +177,21 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
     }
 
     return result;
-  }, [routes, search, direction, sortPrice, language]);
+  }, [routes, search, serviceFilter, sortPrice, sharedRoutes, language]);
+
+  const sharedCount = useMemo(() => {
+    return routes.filter((r) =>
+      Boolean(
+        r.hasSharedRoute ||
+        r.linkedSharedRouteId ||
+        sharedRoutes.some((s) => s.linkedIntercityRouteId === r.id || s.id === r.linkedSharedRouteId)
+      )
+    ).length;
+  }, [routes, sharedRoutes]);
+
+  const privateCount = useMemo(() => {
+    return routes.filter((r) => (r.prices?.filter((p) => p.active) ?? []).length > 0).length;
+  }, [routes]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRoutes.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -144,9 +199,9 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
 
   useEffect(() => {
     setPage(1);
-  }, [search, direction, sortPrice]);
+  }, [search, serviceFilter, sortPrice]);
 
-  const hasActiveFilter = search.trim() || direction !== "all" || sortPrice !== null;
+  const hasActiveFilter = search.trim() || serviceFilter !== "all" || sortPrice !== null;
 
   const heroSection = sections.find((s) => s.sectionType === "HERO_BANNER");
 
@@ -164,9 +219,9 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
             style={{ backgroundImage: `url('${heroSection.imageUrls[0]}')` }}
           />
         )}
-        <div className="max-w-7xl mx-auto w-full px-6 py-10 relative z-10 text-white space-y-4">
+        <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-10 relative z-10 text-white space-y-4">
           <Button
-            onClick={() => router.push(prefixUrl("/rent-car"))}
+            onClick={() => router.push(prefixUrl("/intercity"))}
             className="flex items-center gap-1.5 text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 border-none rounded-full px-4 py-2 cursor-pointer"
           >
             <ArrowLeft size={13} />
@@ -187,88 +242,119 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
       </section>
 
       {/* Filter Bar */}
-      <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-6">
-        <div className="bg-white dark:bg-black rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-4">
+      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6">
+        <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 space-y-4">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder={t.rentCar.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+              className="w-full pl-10 pr-4 h-10 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 text-xs font-semibold"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex bg-slate-100 dark:bg-[var(--bg-surface)] p-1 rounded-xl">
-              {(["all", "one-way", "round-trip"] as Direction[]).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDirection(d)}
-                  className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer border-none ${direction === d
-                    ? "bg-white dark:bg-[var(--bg-card)] text-accent shadow-sm"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700"
-                    }`}
-                >
-                  {d === "all" ? t.common.all : d === "one-way" ? t.rentCar.oneWay : t.rentCar.roundTrip}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <ArrowUpDown size={14} className="text-slate-400" />
-              <Select
-                selectedKey={sortPrice ?? undefined}
-                onSelectionChange={(key) => setSortPrice((key as SortPrice) ?? null)}
-                className="w-26"
-              >
-                <Label className="sr-only">{t.rentCar.sortPrice}</Label>
-                <Select.Trigger className="h-8 px-3 text-[10px] font-bold bg-slate-100 dark:bg-[var(--bg-surface)] text-slate-600 dark:text-slate-300 rounded-lg border-none cursor-pointer">
-                  <Select.Value className={`text-xs`}>{t.rentCar.sortPrice}</Select.Value>
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
-                  <ListBox>
-                    <ListBox.Item key="asc" id="asc" textValue={t.rentCar.sortPriceAsc} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
-                      {t.rentCar.sortPriceAsc}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item key="desc" id="desc" textValue={t.rentCar.sortPriceDesc} className="px-3 py-2 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]">
-                      {t.rentCar.sortPriceDesc}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
-
-            {hasActiveFilter && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap bg-slate-100 dark:bg-[var(--bg-card)] p-1.5 rounded-2xl gap-1">
               <button
-                onClick={() => { setSearch(""); setDirection("all"); setSortPrice(null); }}
-                className="text-[10px] font-bold text-accent hover:text-accent-hover cursor-pointer border-none bg-transparent"
+                type="button"
+                onClick={() => setServiceFilter("all")}
+                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                  serviceFilter === "all"
+                    ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-transparent"
+                }`}
               >
-                {t.rentCar.clearFilters}
+                <span>{t.common.all}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/70 dark:bg-[var(--bg-elevated)] font-semibold">
+                  {routes.length}
+                </span>
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => setServiceFilter("private")}
+                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                  serviceFilter === "private"
+                    ? "bg-white dark:bg-[var(--bg-surface)] text-blue-600 dark:text-blue-400 shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-transparent"
+                }`}
+              >
+                <Car size={13} />
+                <span>{t.rentCar.privateService}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/70 dark:bg-[var(--bg-elevated)] font-semibold">
+                  {privateCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setServiceFilter("shared")}
+                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                  serviceFilter === "shared"
+                    ? "bg-white dark:bg-[var(--bg-surface)] text-amber-600 dark:text-amber-400 shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-transparent"
+                }`}
+              >
+                <Users size={13} />
+                <span>{t.rentCar.sharedService}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/70 dark:bg-[var(--bg-elevated)] font-semibold">
+                  {sharedCount}
+                </span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown size={14} className="text-slate-400 shrink-0" />
+                <Select
+                  selectedKey={sortPrice ?? undefined}
+                  onSelectionChange={(key) => setSortPrice((key as SortPrice) ?? null)}
+                  className="min-w-[130px] w-auto"
+                >
+                  <Label className="sr-only">{t.rentCar.sortPrice}</Label>
+                  <Select.Trigger className="h-9 px-3 text-xs font-bold bg-slate-100 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 rounded-xl border-none cursor-pointer flex items-center justify-between gap-2 whitespace-nowrap">
+                    <Select.Value className="text-xs font-bold">{t.rentCar.sortPrice}</Select.Value>
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50 min-w-[130px]">
+                    <ListBox>
+                      <ListBox.Item key="asc" id="asc" textValue={t.rentCar.sortPriceAsc} className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)]">
+                        {t.rentCar.sortPriceAsc}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item key="desc" id="desc" textValue={t.rentCar.sortPriceDesc} className="px-3 py-2 rounded-lg text-xs font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)]">
+                        {t.rentCar.sortPriceDesc}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+
+              {hasActiveFilter && (
+                <button
+                  onClick={() => { setSearch(""); setServiceFilter("all"); setSortPrice(null); }}
+                  className="text-xs font-bold text-accent hover:text-accent-hover cursor-pointer border-none bg-transparent"
+                >
+                  {t.rentCar.clearFilters}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Route Cards */}
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-6 pb-16 flex-1">
+      <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pb-16 flex-1">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="w-9 h-9 rounded-xl" />
-                  <div className="space-y-1.5 flex-1">
-                    <Skeleton className="h-4 w-32 rounded-lg" />
-                    <Skeleton className="h-3 w-24 rounded-lg" />
-                  </div>
-                </div>
-                <Skeleton className="h-3 w-40 rounded-lg" />
-                <Skeleton className="h-4 w-20 rounded-lg" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] p-5 space-y-4">
+                <Skeleton className="h-52 w-full rounded-2xl" />
+                <Skeleton className="h-5 w-3/4 rounded-lg" />
+                <Skeleton className="h-20 w-full rounded-2xl" />
+                <Skeleton className="h-4 w-1/3 rounded-lg" />
               </div>
             ))}
           </div>
@@ -284,93 +370,22 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {displayedRoutes.map((route) => {
-                const routeName = getRouteName(route);
-                const thumbUrl = route.thumbnailUrl
-                  ? (route.thumbnailUrl.startsWith("http") ? route.thumbnailUrl : `${backendUrl}${route.thumbnailUrl}`)
-                  : "";
-                return (
-                  <div
-                    key={route.id}
-                    className="group relative bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:border-accent hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col md:flex-row"
-                    onClick={() => {
-                      const slug = resolveLocalizedSlug(route.translations, language) || route.id;
-                      router.push(prefixUrl(`/rent-car/${slug}`));
-                    }}
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative h-40 md:h-auto md:w-36 shrink-0 overflow-hidden">
-                      {thumbUrl ? (
-                        <img
-                          src={thumbUrl}
-                          alt={routeName}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-accent/10 flex items-center justify-center">
-                          <MapPin size={24} className="text-accent/40" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight truncate">
-                          {routeName}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 font-bold truncate">
-                          {route.originCity} → {route.destinationCity}
-                        </p>
-
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-slate-400">
-                          {route.distanceKm && <span>{route.distanceKm} km</span>}
-                          {route.estimatedHours && <span>~{route.estimatedHours}h</span>}
-                          {route.hasDepartureTimes && route.departureTimes?.length > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Clock size={10} />
-                              {route.departureTimes.length} {t.rentCar.tripsPerDay}
-                            </span>
-                          )}
-                        </div>
-
-                        {route.prices && route.prices.filter(p => p.active).length > 0 && (() => {
-                          const cheapest = getCheapestWithSeatInfo(route);
-                          if (!cheapest) return null;
-                          return (
-                            <div className="space-y-1.5 pt-1">
-                              <p className="text-sm font-black text-accent">
-                                {t.rentCar.priceFrom}{" "}
-                                {formatPrice(cheapest.price)}
-                                {cheapest.seatLabel && (
-                                  <span className="text-[10px] font-bold text-slate-400 ml-1">
-                                    {` / ${cheapest.seatLabel}-${t.rentCar.seater}`}
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-[10px] text-slate-400 font-semibold">
-                                {t.rentCar.otherVehiclesHint}
-                              </p>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 dark:border-slate-800">
-                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-accent transition-colors">
-                          {t.rentCar.viewDetails}
-                        </span>
-                        {/* <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full group-hover:bg-accent group-hover:text-white transition-colors">
-                          {t.rentCar.viewRepresentativeVehicles}
-                        </span> */}
-                        <ArrowLeft size={14} className="text-slate-300 group-hover:text-accent group-hover:-translate-x-1 transition-all rotate-180" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {displayedRoutes.map((route) => (
+                <IntercityRouteCard
+                  key={route.id}
+                  route={route}
+                  sharedRoutes={sharedRoutes}
+                  defaultServiceType={
+                    serviceFilter === "shared"
+                      ? "SHARED"
+                      : serviceFilter === "private"
+                      ? "PRIVATE"
+                      : undefined
+                  }
+                  highlightShared={serviceFilter === "shared"}
+                />
+              ))}
             </div>
 
             {totalPages > 1 && (

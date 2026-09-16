@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, User, Phone, Mail, MessageSquare } from "lucide-react";
 import { Button, Skeleton, Input, TextArea, Label, TextField, FieldError } from "@heroui/react";
@@ -12,6 +12,7 @@ import SuccessOverlay from "@/components/SuccessOverlay";
 import ErrorOverlay from "@/components/ErrorOverlay";
 import { createAirportTransferBooking } from "@/lib/api/airport-transfer/bookings";
 import { loadBookingDraft, saveBookingDraft, clearBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
+import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 
 export default function AirportTransferCheckoutPage() {
@@ -44,6 +45,14 @@ export default function AirportTransferCheckoutPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const formatPrice = (value: number) => _formatPrice(value, language);
+
+  const depositCalc = useMemo(() => {
+    return calculateDeposit({
+      totalAmount: draft?.totalAmount ?? 0,
+      depositType: DepositType.RATE,
+      defaultRate: 20,
+    });
+  }, [draft?.totalAmount]);
 
   useEffect(() => {
     const d = loadBookingDraft();
@@ -111,6 +120,9 @@ export default function AirportTransferCheckoutPage() {
         whatsapp: whatsapp || undefined,
         contactChannel: zaloId ? "zalo" : kakaoTalkId ? "kakaotalk" : undefined,
         contactId: zaloId || kakaoTalkId || undefined,
+        depositType: depositCalc.depositType,
+        depositRate: depositCalc.depositRate,
+        depositAmount: depositCalc.depositAmount,
       });
 
       if (res && res.data) {
@@ -131,7 +143,7 @@ export default function AirportTransferCheckoutPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col items-center justify-center gap-4 p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] flex flex-col items-center justify-center gap-4 p-6">
         <Skeleton className="w-56 h-8 rounded-lg" />
         <Skeleton className="w-80 h-4 rounded-lg" />
         <Skeleton className="w-full max-w-md h-64 rounded-2xl" />
@@ -159,9 +171,9 @@ export default function AirportTransferCheckoutPage() {
     `w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-surface)] text-slate-900 dark:text-white text-xs font-semibold outline-none focus:border-accent ${className || ""}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 flex flex-col font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-slate-50/80 dark:bg-black/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <header className="sticky top-0 z-20 bg-slate-50/80 dark:bg-[var(--bg-page)]/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-3xl mx-auto w-full px-4 md:px-6 py-3 flex items-center gap-3">
           <button
             type="button"
@@ -347,6 +359,10 @@ export default function AirportTransferCheckoutPage() {
         summaryItems={draft.summaryItems}
         totalAmount={draft.totalAmount}
         totalLabel={t.common.total}
+        depositAmount={depositCalc.depositAmount}
+        depositRate={depositCalc.depositRate}
+        depositType={depositCalc.depositType}
+        remainingAmount={depositCalc.remainingAmount}
         submitting={submitting}
         contactInfo={{
           fullName: name,

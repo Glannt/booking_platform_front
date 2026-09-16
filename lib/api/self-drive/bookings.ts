@@ -1,5 +1,5 @@
 import { apiFetch, type ApiResponse } from "../client";
-import type { BookingDto } from "../bookings";
+import { type BookingDto, DepositType } from "../bookings";
 
 export interface CreateSelfDriveBookingDto {
   customerName: string;
@@ -20,6 +20,14 @@ export interface CreateSelfDriveBookingDto {
   basePrice?: number;
   deposit?: number;
   totalPrice: number;
+  seatAddOnId?: number;
+  fuelAddOnId?: number;
+  addOnIds?: number[];
+  depositType?: DepositType;
+  depositRate?: number;
+  depositAmount?: number;
+  discountCode?: string;
+  discountAmount?: number;
 }
 
 export async function createSelfDriveBooking(dto: CreateSelfDriveBookingDto): Promise<ApiResponse<BookingDto>> {

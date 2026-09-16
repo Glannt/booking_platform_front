@@ -704,7 +704,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
         minLuggage: cat.minLuggage || 1,
         maxLuggage: cat.maxLuggage || 2,
         unitLuggage: cat.unitLuggage || "kiện",
-        luggageWeight: cat.luggageWeight
+        luggageWeight: undefined
       };
     });
   };
@@ -1013,7 +1013,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
           <div className="absolute inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-[1.5px]" />
         </div>
 
-        <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10 text-white">
+        <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10 text-white">
           <div>
             <div className="inline-flex items-center gap-2 bg-white/10 dark:bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-3">
               <Sparkles size={12} className="text-accent animate-spin-slow" />
@@ -1040,7 +1040,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       </section>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto w-full px-4 md:px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* Left Column: Form & Car Choices */}
         <div className="lg:col-span-8 space-y-6">
@@ -1791,7 +1791,14 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                       {/* Image on left */}
                       <div className="relative w-full sm:w-40 h-40 sm:h-auto shrink-0 bg-slate-100 dark:bg-[var(--bg-card)] flex items-center justify-center border-b sm:border-b-0 sm:border-r border-slate-200/50 dark:border-slate-800/60 overflow-hidden">
                         {v.thumbnailUrl ? (
-                          <img src={v.thumbnailUrl} alt={language === "vi" ? v.nameVi : v.nameEn} className="w-full h-full object-cover" />
+                          <img
+                            src={v.thumbnailUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
                         ) : (
                           <Car size={32} className="text-slate-400 dark:text-slate-650" />
                         )}

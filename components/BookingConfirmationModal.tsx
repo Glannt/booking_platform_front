@@ -5,6 +5,7 @@ import { Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalCloseTrigger, M
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { DepositType } from "@/lib/pricing/deposit";
 
 export interface ContactInfo {
   fullName: string;
@@ -30,6 +31,10 @@ interface BookingConfirmationModalProps {
   summaryItems: SummaryItem[];
   totalAmount: number | string;
   totalLabel?: string;
+  depositAmount?: number | string;
+  depositRate?: number;
+  depositType?: DepositType | string;
+  remainingAmount?: number | string;
   submitting: boolean;
   contactInfo?: ContactInfo;
 }
@@ -43,6 +48,10 @@ export default function BookingConfirmationModal({
   summaryItems,
   totalAmount,
   totalLabel,
+  depositAmount,
+  depositRate,
+  depositType,
+  remainingAmount,
   submitting,
   contactInfo,
 }: BookingConfirmationModalProps) {
@@ -54,33 +63,33 @@ export default function BookingConfirmationModal({
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }} aria-labelledby="booking-confirm-title">
-      <ModalBackdrop className="backdrop-blur-sm">
+      <ModalBackdrop className="bg-slate-950/45 backdrop-blur-xs">
         <ModalContainer size="md">
-          <ModalDialog className="bg-white dark:bg-black rounded-3xl border border-divider shadow-2xl overflow-hidden w-full max-w-md relative p-6 space-y-4">
+          <ModalDialog className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden w-full max-w-lg relative flex flex-col">
             <ModalCloseTrigger />
-            <ModalHeader className="p-0 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h2 id="booking-confirm-title" className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                <AlertTriangle size={18} className="text-amber-500" />
+            <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+              <h2 id="booking-confirm-title" className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertTriangle size={20} className="text-amber-500" />
                 {modalTitle}
               </h2>
             </ModalHeader>
 
-            <ModalBody className="p-0 py-2 space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-200">
-              <p className="font-normal leading-relaxed">
+            <ModalBody className="p-6 space-y-4 text-sm font-semibold text-slate-700 dark:text-slate-200 overflow-y-auto max-h-[65vh]">
+              <p className="font-normal leading-relaxed text-sm text-slate-500">
                 {t.common.reviewBeforeConfirm}
               </p>
 
-              <div className="bg-slate-50 dark:bg-black p-4 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-2.5">
+              <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
                 {serviceType && (
-                  <div className="flex items-start justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-                    <span className="font-normal shrink-0">{t.common.serviceType}:</span>
+                  <div className="flex items-start justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800 text-sm">
+                    <span className="font-normal shrink-0 text-slate-400">{t.common.serviceType}:</span>
                     <span className="font-bold text-right break-words max-w-[70%]">{serviceType}</span>
                   </div>
                 )}
                 {summaryItems.map((item, idx) => (
-                  <div key={idx} className="flex items-start justify-between gap-4">
-                    <span className="font-normal shrink-0">{item.label}:</span>
-                    <span className={`text-right break-words max-w-[70%] ${item.highlight ? "text-accent font-bold" : "text-slate-900 dark:text-white"}`}>
+                  <div key={idx} className="flex items-start justify-between gap-4 text-sm">
+                    <span className="font-normal shrink-0 text-slate-400">{item.label}:</span>
+                    <span className={`text-right break-words max-w-[70%] font-bold ${item.highlight ? "text-accent font-extrabold" : "text-slate-900 dark:text-white"}`}>
                       {item.value || "-"}
                     </span>
                   </div>
@@ -88,59 +97,95 @@ export default function BookingConfirmationModal({
               </div>
 
               {contactInfo && (
-                <div className="bg-slate-50 dark:bg-black p-4 rounded-2xl border border-slate-100 dark:border-zinc-800 space-y-2.5">
-                  <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1 border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
+                  <h4 className="text-sm font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1 border-b border-slate-100 dark:border-slate-800 pb-1.5">
                     {t.airportTransfer.contactInfo}
                   </h4>
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="font-normal shrink-0">{t.airportTransfer.fullName}:</span>
+                  <div className="flex items-start justify-between gap-4 text-sm">
+                    <span className="font-normal shrink-0 text-slate-400">{t.airportTransfer.fullName}:</span>
                     <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.fullName}</span>
                   </div>
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="font-normal shrink-0">{t.airportTransfer.phone}:</span>
+                  <div className="flex items-start justify-between gap-4 text-sm">
+                    <span className="font-normal shrink-0 text-slate-400">{t.airportTransfer.phone}:</span>
                     <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.phone}</span>
                   </div>
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="font-normal shrink-0">Email:</span>
+                  <div className="flex items-start justify-between gap-4 text-sm">
+                    <span className="font-normal shrink-0 text-slate-400">Email:</span>
                     <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.email}</span>
                   </div>
                   {contactInfo.zaloId && (
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-normal shrink-0">Zalo:</span>
+                    <div className="flex items-start justify-between gap-4 text-sm">
+                      <span className="font-normal shrink-0 text-slate-400">Zalo:</span>
                       <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.zaloId}</span>
                     </div>
                   )}
                   {contactInfo.kakaoTalkId && (
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-normal shrink-0">KakaoTalk:</span>
+                    <div className="flex items-start justify-between gap-4 text-sm">
+                      <span className="font-normal shrink-0 text-slate-400">KakaoTalk:</span>
                       <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.kakaoTalkId}</span>
                     </div>
                   )}
                   {contactInfo.whatsapp && (
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-normal shrink-0">WhatsApp:</span>
+                    <div className="flex items-start justify-between gap-4 text-sm">
+                      <span className="font-normal shrink-0 text-slate-400">WhatsApp:</span>
                       <span className="font-bold text-right break-words max-w-[70%]">{contactInfo.whatsapp}</span>
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="flex justify-between items-end bg-accent/5 dark:bg-black border border-accent/10 rounded-2xl p-4">
-                <div>
-                  <span className="text-[10px] text-accent uppercase tracking-wider font-extrabold block">
-                    {totalLabel || t.common.totalPrice}
-                  </span>
-                </div>
-                <span className="text-lg font-black text-amber-500">
-                  {typeof totalAmount === "number" ? formatPrice(totalAmount) : totalAmount}
-                </span>
+              <div className="bg-accent/5 dark:bg-[var(--bg-muted)] border border-accent/15 rounded-2xl p-4 space-y-2.5">
+                {depositAmount !== undefined ? (
+                  <>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">
+                        {totalLabel || t.common.totalPrice}:
+                      </span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {typeof totalAmount === "number" ? formatPrice(totalAmount) : totalAmount}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm pb-2 border-b border-accent/10 dark:border-slate-800">
+                      <span className="font-semibold text-accent flex items-center gap-1">
+                        {t.common.depositAmount}
+                        {depositRate ? ` (${depositRate}%)` : ""}:
+                      </span>
+                      <span className="font-bold text-accent text-base">
+                        {typeof depositAmount === "number" ? formatPrice(depositAmount) : depositAmount}
+                      </span>
+                    </div>
+
+                    {remainingAmount !== undefined && (
+                      <div className="flex justify-between items-center text-sm pt-0.5">
+                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                          {t.common.remainingAmount}:
+                        </span>
+                        <span className="font-black text-amber-500 text-base">
+                          {typeof remainingAmount === "number" ? formatPrice(remainingAmount) : remainingAmount}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <span className="text-sm text-accent uppercase tracking-wider font-extrabold block">
+                        {totalLabel || t.common.totalPrice}
+                      </span>
+                    </div>
+                    <span className="text-lg sm:text-xl font-black text-amber-500">
+                      {typeof totalAmount === "number" ? formatPrice(totalAmount) : totalAmount}
+                    </span>
+                  </div>
+                )}
               </div>
             </ModalBody>
 
-            <ModalFooter className="p-0 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+            <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
               <Button
                 variant="outline"
-                className="rounded-xl font-bold bg-slate-100 hover:bg-slate-250 dark:bg-[var(--bg-card)] text-slate-700 dark:text-slate-200 border-none px-4 py-2"
+                className="rounded-xl font-bold text-sm h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 onClick={onClose}
                 isDisabled={submitting}
               >
@@ -150,13 +195,13 @@ export default function BookingConfirmationModal({
                 type="button"
                 isDisabled={submitting}
                 onClick={onConfirm}
-                className="rounded-xl font-bold bg-accent hover:bg-accent/90 text-white shadow-md border-none px-5 py-2.5 flex items-center gap-1.5 cursor-pointer"
+                className="rounded-xl font-bold text-sm h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm border-none flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {submitting ? (
                   t.common.bookingInProgress
                 ) : (
                   <>
-                    <CheckCircle size={15} />
+                    <CheckCircle size={16} />
                     {t.common.confirmBooking}
                   </>
                 )}

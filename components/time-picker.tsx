@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Clock, ChevronDown, Check } from "lucide-react";
+import { Label } from "@heroui/react";
 
 /* ─────────────────────────────────────────────
    Drum-Roll Scroll Column
@@ -149,7 +150,7 @@ export function TimePicker({
   
   const triggerBase = isBorderless
     ? "flex items-center gap-1.5 w-full text-slate-800 dark:text-slate-100 font-bold text-left cursor-pointer outline-none transition-colors"
-    : "flex items-center gap-2 h-10 w-full border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-slate-800 dark:text-slate-100 text-sm font-bold text-left cursor-pointer hover:border-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+    : "flex items-center gap-2 h-10 w-full border border-border rounded-xl px-3 text-slate-800 dark:text-slate-100 text-sm font-bold text-left cursor-pointer hover:border-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
   
   const triggerDefaultBg = (overrideBg || isBorderless) ? "" : " bg-slate-50 dark:bg-[var(--bg-surface)]";
   const triggerClasses = `${triggerBase}${triggerDefaultBg}${triggerClassName ? ` ${triggerClassName}` : ""}${isInvalid ? " border-red-500" : ""}`;
@@ -171,10 +172,9 @@ export function TimePicker({
     <div className={`flex flex-col w-full relative${className ? ` ${className}` : ""}`} ref={popoverRef}>
       {/* Label */}
       {label && (
-        <label className={labelClassName}>
+        <Label isRequired={isRequired} className={labelClassName}>
           {label}
-          {isRequired && <span className="text-red-500 ml-0.5">*</span>}
-        </label>
+        </Label>
       )}
 
       {/* Trigger */}
@@ -200,9 +200,9 @@ export function TimePicker({
 
       {/* Popover */}
       {open && (
-        <div className={`absolute top-full z-50 w-72 bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up mt-2 ${popoverClassName || "left-0"}`}>
+        <div className={`absolute top-full z-50 w-72 bg-white dark:bg-[var(--bg-surface)] border border-border-secondary rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up mt-2 ${popoverClassName || "left-0"}`}>
           {/* Header */}
-          <div className="px-4 pt-3.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="px-4 pt-3.5 pb-2 border-b border-separator">
             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
               {headerTitle}
             </p>
@@ -242,7 +242,7 @@ export function TimePicker({
           </div>
 
           {/* Confirm Footer */}
-          <div className="px-4 pb-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="px-4 pb-4 pt-2 border-t border-separator">
             <button
               type="button"
               onClick={() => setOpen(false)}

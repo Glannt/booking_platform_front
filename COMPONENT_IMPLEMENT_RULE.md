@@ -16,7 +16,7 @@
 ```tsx
 import { Label } from "@heroui/react";
 
-<Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+<Label className="block text-xs font-bold uppercase tracking-wider mb-2">
   Tour Category
 </Label>
 ```
@@ -192,7 +192,7 @@ import { TextField, Label, Input, FieldError, Description } from "@heroui/react"
     placeholder="Enter full name..."
     className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
   />
-  <Description className="text-[10px] text-slate-400">Optional helper text</Description>
+  <Description className="text-[10px]">Optional helper text</Description>
 </TextField>
 
 <TextField isRequired isInvalid={!!error} name="email" type="email" className="w-full">
@@ -360,12 +360,12 @@ import { Button } from "@heroui/react";
   className="bg-[#C9A227] hover:bg-[#B8911F] text-white border-none"
 >
   <Save size={14} />
-  Lưu thay đổi
+  Lưu
 </Button>
 
 {/* Accent Yellow */}
 <Button
-  className="bg-[#FEE500] hover:bg-[#E6CF00] text-slate-900 border-none"
+  className="bg-[#FEE500] hover:bg-[#E6CF00] border-none"
 >
   <Plus size={14} />
   Thêm mới
@@ -639,6 +639,218 @@ function ListSkeleton() {
 
 ---
 
+## 13. Tooltip & Table Action Cell (`Button isIconOnly` + `Tooltip`)
+
+> **Nguyên tắc:** Trên các ô thao tác (`Table.Cell` actions) của bảng, **KHÔNG BAO GIỜ** dùng thẻ `<button>` thuần với thuộc tính `title="..."`. Luôn kết hợp HeroUI `Button` (với `isIconOnly`, `size="sm"`, `aria-label`) và bọc trong HeroUI `Tooltip` (`<Tooltip>`, `<Tooltip.Trigger>`, `<Tooltip.Content>`, `<Tooltip.Arrow />`).
+
+### Ví dụ chuẩn trong Table Action Cell:
+
+```tsx
+import { Tooltip, Button } from "@heroui/react";
+import { Eye, Edit3, Trash2 } from "lucide-react"; // hoặc import từ "@gravity-ui/icons"
+
+<Table.Cell className="px-6 py-4 text-right">
+  <div className="flex items-center justify-end gap-1.5">
+    {/* Xem chi tiết */}
+    <Tooltip delay={300} closeDelay={100}>
+      <Tooltip.Trigger>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="tertiary"
+          aria-label={t.common.details}
+          onPress={() => handleView(item)}
+        >
+          <Eye size={16} />
+        </Button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        <Tooltip.Arrow />
+        {t.common.details}
+      </Tooltip.Content>
+    </Tooltip>
+
+    {/* Chỉnh sửa */}
+    <Tooltip delay={300} closeDelay={100}>
+      <Tooltip.Trigger>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="secondary"
+          aria-label={t.common.edit}
+          onPress={() => handleEdit(item)}
+        >
+          <Edit3 size={16} />
+        </Button>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        <Tooltip.Arrow />
+        {t.common.edit}
+      </Tooltip.Content>
+    </Tooltip>
+
+    {/* Xóa / Hủy */}
+    <Tooltip delay={300} closeDelay={100}>
+      <Tooltip.Trigger>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="danger"
+          aria-label={t.common.clear}
+          onPress={() => handleDelete(item.id)}
+        >
+          <Trash2 size={16} />
+        </Button>
+      </Tooltip.Trigger>
+      <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+        <Tooltip.Arrow />
+        {t.common.clear}
+      </Tooltip.Content>
+    </Tooltip>
+  </div>
+</Table.Cell>
+```
+
+### Quy ước Button Variant cho Thao tác Bảng:
+* **Xem / Chi tiết / Info**: `variant="tertiary"` hoặc `variant="ghost"`
+* **Chỉnh sửa / Cài đặt**: `variant="secondary"` hoặc `variant="ghost"`
+* **Xóa / Hủy / Vô hiệu hóa**: `variant="danger"` hoặc `variant="danger-soft"` (kèm chữ đỏ ở tooltip content)
+* **Thao tác phụ / Toggle**: `variant="ghost"`
+
+### HeroUI Tooltip API Reference
+
+#### `<Tooltip>` Props
+| Prop | Type | Default | Mô tả |
+|---|---|---|---|
+| `children` | `ReactNode` | - | Trigger element và Content |
+| `delay` | `number` | `700` | Thời gian trễ trước khi hiện (khuyên dùng `200`-`300`ms cho table actions) |
+| `closeDelay` | `number` | `0` | Thời gian trễ trước khi ẩn (khuyên dùng `100`ms) |
+| `trigger` | `"hover" \| "focus"` | `"hover"` | Cách kích hoạt tooltip |
+| `isDisabled` | `boolean` | `false` | Vô hiệu hóa tooltip |
+| `shouldSkipAnimation` | `boolean` | `false` | Bỏ qua animation khi rê chuột nhanh giữa các tooltip |
+
+#### `<Tooltip.Content>` Props
+| Prop | Type | Default | Mô tả |
+|---|---|---|---|
+| `children` | `ReactNode` | - | Nội dung hiển thị trong tooltip (bao gồm `<Tooltip.Arrow />`) |
+| `showArrow` | `boolean` | `false` | Có hiển thị mũi tên hay không |
+| `offset` | `number` | `3` (7 nếu có arrow) | Khoảng cách so với trigger button |
+| `placement` | `"top" \| "bottom" \| "left" \| "right"` | `"top"` | Vị trí tooltip hiển thị |
+| `className` | `string` | - | Tùy chỉnh class Tailwind |
+
+#### `<Tooltip.Trigger>` & `<Tooltip.Arrow>` Props
+* `<Tooltip.Trigger>`: Bọc nút kích hoạt (`Button`).
+* `<Tooltip.Arrow>`: Mũi tên chỉ hướng của tooltip.
+
+### Custom CSS Classes (BEM) & Styling Reference
+
+Tooltip tuân thủ BEM methodology. Được định nghĩa đồng bộ trong `globals.css` tại `@layer components`:
+
+```css
+@layer components {
+  .tooltip {
+    @apply bg-white dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl z-[999];
+  }
+  .tooltip__trigger {
+    @apply inline-flex;
+  }
+  .tooltip [data-slot="overlay-arrow"] {
+    @apply fill-white dark:fill-[var(--bg-card)] stroke-slate-200 dark:stroke-slate-800;
+  }
+}
+```
+
+* `.tooltip`: Container cơ bản của tooltip kèm animations
+* `.tooltip__trigger`: Phần tử trigger
+* `[data-entering]`: Trạng thái khi tooltip xuất hiện
+* `[data-exiting]`: Trạng thái khi tooltip biến mất
+* `[data-placement="*"]`: Trạng thái theo hướng hiển thị (`top`, `bottom`, `left`, `right`)
+
+---
+
+## 14. Quy chuẩn Màu sắc & Bố cục Action Buttons trong Modal & Toolbar
+
+### A. Cấu trúc Khung `<ModalFooter>` Chuẩn
+Mọi modal đều phải có `<ModalFooter>` đặt cố định ở đáy modal (`shrink-0`), có viền mỏng phía trên và màu nền đồng bộ:
+```tsx
+<ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+  {/* Các nút hành động */}
+</ModalFooter>
+```
+* **CẤM DÙNG**: `dark:bg-black/40` hoặc `dark:bg-slate-*` (vi phạm Dark Mode token). Luôn dùng `dark:bg-[var(--bg-surface)]` hoặc `dark:bg-[var(--bg-card)]`.
+
+### B. Nút Hủy / Đóng (Cancel / Close Button)
+* **Vị trí**: Luôn nằm ở phía bên trái cụm hành động trong footer.
+* **Variant**: `variant="outline"` hoặc `variant="secondary"`.
+* **Light Mode**: Nền trắng `bg-white`, viền `border-slate-200`, text `text-slate-700`, hover `hover:bg-slate-100`.
+* **Dark Mode**: Nền `dark:bg-[var(--bg-card)]`, viền `dark:border-slate-800`, text `dark:text-slate-300`, hover `dark:hover:bg-[var(--bg-elevated)]`.
+```tsx
+<Button
+  variant="outline"
+  onClick={onClose}
+  isDisabled={loading}
+  className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+>
+  {isEditMode ? "Hủy" : "Đóng"}
+</Button>
+```
+
+### C. Nút Chỉnh sửa (Edit Button trong Detail Modal)
+* **Vị trí**: Trong Modal xem chi tiết, nằm cạnh nút "Đóng" để chuyển sang chế độ chỉnh sửa.
+* **Icon**: `<Edit3 size={15} className="mr-1.5" />`
+* **Màu sắc**: Tone hổ phách (amber) sang trọng:
+  - Light: `bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border border-amber-300/60`
+  - Dark: `dark:bg-amber-500/15 dark:hover:bg-amber-500/25 dark:text-amber-400 dark:border-amber-700/50`
+```tsx
+<Button
+  variant="secondary"
+  onClick={() => setIsEditMode(true)}
+  className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
+>
+  <Edit3 size={15} className="mr-1.5" />
+  Chỉnh sửa
+</Button>
+```
+
+### D. Nút Lưu / Tạo mới / Xác nhận (Primary Action Button)
+* **Vị trí**: Nằm ngoài cùng bên phải của `<ModalFooter>`.
+* **Màu sắc & Contrast**:
+  - Nền: `bg-accent hover:bg-accent-hover`
+  - Chữ: **LUÔN DÙNG** `text-accent-foreground` (chữ sẫm màu ở Light mode, chữ sáng trắng ở Dark mode, đảm bảo chuẩn tương phản đọc WCAG).
+  - **CẤM DÙNG**: Mã hex hardcoded `#C9A227` hay `bg-blue-600`.
+```tsx
+<Button
+  type="submit"
+  isDisabled={loading}
+  className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
+>
+  {loading ? (
+    <RefreshCw size={15} className="animate-spin mr-1.5" />
+  ) : (
+    <Save size={15} className="mr-1.5" />
+  )}
+  {isEdit ? "Lưu thay đổi" : "Tạo mới"}
+</Button>
+```
+
+*(Đối với modal xác nhận xóa vĩnh viễn: Dùng `bg-rose-600 hover:bg-rose-700 text-white` kèm icon `<Trash2 size={15} className="mr-1.5" />`)*.
+
+### E. Nút Thêm trên Toolbar (Toolbar Add Button)
+* **Vị trí**: Nằm bên phải thanh công cụ (Toolbar) hàng đầu các trang `/portal/*`.
+* **Màu sắc & Icon**: Nền `bg-accent hover:bg-accent-hover text-accent-foreground`, icon `<Plus size={16} />`.
+* **Quy chuẩn Text**: Tiền tố "Thêm" + [Tên thực thể] ("Thêm Tour", "Thêm Xe", "Thêm Tuyến đường", "Thêm Dịch vụ", "Thêm User"...).
+```tsx
+<Button
+  onClick={handleOpenCreate}
+  className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+>
+  <Plus size={16} />
+  <span>Thêm Tour</span>
+</Button>
+```
+
+---
+
 ## Khi nào được dùng HTML thuần?
 
 | HTML Tag | Khi nào OK |
@@ -647,7 +859,7 @@ function ListSkeleton() {
 | `<form>` | Form wrapper — luôn OK |
 | `<input type="text/email/tel">` | ❌ **Không dùng** — luôn thay bằng `<Input>` hoặc `<TextField>` + `<Input>` từ HeroUI |
 | `<textarea>` | HeroUI không có textarea riêng — OK dùng HTML |
-| `<button>` | Tab switchers, close icons, inline toggle — OK khi Button component quá nặng |
+| `<button>` | Tab switchers, close modal icons, inline toggle đơn giản — OK khi Button component quá nặng. ❌ **CẤM DÙNG** trong `Table.Cell` action buttons (phải dùng `Button isIconOnly` + `Tooltip`). |
 | `<select>` | ❌ **Không dùng** — luôn thay bằng ComboBox hoặc Autocomplete |
 | `<input type="number">` | ❌ **Không dùng** — luôn thay bằng NumberField |
 | `<label>` | ❌ **Không dùng** — luôn thay bằng `<Label>` từ HeroUI |

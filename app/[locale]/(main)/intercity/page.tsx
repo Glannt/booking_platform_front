@@ -19,12 +19,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-export default async function RentCarPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function IntercityPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const resolvedLocale = locale || "vi";
   let sections: SectionDto[] = [];
   try {
-    sections = await getActiveSectionsServer("/rent-car", resolvedLocale);
+    sections = await getActiveSectionsServer("/intercity", resolvedLocale);
   } catch {
     sections = [];
   }

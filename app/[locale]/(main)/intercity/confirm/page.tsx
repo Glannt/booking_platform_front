@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle,
   Car,
   MapPin,
-  Calendar as CalendarIcon,
   Clock,
   User,
   Phone,
@@ -15,31 +14,31 @@ import {
   MessageSquare,
   Users,
   Sparkles,
+  ShieldCheck,
+  Calendar as CalendarIcon,
+  Bus,
+  Building2,
 } from "lucide-react";
 import {
   Button,
   Skeleton,
   Input,
   TextArea,
-  Select,
-  ListBox,
-  ScrollShadow,
   DatePicker,
   DateField,
   Calendar,
   FieldError,
-  Autocomplete,
-  Label,
-  SearchField,
-  EmptyState,
-  useFilter,
   Chip,
+  Label,
+  TextField,
+  Select,
+  ListBox,
 } from "@heroui/react";
 import type { DateValue } from "@internationalized/date";
-import { parseDate } from "@internationalized/date";
+import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 
 import { useI18n } from "@/context/LanguageContext";
-import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/rental";
+import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/intercity";
 import {
   getVehicleCategories,
   getRentableVehiclesByCategory,
@@ -47,26 +46,41 @@ import {
   type VehicleDto,
 } from "@/lib/api/fleet";
 import { createRentCarBooking } from "@/lib/api/rent-car/bookings";
+import {
+  getSharedRoute,
+  getSharedOffices,
+  createSharedBooking,
+  type SharedRouteDto,
+  type SharedOfficeDto,
+} from "@/lib/api/sharedRoute";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { calcIntercityPrivatePrice, calcSharedPrice } from "@/lib/pricing";
+import { calcIntercityPrivatePrice, calcIntercityDailyRatePrice, calcSharedPrice } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
 import ErrorOverlay from "@/components/ErrorOverlay";
 import { TimePicker, type TimeValue } from "@/components/time-picker";
+import { RentalDateRangePicker } from "@/components/date-picker/RentalDateRangePicker";
+import { calculateRentalDays, formatToIsoDate, formatToDisplayDate } from "@/lib/utils/rentalDate";
+import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
+import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
 
 interface CategoryWithVehicles {
   category: VehicleCategoryDto;
   vehicles: VehicleDto[];
   price: number;
+  dailyRate?: number;
+  minimumDays?: number;
+  depositType?: "PERCENT" | "FIXED";
+  depositRate?: number;
+  depositAmount?: number;
 }
 
 export default function RentCarConfirmPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t } = useI18n();
-  const { contains } = useFilter({ sensitivity: "base" });
 
   const prefixUrl = (url: string) => {
     if (!url) return "";
@@ -84,30 +98,50 @@ export default function RentCarConfirmPage() {
   const initialPax = Math.max(1, Number(searchParams.get("passengerCount") || searchParams.get("passengers") || "1"));
   const [passengerCount, setPassengerCount] = useState<number>(initialPax);
 
-  const tripType = searchParams.get("tripType") || "one-way";
+  const initialTripType = searchParams.get("tripType") || "one-way";
   const departureDate = searchParams.get("departureDate") || searchParams.get("date") || "";
   const departureTime = searchParams.get("departureTime") || searchParams.get("time") || "";
   const returnDate = searchParams.get("returnDate") || "";
   const returnTime = searchParams.get("returnTime") || "";
+  const rentalDaysParam = searchParams.get("rentalDays");
 
-  const customerName = searchParams.get("customerName") || "";
-  const customerEmail = searchParams.get("customerEmail") || "";
-  const customerPhone = searchParams.get("customerPhone") || "";
-  const notes = searchParams.get("notes") || "";
-  const initialPickupAddress = searchParams.get("pickupAddress") || searchParams.get("pickup") || "";
-  const initialDropoffAddress = searchParams.get("dropoffAddress") || searchParams.get("dropoff") || "";
+  const [durationMode, setDurationMode] = useState<"IN_DAY" | "DAILY_RATE">(() => {
+    return initialTripType === "DAILY_RATE" || Boolean(rentalDaysParam) ? "DAILY_RATE" : "IN_DAY";
+  });
+  const [tripType, setTripType] = useState<string>(
+    initialTripType === "DAILY_RATE" ? "one-way" : initialTripType
+  );
 
-  const [route, setRoute] = useState<IntercityRouteDto | null>(null);
-  const [allRoutes, setAllRoutes] = useState<IntercityRouteDto[]>([]);
-  const [allCategories, setAllCategories] = useState<CategoryWithVehicles[]>([]);
-  const [displayCount, setDisplayCount] = useState(3);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [createdCode, setCreatedCode] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const currentDate = today(getLocalTimeZone());
+
+  const [dateRange, setDateRange] = useState<{ start: DateValue; end: DateValue } | null>(() => {
+    if (departureDate) {
+      try {
+        const start = parseDate(departureDate);
+        const end = returnDate ? parseDate(returnDate) : start;
+        return { start, end };
+      } catch {}
+    }
+    return { start: currentDate, end: currentDate };
+  });
+
+  const [dateValue, setDateValue] = useState<DateValue | null>(() => {
+    if (departureDate) {
+      try {
+        return parseDate(departureDate);
+      } catch {}
+    }
+    return currentDate;
+  });
+
+  const [returnDateValue, setReturnDateValue] = useState<DateValue | null>(() => {
+    if (returnDate) {
+      try {
+        return parseDate(returnDate);
+      } catch {}
+    }
+    return null;
+  });
 
   const timeStringToValue = (s: string): TimeValue => {
     if (!s) return { hour: 8, minute: 0, period: "AM" };
@@ -126,47 +160,269 @@ export default function RentCarConfirmPage() {
     return `${String(h24).padStart(2, "0")}:${String(v.minute).padStart(2, "0")}`;
   };
 
+  const defaultTimeValue = timeStringToValue(departureTime);
+  const [editTime, setEditTime] = useState(departureTime || timeValueToString(defaultTimeValue));
+  const [editTimeValue, setEditTimeValue] = useState<TimeValue>(defaultTimeValue);
+  const defaultReturnTimeValue = timeStringToValue(returnTime);
+  const [editReturnTime, setEditReturnTime] = useState(returnTime || (returnTime ? timeValueToString(defaultReturnTimeValue) : ""));
+  const [editReturnTimeValue, setEditReturnTimeValue] = useState<TimeValue>(defaultReturnTimeValue);
+
+  const customerName = searchParams.get("customerName") || "";
+  const customerEmail = searchParams.get("customerEmail") || "";
+  const customerPhone = searchParams.get("customerPhone") || "";
+  const notes = searchParams.get("notes") || "";
+  const initialPickupAddress = searchParams.get("pickupAddress") || searchParams.get("pickup") || "";
+  const initialDropoffAddress = searchParams.get("dropoffAddress") || searchParams.get("dropoff") || "";
+
   const [editName, setEditName] = useState(customerName);
   const [editPhone, setEditPhone] = useState(customerPhone);
   const [editEmail, setEditEmail] = useState(customerEmail);
   const [editNotes, setEditNotes] = useState(notes);
   const [editZaloId, setEditZaloId] = useState("");
   const [editKakaoTalkId, setEditKakaoTalkId] = useState("");
-  const [editTripType, setEditTripType] = useState(tripType);
-  const [editDate, setEditDate] = useState(departureDate);
-  const defaultTimeValue = timeStringToValue(departureTime);
-  const [editTime, setEditTime] = useState(departureTime || timeValueToString(defaultTimeValue));
-  const [editTimeValue, setEditTimeValue] = useState<TimeValue>(defaultTimeValue);
-  const [editReturnDate, setEditReturnDate] = useState(returnDate);
-  const [editReturnTime, setEditReturnTime] = useState(returnTime);
-  const [editRouteId, setEditRouteId] = useState(routeId);
   const [editPickupAddress, setEditPickupAddress] = useState(initialPickupAddress);
   const [editDropoffAddress, setEditDropoffAddress] = useState(initialDropoffAddress);
+
+  const [route, setRoute] = useState<IntercityRouteDto | null>(null);
+  const [allCategories, setAllCategories] = useState<CategoryWithVehicles[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [createdCode, setCreatedCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const clearError = (field: string) =>
-    setErrors((prev) => {
-      if (!prev[field]) return prev;
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
+  // Shared route params & state
+  const sharedRouteId = Number(searchParams.get("sharedRouteId") || searchParams.get("routeId") || "0");
+  const sharedTripType = searchParams.get("sharedTripType") || searchParams.get("tripType") || "one-way";
+  const isSharedRoundTrip = sharedTripType === "return" || sharedTripType === "round-trip";
+  const pax = Math.max(1, Number(searchParams.get("pax") || searchParams.get("passengerCount") || "1"));
+
+  // Outbound params
+  const outboundDirectionId = Number(searchParams.get("directionId") || "0");
+  const outboundScheduleId = Number(searchParams.get("scheduleId") || "0");
+  const outboundTripDate = searchParams.get("tripDate") || searchParams.get("departureDate") || searchParams.get("date") || "";
+  const [outboundPickupType, setOutboundPickupType] = useState<"OFFICE" | "DOOR">(() => {
+    const p = searchParams.get("pickupType");
+    return p === "DOOR" ? "DOOR" : "OFFICE";
+  });
+  const [outboundPickupOfficeId, setOutboundPickupOfficeId] = useState<number | null>(() => {
+    const id = Number(searchParams.get("pickupOfficeId"));
+    return id || null;
+  });
+  const [editOutboundPickupAddress, setEditOutboundPickupAddress] = useState(searchParams.get("pickupAddress") || "");
+  const [outboundDropoffType, setOutboundDropoffType] = useState<"OFFICE" | "DOOR">(() => {
+    const p = searchParams.get("dropoffType");
+    return p === "DOOR" ? "DOOR" : "OFFICE";
+  });
+  const [outboundDropoffOfficeId, setOutboundDropoffOfficeId] = useState<number | null>(() => {
+    const id = Number(searchParams.get("dropoffOfficeId"));
+    return id || null;
+  });
+  const [editOutboundDropoffAddress, setEditOutboundDropoffAddress] = useState(searchParams.get("dropoffAddress") || "");
+
+  // Return params
+  const returnDirectionId = Number(searchParams.get("returnDirectionId") || "0");
+  const returnScheduleId = Number(searchParams.get("returnScheduleId") || "0");
+  const returnTripDate = searchParams.get("returnTripDate") || searchParams.get("returnDate") || "";
+  const [returnPickupType, setReturnPickupType] = useState<"OFFICE" | "DOOR">(() => {
+    const p = searchParams.get("returnPickupType");
+    return p === "DOOR" ? "DOOR" : "OFFICE";
+  });
+  const [returnPickupOfficeId, setReturnPickupOfficeId] = useState<number | null>(() => {
+    const id = Number(searchParams.get("returnPickupOfficeId"));
+    return id || null;
+  });
+  const [editReturnPickupAddress, setEditReturnPickupAddress] = useState(searchParams.get("returnPickupAddress") || "");
+  const [returnDropoffType, setReturnDropoffType] = useState<"OFFICE" | "DOOR">(() => {
+    const p = searchParams.get("returnDropoffType");
+    return p === "DOOR" ? "DOOR" : "OFFICE";
+  });
+  const [returnDropoffOfficeId, setReturnDropoffOfficeId] = useState<number | null>(() => {
+    const id = Number(searchParams.get("returnDropoffOfficeId"));
+    return id || null;
+  });
+  const [editReturnDropoffAddress, setEditReturnDropoffAddress] = useState(searchParams.get("returnDropoffAddress") || "");
+
+  const [sharedRoute, setSharedRoute] = useState<SharedRouteDto | null>(null);
+  const [allOffices, setAllOffices] = useState<SharedOfficeDto[]>([]);
+
+  const getOfficeText = useCallback((officeId?: number | null) => {
+    if (!officeId) return "";
+    const off = allOffices.find((o) => o.id === officeId);
+    return off ? `${off.name} (${off.address}, ${off.city})` : `Văn phòng #${officeId}`;
+  }, [allOffices]);
+
+  const outboundDirection = useMemo(() => {
+    if (!sharedRoute?.directions) return null;
+    return sharedRoute.directions.find((d) => d.id === outboundDirectionId)
+      || sharedRoute.directions.find((d) => d.directionType === "OUTBOUND")
+      || sharedRoute.directions[0] || null;
+  }, [sharedRoute, outboundDirectionId]);
+
+  const outboundSchedule = useMemo(() => {
+    if (!outboundDirection?.schedules) return null;
+    return outboundDirection.schedules.find((s) => s.id === outboundScheduleId)
+      || outboundDirection.schedules[0] || null;
+  }, [outboundDirection, outboundScheduleId]);
+
+  const returnDirection = useMemo(() => {
+    if (!sharedRoute?.directions || !isSharedRoundTrip) return null;
+    return sharedRoute.directions.find((d) => d.id === returnDirectionId)
+      || sharedRoute.directions.find((d) => d.directionType === "RETURN")
+      || null;
+  }, [sharedRoute, isSharedRoundTrip, returnDirectionId]);
+
+  const returnSchedule = useMemo(() => {
+    if (!returnDirection?.schedules) return null;
+    return returnDirection.schedules.find((s) => s.id === returnScheduleId)
+      || returnDirection.schedules[0] || null;
+  }, [returnDirection, returnScheduleId]);
+
+  const availableOriginOffices = useMemo(() => {
+    if (outboundDirection?.originOffices && outboundDirection.originOffices.length > 0) {
+      return outboundDirection.originOffices;
+    }
+    if (outboundDirection?.originOfficeIds && outboundDirection.originOfficeIds.length > 0) {
+      return allOffices.filter((o) => o.id && outboundDirection.originOfficeIds!.includes(o.id));
+    }
+    if (outboundDirection?.originCity) {
+      return allOffices.filter((o) => o.city?.toLowerCase() === outboundDirection.originCity?.toLowerCase());
+    }
+    return allOffices;
+  }, [outboundDirection, allOffices]);
+
+  const availableDestinationOffices = useMemo(() => {
+    if (outboundDirection?.destinationOffices && outboundDirection.destinationOffices.length > 0) {
+      return outboundDirection.destinationOffices;
+    }
+    if (outboundDirection?.destinationOfficeIds && outboundDirection.destinationOfficeIds.length > 0) {
+      return allOffices.filter((o) => o.id && outboundDirection.destinationOfficeIds!.includes(o.id));
+    }
+    if (outboundDirection?.destinationCity) {
+      return allOffices.filter((o) => o.city?.toLowerCase() === outboundDirection.destinationCity?.toLowerCase());
+    }
+    return allOffices;
+  }, [outboundDirection, allOffices]);
+
+  const availableReturnOriginOffices = useMemo(() => {
+    if (returnDirection?.originOffices && returnDirection.originOffices.length > 0) {
+      return returnDirection.originOffices;
+    }
+    if (returnDirection?.originOfficeIds && returnDirection.originOfficeIds.length > 0) {
+      return allOffices.filter((o) => o.id && returnDirection.originOfficeIds!.includes(o.id));
+    }
+    if (returnDirection?.originCity) {
+      return allOffices.filter((o) => o.city?.toLowerCase() === returnDirection.originCity?.toLowerCase());
+    }
+    return allOffices;
+  }, [returnDirection, allOffices]);
+
+  const availableReturnDestinationOffices = useMemo(() => {
+    if (returnDirection?.destinationOffices && returnDirection.destinationOffices.length > 0) {
+      return returnDirection.destinationOffices;
+    }
+    if (returnDirection?.destinationOfficeIds && returnDirection.destinationOfficeIds.length > 0) {
+      return allOffices.filter((o) => o.id && returnDirection.destinationOfficeIds!.includes(o.id));
+    }
+    if (returnDirection?.destinationCity) {
+      return allOffices.filter((o) => o.city?.toLowerCase() === returnDirection.destinationCity?.toLowerCase());
+    }
+    return allOffices;
+  }, [returnDirection, allOffices]);
+
+  useEffect(() => {
+    if (availableOriginOffices.length > 0) {
+      if (!outboundPickupOfficeId || !availableOriginOffices.some((o) => o.id === outboundPickupOfficeId)) {
+        setOutboundPickupOfficeId(availableOriginOffices[0].id ?? null);
+      }
+    } else if (outboundPickupType === "OFFICE") {
+      setOutboundPickupType("DOOR");
+    }
+  }, [availableOriginOffices, outboundPickupOfficeId, outboundPickupType]);
+
+  useEffect(() => {
+    if (availableDestinationOffices.length > 0) {
+      if (!outboundDropoffOfficeId || !availableDestinationOffices.some((o) => o.id === outboundDropoffOfficeId)) {
+        setOutboundDropoffOfficeId(availableDestinationOffices[0].id ?? null);
+      }
+    } else if (outboundDropoffType === "OFFICE") {
+      setOutboundDropoffType("DOOR");
+    }
+  }, [availableDestinationOffices, outboundDropoffOfficeId, outboundDropoffType]);
+
+  useEffect(() => {
+    if (availableReturnOriginOffices.length > 0) {
+      if (!returnPickupOfficeId || !availableReturnOriginOffices.some((o) => o.id === returnPickupOfficeId)) {
+        setReturnPickupOfficeId(availableReturnOriginOffices[0].id ?? null);
+      }
+    } else if (returnPickupType === "OFFICE") {
+      setReturnPickupType("DOOR");
+    }
+  }, [availableReturnOriginOffices, returnPickupOfficeId, returnPickupType]);
+
+  useEffect(() => {
+    if (availableReturnDestinationOffices.length > 0) {
+      if (!returnDropoffOfficeId || !availableReturnDestinationOffices.some((o) => o.id === returnDropoffOfficeId)) {
+        setReturnDropoffOfficeId(availableReturnDestinationOffices[0].id ?? null);
+      }
+    } else if (returnDropoffType === "OFFICE") {
+      setReturnDropoffType("DOOR");
+    }
+  }, [availableReturnDestinationOffices, returnDropoffOfficeId, returnDropoffType]);
+
+  const sharedTotalPrice = useMemo(() => {
+    const outPrice = outboundDirection?.price || 0;
+    const retPrice = isSharedRoundTrip ? (returnDirection?.price || 0) : 0;
+    return (outPrice + retPrice) * pax;
+  }, [outboundDirection, returnDirection, isSharedRoundTrip, pax]);
+
+  const rentalDays = useMemo(() => {
+    if (!dateRange?.start || !dateRange?.end) return 1;
+    return calculateRentalDays(dateRange.start, dateRange.end, 1);
+  }, [dateRange]);
+
+  const isDateInvalid = Boolean(dateValue && dateValue.compare(currentDate) < 0);
+  const isDateRangeInvalid = Boolean(
+    !dateRange?.start ||
+    !dateRange?.end ||
+    dateRange.start.compare(currentDate) < 0 ||
+    dateRange.end.compare(dateRange.start) < 0
+  );
 
   const formatPrice = useCallback((value: number) => _formatPrice(value, language), [language]);
 
-  const getRouteName = useCallback(
-    (r: IntercityRouteDto) => {
-      const tr = r.translations?.find((t) => t.locale === language);
-      if (tr?.name) return tr.name;
-      return `${r.originCity} ⇌ ${r.destinationCity}`;
-    },
-    [language]
-  );
+  const isRoundTrip = tripType === "round-trip" || tripType === "return";
 
   useEffect(() => {
+    if (serviceType === "SHARED") {
+      if (!sharedRouteId) {
+        router.push(prefixUrl("/intercity"));
+        return;
+      }
+      const fetchSharedData = async () => {
+        setLoading(true);
+        try {
+          const [routeData, officesData] = await Promise.all([
+            getSharedRoute(sharedRouteId),
+            getSharedOffices(false),
+          ]);
+          setSharedRoute(routeData);
+          setAllOffices(officesData);
+        } catch (err) {
+          console.error("Failed to load shared route data:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchSharedData();
+      return;
+    }
+
     if (!routeId) {
-      router.push(prefixUrl("/rent-car"));
+      router.push(prefixUrl("/intercity"));
       return;
     }
 
@@ -179,31 +435,13 @@ export default function RentCarConfirmPage() {
         ]);
 
         const routes = (routesRes?.data ?? []) as IntercityRouteDto[];
-        setAllRoutes(routes);
-
         const foundRoute = routes.find((r) => r.id === routeId);
         if (foundRoute) {
           setRoute(foundRoute);
         }
-      } catch (err) {
-        console.error("Failed to load confirm data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchData();
-  }, [routeId, language]);
-
-  // Load private vehicle categories if route is found
-  useEffect(() => {
-    if (!route) return;
-
-    const loadCategories = async () => {
-      try {
-        const catsRes = await getVehicleCategories({ active: true, page: 0, size: 100 });
         const allCats = (catsRes?.data?.content ?? []) as VehicleCategoryDto[];
-        const routePrices = route.prices ?? [];
+        const routePrices = foundRoute?.prices ?? [];
 
         const catsWithVehicles: CategoryWithVehicles[] = [];
         for (const cat of allCats) {
@@ -212,33 +450,49 @@ export default function RentCarConfirmPage() {
           );
           if (!priceEntry) continue;
 
+          let vehicles: VehicleDto[] = [];
           try {
             const vehiclesRes = await getRentableVehiclesByCategory(cat.id);
-            const vehicles = (vehiclesRes?.data ?? []) as VehicleDto[];
-            if (vehicles.length === 0) continue;
-
-            const price = calcIntercityPrivatePrice(
-              {
-                distanceKm: route.distanceKm,
-                pricingType: priceEntry.pricingType,
-                perKmAmount: priceEntry.perKmAmount,
-                fixedPriceOneWay: priceEntry.fixedPriceOneWay,
-                fixedPriceRoundTrip: priceEntry.fixedPriceRoundTrip,
-                roundTripPrice: priceEntry.roundTripPrice,
-                roundTripPerKmAmount: priceEntry.roundTripPerKmAmount,
-              },
-              editTripType === "round-trip" || editTripType === "return"
-            );
-            catsWithVehicles.push({ category: cat, vehicles, price });
+            vehicles = (vehiclesRes?.data ?? []) as VehicleDto[];
           } catch {
-            continue;
+            vehicles = [];
           }
+
+          const oneWayBase = priceEntry.fixedPriceOneWay || priceEntry.oneWayPrice || priceEntry.basePrice || 0;
+          const baseOneWayPrice = calcIntercityPrivatePrice(
+            {
+              distanceKm: foundRoute?.distanceKm,
+              pricingType: priceEntry.pricingType || (oneWayBase > 0 && !priceEntry.perKmAmount ? "FIXED" : undefined),
+              perKmAmount: priceEntry.perKmAmount,
+              fixedPriceOneWay: oneWayBase,
+              basePrice: oneWayBase,
+              fixedPriceRoundTrip: priceEntry.fixedPriceRoundTrip || priceEntry.roundTripPrice,
+              roundTripPrice: priceEntry.roundTripPrice || priceEntry.fixedPriceRoundTrip,
+              roundTripPerKmAmount: priceEntry.roundTripPerKmAmount,
+            },
+            false
+          );
+
+          const dailyRate = priceEntry.dailyRate && Number(priceEntry.dailyRate) > 0
+            ? Number(priceEntry.dailyRate)
+            : (Number(priceEntry.fixedPriceOneWay ?? 0) > 0 ? Number(priceEntry.fixedPriceOneWay) : 800000);
+
+          catsWithVehicles.push({
+            category: cat,
+            vehicles,
+            price: baseOneWayPrice,
+            dailyRate,
+            minimumDays: priceEntry.minimumDays || 1,
+            depositType: priceEntry.depositType || "PERCENT",
+            depositRate: priceEntry.depositRate ?? 20,
+            depositAmount: priceEntry.depositAmount,
+          });
         }
 
         setAllCategories(catsWithVehicles);
-        setDisplayCount(3);
+
         const seatsParam = searchParams.get("seats") || searchParams.get("vehicleCategoryId");
-        let preselectedId = null;
+        let preselectedId: number | null = null;
         if (seatsParam && catsWithVehicles.length > 0) {
           const matched = catsWithVehicles.find(
             (c) => c.category.code === seatsParam || String(c.category.id) === seatsParam
@@ -250,114 +504,211 @@ export default function RentCarConfirmPage() {
         }
         setSelectedCategoryId(preselectedId);
       } catch (err) {
-        console.error("Failed to load categories:", err);
+        console.error("Failed to load confirm data:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadCategories();
-  }, [route, editTripType]);
+    fetchData();
+  }, [routeId, sharedRouteId, serviceType, language]);
 
-  useEffect(() => {
-    const foundRoute = allRoutes.find((r) => r.id === editRouteId);
-    if (foundRoute && foundRoute.id !== route?.id) {
-      setRoute(foundRoute);
-      setEditTime("");
+  const selectedCategory = allCategories.find((c) => c.category.id === selectedCategoryId) || allCategories[0];
+
+  // Dynamic price calculation for categories
+  const calculateCategoryPrice = useCallback((cat: CategoryWithVehicles) => {
+    if (durationMode === "DAILY_RATE") {
+      return calcIntercityDailyRatePrice(cat.dailyRate, rentalDays, cat.minimumDays || 1);
     }
-  }, [editRouteId, allRoutes]);
+    return isRoundTrip ? cat.price * 2 : cat.price;
+  }, [durationMode, rentalDays, isRoundTrip]);
 
-  const categories = allCategories.slice(0, displayCount);
-  const hasMore = displayCount < allCategories.length;
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountInfo | null>(null);
 
-  const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
-    setLoadingMore(true);
-    setTimeout(() => {
-      setDisplayCount((prev) => prev + 3);
-      setLoadingMore(false);
-    }, 400);
-  }, [loadingMore, hasMore]);
+  const rawTotalPrice = useMemo(() => {
+    if (serviceType === "SHARED") return sharedTotalPrice;
+    if (!selectedCategory) return 0;
+    return calculateCategoryPrice(selectedCategory);
+  }, [serviceType, sharedTotalPrice, selectedCategory, calculateCategoryPrice]);
 
-  const selectedCategory = allCategories.find((c) => c.category.id === selectedCategoryId);
+  const finalTotalPrice = useMemo(() => {
+    return Math.max(0, rawTotalPrice - (appliedDiscount?.amount || 0));
+  }, [rawTotalPrice, appliedDiscount]);
 
-  // Calculate current total based on service type
-  const isRoundTrip = editTripType === "round-trip" || editTripType === "return";
-  const sharedTotal = calcSharedPrice(
-    route?.sharedPriceOneWay,
-    route?.sharedPriceRoundTrip,
-    passengerCount,
-    isRoundTrip
-  );
-  const currentTotalPrice =
-    serviceType === "SHARED"
-      ? sharedTotal
-      : selectedCategory
-      ? selectedCategory.price
-      : 0;
+  const currentTotalPrice = finalTotalPrice;
+
+  const depositCalc = useMemo(() => {
+    if (serviceType === "SHARED") {
+      return calculateDeposit({
+        totalAmount: finalTotalPrice,
+        depositType: DepositType.PERCENT,
+        defaultRate: 20,
+      });
+    }
+
+    const isFixed = selectedCategory?.depositType === "FIXED" && (selectedCategory?.depositAmount ?? 0) > 0;
+    if (isFixed) {
+      return calculateDeposit({
+        totalAmount: finalTotalPrice,
+        depositType: DepositType.FIXED,
+        depositAmount: selectedCategory?.depositAmount,
+      });
+    }
+
+    return calculateDeposit({
+      totalAmount: finalTotalPrice,
+      depositType: DepositType.PERCENT,
+      depositRate: selectedCategory?.depositRate ?? 20,
+      defaultRate: 20,
+    });
+  }, [serviceType, finalTotalPrice, selectedCategory]);
 
   const validate = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!editRouteId || editRouteId === 0) newErrors.route = t.errors.routeRequired;
-    if (!editTripType) newErrors.tripType = t.errors.tripTypeRequired;
-    if (!editDate) newErrors.date = t.errors.dateRequired;
-    if (!editTime) newErrors.time = t.errors.timeRequired;
     if (!editName?.trim()) newErrors.name = t.errors.nameRequired;
     if (!editPhone?.trim()) newErrors.phone = t.errors.phoneRequired;
     if (!editEmail?.trim()) newErrors.email = t.errors.emailRequired;
-    if (!editPickupAddress?.trim()) newErrors.pickupAddress = t.errors.pickupAddressRequired;
-    if (!editDropoffAddress?.trim()) newErrors.dropoffAddress = t.errors.dropoffAddressRequired;
 
-    if (serviceType === "SHARED" && isRoundTrip) {
-      if (!editReturnDate) newErrors.returnDate = t.errors.dateRequired;
-      if (!editReturnTime) newErrors.returnTime = t.rentCar.selectReturnTime;
+    if (serviceType === "SHARED") {
+      if (outboundPickupType === "OFFICE") {
+        if (!outboundPickupOfficeId) newErrors.pickupAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng đón";
+      } else {
+        if (!editOutboundPickupAddress?.trim()) newErrors.pickupAddress = t.errors.pickupAddressRequired;
+      }
+
+      if (outboundDropoffType === "OFFICE") {
+        if (!outboundDropoffOfficeId) newErrors.dropoffAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng trả";
+      } else {
+        if (!editOutboundDropoffAddress?.trim()) newErrors.dropoffAddress = t.errors.dropoffAddressRequired;
+      }
+
+      if (isSharedRoundTrip) {
+        if (returnPickupType === "OFFICE") {
+          if (!returnPickupOfficeId) newErrors.returnPickupAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng đón chiều về";
+        } else {
+          if (!editReturnPickupAddress?.trim()) newErrors.returnPickupAddress = t.errors.pickupAddressRequired;
+        }
+
+        if (returnDropoffType === "OFFICE") {
+          if (!returnDropoffOfficeId) newErrors.returnDropoffAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng trả chiều về";
+        } else {
+          if (!editReturnDropoffAddress?.trim()) newErrors.returnDropoffAddress = t.errors.dropoffAddressRequired;
+        }
+      }
+    } else {
+      if (!editPickupAddress?.trim()) newErrors.pickupAddress = t.errors.pickupAddressRequired;
+
+      if (durationMode === "DAILY_RATE") {
+        if (isDateRangeInvalid || !dateRange) newErrors.date = t.errors.dateRequired;
+      } else {
+        if (!dateValue || isDateInvalid) newErrors.date = t.errors.dateRequired;
+        if (isRoundTrip && !editReturnTime) {
+          newErrors.returnTime = t.errors.timeRequired || "Vui lòng chọn giờ về";
+        }
+      }
+      if (!editTime) newErrors.time = t.errors.timeRequired;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [
-    editRouteId,
-    editTripType,
-    editDate,
-    editTime,
     editName,
     editPhone,
     editEmail,
-    editPickupAddress,
-    editDropoffAddress,
     serviceType,
+    outboundPickupType,
+    outboundPickupOfficeId,
+    editOutboundPickupAddress,
+    outboundDropoffType,
+    outboundDropoffOfficeId,
+    editOutboundDropoffAddress,
+    isSharedRoundTrip,
+    returnPickupType,
+    returnPickupOfficeId,
+    editReturnPickupAddress,
+    returnDropoffType,
+    returnDropoffOfficeId,
+    editReturnDropoffAddress,
+    editPickupAddress,
+    durationMode,
+    isDateRangeInvalid,
+    dateRange,
+    dateValue,
+    isDateInvalid,
     isRoundTrip,
-    editReturnDate,
+    editTime,
     editReturnTime,
     t.errors,
-    t.rentCar,
+    t.rentCar.selectRouteError,
   ]);
 
-  const isFormValid = !!(
-    editRouteId &&
-    editRouteId > 0 &&
-    editTripType &&
-    editDate &&
-    editTime &&
-    editName?.trim() &&
-    editPhone?.trim() &&
-    editEmail?.trim() &&
-    editPickupAddress?.trim() &&
-    editDropoffAddress?.trim() &&
-    route &&
-    (serviceType === "SHARED" || selectedCategory) &&
-    (!isRoundTrip || serviceType === "PRIVATE" || (editReturnDate && editReturnTime))
-  );
-
-  const handleSubmit = async () => {
-    if (!route || submitting) return;
-    if (serviceType === "PRIVATE" && !selectedCategory) return;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+    if (serviceType === "SHARED") {
+      if (!sharedRoute || !outboundDirection || !outboundSchedule) return;
+    } else {
+      if (!route || !selectedCategory) return;
+    }
     if (!validate()) return;
     setShowConfirmModal(true);
   };
 
   const handleConfirmBooking = async () => {
-    if (!route || submitting) return;
-    if (serviceType === "PRIVATE" && !selectedCategory) return;
+    if (submitting) return;
+    if (serviceType === "SHARED") {
+      if (!sharedRoute || !outboundDirection || !outboundSchedule) return;
+      if (!validate()) {
+        setShowConfirmModal(false);
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const res = await createSharedBooking({
+          customerName: editName || "Guest",
+          customerPhone: editPhone || "",
+          customerEmail: editEmail || `${editPhone || "guest"}@traveler.com`,
+          note: editNotes.trim() || undefined,
+          directionId: outboundDirection.id!,
+          scheduleId: outboundSchedule.id!,
+          tripDate: outboundTripDate,
+          pickupType: outboundPickupType,
+          pickupOfficeId: outboundPickupType === "OFFICE" ? (outboundPickupOfficeId || undefined) : undefined,
+          pickupAddress: outboundPickupType === "DOOR" ? (editOutboundPickupAddress.trim() || undefined) : undefined,
+          dropoffType: outboundDropoffType,
+          dropoffOfficeId: outboundDropoffType === "OFFICE" ? (outboundDropoffOfficeId || undefined) : undefined,
+          dropoffAddress: outboundDropoffType === "DOOR" ? (editOutboundDropoffAddress.trim() || undefined) : undefined,
+          passengerCount: pax,
+
+          isRoundTrip: isSharedRoundTrip,
+          returnDirectionId: isSharedRoundTrip && returnDirection ? returnDirection.id : undefined,
+          returnScheduleId: isSharedRoundTrip && returnSchedule ? returnSchedule.id : undefined,
+          returnTripDate: isSharedRoundTrip ? returnTripDate : undefined,
+          returnPickupType: isSharedRoundTrip ? returnPickupType : undefined,
+          returnPickupOfficeId: isSharedRoundTrip && returnPickupType === "OFFICE" ? (returnPickupOfficeId || undefined) : undefined,
+          returnPickupAddress: isSharedRoundTrip && returnPickupType === "DOOR" ? (editReturnPickupAddress.trim() || undefined) : undefined,
+          returnDropoffType: isSharedRoundTrip ? returnDropoffType : undefined,
+          returnDropoffOfficeId: isSharedRoundTrip && returnDropoffType === "OFFICE" ? (returnDropoffOfficeId || undefined) : undefined,
+          returnDropoffAddress: isSharedRoundTrip && returnDropoffType === "DOOR" ? (editReturnDropoffAddress.trim() || undefined) : undefined,
+        });
+
+        const code = res?.bookingGroupId
+          ? `SH-${res.bookingGroupId}`
+          : (res?.bookings?.[0]?.id ? `SH-${res.bookings[0].id}` : "SH-CONFIRMED");
+        setCreatedCode(code);
+        setBookingSuccess(true);
+      } catch (err) {
+        console.error("Shared booking API error:", err);
+        setErrorMessage(err instanceof Error ? err.message : t.errors.bookingFailed);
+      } finally {
+        setSubmitting(false);
+        setShowConfirmModal(false);
+      }
+      return;
+    }
+
+    if (!route || !selectedCategory) return;
     if (!validate()) {
       setShowConfirmModal(false);
       return;
@@ -365,25 +716,41 @@ export default function RentCarConfirmPage() {
 
     setSubmitting(true);
 
+    const departureDateStr = durationMode === "DAILY_RATE" && dateRange?.start
+      ? formatToIsoDate(dateRange.start)
+      : (dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : "");
+
+    const returnDateStr = durationMode === "DAILY_RATE" && dateRange?.end
+      ? formatToIsoDate(dateRange.end)
+      : (isRoundTrip && returnDateValue ? `${returnDateValue.year}-${String(returnDateValue.month).padStart(2, "0")}-${String(returnDateValue.day).padStart(2, "0")}` : undefined);
+
+    const finalTripType = durationMode === "DAILY_RATE" ? "DAILY_RATE" : tripType;
+
     try {
       const res = await createRentCarBooking({
         customerName: editName || "Guest",
         customerEmail: editEmail || `${editPhone || "guest"}@traveler.com`,
         customerPhone: editPhone || "",
         customerNotes: editNotes.trim() || undefined,
+        zaloId: editZaloId.trim() || undefined,
+        kakaoTalkId: editKakaoTalkId.trim() || undefined,
         routeId: route.id,
-        serviceType: serviceType,
-        passengerCount: serviceType === "SHARED" ? passengerCount : undefined,
-        vehicleCategoryId: serviceType === "PRIVATE" ? selectedCategory?.category.id : undefined,
-        tripType: editTripType,
-        departureDate: editDate,
+        serviceType: "PRIVATE",
+        vehicleCategoryId: selectedCategory?.category.id,
+        tripType: finalTripType,
+        departureDate: departureDateStr,
         departureTime: editTime,
-        returnDate: isRoundTrip ? editReturnDate : undefined,
+        returnDate: returnDateStr,
         returnTime: isRoundTrip ? editReturnTime : undefined,
         pickupAddress: editPickupAddress,
-        dropoffAddress: editDropoffAddress,
-        basePrice: currentTotalPrice,
-        totalPrice: currentTotalPrice,
+        dropoffAddress: route?.destinationCity || "",
+        basePrice: rawTotalPrice,
+        totalPrice: finalTotalPrice,
+        depositType: depositCalc.depositType as any,
+        depositRate: depositCalc.depositRate,
+        depositAmount: depositCalc.depositAmount,
+        discountCode: appliedDiscount?.code,
+        discountAmount: appliedDiscount?.amount,
       });
 
       if (res?.data?.bookingCode) {
@@ -413,13 +780,12 @@ export default function RentCarConfirmPage() {
   }
 
   if (bookingSuccess) {
-    const onSuccessComplete = () => {
-      router.push(`/${language}/rent-car/success?bookingCode=${createdCode}`);
-    };
     return (
       <SuccessOverlay
         bookingCode={createdCode}
-        onComplete={onSuccessComplete}
+        onComplete={() => {
+          router.push(`/${language}/intercity/success?bookingCode=${createdCode}`);
+        }}
         title={t.rentCar.confirmSuccessTitle}
         subtitle={t.rentCar.redirecting}
       />
@@ -427,757 +793,1367 @@ export default function RentCarConfirmPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Scenic Route Panoramic Banner */}
-      <div className="relative w-full h-[200px] sm:h-[260px] overflow-hidden">
-        <img
-          src={
-            route?.thumbnailUrl
-              ? route.thumbnailUrl.startsWith("http")
-                ? route.thumbnailUrl
-                : `${backendUrl}${route.thumbnailUrl}`
-              : "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&h=685&q=80"
-          }
-          alt={route ? getRouteName(route) : "Scenic Route"}
-          className="w-full h-full object-cover scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/30" />
+    <div className="min-h-screen bg-background text-foreground pb-16">
+      {/* 1. Header Banner */}
+      <section className="relative w-full h-[180px] sm:h-[220px] bg-slate-900 overflow-hidden flex items-end">
+        {route?.thumbnailUrl ? (
+          <img
+            src={route.thumbnailUrl.startsWith("http") ? route.thumbnailUrl : `${backendUrl}${route.thumbnailUrl}`}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-60"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-slate-900" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent" />
 
-        <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8 max-w-4xl mx-auto w-full">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="absolute top-4 left-4 p-2 rounded-xl bg-black/35 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 transition-all cursor-pointer"
-            aria-label="Back"
-          >
-            <ArrowLeft size={18} />
-          </button>
-
-          <div className="inline-block self-start rounded-2xl bg-black/40 backdrop-blur-[3px] border border-white/10 px-5 py-3.5 mt-auto">
-            <span className="text-[10px] font-extrabold tracking-widest text-accent uppercase block mb-1">
-              {serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.requestedRoute}
-            </span>
-            <h1 className="text-xl sm:text-3xl font-black text-white tracking-wide uppercase leading-none drop-shadow-md flex items-center gap-3">
-              {route ? (
+        <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pb-6 relative z-10 flex items-center justify-between gap-4">
+          <div>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3.5 py-1.5 rounded-full text-sm font-bold text-white transition-colors cursor-pointer mb-2"
+            >
+              <ArrowLeft size={16} />
+              <span>{t.common.goBack}</span>
+            </button>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+              {serviceType === "SHARED"
+                ? (sharedRoute?.name || "Tuyến xe ghép")
+                : (route ? `${route.originCity} ⇌ ${route.destinationCity}` : "--- ⇌ ---")}
+            </h1>
+            <p className="text-sm text-white/80 font-semibold mt-1 flex items-center gap-2">
+              <span>{serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}</span>
+              {serviceType === "SHARED" ? (
                 <>
-                  <span>{route.originCity}</span>
-                  <span className="text-accent">⇄</span>
-                  <span>{route.destinationCity}</span>
+                  <span>•</span>
+                  <span>{sharedRoute?.vehicleName || "Limousine VIP"}</span>
+                  <span>•</span>
+                  <span className="text-accent font-extrabold">{pax} {t.common.seats} ({isSharedRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay})</span>
                 </>
               ) : (
-                "--- ⇄ ---"
-              )}
-            </h1>
-            <p className="text-[11px] font-bold text-white/70 mt-1.5 flex items-center gap-1.5">
-              <span>{serviceType === "SHARED" ? `${t.rentCar.paxCount}: ${passengerCount}` : t.rentCar.reviewAndSelect}</span>
-              {route?.distanceKm && (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
-                  <span>{route.distanceKm} km</span>
+                  {route?.distanceKm && (
+                    <>
+                      <span>•</span>
+                      <span>{route.distanceKm} km</span>
+                    </>
+                  )}
+                  {durationMode === "DAILY_RATE" && (
+                    <>
+                      <span>•</span>
+                      <span className="text-accent font-extrabold">{t.rentCar.dailyRate} ({rentalDays} {t.rentCar.dayUnit})</span>
+                    </>
+                  )}
                 </>
               )}
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* Booking Summary - Editable */}
-        <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t.rentCar.tripInformation}
-            </h3>
-            <Chip
-              size="sm"
-              color={serviceType === "SHARED" ? "warning" : "accent"}
-              variant="soft"
-              className="font-bold text-[10px]"
-            >
-              {serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}
-            </Chip>
-          </div>
+      {/* 2. Main 2-Column Content */}
+      <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 mt-8">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Form Controls (col-span-8) */}
+          <div className="lg:col-span-8 space-y-6">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Route - Autocomplete */}
-            <div className="flex items-start gap-3">
-              <MapPin size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Autocomplete
-                  className="w-full"
-                  placeholder={t.rentCar.selectRoute}
-                  selectionMode="single"
-                  value={route ? String(route.id) : null}
-                  onChange={(key) => {
-                    if (key) {
-                      setEditRouteId(Number(key));
-                      clearError("route");
-                    }
-                  }}
-                >
-                  <Label className="font-bold" isRequired>
-                    {t.rentCar.route}
-                  </Label>
-                  <Autocomplete.Trigger className="dark:shadow-accent dark:shadow-xs w-full h-10 px-3 rounded-xl border-1 border-slate-300 dark:border-slate-700 shadow-sm text-sm font-bold flex items-center justify-between cursor-pointer">
-                    <Autocomplete.Value />
-                    <Autocomplete.Indicator />
-                  </Autocomplete.Trigger>
-                  <Autocomplete.Popover>
-                    <Autocomplete.Filter filter={contains}>
-                      <SearchField autoFocus name="search" variant="secondary">
-                        <SearchField.Group>
-                          <SearchField.SearchIcon />
-                          <SearchField.Input placeholder={t.rentCar.searchPlaceholder} />
-                          <SearchField.ClearButton />
-                        </SearchField.Group>
-                      </SearchField>
-                      <ListBox
-                        className="max-h-[200px] overflow-y-auto"
-                        renderEmptyState={() => <EmptyState>{t.common.noResults}</EmptyState>}
-                      >
-                        {allRoutes.map((r) => (
-                          <ListBox.Item key={String(r.id)} id={String(r.id)} textValue={getRouteName(r)}>
-                            <div className="flex items-center gap-2 py-0.5">
-                              <MapPin size={14} className="text-accent shrink-0" />
-                              <span className="text-xs font-bold">{getRouteName(r)}</span>
-                            </div>
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Autocomplete.Filter>
-                  </Autocomplete.Popover>
-                </Autocomplete>
-                {errors.route && <FieldError>{errors.route}</FieldError>}
-              </div>
-            </div>
-
-            {/* Trip Type */}
-            <div className="flex items-start gap-3">
-              <Car size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Label className="font-bold" isRequired>
-                  {t.rentCar.tripType}
-                </Label>
-                <Select
-                  isRequired
-                  selectedKey={editTripType}
-                  onSelectionChange={(key) => {
-                    if (key) {
-                      setEditTripType(key as string);
-                      clearError("tripType");
-                    }
-                  }}
-                  fullWidth
-                >
-                  <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[40px] dark:shadow-accent dark:shadow-xs">
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover className="border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50">
-                    <ListBox>
-                      <ListBox.Item
-                        key="one-way"
-                        id="one-way"
-                        textValue={t.rentCar.oneWay}
-                        className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
-                      >
-                        {t.rentCar.oneWay}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item
-                        key="round-trip"
-                        id="round-trip"
-                        textValue={t.rentCar.roundTrip}
-                        className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
-                      >
-                        {t.rentCar.roundTrip}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-                {errors.tripType && <FieldError>{errors.tripType}</FieldError>}
-              </div>
-            </div>
-
-            {/* Date - Outbound */}
-            <div className="flex items-start gap-3">
-              <CalendarIcon size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <DatePicker
-                  className="w-full"
-                  value={editDate ? parseDate(editDate) : undefined}
-                  onChange={(val) => {
-                    if (val) {
-                      const d = val as DateValue;
-                      const y = d.year;
-                      const m = String(d.month).padStart(2, "0");
-                      const day = String(d.day).padStart(2, "0");
-                      setEditDate(`${y}-${m}-${day}`);
-                      clearError("date");
-                    }
-                  }}
-                >
-                  <Label className="font-bold" isRequired>
-                    {serviceType === "SHARED" ? `${t.rentCar.date} (${t.rentCar.outboundTrip})` : t.rentCar.date}
-                  </Label>
-                  <DateField.Group
-                    fullWidth
-                    className="dark:shadow-accent dark:shadow-xs h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between"
-                  >
-                    <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
-                      {(segment) => <DateField.Segment segment={segment} />}
-                    </DateField.Input>
-                    <DateField.Suffix>
-                      <DatePicker.Trigger className="cursor-pointer">
-                        <DatePicker.TriggerIndicator />
-                      </DatePicker.Trigger>
-                    </DateField.Suffix>
-                  </DateField.Group>
-                  <DatePicker.Popover className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
-                    <Calendar aria-label="Pick date">
-                      <Calendar.Header className="flex items-center justify-between mb-2">
-                        <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
-                          <Calendar.YearPickerTriggerHeading />
-                          <Calendar.YearPickerTriggerIndicator />
-                        </Calendar.YearPickerTrigger>
-                        <div className="flex gap-1">
-                          <Calendar.NavButton
-                            slot="previous"
-                            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer"
-                          />
-                          <Calendar.NavButton
-                            slot="next"
-                            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer"
-                          />
-                        </div>
-                      </Calendar.Header>
-                      <Calendar.Grid className="w-full">
-                        <Calendar.GridHeader className="text-slate-400 text-[10px] font-bold">
-                          {(day) => (
-                            <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>
-                          )}
-                        </Calendar.GridHeader>
-                        <Calendar.GridBody>
-                          {(date) => (
-                            <Calendar.Cell
-                              date={date}
-                              className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
-                            />
-                          )}
-                        </Calendar.GridBody>
-                      </Calendar.Grid>
-                    </Calendar>
-                  </DatePicker.Popover>
-                </DatePicker>
-                {errors.date && <FieldError>{errors.date}</FieldError>}
-              </div>
-            </div>
-
-            {/* Time - Outbound */}
-            <div className="flex items-start gap-3">
-              <Clock size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <TimePicker
-                  value={editTimeValue}
-                  onChange={(v) => {
-                    setEditTimeValue(v);
-                    setEditTime(timeValueToString(v));
-                    clearError("time");
-                  }}
-                  label={serviceType === "SHARED" ? `${t.rentCar.time} (${t.rentCar.outboundTrip})` : t.rentCar.time}
-                  language={language}
-                  popoverTitle="Chọn giờ xuất phát"
-                  isRequired
-                  labelClassName="dark:text-white dark:text-sm text-sm font-bold mb-1 mt-0.5"
-                  triggerClassName="dark:shadow-accent dark:shadow-xs bg-white dark:bg-zinc-900"
-                />
-                {errors.time && <FieldError>{errors.time}</FieldError>}
-              </div>
-            </div>
-
-            {/* If SHARED & Round Trip: Return Date & Return Time */}
-            {serviceType === "SHARED" && isRoundTrip && (
-              <>
-                <div className="flex items-start gap-3">
-                  <CalendarIcon size={16} className="text-amber-500 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <DatePicker
-                      className="w-full"
-                      value={editReturnDate ? parseDate(editReturnDate) : undefined}
-                      onChange={(val) => {
-                        if (val) {
-                          const d = val as DateValue;
-                          setEditReturnDate(`${d.year}-${String(d.month).padStart(2, "0")}-${String(d.day).padStart(2, "0")}`);
-                          clearError("returnDate");
-                        }
-                      }}
-                    >
-                      <Label className="font-bold" isRequired>
-                        {`${t.rentCar.date} (${t.rentCar.returnTrip})`}
-                      </Label>
-                      <DateField.Group
-                        fullWidth
-                        className="dark:shadow-accent dark:shadow-xs h-10 border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between"
-                      >
-                        <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
-                          {(segment) => <DateField.Segment segment={segment} />}
-                        </DateField.Input>
-                        <DateField.Suffix>
-                          <DatePicker.Trigger className="cursor-pointer">
-                            <DatePicker.TriggerIndicator />
-                          </DatePicker.Trigger>
-                        </DateField.Suffix>
-                      </DateField.Group>
-                      <DatePicker.Popover className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
-                        <Calendar aria-label="Pick return date">
-                          <Calendar.Header className="flex items-center justify-between mb-2">
-                            <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
-                              <Calendar.YearPickerTriggerHeading />
-                              <Calendar.YearPickerTriggerIndicator />
-                            </Calendar.YearPickerTrigger>
-                            <div className="flex gap-1">
-                              <Calendar.NavButton
-                                slot="previous"
-                                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer"
-                              />
-                              <Calendar.NavButton
-                                slot="next"
-                                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer"
-                              />
-                            </div>
-                          </Calendar.Header>
-                          <Calendar.Grid className="w-full">
-                            <Calendar.GridHeader className="text-slate-400 text-[10px] font-bold">
-                              {(day) => (
-                                <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>
-                              )}
-                            </Calendar.GridHeader>
-                            <Calendar.GridBody>
-                              {(date) => (
-                                <Calendar.Cell
-                                  date={date}
-                                  className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
-                                />
-                              )}
-                            </Calendar.GridBody>
-                          </Calendar.Grid>
-                        </Calendar>
-                      </DatePicker.Popover>
-                    </DatePicker>
-                    {errors.returnDate && <FieldError>{errors.returnDate}</FieldError>}
-                  </div>
+            {/* Card 1: Contact Information */}
+            <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <User size={18} className="text-accent" />
+                  <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                    {t.rentCar.contactInfo}
+                  </h2>
                 </div>
+                <AutofillButton
+                  onFill={(data) => {
+                    if (data.fullname) setEditName(data.fullname);
+                    if (data.phone) setEditPhone(data.phone);
+                    if (data.email) setEditEmail(data.email);
+                    if (data.zaloId) setEditZaloId(data.zaloId);
+                    if (data.kakaoTalkId) setEditKakaoTalkId(data.kakaoTalkId);
+                  }}
+                />
+              </div>
 
-                <div className="flex items-start gap-3">
-                  <Clock size={16} className="text-amber-500 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <Label className="font-bold mb-1 mt-0.5 text-sm" isRequired>
-                      {`${t.rentCar.time} (${t.rentCar.returnTrip})`}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField isRequired isInvalid={Boolean(errors.name)} className="w-full">
+                  <Label isRequired className="text-sm font-bold uppercase tracking-wider pl-1">
+                    {t.rentCar.fullName}
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder={t.common.name}
+                    value={editName}
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
+                    }}
+                    className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                  />
+                  {errors.name && <FieldError className="text-sm text-red-500 mt-1 pl-1 font-medium">{errors.name}</FieldError>}
+                </TextField>
+
+                <TextField isRequired isInvalid={Boolean(errors.phone)} className="w-full">
+                  <Label isRequired className="text-sm font-bold uppercase tracking-wider pl-1">
+                    {t.rentCar.phone}
+                  </Label>
+                  <Input
+                    type="tel"
+                    placeholder="0901 234 567"
+                    value={editPhone}
+                    onChange={(e) => {
+                      setEditPhone(e.target.value);
+                      if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+                    }}
+                    className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                  />
+                  {errors.phone && <FieldError className="text-sm text-red-500 mt-1 pl-1 font-medium">{errors.phone}</FieldError>}
+                </TextField>
+
+                <TextField isRequired isInvalid={Boolean(errors.email)} className="w-full">
+                  <Label isRequired className="text-sm font-bold uppercase tracking-wider pl-1">
+                    Email
+                  </Label>
+                  <Input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={editEmail}
+                    onChange={(e) => {
+                      setEditEmail(e.target.value);
+                      if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                    }}
+                    className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                  />
+                  {errors.email && <FieldError className="text-sm text-red-500 mt-1 pl-1 font-medium">{errors.email}</FieldError>}
+                </TextField>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <TextField className="w-full">
+                    <Label className="text-sm font-bold uppercase tracking-wider pl-1">
+                      Zalo ID
                     </Label>
                     <Input
-                      type="time"
-                      value={editReturnTime}
-                      onChange={(e) => {
-                        setEditReturnTime(e.target.value);
-                        clearError("returnTime");
-                      }}
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold"
+                      type="text"
+                      placeholder="Zalo (tùy chọn)"
+                      value={editZaloId}
+                      onChange={(e) => setEditZaloId(e.target.value)}
+                      className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
                     />
-                    {errors.returnTime && <FieldError>{errors.returnTime}</FieldError>}
+                  </TextField>
+                  <TextField className="w-full">
+                    <Label className="text-sm font-bold uppercase tracking-wider pl-1">
+                      KakaoTalk ID
+                    </Label>
+                    <Input
+                      type="text"
+                      placeholder="Kakao (tùy chọn)"
+                      value={editKakaoTalkId}
+                      onChange={(e) => setEditKakaoTalkId(e.target.value)}
+                      className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                    />
+                  </TextField>
+                </div>
+              </div>
+            </div>
+
+            {/* If SHARED: Card 2 - Shared Route Trip Details */}
+            {serviceType === "SHARED" ? (
+              <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Bus size={18} className="text-accent" />
+                    <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      {t.rentCar.tripDetails}
+                    </h2>
+                  </div>
+                  <Chip size="sm" color="accent" variant="soft" className="text-sm font-bold px-3 py-1">
+                    {pax} {t.common.seats} • {isSharedRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay}
+                  </Chip>
+                </div>
+
+                {/* Outbound Leg */}
+                <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-[var(--bg-card)] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-black">
+                        1
+                      </span>
+                      <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                        {t.rentCar.outboundTrip}: {outboundDirection?.originCity} ➔ {outboundDirection?.destinationCity}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-accent">
+                      {outboundTripDate} {outboundSchedule?.departureTime ? `(${outboundSchedule.departureTime.slice(0, 5)})` : ""}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    {/* Outbound Pickup */}
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
+                          {outboundPickupType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                          <span>{t.rentCar.pickupPoint}</span>
+                        </div>
+                        {availableOriginOffices.length > 0 && (
+                          <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                            <button
+                              type="button"
+                              onClick={() => setOutboundPickupType("OFFICE")}
+                              className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                outboundPickupType === "OFFICE"
+                                  ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                              }`}
+                            >
+                              {t.rentCar.officePickup}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOutboundPickupType("DOOR")}
+                              className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                outboundPickupType === "DOOR"
+                                  ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                              }`}
+                            >
+                              {t.rentCar.doorPickup}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {outboundPickupType === "OFFICE" && availableOriginOffices.length > 0 ? (
+                        <div className="space-y-1">
+                          <Select
+                            selectedKey={outboundPickupOfficeId ? String(outboundPickupOfficeId) : undefined}
+                            onSelectionChange={(key) => {
+                              if (key) {
+                                setOutboundPickupOfficeId(Number(key));
+                                if (errors.pickupAddress) setErrors((prev) => ({ ...prev, pickupAddress: "" }));
+                              }
+                            }}
+                            className="w-full"
+                          >
+                            <Label className="sr-only">{t.rentCar.officePickup}</Label>
+                            <Select.Trigger className="w-full h-11 px-3 text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer flex items-center justify-between">
+                              <Select.Value className="text-sm font-bold text-left truncate text-slate-800 dark:text-slate-100">
+                                {getOfficeText(outboundPickupOfficeId) || t.rentCar.officePickup}
+                              </Select.Value>
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50 max-h-60 overflow-y-auto w-[var(--trigger-width)]">
+                              <ListBox>
+                                {availableOriginOffices.map((off) => (
+                                  <ListBox.Item
+                                    key={off.id}
+                                    id={String(off.id)}
+                                    textValue={`${off.name} - ${off.address}`}
+                                    className="px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-slate-900 dark:text-white">{off.name}</span>
+                                      <span className="text-sm text-slate-400 font-medium">{off.address}, {off.city}</span>
+                                    </div>
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          {errors.pickupAddress && <p className="text-sm text-red-500 font-medium">{errors.pickupAddress}</p>}
+                        </div>
+                      ) : (
+                        <TextField isRequired isInvalid={Boolean(errors.pickupAddress)} className="w-full">
+                          <Input
+                            type="text"
+                            placeholder={t.rentCar.pickupAddressPlaceholder}
+                            value={editOutboundPickupAddress}
+                            onChange={(e) => {
+                              setEditOutboundPickupAddress(e.target.value);
+                              if (errors.pickupAddress) setErrors((prev) => ({ ...prev, pickupAddress: "" }));
+                            }}
+                            className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                          />
+                          {errors.pickupAddress && <FieldError className="text-sm text-red-500 mt-1 font-medium">{errors.pickupAddress}</FieldError>}
+                        </TextField>
+                      )}
+                    </div>
+
+                    {/* Outbound Dropoff */}
+                    <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
+                          {outboundDropoffType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                          <span>{t.rentCar.dropoffPoint}</span>
+                        </div>
+                        {availableDestinationOffices.length > 0 && (
+                          <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                            <button
+                              type="button"
+                              onClick={() => setOutboundDropoffType("OFFICE")}
+                              className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                outboundDropoffType === "OFFICE"
+                                  ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                              }`}
+                            >
+                              {t.rentCar.officePickup}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOutboundDropoffType("DOOR")}
+                              className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                outboundDropoffType === "DOOR"
+                                  ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                  : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                              }`}
+                            >
+                              {t.rentCar.doorPickup}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {outboundDropoffType === "OFFICE" && availableDestinationOffices.length > 0 ? (
+                        <div className="space-y-1">
+                          <Select
+                            selectedKey={outboundDropoffOfficeId ? String(outboundDropoffOfficeId) : undefined}
+                            onSelectionChange={(key) => {
+                              if (key) {
+                                setOutboundDropoffOfficeId(Number(key));
+                                if (errors.dropoffAddress) setErrors((prev) => ({ ...prev, dropoffAddress: "" }));
+                              }
+                            }}
+                            className="w-full"
+                          >
+                            <Label className="sr-only">{t.rentCar.officePickup}</Label>
+                            <Select.Trigger className="w-full h-11 px-3 text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer flex items-center justify-between">
+                              <Select.Value className="text-sm font-bold text-left truncate text-slate-800 dark:text-slate-100">
+                                {getOfficeText(outboundDropoffOfficeId) || t.rentCar.officePickup}
+                              </Select.Value>
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50 max-h-60 overflow-y-auto w-[var(--trigger-width)]">
+                              <ListBox>
+                                {availableDestinationOffices.map((off) => (
+                                  <ListBox.Item
+                                    key={off.id}
+                                    id={String(off.id)}
+                                    textValue={`${off.name} - ${off.address}`}
+                                    className="px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-slate-900 dark:text-white">{off.name}</span>
+                                      <span className="text-sm text-slate-400 font-medium">{off.address}, {off.city}</span>
+                                    </div>
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          {errors.dropoffAddress && <p className="text-sm text-red-500 font-medium">{errors.dropoffAddress}</p>}
+                        </div>
+                      ) : (
+                        <TextField isRequired isInvalid={Boolean(errors.dropoffAddress)} className="w-full">
+                          <Input
+                            type="text"
+                            placeholder={t.rentCar.dropoffAddressPlaceholder}
+                            value={editOutboundDropoffAddress}
+                            onChange={(e) => {
+                              setEditOutboundDropoffAddress(e.target.value);
+                              if (errors.dropoffAddress) setErrors((prev) => ({ ...prev, dropoffAddress: "" }));
+                            }}
+                            className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                          />
+                          {errors.dropoffAddress && <FieldError className="text-sm text-red-500 mt-1 font-medium">{errors.dropoffAddress}</FieldError>}
+                        </TextField>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200/50 dark:border-slate-800 text-sm font-semibold">
+                    <span className="text-slate-400">
+                      {pax} vé × {formatPrice(outboundDirection?.price || 0)}
+                    </span>
+                    <span className="font-black text-slate-900 dark:text-white">
+                      {formatPrice((outboundDirection?.price || 0) * pax)}
+                    </span>
                   </div>
                 </div>
+
+                {/* Return Leg (if return trip) */}
+                {isSharedRoundTrip && returnDirection && (
+                  <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-[var(--bg-card)] space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-black">
+                          2
+                        </span>
+                        <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                          {t.rentCar.returnTrip}: {returnDirection.originCity} ➔ {returnDirection.destinationCity}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-accent">
+                        {returnTripDate} {returnSchedule?.departureTime ? `(${returnSchedule.departureTime.slice(0, 5)})` : ""}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      {/* Return Pickup */}
+                      <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
+                            {returnPickupType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                            <span>{t.rentCar.pickupPoint}</span>
+                          </div>
+                          {availableReturnOriginOffices.length > 0 && (
+                            <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                              <button
+                                type="button"
+                                onClick={() => setReturnPickupType("OFFICE")}
+                                className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                  returnPickupType === "OFFICE"
+                                    ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                    : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                }`}
+                              >
+                                {t.rentCar.officePickup}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReturnPickupType("DOOR")}
+                                className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                  returnPickupType === "DOOR"
+                                    ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                    : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                }`}
+                              >
+                                {t.rentCar.doorPickup}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {returnPickupType === "OFFICE" && availableReturnOriginOffices.length > 0 ? (
+                          <div className="space-y-1">
+                            <Select
+                              selectedKey={returnPickupOfficeId ? String(returnPickupOfficeId) : undefined}
+                              onSelectionChange={(key) => {
+                                if (key) {
+                                  setReturnPickupOfficeId(Number(key));
+                                  if (errors.returnPickupAddress) setErrors((prev) => ({ ...prev, returnPickupAddress: "" }));
+                                }
+                              }}
+                              className="w-full"
+                            >
+                              <Label className="sr-only">{t.rentCar.officePickup}</Label>
+                              <Select.Trigger className="w-full h-11 px-3 text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer flex items-center justify-between">
+                                <Select.Value className="text-sm font-bold text-left truncate text-slate-800 dark:text-slate-100">
+                                  {getOfficeText(returnPickupOfficeId) || t.rentCar.officePickup}
+                                </Select.Value>
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50 max-h-60 overflow-y-auto w-[var(--trigger-width)]">
+                                <ListBox>
+                                  {availableReturnOriginOffices.map((off) => (
+                                    <ListBox.Item
+                                      key={off.id}
+                                      id={String(off.id)}
+                                      textValue={`${off.name} - ${off.address}`}
+                                      className="px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-bold text-slate-900 dark:text-white">{off.name}</span>
+                                        <span className="text-sm text-slate-400 font-medium">{off.address}, {off.city}</span>
+                                      </div>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
+                            </Select>
+                            {errors.returnPickupAddress && <p className="text-sm text-red-500 font-medium">{errors.returnPickupAddress}</p>}
+                          </div>
+                        ) : (
+                          <TextField isRequired isInvalid={Boolean(errors.returnPickupAddress)} className="w-full">
+                            <Input
+                              type="text"
+                              placeholder={t.rentCar.pickupAddressPlaceholder}
+                              value={editReturnPickupAddress}
+                              onChange={(e) => {
+                                setEditReturnPickupAddress(e.target.value);
+                                if (errors.returnPickupAddress) setErrors((prev) => ({ ...prev, returnPickupAddress: "" }));
+                              }}
+                              className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                            />
+                            {errors.returnPickupAddress && <FieldError className="text-sm text-red-500 mt-1 font-medium">{errors.returnPickupAddress}</FieldError>}
+                          </TextField>
+                        )}
+                      </div>
+
+                      {/* Return Dropoff */}
+                      <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
+                            {returnDropoffType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                            <span>{t.rentCar.dropoffPoint}</span>
+                          </div>
+                          {availableReturnDestinationOffices.length > 0 && (
+                            <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                              <button
+                                type="button"
+                                onClick={() => setReturnDropoffType("OFFICE")}
+                                className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                  returnDropoffType === "OFFICE"
+                                    ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                    : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                }`}
+                              >
+                                {t.rentCar.officePickup}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReturnDropoffType("DOOR")}
+                                className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
+                                  returnDropoffType === "DOOR"
+                                    ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                                    : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                }`}
+                              >
+                                {t.rentCar.doorPickup}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {returnDropoffType === "OFFICE" && availableReturnDestinationOffices.length > 0 ? (
+                          <div className="space-y-1">
+                            <Select
+                              selectedKey={returnDropoffOfficeId ? String(returnDropoffOfficeId) : undefined}
+                              onSelectionChange={(key) => {
+                                if (key) {
+                                  setReturnDropoffOfficeId(Number(key));
+                                  if (errors.returnDropoffAddress) setErrors((prev) => ({ ...prev, returnDropoffAddress: "" }));
+                                }
+                              }}
+                              className="w-full"
+                            >
+                              <Label className="sr-only">{t.rentCar.officePickup}</Label>
+                              <Select.Trigger className="w-full h-11 px-3 text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer flex items-center justify-between">
+                                <Select.Value className="text-sm font-bold text-left truncate text-slate-800 dark:text-slate-100">
+                                  {getOfficeText(returnDropoffOfficeId) || t.rentCar.officePickup}
+                                </Select.Value>
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 z-50 max-h-60 overflow-y-auto w-[var(--trigger-width)]">
+                                <ListBox>
+                                  {availableReturnDestinationOffices.map((off) => (
+                                    <ListBox.Item
+                                      key={off.id}
+                                      id={String(off.id)}
+                                      textValue={`${off.name} - ${off.address}`}
+                                      className="px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="font-bold text-slate-900 dark:text-white">{off.name}</span>
+                                        <span className="text-sm text-slate-400 font-medium">{off.address}, {off.city}</span>
+                                      </div>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
+                            </Select>
+                            {errors.returnDropoffAddress && <p className="text-sm text-red-500 font-medium">{errors.returnDropoffAddress}</p>}
+                          </div>
+                        ) : (
+                          <TextField isRequired isInvalid={Boolean(errors.returnDropoffAddress)} className="w-full">
+                            <Input
+                              type="text"
+                              placeholder={t.rentCar.dropoffAddressPlaceholder}
+                              value={editReturnDropoffAddress}
+                              onChange={(e) => {
+                                setEditReturnDropoffAddress(e.target.value);
+                                if (errors.returnDropoffAddress) setErrors((prev) => ({ ...prev, returnDropoffAddress: "" }));
+                              }}
+                              className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                            />
+                            {errors.returnDropoffAddress && <FieldError className="text-sm text-red-500 mt-1 font-medium">{errors.returnDropoffAddress}</FieldError>}
+                          </TextField>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-slate-200/50 dark:border-slate-800 text-sm font-semibold">
+                      <span className="text-slate-400">
+                        {pax} vé × {formatPrice(returnDirection.price || 0)}
+                      </span>
+                      <span className="font-black text-slate-900 dark:text-white">
+                        {formatPrice((returnDirection.price || 0) * pax)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Card 2: Schedule & Rental Mode */}
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Clock size={18} className="text-accent" />
+                      <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                        {t.rentCar.rentalPeriod}
+                      </h2>
+                    </div>
+                    {durationMode === "DAILY_RATE" && (
+                      <Chip size="sm" color="accent" variant="soft" className="text-sm font-bold px-3 py-1">
+                        {rentalDays} {t.rentCar.dayUnit}
+                      </Chip>
+                    )}
+                  </div>
+
+                  {/* Trip Mode Switcher */}
+                  <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-[var(--bg-card)] rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDurationMode("IN_DAY");
+                        setTripType("one-way");
+                      }}
+                      className={`flex-1 py-2 text-sm font-black rounded-xl transition-all cursor-pointer border-none text-center ${
+                        durationMode === "IN_DAY" && tripType === "one-way"
+                          ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                          : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
+                      }`}
+                    >
+                      {t.rentCar.oneWay}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDurationMode("IN_DAY");
+                        setTripType("round-trip");
+                      }}
+                      className={`flex-1 py-2 text-sm font-black rounded-xl transition-all cursor-pointer border-none text-center ${
+                        durationMode === "IN_DAY" && tripType === "round-trip"
+                          ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                          : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
+                      }`}
+                    >
+                      {t.rentCar.roundTrip}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDurationMode("DAILY_RATE");
+                      }}
+                      className={`flex-1 py-2 text-sm font-black rounded-xl transition-all cursor-pointer border-none text-center ${
+                        durationMode === "DAILY_RATE"
+                          ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
+                          : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
+                      }`}
+                    >
+                      {t.rentCar.dailyRate}
+                    </button>
+                  </div>
+
+                  {/* Date & Time selection */}
+                  {durationMode === "DAILY_RATE" ? (
+                    <div className="space-y-4">
+                      <RentalDateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        minimumDays={1}
+                        isInvalid={isDateRangeInvalid}
+                        errorMessage={errors.date}
+                      />
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <TimePicker
+                          value={editTimeValue}
+                          onChange={(v) => {
+                            setEditTimeValue(v);
+                            setEditTime(timeValueToString(v));
+                          }}
+                          label={t.rentCar.customDepartureTime}
+                          labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                          popoverTitle="Chọn giờ xuất phát"
+                          language={language}
+                          triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                          isRequired
+                        />
+                      </div>
+                    </div>
+                  ) : isRoundTrip ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-bold uppercase tracking-wider">
+                            {t.rentCar.startDate || "Ngày đi"}
+                          </Label>
+                          <DatePicker
+                            className="w-full"
+                            value={dateValue}
+                            minValue={currentDate}
+                            onChange={(val) => {
+                              setDateValue(val as DateValue);
+                              if (!returnDateValue || (val && returnDateValue.compare(val as DateValue) < 0)) {
+                                setReturnDateValue(val as DateValue);
+                              }
+                            }}
+                          >
+                            <DateField.Group
+                              fullWidth
+                              className="h-10 bg-slate-50 dark:bg-[var(--bg-card)] border border-border rounded-xl px-3 flex items-center justify-between"
+                            >
+                              <DateField.Input className="text-sm font-semibold bg-transparent border-none outline-none">
+                                {(segment) => <DateField.Segment segment={segment} />}
+                              </DateField.Input>
+                              <DateField.Suffix>
+                                <DatePicker.Trigger className="cursor-pointer">
+                                  <DatePicker.TriggerIndicator />
+                                </DatePicker.Trigger>
+                              </DateField.Suffix>
+                            </DateField.Group>
+                            <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-border rounded-2xl p-4 shadow-xl z-50">
+                              <Calendar aria-label="Pick departure date">
+                                <Calendar.Header className="flex items-center justify-between mb-2">
+                                  <Calendar.YearPickerTrigger className="text-sm font-bold flex items-center gap-1 cursor-pointer">
+                                    <Calendar.YearPickerTriggerHeading />
+                                    <Calendar.YearPickerTriggerIndicator />
+                                  </Calendar.YearPickerTrigger>
+                                  <div className="flex gap-1">
+                                    <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                                    <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                                  </div>
+                                </Calendar.Header>
+                                <Calendar.Grid className="w-full">
+                                  <Calendar.GridHeader className="text-slate-400 text-sm font-bold">
+                                    {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
+                                  </Calendar.GridHeader>
+                                  <Calendar.GridBody>
+                                    {(date) => (
+                                      <Calendar.Cell
+                                        date={date}
+                                        className="w-8 h-8 text-sm font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-accent-foreground"
+                                      />
+                                    )}
+                                  </Calendar.GridBody>
+                                </Calendar.Grid>
+                              </Calendar>
+                            </DatePicker.Popover>
+                          </DatePicker>
+                          {isDateInvalid && <p className="text-sm text-red-500 font-medium">{errors.date}</p>}
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-sm font-bold uppercase tracking-wider">
+                            {t.rentCar.endDate || "Ngày về"}
+                          </Label>
+                          <DatePicker
+                            className="w-full"
+                            value={returnDateValue || dateValue}
+                            minValue={dateValue || currentDate}
+                            onChange={(val) => setReturnDateValue(val as DateValue)}
+                          >
+                            <DateField.Group
+                              fullWidth
+                              className="h-10 bg-slate-50 dark:bg-[var(--bg-card)] border border-border rounded-xl px-3 flex items-center justify-between"
+                            >
+                              <DateField.Input className="text-sm font-semibold bg-transparent border-none outline-none">
+                                {(segment) => <DateField.Segment segment={segment} />}
+                              </DateField.Input>
+                              <DateField.Suffix>
+                                <DatePicker.Trigger className="cursor-pointer">
+                                  <DatePicker.TriggerIndicator />
+                                </DatePicker.Trigger>
+                              </DateField.Suffix>
+                            </DateField.Group>
+                            <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-border rounded-2xl p-4 shadow-xl z-50">
+                              <Calendar aria-label="Pick return date">
+                                <Calendar.Header className="flex items-center justify-between mb-2">
+                                  <Calendar.YearPickerTrigger className="text-sm font-bold flex items-center gap-1 cursor-pointer">
+                                    <Calendar.YearPickerTriggerHeading />
+                                    <Calendar.YearPickerTriggerIndicator />
+                                  </Calendar.YearPickerTrigger>
+                                  <div className="flex gap-1">
+                                    <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                                    <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                                  </div>
+                                </Calendar.Header>
+                                <Calendar.Grid className="w-full">
+                                  <Calendar.GridHeader className="text-slate-400 text-sm font-bold">
+                                    {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
+                                  </Calendar.GridHeader>
+                                  <Calendar.GridBody>
+                                    {(date) => (
+                                      <Calendar.Cell
+                                        date={date}
+                                        className="w-8 h-8 text-sm font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-accent-foreground"
+                                      />
+                                    )}
+                                  </Calendar.GridBody>
+                                </Calendar.Grid>
+                              </Calendar>
+                            </DatePicker.Popover>
+                          </DatePicker>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <TimePicker
+                          value={editTimeValue}
+                          onChange={(v) => {
+                            setEditTimeValue(v);
+                            setEditTime(timeValueToString(v));
+                          }}
+                          label="Giờ đi"
+                          labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                          popoverTitle="Chọn giờ xuất phát chiều đi"
+                          language={language}
+                          triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                          isRequired
+                        />
+                        <div className="space-y-1">
+                          <TimePicker
+                            value={editReturnTimeValue}
+                            onChange={(v) => {
+                              setEditReturnTimeValue(v);
+                              setEditReturnTime(timeValueToString(v));
+                              if (errors.returnTime) setErrors((prev) => ({ ...prev, returnTime: "" }));
+                            }}
+                            label="Giờ về"
+                            labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                            popoverTitle="Chọn giờ xuất phát chiều về"
+                            language={language}
+                            triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                            isRequired
+                          />
+                          {errors.returnTime && (
+                            <p className="text-sm text-red-500 font-medium">{errors.returnTime}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-bold uppercase tracking-wider">
+                          {t.rentCar.date}
+                        </Label>
+                        <DatePicker
+                          className="w-full"
+                          value={dateValue}
+                          minValue={currentDate}
+                          onChange={(val) => setDateValue(val as DateValue)}
+                        >
+                          <DateField.Group
+                            fullWidth
+                            className="h-10 bg-slate-50 dark:bg-[var(--bg-card)] border border-border rounded-xl px-3 flex items-center justify-between"
+                          >
+                            <DateField.Input className="text-sm font-semibold bg-transparent border-none outline-none">
+                              {(segment) => <DateField.Segment segment={segment} />}
+                            </DateField.Input>
+                            <DateField.Suffix>
+                              <DatePicker.Trigger className="cursor-pointer">
+                                <DatePicker.TriggerIndicator />
+                              </DatePicker.Trigger>
+                            </DateField.Suffix>
+                          </DateField.Group>
+                          <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-border rounded-2xl p-4 shadow-xl z-50">
+                            <Calendar aria-label="Pick date">
+                              <Calendar.Header className="flex items-center justify-between mb-2">
+                                <Calendar.YearPickerTrigger className="text-sm font-bold flex items-center gap-1 cursor-pointer">
+                                  <Calendar.YearPickerTriggerHeading />
+                                  <Calendar.YearPickerTriggerIndicator />
+                                </Calendar.YearPickerTrigger>
+                                <div className="flex gap-1">
+                                  <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                                  <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer" />
+                                </div>
+                              </Calendar.Header>
+                              <Calendar.Grid className="w-full">
+                                <Calendar.GridHeader className="text-slate-400 text-sm font-bold">
+                                  {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
+                                </Calendar.GridHeader>
+                                <Calendar.GridBody>
+                                  {(date) => (
+                                    <Calendar.Cell
+                                      date={date}
+                                      className="w-8 h-8 text-sm font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-accent-foreground"
+                                    />
+                                  )}
+                                </Calendar.GridBody>
+                              </Calendar.Grid>
+                            </Calendar>
+                          </DatePicker.Popover>
+                        </DatePicker>
+                        {isDateInvalid && <p className="text-sm text-red-500 font-medium">{errors.date}</p>}
+                      </div>
+
+                      <TimePicker
+                        value={editTimeValue}
+                        onChange={(v) => {
+                          setEditTimeValue(v);
+                          setEditTime(timeValueToString(v));
+                        }}
+                        label={t.rentCar.time}
+                        labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                        popoverTitle="Chọn giờ xuất phát"
+                        language={language}
+                        triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                        isRequired
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Card 3: Pickup Address */}
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <MapPin size={18} className="text-accent" />
+                    <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      {t.rentCar.pickupAddress}
+                    </h2>
+                  </div>
+
+                  <div>
+                    <TextField isRequired isInvalid={Boolean(errors.pickupAddress)} className="w-full">
+                      <Label isRequired className="text-sm font-bold uppercase tracking-wider pl-1">
+                        {t.rentCar.pickupAddress}
+                      </Label>
+                      <Input
+                        type="text"
+                        placeholder={t.rentCar.pickupAddressPlaceholder}
+                        value={editPickupAddress}
+                        onChange={(e) => {
+                          setEditPickupAddress(e.target.value);
+                          if (errors.pickupAddress) setErrors((prev) => ({ ...prev, pickupAddress: "" }));
+                        }}
+                        className="text-sm font-semibold bg-slate-50 dark:bg-[var(--bg-card)]"
+                      />
+                      {errors.pickupAddress && <FieldError className="text-sm text-red-500 mt-1 pl-1 font-medium">{errors.pickupAddress}</FieldError>}
+                    </TextField>
+                  </div>
+                </div>
+
+                {/* Card 4: Vehicle Category Selection (Private only) */}
+                {allCategories.length > 0 && (
+                  <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Car size={18} className="text-accent" />
+                        <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                          {t.rentCar.vehicleType}
+                        </h2>
+                      </div>
+                      <span className="text-sm text-slate-400 font-semibold">
+                        {allCategories.length} {t.rentCar.representativeVehicles}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {allCategories.map((c) => {
+                        const isSelected = selectedCategoryId === c.category.id;
+                        const catPrice = calculateCategoryPrice(c);
+                        const tr = c.category.translations?.find((t) => t.locale === language);
+                        const name = tr?.name || c.category.code;
+
+                        return (
+                          <div
+                            key={c.category.id}
+                            onClick={() => setSelectedCategoryId(c.category.id)}
+                            className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${isSelected
+                              ? "border-accent bg-accent/5 ring-2 ring-accent/10 shadow-xs"
+                              : "border-border hover:border-accent/40 bg-white dark:bg-[var(--bg-card)]"
+                              }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center text-accent shrink-0">
+                                  <Car size={18} />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase leading-tight">
+                                    {name}
+                                  </h3>
+                                  <span className="text-sm text-slate-400 font-semibold">
+                                    {c.category.minSeat === c.category.maxSeat
+                                      ? `${c.category.minSeat} ${t.common.seats}`
+                                      : `${c.category.minSeat}-${c.category.maxSeat} ${t.common.seats}`}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-accent bg-accent text-accent-foreground" : "border-slate-300"}`}>
+                                {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-accent-foreground" />}
+                              </span>
+                            </div>
+
+                            <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex items-baseline justify-between">
+                              <span className="text-sm text-slate-400 font-bold uppercase">
+                                {durationMode === "DAILY_RATE" ? `${rentalDays} ${t.rentCar.dayUnit}` : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay)}
+                              </span>
+                              <div className="text-right">
+                                <span className="text-sm sm:text-base font-black text-accent block leading-none">
+                                  {formatPrice(catPrice)}
+                                </span>
+                                {durationMode === "DAILY_RATE" && c.dailyRate && (
+                                  <span className="text-sm text-slate-400 font-medium mt-0.5 block">
+                                    {formatPrice(c.dailyRate)} / {t.rentCar.dayUnit}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             )}
-          </div>
-        </div>
 
-        {/* Customer Info - Editable */}
-        <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4 shadow-sm">
-          <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            {t.rentCar.contactInfo}
-          </h3>
-          <AutofillButton
-            onFill={(d) => {
-              setEditName(d.fullname);
-              setEditPhone(d.phone);
-              setEditEmail(d.email);
-              setEditZaloId(d.zaloId ?? "");
-              setEditKakaoTalkId(d.kakaoTalkId ?? "");
-            }}
-            label={t.common.autoFill}
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Name */}
-            <div className="flex items-start gap-3">
-              <User size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Label className="font-bold mb-1" isRequired>
-                  {t.common.name}
-                </Label>
-                <Input
-                  value={editName}
-                  onChange={(e) => {
-                    setEditName(e.target.value);
-                    clearError("name");
-                  }}
-                  placeholder={t.rentCar.namePlaceholder}
-                  className="w-full"
-                />
-                {errors.name && <FieldError>{errors.name}</FieldError>}
+            {/* Card 5: Notes */}
+            <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={16} className="text-accent" />
+                <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                  {t.rentCar.notes}
+                </h2>
               </div>
-            </div>
-
-            {/* Phone */}
-            <div className="flex items-start gap-3">
-              <Phone size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Label className="font-bold mb-1" isRequired>
-                  {t.common.phone}
-                </Label>
-                <Input
-                  value={editPhone}
-                  onChange={(e) => {
-                    setEditPhone(e.target.value);
-                    clearError("phone");
-                  }}
-                  placeholder={t.rentCar.phonePlaceholder}
-                  className="w-full"
-                />
-                {errors.phone && <FieldError>{errors.phone}</FieldError>}
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="flex items-start gap-3">
-              <Mail size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Label className="font-bold mb-1" isRequired>
-                  Email
-                </Label>
-                <Input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => {
-                    setEditEmail(e.target.value);
-                    clearError("email");
-                  }}
-                  placeholder={t.rentCar.emailPlaceholder}
-                  className="w-full"
-                />
-                {errors.email && <FieldError>{errors.email}</FieldError>}
-              </div>
-            </div>
-          </div>
-
-          {/* Zalo ID & KakaoTalk ID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-start gap-3">
-              <MessageSquare size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Label className="font-bold mb-1">{t.rentCar.zaloId}</Label>
-                <Input
-                  value={editZaloId}
-                  onChange={(e) => setEditZaloId(e.target.value)}
-                  placeholder="Zalo ID"
-                  className="w-full"
-                />
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <MessageSquare size={16} className="text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <Label className="font-bold mb-1">{t.rentCar.kakaoTalkId}</Label>
-                <Input
-                  value={editKakaoTalkId}
-                  onChange={(e) => setEditKakaoTalkId(e.target.value)}
-                  placeholder="KakaoTalk ID"
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Pickup Address */}
-          <div className="flex items-start gap-3">
-            <MapPin size={16} className="text-accent mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <Label className="font-bold mb-1" isRequired>
-                {t.rentCar.pickupAddress}
-              </Label>
-              <Input
-                value={editPickupAddress}
-                onChange={(e) => {
-                  setEditPickupAddress(e.target.value);
-                  clearError("pickupAddress");
-                }}
-                placeholder={t.rentCar.pickupAddressPlaceholder}
-                className="w-full"
-              />
-              {errors.pickupAddress && <FieldError>{errors.pickupAddress}</FieldError>}
-            </div>
-          </div>
-
-          {/* Dropoff Address */}
-          <div className="flex items-start gap-3">
-            <MapPin size={16} className="text-accent mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <Label className="font-bold mb-1" isRequired>
-                {t.rentCar.dropoffAddress}
-              </Label>
-              <Input
-                value={editDropoffAddress}
-                onChange={(e) => {
-                  setEditDropoffAddress(e.target.value);
-                  clearError("dropoffAddress");
-                }}
-                placeholder={t.rentCar.dropoffAddressPlaceholder}
-                className="w-full"
-              />
-              {errors.dropoffAddress && <FieldError>{errors.dropoffAddress}</FieldError>}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="flex items-start gap-3">
-            <MessageSquare size={16} className="text-accent mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <Label className="font-bold mb-1">{t.rentCar.notes}</Label>
               <TextArea
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
                 placeholder={t.rentCar.notesPlaceholder}
-                className="w-full"
-                rows={2}
+                className="w-full h-24 p-3 bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-semibold outline-none resize-none focus:border-accent"
               />
             </div>
+
           </div>
-        </div>
 
-        {/* If SHARED: Display Ticket Summary Card */}
-        {serviceType === "SHARED" ? (
-          <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <Label className="font-bold text-lg">{t.rentCar.sharedService}</Label>
-              <Chip size="sm" color="warning" variant="soft" className="font-bold">
-                {route?.sharedVehicleName || t.rentCar.sharedVehicleDefault}
-              </Chip>
-            </div>
+          {/* Right Column: Sticky Booking Summary (col-span-4) */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+            {/* Customer Discount Section */}
+            <CustomerDiscountSection
+              scopeType={serviceType === "SHARED" ? "SHARED_ROUTE" : "INTERCITY_ROUTE"}
+              scopeRefId={serviceType === "SHARED" ? sharedRoute?.id : route?.id}
+              orderTotal={rawTotalPrice}
+              onDiscountChange={setAppliedDiscount}
+            />
 
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <span className="text-xs font-black text-slate-900 dark:text-white block">
-                  {route?.sharedVehicleName || t.rentCar.sharedVehicleDefault}
-                </span>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {passengerCount} {t.rentCar.pax} • {isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay}
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Xuất phát: <strong>{editTime}</strong> ngày <strong>{editDate}</strong>
-                  {isRoundTrip && (
-                    <>
-                      {" "}• Về: <strong>{editReturnTime}</strong> ngày <strong>{editReturnDate}</strong>
-                    </>
-                  )}
-                </p>
+            <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">
+                  {t.selfDrive.bookingSummary}
+                </h3>
+                <Chip size="sm" color="accent" variant="soft" className="text-sm font-bold px-3 py-1">
+                  {serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}
+                </Chip>
               </div>
 
-              <div className="text-right shrink-0">
-                <span className="text-lg font-black text-amber-600 dark:text-amber-400 block">
-                  {formatPrice(sharedTotal)}
-                </span>
-                <span className="text-[10px] text-slate-400 font-semibold">
-                  ({formatPrice(Math.round(sharedTotal / passengerCount))} / {t.rentCar.pax})
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* If PRIVATE: Vehicle Category Selection */
-          <div className="space-y-4">
-            <Label className="font-bold text-lg" isRequired>
-              {t.rentCar.vehicleType}
-            </Label>
-            {allCategories.length === 0 ? (
-              <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-8 text-center mt-3">
-                <Car size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  {t.rentCar.noVehiclesForRoute}
-                </p>
-              </div>
-            ) : (
-              <ScrollShadow className="max-h-[600px] mt-3" onScrollEnd={loadMore}>
-                <div className="flex flex-col gap-3">
-                  {categories.map((item) => {
-                    const isSelected = selectedCategoryId === item.category.id;
-                    const catName =
-                      item.category.translations?.find((tr) => tr.locale === language)?.name ||
-                      item.category.code;
-                    const catDesc =
-                      item.category.translations?.find((tr) => tr.locale === language)?.description || "";
-                    const vehicleNames = item.vehicles.slice(0, 3).map((v) => `${v.brand} ${v.model}`);
-                    const thumbnailUrl = item.category.thumbnailUrl || "";
-
-                    return (
-                      <button
-                        key={item.category.id}
-                        type="button"
-                        onClick={() => setSelectedCategoryId(item.category.id)}
-                        className={`card card--default w-full text-left transition-all cursor-pointer ${
-                          isSelected ? "!border-2 !border-accent shadow-md" : "hover:shadow-sm"
-                        }`}
-                      >
-                        <div className="card__body flex flex-col sm:flex-row items-stretch gap-0">
-                          {/* Thumbnail */}
-                          <div className="relative w-full aspect-[16/9] sm:aspect-auto sm:h-auto sm:w-[140px] sm:min-h-[120px] shrink-0 overflow-hidden rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none">
-                            {thumbnailUrl ? (
-                              <img
-                                alt={catName}
-                                className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
-                                loading="lazy"
-                                src={thumbnailUrl}
-                              />
-                            ) : (
-                              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-[var(--bg-card)]">
-                                <Car size={32} className="text-slate-300 dark:text-slate-600" />
-                              </div>
-                            )}
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent flex items-center justify-center">
-                                <CheckCircle size={14} className="text-white" />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex flex-1 flex-col gap-2 p-4 sm:pl-5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h4
-                                  className={`text-sm font-bold ${
-                                    isSelected ? "text-accent" : "text-slate-800 dark:text-slate-100"
-                                  }`}
-                                >
-                                  {catName}
-                                </h4>
-                                <p className="text-[10px] text-slate-400 mt-0.5">
-                                  {item.category.minSeat}-{item.category.maxSeat} {t.common.seats}
-                                  {item.category.minLuggage > 0 &&
-                                    ` · ${item.category.minLuggage}-${item.category.maxLuggage} ${
-                                      item.category.unitLuggage || "kg"
-                                    }`}
-                                </p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <span className="text-base font-black text-accent">
-                                  {formatPrice(item.price)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {catDesc && (
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
-                                {catDesc}
-                              </p>
-                            )}
-
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                              {t.rentCar.vehicleExamples} {vehicleNames.join(", ")}
-                              {item.vehicles.length > 3 && ` +${item.vehicles.length - 3}`}
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-
-                  {loadingMore && (
-                    <div className="flex justify-center py-4">
-                      <Skeleton className="w-full h-24 rounded-2xl" />
-                    </div>
-                  )}
+              <div className="space-y-3 text-sm">
+                {/* Route */}
+                <div className="flex justify-between items-start">
+                  <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.route}</span>
+                  <span className="font-black text-slate-900 dark:text-white text-right max-w-[65%] truncate">
+                    {serviceType === "SHARED"
+                      ? (sharedRoute?.name || "---")
+                      : (route ? `${route.originCity} ⇌ ${route.destinationCity}` : "---")}
+                  </span>
                 </div>
-              </ScrollShadow>
-            )}
 
-            {hasMore && !loadingMore && allCategories.length > 0 && (
-              <div className="text-center">
-                <span className="text-[10px] text-slate-400">
-                  {`${t.rentCar.showing} ${categories.length}/${allCategories.length}`}
-                </span>
+                {/* Service / Vehicle Category */}
+                {serviceType === "SHARED" ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.vehicleType}</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 text-right">
+                      {sharedRoute?.vehicleName || "Limousine VIP"} ({pax} {t.common.seats})
+                    </span>
+                  </div>
+                ) : selectedCategory ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.vehicleType}</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 text-right">
+                      {selectedCategory.category.code} ({selectedCategory.category.minSeat}-{selectedCategory.category.maxSeat} {t.common.seats})
+                    </span>
+                  </div>
+                ) : null}
+
+                {/* Trip Type / Duration */}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.durationMinutes}</span>
+                  <span className="font-extrabold text-accent">
+                    {serviceType === "SHARED"
+                      ? (isSharedRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay)
+                      : (durationMode === "DAILY_RATE"
+                          ? `${t.rentCar.dailyRate} (${rentalDays} ${t.rentCar.dayUnit})`
+                          : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay))}
+                  </span>
+                </div>
+
+                {serviceType === "SHARED" ? (
+                  <>
+                    {/* Outbound */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.outboundTrip}</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                        {outboundTripDate} ({outboundSchedule?.departureTime ? outboundSchedule.departureTime.slice(0, 5) : ""})
+                      </span>
+                    </div>
+
+                    {/* Return if any */}
+                    {isSharedRoundTrip && returnDirection && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.returnTrip}</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          {returnTripDate} ({returnSchedule?.departureTime ? returnSchedule.departureTime.slice(0, 5) : ""})
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Pickup */}
+                    <div className="flex justify-between items-start text-sm">
+                      <span className="text-slate-400 font-bold uppercase text-sm shrink-0">{t.rentCar.pickupPoint}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium text-right max-w-[60%] truncate">
+                        {outboundPickupType === "OFFICE" ? getOfficeText(outboundPickupOfficeId) : (editOutboundPickupAddress || "---")}
+                      </span>
+                    </div>
+
+                    {/* Dropoff */}
+                    <div className="flex justify-between items-start text-sm">
+                      <span className="text-slate-400 font-bold uppercase text-sm shrink-0">{t.rentCar.dropoffPoint}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium text-right max-w-[60%] truncate">
+                        {outboundDropoffType === "OFFICE" ? getOfficeText(outboundDropoffOfficeId) : (editOutboundDropoffAddress || "---")}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Departure Date & Time */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.departure}</span>
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                        {durationMode === "DAILY_RATE" && dateRange?.start
+                          ? formatToDisplayDate(dateRange.start)
+                          : (dateValue ? `${dateValue.day}/${dateValue.month}/${dateValue.year}` : "---")}{" "}
+                        ({editTime})
+                      </span>
+                    </div>
+
+                    {/* Return Date (if DAILY_RATE) */}
+                    {durationMode === "DAILY_RATE" && dateRange?.end && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.endDate}</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          {formatToDisplayDate(dateRange.end)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Return Date (if in-day round trip) */}
+                    {durationMode === "IN_DAY" && isRoundTrip && returnDateValue && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.returnSchedule}</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          {returnDateValue.day}/{returnDateValue.month}/{returnDateValue.year}
+                          {editReturnTime && ` (${editReturnTime})`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Addresses */}
+                    {editPickupAddress && (
+                      <div className="flex justify-between items-start text-sm">
+                        <span className="text-slate-400 font-bold uppercase text-sm shrink-0">{t.rentCar.pickupAddress}</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-medium text-right max-w-[60%] truncate">
+                          {editPickupAddress}
+                        </span>
+                      </div>
+                    )}
+                    {editDropoffAddress && (
+                      <div className="flex justify-between items-start text-sm">
+                        <span className="text-slate-400 font-bold uppercase text-sm shrink-0">{t.rentCar.dropoffAddress}</span>
+                        <span className="text-slate-700 dark:text-slate-300 font-medium text-right max-w-[60%] truncate">
+                          {editDropoffAddress}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            )}
+
+              {/* Price Breakdown */}
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2 text-sm">
+                {durationMode === "DAILY_RATE" && selectedCategory?.dailyRate ? (
+                  <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase">
+                    <span>{t.rentCar.pricePerDay}</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                      {formatPrice(selectedCategory.dailyRate)} × {rentalDays} {t.rentCar.dayUnit}
+                    </span>
+                  </div>
+                ) : null}
+
+                {/* Subtotal & Discount if applied */}
+                {appliedDiscount && (
+                  <>
+                    <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase">
+                      <span>{t.booking.totalPrice || "Tạm tính"}</span>
+                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                        {formatPrice(rawTotalPrice)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                      <span>{t.discounts.tabDiscounts} ({appliedDiscount.code})</span>
+                      <span className="font-extrabold">
+                        - {formatPrice(appliedDiscount.amount)}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-between items-baseline pt-1">
+                  <span className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase">
+                    {t.common.totalPrice}
+                  </span>
+                  <span className="text-2xl font-black text-accent">
+                    {formatPrice(finalTotalPrice)}
+                  </span>
+                </div>
+
+                {/* Deposit Info Box */}
+                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                      <ShieldCheck size={16} className="text-amber-600 shrink-0" />
+                      {depositCalc.depositType === "FIXED"
+                        ? `${t.discounts.depositRequired} (${t.discounts.depositFixed})`
+                        : `${t.discounts.depositRequired} (${depositCalc.depositRate}%)`}
+                    </span>
+                    <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
+                      {formatPrice(depositCalc.depositAmount)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    <span>{t.discounts.remainingPayment}:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {formatPrice(depositCalc.remainingAmount)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit CTA Button */}
+              <Button
+                type="submit"
+                isDisabled={submitting}
+                className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-accent-foreground hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer flex items-center justify-center"
+              >
+                <CheckCircle size={18} />
+                <span>{t.common.bookNow}</span>
+              </Button>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-sm text-slate-400 font-medium">
+                <ShieldCheck size={16} className="text-accent" />
+                <span>{t.selfDrive.guarantee}</span>
+              </div>
+            </div>
           </div>
-        )}
+        </form>
+      </main>
 
-        {/* Submit */}
-        <div className="flex flex-col gap-3 pt-4">
-          <div className="flex items-center justify-between bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 shadow-sm">
-            <span className="text-sm font-bold text-slate-500">{t.common.total}</span>
-            <span className="text-xl font-black text-accent">
-              {currentTotalPrice > 0 ? formatPrice(currentTotalPrice) : "-"}
-            </span>
-          </div>
-          <Button
-            onClick={handleSubmit}
-            isDisabled={!isFormValid || submitting}
-            className="w-full h-12 rounded-2xl font-black text-sm sm:text-base bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
-          >
-            {submitting ? t.airportTransfer.submitting : t.airportTransfer.confirmBooking}
-          </Button>
-        </div>
-      </div>
-
-      {errorMessage && <ErrorOverlay message={errorMessage} onClose={() => setErrorMessage("")} />}
-
+      {/* Confirmation Modal */}
       <BookingConfirmationModal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
-        serviceType={serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.intercityRental}
-        summaryItems={[
-          { label: t.rentCar.route, value: route ? getRouteName(route) : "" },
-          {
-            label: t.rentCar.tripType,
-            value: isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay,
-          },
-          { label: t.rentCar.date, value: editDate },
-          { label: t.rentCar.time, value: editTime || "-" },
-          ...(serviceType === "SHARED"
+        totalAmount={finalTotalPrice}
+        depositAmount={depositCalc.depositAmount}
+        depositRate={depositCalc.depositRate}
+        depositType={depositCalc.depositType as any}
+        remainingAmount={depositCalc.remainingAmount}
+        submitting={submitting}
+        serviceType={serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}
+        summaryItems={
+          serviceType === "SHARED"
             ? [
+                { label: t.rentCar.route, value: sharedRoute?.name || "" },
+                { label: t.rentCar.serviceType, value: t.rentCar.sharedService },
+                { label: t.rentCar.vehicleType, value: sharedRoute?.vehicleName || "Limousine VIP" },
                 {
-                  label: t.rentCar.vehicleTypes,
-                  value: route?.sharedVehicleName || t.rentCar.sharedVehicleDefault,
+                  label: t.rentCar.tripType,
+                  value: isSharedRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay,
                 },
-                { label: t.rentCar.paxCount, value: `${passengerCount} ${t.rentCar.pax}` },
-                ...(isRoundTrip
-                  ? [
-                      { label: `${t.rentCar.date} (${t.rentCar.returnTrip})`, value: editReturnDate },
-                      { label: `${t.rentCar.time} (${t.rentCar.returnTrip})`, value: editReturnTime },
-                    ]
+                {
+                  label: t.rentCar.outboundTrip,
+                  value: `${outboundTripDate} (${outboundSchedule?.departureTime ? outboundSchedule.departureTime.slice(0, 5) : ""})`,
+                },
+                ...(isSharedRoundTrip && returnDirection
+                  ? [{
+                      label: t.rentCar.returnTrip,
+                      value: `${returnTripDate} (${returnSchedule?.departureTime ? returnSchedule.departureTime.slice(0, 5) : ""})`,
+                    }]
                   : []),
+                {
+                  label: t.rentCar.pickupPoint,
+                  value: outboundPickupType === "OFFICE" ? getOfficeText(outboundPickupOfficeId) : editOutboundPickupAddress,
+                },
+                {
+                  label: t.rentCar.dropoffPoint,
+                  value: outboundDropoffType === "OFFICE" ? getOfficeText(outboundDropoffOfficeId) : editOutboundDropoffAddress,
+                },
+                { label: t.rentCar.fullName, value: editName },
+                { label: t.rentCar.phone, value: editPhone },
+                { label: t.rentCar.paxCount, value: `${pax} ${t.common.seats}` },
+                ...(appliedDiscount
+                  ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
+                  : []),
+                { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
+                { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
+                { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
               ]
             : [
+                { label: t.rentCar.route, value: route ? `${route.originCity} ⇌ ${route.destinationCity}` : "" },
                 {
-                  label: t.rentCar.vehicleTypes,
-                  value:
-                    selectedCategory?.category.translations?.find((tr) => tr.locale === language)?.name ||
-                    selectedCategory?.category.code ||
-                    "",
+                  label: t.rentCar.rentalPeriod,
+                  value: durationMode === "DAILY_RATE"
+                    ? `${t.rentCar.dailyRate} (${rentalDays} ${t.rentCar.dayUnit})`
+                    : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay),
                 },
-              ]),
-          { label: t.common.notes, value: editNotes || "-" },
-        ]}
-        contactInfo={{
-          fullName: editName || "Guest",
-          phone: editPhone || "-",
-          email: editEmail || "-",
-        }}
-        totalAmount={currentTotalPrice}
-        totalLabel={t.common.totalPrice}
-        submitting={submitting}
+                ...(serviceType === "PRIVATE" && selectedCategory
+                  ? [{ label: t.rentCar.vehicleType, value: selectedCategory.category.code }]
+                  : []),
+                {
+                  label: t.rentCar.date,
+                  value: durationMode === "DAILY_RATE" && dateRange?.start
+                    ? `${formatToDisplayDate(dateRange.start)} → ${formatToDisplayDate(dateRange.end)}`
+                    : (dateValue ? `${dateValue.day}/${dateValue.month}/${dateValue.year}` : ""),
+                },
+                { label: t.rentCar.time, value: editTime },
+                { label: t.rentCar.pickupAddress, value: editPickupAddress },
+                { label: t.rentCar.fullName, value: editName },
+                { label: t.rentCar.phone, value: editPhone },
+                ...(appliedDiscount
+                  ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
+                  : []),
+                { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
+                { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
+                { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
+              ]
+        }
       />
+
+      {/* Error Overlay */}
+      {errorMessage && (
+        <ErrorOverlay message={errorMessage} onClose={() => setErrorMessage("")} />
+      )}
     </div>
   );
 }

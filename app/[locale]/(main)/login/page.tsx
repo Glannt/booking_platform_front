@@ -3,14 +3,14 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button, Label, toast } from "@heroui/react";
+import { Button, Label, FieldError, toast } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/authStore";
+import { loginFormSchema, LoginFormValues } from "@/lib/schemas/auth.schema";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,19 +19,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  const loginSchema = z.object({
-    email: z.string().email({ message: t.errors.invalidEmail }),
-    password: z.string().min(6, { message: t.errors.passwordTooShort }),
-  });
-
-  type LoginFormValues = z.infer<typeof loginSchema>;
-
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -87,34 +80,32 @@ export default function LoginPage() {
         <div className="py-2">
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div className="space-y-1">
-              <Label className="block text-xs font-bold text-default-600">
-                {t.auth.email} *
+              <Label isRequired className="block text-xs font-bold mb-1">
+                {t.auth.email}
               </Label>
               <div className="relative flex items-center">
                 <Mail className="absolute left-3 text-default-450 pointer-events-none" size={16} />
                 <input
                   {...register("email")}
                   type="email"
-                  required
                   placeholder="name@example.com"
                   className="w-full pl-10 pr-3 py-2.5 bg-default-100/50 border border-default-200 rounded-2xl text-sm font-medium outline-none focus:border-primary transition-colors text-foreground placeholder:text-default-400"
                 />
               </div>
               {errors.email && (
-                <p className="text-xs text-rose-500 mt-1">{errors.email.message}</p>
+                <FieldError className="text-xs text-rose-500 mt-1">{errors.email.message}</FieldError>
               )}
             </div>
 
             <div className="space-y-1">
-              <Label className="block text-xs font-bold text-default-600">
-                {t.auth.password} *
+              <Label isRequired className="block text-xs font-bold mb-1">
+                {t.auth.password}
               </Label>
               <div className="relative flex items-center">
                 <Lock className="absolute left-3 text-default-450 pointer-events-none" size={16} />
                 <input
                   {...register("password")}
                   type={showPassword ? "text" : "password"}
-                  required
                   placeholder="••••••••"
                   className="w-full pl-10 pr-10 py-2.5 bg-default-100/50 border border-default-200 rounded-2xl text-sm font-medium outline-none focus:border-primary transition-colors text-foreground placeholder:text-default-400"
                 />
@@ -131,7 +122,7 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-rose-500 mt-1">{errors.password.message}</p>
+                <FieldError className="text-xs text-rose-500 mt-1">{errors.password.message}</FieldError>
               )}
             </div>
 

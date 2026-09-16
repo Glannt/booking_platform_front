@@ -408,6 +408,7 @@ export const PAGE_SECTION_RECOMMENDATIONS: Record<string, string[]> = {
   "/": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "SLIDE_REVIEW", "INSPIRATION", "FAQ", "CTA"],
   "/tours": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
   "/self-drive": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
-  "/rent-car": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
+  "/intercity": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
+  "/intercity/routes": ["HERO_BANNER"],
   "/airport-transfer": ["HERO_BANNER", "FEATURES", "SLIDE_CARD", "BOOKING_PROCESS", "SLIDE_REVIEW", "FAQ", "CTA"],
 };

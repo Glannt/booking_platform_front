@@ -46,8 +46,8 @@ export default function SuccessOverlay({ bookingCode, onComplete, title = "Booki
         </div>
 
         <div className="text-center space-y-2">
-          <h3 className="text-lg font-black text-slate-900 dark:text-white">{title}</h3>
-          <p className="text-xs text-slate-400 font-bold">{subtitle}</p>
+          <h3 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">{title}</h3>
+          <p className="text-sm sm:text-base text-muted-foreground font-semibold">{subtitle}</p>
         </div>
       </div>
 

@@ -16,6 +16,7 @@ export interface FeedbackDto {
   route?: string;
   showOnIndex?: boolean;
   orderIndex?: number;
+  country?: string;
   translations: FeedbackTranslationDto[];
 }
 

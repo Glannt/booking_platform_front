@@ -109,7 +109,7 @@ export function ImageGalleryModal({
         <div className="w-10 h-10" />
 
         {/* Center Pill Button: "Ảnh chính thức (N)" */}
-        <div className="bg-white dark:bg-[var(--bg-card)] text-slate-900 dark:text-white font-black text-xs sm:text-sm px-4 sm:px-5 py-2 rounded-full shadow-lg border border-slate-200/40 dark:border-slate-700/50 flex items-center gap-1.5 pointer-events-none">
+        <div className="bg-white dark:bg-[var(--bg-card)] text-slate-900 dark:text-white font-black text-sm px-4 sm:px-5 py-2 rounded-full shadow-lg border border-slate-200/40 dark:border-slate-700/50 flex items-center gap-1.5 pointer-events-none">
           <span>{label}</span>
           <span className="text-slate-500 dark:text-slate-400 font-semibold">
             ({images.length})
@@ -137,12 +137,15 @@ export function ImageGalleryModal({
           <div className="relative max-h-[60vh] sm:max-h-[68vh] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl bg-black/40 border border-white/10 flex items-center justify-center">
             <img
               src={currentImage.url}
-              alt={currentImage.alt || ""}
+              alt=""
               className="max-h-[60vh] sm:max-h-[68vh] w-auto max-w-full object-contain pointer-events-none"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
             />
 
             {/* Bottom-Right Counter Badge: e.g. "1 / 9" */}
-            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-black/60 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-xs shadow-md border border-white/10">
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-black/60 text-white text-sm font-bold px-3 py-1 rounded-full backdrop-blur-xs shadow-md border border-white/10">
               {currentIndex + 1} / {images.length}
             </div>
           </div>
@@ -198,8 +201,11 @@ export function ImageGalleryModal({
               >
                 <img
                   src={img.url}
-                  alt={img.alt || ""}
+                  alt=""
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
                 />
               </button>
             );

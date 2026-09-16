@@ -21,9 +21,127 @@ export interface VehicleCategoryDto {
   default: boolean;
   thumbnailId?: number;
   thumbnailUrl?: string;
-  luggageWeight?: number;
   totalVehicles?: number;
   availableVehicles?: number;
+}
+
+export interface AddOnTranslationDto {
+  id?: number;
+  locale: string;
+  name: string;
+  description?: string;
+}
+
+export interface AddOnDto {
+  id: number;
+  categoryId?: number;
+  categoryCode?: string;
+  categoryName?: string;
+  categoryTranslations?: AddOnCategoryTranslationDto[];
+  code: string;
+  value?: string;
+  icon?: string;
+  displayOrder: number;
+  active: boolean;
+  translations?: AddOnTranslationDto[];
+}
+
+export interface AddOnCategoryTranslationDto {
+  id?: number;
+  locale: string;
+  name: string;
+  description?: string;
+}
+
+export interface AddOnCategoryDto {
+  id: number;
+  code: string;
+  icon?: string;
+  displayOrder: number;
+  active: boolean;
+  isFilterable: boolean;
+  translations?: AddOnCategoryTranslationDto[];
+  addOns?: AddOnDto[];
+}
+
+export interface AmenityTranslationDto {
+  id?: number;
+  locale: string;
+  name: string;
+  description?: string;
+}
+
+export interface AmenityDto {
+  id: number;
+  categoryId?: number;
+  categoryCode?: string;
+  categoryName?: string;
+  categoryTranslations?: AmenityCategoryTranslationDto[];
+  code: string;
+  icon?: string;
+  displayOrder: number;
+  active: boolean;
+  translations?: AmenityTranslationDto[];
+}
+
+export interface AmenityCategoryTranslationDto {
+  id?: number;
+  locale: string;
+  name: string;
+  description?: string;
+}
+
+export interface AmenityCategoryDto {
+  id: number;
+  code: string;
+  icon?: string;
+  displayOrder: number;
+  active: boolean;
+  translations?: AmenityCategoryTranslationDto[];
+  amenities?: AmenityDto[];
+}
+
+// Public DTOs (sanitized, localized, without internal fields)
+export interface PublicAddOnDto {
+  id: number;
+  categoryCode: string;
+  code: string;
+  name: string;
+  description?: string;
+  value?: string;
+  icon?: string;
+  displayOrder: number;
+}
+
+export interface PublicAddOnCategoryDto {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  displayOrder: number;
+  isFilterable: boolean;
+  addOns: PublicAddOnDto[];
+}
+
+export interface PublicAmenityDto {
+  id: number;
+  categoryCode: string;
+  code: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  displayOrder: number;
+}
+
+export interface PublicAmenityCategoryDto {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  displayOrder: number;
+  amenities: PublicAmenityDto[];
 }
 
 export interface VehicleDto {
@@ -37,12 +155,13 @@ export interface VehicleDto {
   canRent: boolean;
   luggage: number;
   luggageUnit: string;
-  luggageWeight?: number;
   thumbnailId?: number;
   thumbnailUrl?: string;
   imageIds?: number[];
   images?: { id: number; fileName: string; filePath: string; fileSize: number; mimeType: string; width?: number; height?: number; altText?: string }[];
   type: VehicleCategoryDto;
+  addOns?: AddOnDto[];
+  amenities?: AmenityDto[];
 }
 
 export interface PaginatedResponse<T> {
@@ -120,16 +239,19 @@ export async function getVehicles(params?: {
 export async function createVehicle(payload: {
   brand: string;
   model: string;
+  licensePlate?: string;
   year: number;
   fuelType: string;
   active: boolean;
   canRent: boolean;
   luggage: number;
   luggageUnit: string;
-  luggageWeight?: number;
   imageIds?: number[];
   thumbnailId?: number;
-  typeId: number;
+  typeId?: number;
+  vehicleCategoryId?: number;
+  addOnIds?: number[];
+  amenityIds?: number[];
 }): Promise<ApiResponse<VehicleDto>> {
   return apiFetch<ApiResponse<VehicleDto>>("/api/v1/vehicles", {
     method: "POST",
@@ -140,16 +262,19 @@ export async function createVehicle(payload: {
 export async function updateVehicle(id: number, payload: {
   brand: string;
   model: string;
+  licensePlate?: string;
   year: number;
   fuelType: string;
   active: boolean;
   canRent: boolean;
   luggage: number;
   luggageUnit: string;
-  luggageWeight?: number;
   imageIds?: number[];
   thumbnailId?: number;
-  typeId: number;
+  typeId?: number;
+  vehicleCategoryId?: number;
+  addOnIds?: number[];
+  amenityIds?: number[];
 }): Promise<ApiResponse<VehicleDto>> {
   return apiFetch<ApiResponse<VehicleDto>>(`/api/v1/vehicles/${id}`, {
     method: "PUT",
@@ -169,6 +294,164 @@ export async function getRentableVehiclesByCategory(categoryId: number): Promise
   }
   return apiFetch<ApiResponse<VehicleDto[]>>(`/api/v1/vehicles/by-category/${categoryId}/rentable`);
 }
+
+export async function getCategoryImages(categoryId: number): Promise<ApiResponse<{ id: number; filePath: string; altText?: string }[]>> {
+  if (!categoryId || isNaN(Number(categoryId)) || Number(categoryId) <= 0) {
+    return { data: [], status: "200", message: "Invalid category ID" };
+  }
+  return apiFetch<ApiResponse<{ id: number; filePath: string; altText?: string }[]>>(`/api/v1/vehicles/by-category/${categoryId}/images`);
+}
+
+// Strategy Pattern Vehicle Matching for Booking Assignment
+export async function matchVehicles(params: {
+  categoryId: number;
+  seatAddOnId?: number;
+  fuelAddOnId?: number;
+  addOnIds?: number[];
+}): Promise<ApiResponse<VehicleDto[]>> {
+  const query = new URLSearchParams();
+  query.append("categoryId", params.categoryId.toString());
+  if (params.seatAddOnId) query.append("seatAddOnId", params.seatAddOnId.toString());
+  if (params.fuelAddOnId) query.append("fuelAddOnId", params.fuelAddOnId.toString());
+  if (params.addOnIds && params.addOnIds.length > 0) {
+    query.append("addOnIds", params.addOnIds.join(","));
+  }
+  return apiFetch<ApiResponse<VehicleDto[]>>(`/api/v1/vehicles/match?${query.toString()}`);
+}
+
+// Public API for Customer/Guest (Localized & Sanitized)
+export async function getPublicAddOnCategories(params?: {
+  locale?: string;
+  filterableOnly?: boolean;
+}): Promise<ApiResponse<PublicAddOnCategoryDto[]>> {
+  const query = new URLSearchParams();
+  if (params?.locale) query.append("locale", params.locale);
+  if (params?.filterableOnly !== undefined) query.append("filterableOnly", params.filterableOnly.toString());
+  const queryString = query.toString();
+  return apiFetch<ApiResponse<PublicAddOnCategoryDto[]>>(`/api/v1/public/addon-categories${queryString ? `?${queryString}` : ""}`);
+}
+
+export async function getPublicAddOnsByCategory(params: {
+  categoryCode: string;
+  locale?: string;
+}): Promise<ApiResponse<PublicAddOnDto[]>> {
+  const query = new URLSearchParams();
+  query.append("categoryCode", params.categoryCode);
+  if (params.locale) query.append("locale", params.locale);
+  return apiFetch<ApiResponse<PublicAddOnDto[]>>(`/api/v1/public/addons?${query.toString()}`);
+}
+
+export async function getPublicAmenityCategories(params?: {
+  locale?: string;
+}): Promise<ApiResponse<PublicAmenityCategoryDto[]>> {
+  const query = new URLSearchParams();
+  if (params?.locale) query.append("locale", params.locale);
+  const queryString = query.toString();
+  return apiFetch<ApiResponse<PublicAmenityCategoryDto[]>>(`/api/v1/public/amenity-categories${queryString ? `?${queryString}` : ""}`);
+}
+
+export async function getPublicAmenitiesByCategory(params: {
+  categoryCode: string;
+  locale?: string;
+}): Promise<ApiResponse<PublicAmenityDto[]>> {
+  const query = new URLSearchParams();
+  query.append("categoryCode", params.categoryCode);
+  if (params.locale) query.append("locale", params.locale);
+  return apiFetch<ApiResponse<PublicAmenityDto[]>>(`/api/v1/public/amenities?${query.toString()}`);
+}
+
+// Portal / Admin API for Add-on Categories & Add-ons
+export async function getAddOnCategories(activeOnly?: boolean): Promise<ApiResponse<AddOnCategoryDto[]>> {
+  const query = activeOnly ? "?activeOnly=true" : "";
+  return apiFetch<ApiResponse<AddOnCategoryDto[]>>(`/api/v1/addon-categories${query}`);
+}
+
+export async function createAddOnCategory(payload: any): Promise<ApiResponse<AddOnCategoryDto>> {
+  return apiFetch<ApiResponse<AddOnCategoryDto>>("/api/v1/addon-categories", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAddOnCategory(id: number, payload: any): Promise<ApiResponse<AddOnCategoryDto>> {
+  return apiFetch<ApiResponse<AddOnCategoryDto>>(`/api/v1/addon-categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAddOnCategory(id: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/addon-categories/${id}`, { method: "DELETE" });
+}
+
+export async function getAddOnsByCategoryId(categoryId: number): Promise<ApiResponse<AddOnDto[]>> {
+  return apiFetch<ApiResponse<AddOnDto[]>>(`/api/v1/addons/by-category-id/${categoryId}`);
+}
+
+export async function createAddOn(payload: any): Promise<ApiResponse<AddOnDto>> {
+  return apiFetch<ApiResponse<AddOnDto>>("/api/v1/addons", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAddOn(id: number, payload: any): Promise<ApiResponse<AddOnDto>> {
+  return apiFetch<ApiResponse<AddOnDto>>(`/api/v1/addons/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAddOn(id: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/addons/${id}`, { method: "DELETE" });
+}
+
+// Portal / Admin API for Amenity Categories & Amenities
+export async function getAmenityCategories(activeOnly?: boolean): Promise<ApiResponse<AmenityCategoryDto[]>> {
+  const query = activeOnly ? "?activeOnly=true" : "";
+  return apiFetch<ApiResponse<AmenityCategoryDto[]>>(`/api/v1/amenity-categories${query}`);
+}
+
+export async function createAmenityCategory(payload: any): Promise<ApiResponse<AmenityCategoryDto>> {
+  return apiFetch<ApiResponse<AmenityCategoryDto>>("/api/v1/amenity-categories", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAmenityCategory(id: number, payload: any): Promise<ApiResponse<AmenityCategoryDto>> {
+  return apiFetch<ApiResponse<AmenityCategoryDto>>(`/api/v1/amenity-categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAmenityCategory(id: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/amenity-categories/${id}`, { method: "DELETE" });
+}
+
+export async function getAmenitiesByCategoryId(categoryId: number): Promise<ApiResponse<AmenityDto[]>> {
+  return apiFetch<ApiResponse<AmenityDto[]>>(`/api/v1/amenities/by-category-id/${categoryId}`);
+}
+
+export async function createAmenity(payload: any): Promise<ApiResponse<AmenityDto>> {
+  return apiFetch<ApiResponse<AmenityDto>>("/api/v1/amenities", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAmenity(id: number, payload: any): Promise<ApiResponse<AmenityDto>> {
+  return apiFetch<ApiResponse<AmenityDto>>(`/api/v1/amenities/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAmenity(id: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/amenities/${id}`, { method: "DELETE" });
+}
+
 
 // Airports
 export interface AirportTranslationDto {

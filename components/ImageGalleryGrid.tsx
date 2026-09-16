@@ -80,9 +80,12 @@ export function ImageGalleryGrid({
           >
             <img
               src={mainImage.url}
-              alt={mainImage.alt || ""}
+              alt=""
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="eager"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-center justify-center">
               <div className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 backdrop-blur-xs">
@@ -106,9 +109,12 @@ export function ImageGalleryGrid({
                   >
                     <img
                       src={img.url}
-                      alt={img.alt || ""}
+                      alt=""
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors duration-300 flex items-center justify-center">
                       <div className="w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 backdrop-blur-xs">
@@ -151,8 +157,11 @@ export function ImageGalleryGrid({
           >
             <img
               src={mainImage.url}
-              alt={mainImage.alt || ""}
+              alt=""
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
@@ -171,8 +180,11 @@ export function ImageGalleryGrid({
                   >
                     <img
                       src={img.url}
-                      alt={img.alt || ""}
+                      alt=""
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
                     />
                     {isLast && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
