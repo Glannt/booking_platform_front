@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, User, Phone, Mail, Calendar as IconCalendar, Users, MessageSquare, ClipboardList, Shield, MapPin, Ship, Compass, Sparkles } from "lucide-react";
 import { Button, Label, Input, TextField, Skeleton, Select, ListBox, FieldError, DatePicker, DateField, Calendar, SearchField } from "@heroui/react";
@@ -8,18 +8,20 @@ import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import type { DateValue } from "@internationalized/date";
 import { TimePicker, TimeValue } from "@/components/time-picker";
 
-import { getTourByIdOrSlug, TourDto, TourPackageDto } from "@/lib/api/tours";
+import { getTourById, getTourByIdOrSlug, TourDto, TourPackageDto, getPackagePrice } from "@/lib/api/tours";
 import { getVehicles, VehicleDto } from "@/lib/api/fleet";
 import { createTourBooking } from "@/lib/api/tours/bookings";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
 import { resolveLocalizedName, resolveLocalizedSlug, resolveTranslation } from "@/lib/i18n-helpers";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmModal from "@/components/tours/BookingConfirmModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
 import ErrorOverlay from "@/components/ErrorOverlay";
 import type { SectionDto } from "@/lib/api/sections";
+import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
 
 interface TourConfirmClientProps {
     tourIdentifier: string | number;
@@ -67,6 +69,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
     const suggestionsRef = useRef<HTMLDivElement>(null);
 
     // Submission states
+    const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountInfo | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -127,7 +130,10 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
         let active = true;
         (async () => {
             try {
-                const tourRes = await getTourByIdOrSlug(tourIdentifier);
+                const tourIdParam = searchParams.get("tourId") || searchParams.get("id");
+                const tourRes = (tourIdParam && !isNaN(Number(tourIdParam)))
+                    ? await getTourById(Number(tourIdParam))
+                    : await getTourByIdOrSlug(tourIdentifier);
                 if (!active) return;
 
                 if (tourRes?.data) {
@@ -179,23 +185,25 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
     const calculatePrice = () => {
         if (selectedPackage) {
             if (selectedPackage.isContactOnly) return 0;
-            if (selectedPackage.pricingType === "PER_PERSON") {
-                const adultTotal = (selectedPackage.adultPrice || 0) * adultCount;
-                const childTotal = (selectedPackage.childPrice || 0) * childCount;
-                return adultTotal + childTotal;
-            }
-            return selectedPackage.fixedPrice || 0;
-        }
-
-        // Legacy fallback
-        if (tour && vehicle?.type) {
-            const foundPrice = tour.prices?.find(p => p.vehicleCategoryId === vehicle.type?.id && p.active);
-            if (foundPrice) return foundPrice.amount;
+            const adultRate = getPackagePrice(selectedPackage, "ADULT");
+            const childRate = getPackagePrice(selectedPackage, "CHILD");
+            const infantRate = getPackagePrice(selectedPackage, "INFANT");
+            return (adultRate * adultCount) + (childRate * childCount) + (infantRate * infantCount);
         }
         return 0;
     };
 
-    const totalPrice = calculatePrice();
+    const rawTotalPrice = calculatePrice();
+    const finalTotalPrice = Math.max(0, rawTotalPrice - (appliedDiscount?.amount || 0));
+
+    const depositCalc = useMemo(() => {
+        return calculateDeposit({
+            totalAmount: finalTotalPrice,
+            depositType: DepositType.RATE,
+            defaultRate: 30,
+        });
+    }, [finalTotalPrice]);
+
     const formatPrice = (value: number) => {
         if (value <= 0) return t.tours.contactOnly;
         return _formatPrice(value, language);
@@ -234,7 +242,12 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                 pickupLocation: meetingPoint,
                 description: pkgName ? `Tour Package: ${pkgName}` : `Tour Booking`,
                 startTime: `${dateStr}T${timeStr}:00`,
-                totalPrice,
+                totalPrice: finalTotalPrice,
+                depositType: depositCalc.depositType,
+                depositRate: depositCalc.depositRate,
+                depositAmount: depositCalc.depositAmount,
+                discountCode: appliedDiscount?.code,
+                discountAmount: appliedDiscount?.amount,
             });
             console.log("Booking API response:", res);
             const code = res?.data?.bookingCode || res?.data?.id;
@@ -265,7 +278,10 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col items-center justify-center gap-4">
                 <p className="text-sm font-bold text-slate-500">{t.tours.notFound}</p>
-                <Button onClick={() => router.push(`/${language}/tours`)} className="bg-accent text-white text-xs font-bold px-4 py-2 rounded-xl">
+                <Button
+                    onClick={() => router.push(`/${language}/tours`)}
+                    className="bg-accent hover:bg-accent-hover text-accent-foreground text-sm font-bold px-5 py-2.5 rounded-xl border-none cursor-pointer shadow-sm transition-colors"
+                >
                     {t.common.goBack}
                 </Button>
             </div>
@@ -276,7 +292,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
         <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 font-sans">
             {/* Header */}
             <div className="bg-slate-50 dark:bg-[var(--bg-surface)] border-b border-slate-100 dark:border-slate-800">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
+                <div className="max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
                         className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] transition-colors cursor-pointer border-none bg-transparent"
@@ -287,47 +303,47 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                         <h1 className="text-lg sm:text-xl font-black text-slate-800 dark:text-white">
                             {t.tours.confirmBooking}
                         </h1>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                             {t.common.reviewBeforeConfirm}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+            <div className="max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
                 {/* Tour & Package Summary */}
                 <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
                     <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         <Compass size={15} className="text-accent" />
                         <span>{t.tours.tourInfo}</span>
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
                             <span className="text-slate-400 font-medium block">{t.tours.tourLabel}:</span>
-                            <span className="font-bold text-slate-900 dark:text-white text-sm">{getLocalizedName(tour)}</span>
+                            <span className="font-bold text-slate-900 dark:text-white text-base">{getLocalizedName(tour)}</span>
                         </div>
                         <div>
                             <span className="text-slate-400 font-medium block">{t.tours.packages}:</span>
-                            <span className="font-bold text-accent text-sm">
+                            <span className="font-bold text-accent text-base">
                                 {selectedPackage ? getLocalizedPackageName(selectedPackage) : t.tours.tourPackage}
                             </span>
                         </div>
                     </div>
 
                     {/* Passenger breakdown row */}
-                    {selectedPackage && selectedPackage.pricingType === "PER_PERSON" && !selectedPackage.isContactOnly && (
-                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4 text-xs">
+                    {selectedPackage && !selectedPackage.isContactOnly && (
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4 text-sm">
                             <span className="text-slate-500 dark:text-slate-400">
-                                {t.tours.adults}: <strong className="text-slate-900 dark:text-white">{adultCount}</strong> ({formatPrice(selectedPackage.adultPrice || 0)})
+                                {t.tours.adults}: <strong className="text-slate-900 dark:text-white">{adultCount}</strong> ({formatPrice(getPackagePrice(selectedPackage, "ADULT"))})
                             </span>
                             {childCount > 0 && (
                                 <span className="text-slate-500 dark:text-slate-400">
-                                    {t.tours.children}: <strong className="text-slate-900 dark:text-white">{childCount}</strong> ({formatPrice(selectedPackage.childPrice || 0)})
+                                    {t.tours.children}: <strong className="text-slate-900 dark:text-white">{childCount}</strong> ({formatPrice(getPackagePrice(selectedPackage, "CHILD"))})
                                 </span>
                             )}
                             {infantCount > 0 && (
                                 <span className="text-slate-500 dark:text-slate-400">
-                                    {t.tours.infants}: <strong className="text-emerald-500">{infantCount} ({t.tours.free})</strong>
+                                    {t.tours.infants}: <strong className="text-slate-900 dark:text-white">{infantCount}</strong> ({getPackagePrice(selectedPackage, "INFANT") > 0 ? formatPrice(getPackagePrice(selectedPackage, "INFANT")) : t.tours.free})
                                 </span>
                             )}
                         </div>
@@ -347,36 +363,36 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextField isRequired>
-                            <Label className="text-[10px] font-bold uppercase tracking-wider">{t.common.name}</Label>
-                            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t.tours.namePlaceholder} />
+                            <Label className="text-sm font-bold uppercase tracking-wider">{t.common.name}</Label>
+                            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t.tours.namePlaceholder} className="text-sm sm:text-base font-semibold border-1 border-separator" />
                         </TextField>
                         <TextField isRequired>
-                            <Label className="text-[10px] font-bold uppercase tracking-wider">{t.common.phone}</Label>
-                            <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0901 234 567" />
+                            <Label className="text-sm font-bold uppercase tracking-wider">{t.common.phone}</Label>
+                            <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0901 234 567" className="text-sm sm:text-base font-semibold border-1 border-separator" />
                         </TextField>
                         <TextField isRequired>
-                            <Label className="text-[10px] font-bold uppercase tracking-wider">Email</Label>
-                            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+                            <Label className="text-sm font-bold uppercase tracking-wider">Email</Label>
+                            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" className="text-sm sm:text-base font-semibold border-1 border-separator" />
                         </TextField>
                         <TextField>
-                            <Label className="text-[10px] font-bold uppercase tracking-wider">{t.tours.zaloId}</Label>
-                            <Input value={zaloId} onChange={(e) => setZaloId(e.target.value)} placeholder="Zalo ID" />
+                            <Label className="text-sm font-bold uppercase tracking-wider">{t.tours.zaloId}</Label>
+                            <Input value={zaloId} onChange={(e) => setZaloId(e.target.value)} placeholder="Zalo ID" className="text-sm sm:text-base font-semibold border-1 border-separator" />
                         </TextField>
                         <TextField>
-                            <Label className="text-[10px] font-bold uppercase tracking-wider">{t.tours.kakaoTalkId}</Label>
-                            <Input value={kakaoTalkId} onChange={(e) => setKakaoTalkId(e.target.value)} placeholder="KakaoTalk ID" />
+                            <Label className="text-sm font-bold uppercase tracking-wider">{t.tours.kakaoTalkId}</Label>
+                            <Input value={kakaoTalkId} onChange={(e) => setKakaoTalkId(e.target.value)} placeholder="KakaoTalk ID" className="text-sm sm:text-base font-semibold border-1 border-separator" />
                         </TextField>
                     </div>
                 </div>
 
                 {/* Booking Details */}
                 <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
-                    <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <h3 className="text-base font-extrabold uppercase tracking-wider">
                         {t.tours.bookingDetails}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5">
-                            <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">{t.tours.departureDate}</Label>
+                            <Label isRequired className="text-sm font-bold uppercase tracking-wider">{t.tours.departureDate}</Label>
                             <DatePicker
                                 className="w-full"
                                 value={dateValue}
@@ -386,8 +402,8 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                                     }
                                 }}
                             >
-                                <DateField.Group fullWidth className="h-10 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl px-3 flex items-center justify-between">
-                                    <DateField.Input className="text-xs font-semibold bg-transparent border-none outline-none">
+                                <DateField.Group fullWidth className="h-11 bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 flex items-center justify-between">
+                                    <DateField.Input className="text-sm sm:text-base font-semibold bg-transparent border-none outline-none">
                                         {(segment) => <DateField.Segment segment={segment} />}
                                     </DateField.Input>
                                     <DateField.Suffix>
@@ -399,24 +415,24 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                                 <DatePicker.Popover className="bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl z-50">
                                     <Calendar aria-label="Travel date">
                                         <Calendar.Header className="flex items-center justify-between mb-2">
-                                            <Calendar.YearPickerTrigger className="text-xs font-bold flex items-center gap-1 cursor-pointer">
+                                            <Calendar.YearPickerTrigger className="text-sm font-bold flex items-center gap-1 cursor-pointer">
                                                 <Calendar.YearPickerTriggerHeading />
                                                 <Calendar.YearPickerTriggerIndicator />
                                             </Calendar.YearPickerTrigger>
                                             <div className="flex gap-1">
-                                                <Calendar.NavButton slot="previous" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
-                                                <Calendar.NavButton slot="next" className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                                <Calendar.NavButton slot="previous" className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
+                                                <Calendar.NavButton slot="next" className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] cursor-pointer" />
                                             </div>
                                         </Calendar.Header>
                                         <Calendar.Grid className="w-full">
-                                            <Calendar.GridHeader className="text-slate-400 text-[10px] font-bold">
-                                                {(day) => <Calendar.HeaderCell className="w-8 h-8 text-center">{day}</Calendar.HeaderCell>}
+                                            <Calendar.GridHeader className="text-slate-400 text-sm font-bold">
+                                                {(day) => <Calendar.HeaderCell className="w-9 h-9 text-center">{day}</Calendar.HeaderCell>}
                                             </Calendar.GridHeader>
                                             <Calendar.GridBody>
                                                 {(date) => (
                                                     <Calendar.Cell
                                                         date={date}
-                                                        className="w-8 h-8 text-xs font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-white"
+                                                        className="w-9 h-9 text-sm font-semibold text-center cursor-pointer rounded-lg hover:bg-accent/10 hover:text-accent aria-selected:bg-accent aria-selected:text-accent-foreground"
                                                     />
                                                 )}
                                             </Calendar.GridBody>
@@ -426,7 +442,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                                                 {({ year }) => (
                                                     <Calendar.YearPickerCell
                                                         year={year}
-                                                        className="text-xs font-semibold px-2 py-1 cursor-pointer hover:bg-slate-100 rounded"
+                                                        className="text-sm font-semibold px-2.5 py-1 cursor-pointer hover:bg-slate-100 rounded"
                                                     />
                                                 )}
                                             </Calendar.YearPickerGridBody>
@@ -438,29 +454,30 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                         <TimePicker
                             isRequired
                             label={t.tours.startTime}
-                            labelClassName="text-[10px] font-bold uppercase tracking-wider"
+                            labelClassName="text-sm font-bold uppercase tracking-wider mb-1.5"
                             value={startTimeVal}
                             onChange={setStartTimeVal}
                             language={language}
+                            triggerClassName="h-11 bg-transparent shadow-sm"
                         />
                         <div className="flex flex-col gap-1.5">
-                            <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">{t.tours.guests}</Label>
-                            <div className="flex items-center h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-white justify-between">
+                            <Label isRequired className="text-sm font-bold uppercase tracking-wider">{t.tours.guests}</Label>
+                            <div className="flex items-center h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-sm font-bold text-slate-800 dark:text-white justify-between">
                                 <span>{totalGuests} {t.common.guests}</span>
-                                <span className="text-[10px] text-slate-400 font-normal">
+                                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                                     {adultCount} {t.tours.adults}{childCount > 0 ? `, ${childCount} ${t.tours.children}` : ""}{infantCount > 0 ? `, ${infantCount} ${t.tours.infants}` : ""}
                                 </span>
                             </div>
                         </div>
                         <div className="flex flex-col gap-1.5 relative" ref={suggestionsRef}>
-                            <Label isRequired className="text-[10px] font-bold uppercase tracking-wider">{t.tours.meetingPoint}</Label>
+                            <Label isRequired className="text-sm font-bold uppercase tracking-wider">{t.tours.meetingPoint}</Label>
                             <SearchField
                                 value={meetingPoint}
                                 onChange={(val) => { setMeetingPoint(val); setSelectedLocationName(""); }}
                             >
-                                <SearchField.Group>
+                                <SearchField.Group className="border-1 border-separator h-11">
                                     <SearchField.SearchIcon />
-                                    <SearchField.Input placeholder={t.tours.pickupPlaceholder} />
+                                    <SearchField.Input placeholder={t.tours.pickupPlaceholder} className="text-sm sm:text-base font-semibold" />
                                     <SearchField.ClearButton onClick={() => { setSuggestions([]); setShowSuggestions(false); setSelectedCoords(null); }} />
                                 </SearchField.Group>
                             </SearchField>
@@ -472,12 +489,12 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                                             <div
                                                 key={s.id}
                                                 onClick={() => handleSelectSuggestion(s)}
-                                                className="p-2.5 hover:bg-accent/5 dark:hover:bg-[var(--bg-card)] cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                                                className="p-3 hover:bg-accent/5 dark:hover:bg-[var(--bg-card)] cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
                                             >
-                                                <MapPin size={12} className="text-accent shrink-0" />
+                                                <MapPin size={14} className="text-accent shrink-0" />
                                                 <div className="min-w-0">
                                                     <p className="font-bold truncate">{s.name}</p>
-                                                    <p className="text-[10px] text-slate-400 truncate">{s.address}</p>
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{s.address}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -489,33 +506,85 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
 
                     {/* Notes */}
                     <div className="flex flex-col gap-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-wider">{t.rentCar.notes}</Label>
+                        <Label className="text-sm font-bold uppercase tracking-wider">{t.rentCar.notes}</Label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             placeholder={t.airportTransfer.notesPlaceholder}
-                            className="w-full h-16 p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[var(--bg-card)] text-xs font-semibold outline-none resize-none"
+                            className="w-full h-20 p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-[var(--bg-card)] text-sm sm:text-base font-medium outline-none resize-none"
                         />
                     </div>
                 </div>
 
-                {/* Price Summary */}
-                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <span className="text-sm font-bold text-slate-500 block">{t.common.total}</span>
-                            {selectedPackage && (
-                                <span className="text-[10px] text-accent font-semibold">
-                                    {getLocalizedPackageName(selectedPackage)}
-                                </span>
-                            )}
+                {/* Customer Discount Section */}
+                <CustomerDiscountSection
+                    scopeType="TOUR"
+                    scopeRefId={tour?.id}
+                    orderTotal={rawTotalPrice}
+                    onDiscountChange={setAppliedDiscount}
+                />
+
+                {/* Price Summary & Deposit Breakdown */}
+                <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4 shadow-sm">
+                    <div className="space-y-2 text-sm border-b border-separator pb-3">
+                        <div className="flex justify-between items-center text-slate-500">
+                            <span>Tạm tính</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                {formatPrice(rawTotalPrice)}
+                            </span>
                         </div>
-                        <span className="text-xl font-black text-accent">{formatPrice(totalPrice)}</span>
+
+                        {appliedDiscount && (
+                            <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-medium">
+                                <span>Giảm giá ({appliedDiscount.code})</span>
+                                <span className="font-bold">
+                                    - {formatPrice(appliedDiscount.amount)}
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-separator">
+                            <span className="font-bold text-slate-700 dark:text-slate-200 text-base">
+                                {t.common.total}
+                            </span>
+                            <span className="text-xl sm:text-2xl font-black text-accent">
+                                {formatPrice(finalTotalPrice)}
+                            </span>
+                        </div>
                     </div>
+
+                    {/* Dynamic Deposit Info Card */}
+                    <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                                <Shield size={16} className="text-amber-600" />
+                                {t.discounts.depositRequired}
+                            </span>
+                            <span className="text-base font-black text-amber-700 dark:text-amber-400">
+                                {formatPrice(depositCalc.depositAmount)}
+                            </span>
+                        </div>
+
+                        <div className="text-sm text-amber-700 dark:text-amber-400/90 leading-tight">
+                            <span>
+                                {language === "vi"
+                                    ? `Quy định đặt cọc ${depositCalc.depositRate}% tổng giá trị tour`
+                                    : `Deposit policy: ${depositCalc.depositRate}% of total tour value`}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                            <span>{t.discounts.remainingPayment}:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                {formatPrice(depositCalc.remainingAmount)}
+                            </span>
+                        </div>
+                    </div>
+
                     <Button
                         onClick={() => setShowConfirmModal(true)}
                         isDisabled={!fullName || !phone || !email || submitting}
-                        className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-white hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
+                        className="w-full h-12 rounded-2xl font-black text-base bg-accent text-accent-foreground hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer"
                     >
                         {t.common.continueBtn}
                     </Button>
@@ -537,7 +606,11 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                 adultCount={adultCount}
                 childCount={childCount}
                 infantCount={infantCount}
-                totalAmount={totalPrice}
+                totalAmount={finalTotalPrice}
+                depositAmount={depositCalc.depositAmount}
+                depositRate={depositCalc.depositRate}
+                depositType={depositCalc.depositType}
+                remainingAmount={depositCalc.remainingAmount}
                 submitting={submitting}
             />
 

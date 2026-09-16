@@ -1,5 +1,6 @@
 import { apiFetch, ApiResponse } from "./client";
 import { MediaDto } from "./media";
+import type { ComponentItem } from "@/types/routeComponents";
 
 export interface TourTranslationDto {
   id?: number;
@@ -63,11 +64,28 @@ export interface TourPackageTranslationDto {
   exclusions?: string;
 }
 
+export interface PriceListPerPersonDto {
+  id?: number;
+  passengerType: "ADULT" | "CHILD" | "INFANT" | string;
+  pricePerPerson: number;
+  minPax?: number;
+  maxPax?: number;
+  active?: boolean;
+  applyAgeCondition?: boolean;
+  minAge?: number | null;
+  maxAge?: number | null;
+  applyHeightCondition?: boolean;
+  minHeight?: number | null;
+  maxHeight?: number | null;
+}
+
 export interface TourPackageDto {
   id?: number;
   tourId?: number;
   code?: string;
-  pricingType: "PER_PERSON" | "PRIVATE_CHARTER";
+  name?: string;
+  prices?: PriceListPerPersonDto[];
+  pricingType?: "PER_PERSON" | "PRIVATE_CHARTER";
   adultPrice?: number;
   childPrice?: number;
   infantPrice?: number;
@@ -75,12 +93,75 @@ export interface TourPackageDto {
   infantPolicyNote?: string;
   fixedPrice?: number;
   isContactOnly?: boolean;
+  contactOnly?: boolean;
+  minGuests?: number;
+  maxGuests?: number;
   highlights?: string;
   inclusions?: string;
   exclusions?: string;
   active: boolean;
   sortOrder?: number;
   translations: TourPackageTranslationDto[];
+}
+
+export function getPackagePrice(pkg?: TourPackageDto, type: "ADULT" | "CHILD" | "INFANT" = "ADULT"): number {
+  if (!pkg) return 0;
+  if (pkg.prices && pkg.prices.length > 0) {
+    const found = pkg.prices.find((p) => p.passengerType === type);
+    if (found && typeof found.pricePerPerson === "number") return found.pricePerPerson;
+  }
+  if (type === "ADULT") return pkg.adultPrice || 0;
+  if (type === "CHILD") return pkg.childPrice || 0;
+  if (type === "INFANT") return pkg.infantPrice || 0;
+  return 0;
+}
+
+export function getPackagePriceItem(pkg?: TourPackageDto, type: "ADULT" | "CHILD" | "INFANT" = "ADULT"): PriceListPerPersonDto | undefined {
+  if (!pkg || !pkg.prices) return undefined;
+  return pkg.prices.find((p) => p.passengerType === type);
+}
+
+export function formatPassengerCondition(
+  item?: PriceListPerPersonDto | null,
+  language: string = "vi"
+): string {
+  if (!item) return "";
+  const hasAge = Boolean(item.applyAgeCondition);
+  const hasHeight = Boolean(item.applyHeightCondition);
+  const isVi = language === "vi";
+
+  let ageStr = "";
+  if (hasAge) {
+    const minAge = item.minAge;
+    const maxAge = item.maxAge;
+    if (minAge != null && minAge > 0 && maxAge != null && maxAge > 0) {
+      ageStr = isVi ? `${minAge} - ${maxAge} tuổi` : `${minAge} - ${maxAge} yrs`;
+    } else if (minAge != null && minAge > 0) {
+      ageStr = isVi ? `Từ ${minAge} tuổi trở lên` : `From ${minAge}+ yrs`;
+    } else if (maxAge != null && maxAge > 0) {
+      ageStr = isVi ? `Dưới ${maxAge + 1} tuổi` : `Under ${maxAge + 1} yrs`;
+    }
+  }
+
+  let heightStr = "";
+  if (hasHeight) {
+    const minHeight = item.minHeight;
+    const maxHeight = item.maxHeight;
+    if (minHeight != null && minHeight > 0 && maxHeight != null && maxHeight > 0) {
+      heightStr = isVi ? `Cao ${minHeight} - ${maxHeight}cm` : `Height ${minHeight} - ${maxHeight}cm`;
+    } else if (minHeight != null && minHeight > 0) {
+      heightStr = isVi ? `Cao từ ${minHeight}cm trở lên` : `Height ≥ ${minHeight}cm`;
+    } else if (maxHeight != null && maxHeight > 0) {
+      heightStr = isVi ? `Cao dưới ${maxHeight + 1}cm` : `Height < ${maxHeight + 1}cm`;
+    }
+  }
+
+  if (hasAge && hasHeight && ageStr && heightStr) {
+    return isVi ? `${ageStr} hoặc ${heightStr.toLowerCase()}` : `${ageStr} or ${heightStr.toLowerCase()}`;
+  }
+  if (hasAge && ageStr) return ageStr;
+  if (hasHeight && heightStr) return heightStr;
+  return "";
 }
 
 export interface TourPriceDto {
@@ -93,10 +174,12 @@ export interface TourPriceDto {
 
 export interface TourDto {
   id: number;
+  slug?: string;
   tourCategoryId?: number;
   tourCategory?: TourCategoryDto;
   inclusions?: string;
   exclusions?: string;
+  components?: ComponentItem[];
   durationDays: number;
   durationNights: number;
   minGuest?: number;
@@ -107,7 +190,9 @@ export interface TourDto {
   thumbnail?: MediaDto;
   imageIds?: number[];
   images?: MediaDto[];
-  isDefault?: boolean;
+  isRecommended?: boolean;
+  successfulBookingsCount?: number;
+  totalRevenue?: number;
   translations: TourTranslationDto[];
   options: TourOptionDto[];
   days: TourDayDto[];
@@ -117,8 +202,10 @@ export interface TourDto {
 
 export interface CreateTourRequest {
   tourCategoryId: number;
+  slug?: string;
   inclusions?: string;
   exclusions?: string;
+  components?: ComponentItem[];
   durationDays: number;
   durationNights: number;
   minGuest?: number;
@@ -126,6 +213,7 @@ export interface CreateTourRequest {
   active: boolean;
   status?: "ACTIVE" | "DRAFT" | "INACTIVE" | string;
   isDefault?: boolean;
+  isRecommended?: boolean;
   thumbnailId?: number;
   imageIds?: number[];
   translations: TourTranslationDto[];
@@ -158,8 +246,8 @@ export interface TourCategoryDto {
   code?: string;
   icon?: string;
   sortOrder?: number;
-  active?: boolean;
   isActive?: boolean;
+  active?: boolean;
   title?: string;
   description?: string;
   translations?: TourCategoryTranslationDto[];

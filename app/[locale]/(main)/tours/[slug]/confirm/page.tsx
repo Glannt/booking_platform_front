@@ -21,8 +21,27 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
+import { redirect, RedirectType } from "next/navigation";
+import { getTourByIdOrSlug } from "@/lib/api/tours";
+import { getCanonicalSlug, isNumeric } from "@/lib/slug-helpers";
+
 export default async function TourConfirmPage({ params }: { params: Promise<{ slug: string; locale: string }> }) {
   const { slug, locale } = await params;
+
+  if (isNumeric(slug)) {
+    try {
+      const res = await getTourByIdOrSlug(slug);
+      if (res?.data) {
+        const canonicalSlug = getCanonicalSlug(res.data, locale, "tour");
+        if (canonicalSlug && canonicalSlug !== slug && !isNumeric(canonicalSlug)) {
+          redirect(`/${locale}/tours/${canonicalSlug}/confirm?tourId=${slug}`, RedirectType.replace);
+        }
+      }
+    } catch {
+      // Fall through to client component
+    }
+  }
+
   let sections: SectionDto[] = [];
   try {
     sections = await getActiveSectionsServer("/tours", locale);

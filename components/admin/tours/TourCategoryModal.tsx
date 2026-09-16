@@ -13,46 +13,23 @@ import {
   Label,
   NumberField,
   Input,
-  Checkbox
+  Checkbox,
+  CheckboxContent,
+  CheckboxControl,
+  CheckboxIndicator
 } from "@heroui/react";
 import {
   Save,
-  RefreshCw,
-  Ship,
-  Car,
-  Compass,
-  Utensils,
-  Award,
-  Shield,
-  Anchor,
-  Camera,
-  Sun,
-  Palmtree,
-  MapPin,
-  Sparkles
+  RefreshCw
 } from "lucide-react";
 import clsx from "clsx";
+import { SvgIconPickerField } from "@/components/common/SvgIconPickerField";
 
 import {
   TourCategoryDto,
   createTourCategory,
   updateTourCategory
 } from "@/lib/api/tours";
-
-const AVAILABLE_ICONS = [
-  { id: "ship", label: "Cano / Tàu", icon: Ship },
-  { id: "car", label: "Xe / Ô tô", icon: Car },
-  { id: "compass", label: "La bàn", icon: Compass },
-  { id: "palmtree", label: "Cây dừa", icon: Palmtree },
-  { id: "sun", label: "Mặt trời", icon: Sun },
-  { id: "anchor", label: "Mỏ neo", icon: Anchor },
-  { id: "camera", label: "Máy ảnh", icon: Camera },
-  { id: "utensils", label: "Ăn uống", icon: Utensils },
-  { id: "award", label: "Danh hiệu", icon: Award },
-  { id: "shield", label: "Bảo hiểm", icon: Shield },
-  { id: "map-pin", label: "Địa điểm", icon: MapPin },
-  { id: "sparkles", label: "VIP / Đặc biệt", icon: Sparkles }
-];
 
 interface TourCategoryModalProps {
   isOpen: boolean;
@@ -94,7 +71,7 @@ export default function TourCategoryModal({
       setCode(categoryToEdit.code || "");
       setIcon(categoryToEdit.icon || "ship");
       setSortOrder(categoryToEdit.sortOrder ?? 0);
-      setActive(categoryToEdit.active ?? categoryToEdit.isActive ?? true);
+      setActive(categoryToEdit.isActive ?? true);
 
       const transMap: Record<string, { name: string; slug: string; description: string }> = {
         vi: { name: "", slug: "", description: "" },
@@ -204,7 +181,6 @@ export default function TourCategoryModal({
         code: code.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
         icon: icon || "ship",
         sortOrder: Number(sortOrder) || 0,
-        active,
         isActive: active,
         title: translations.vi.name.trim(),
         description: translations.vi.description.trim(),
@@ -236,8 +212,8 @@ export default function TourCategoryModal({
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <ModalBackdrop className="bg-slate-950/45 backdrop-blur-[2px]">
         <ModalContainer>
-          <ModalDialog className="max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <ModalDialog className="max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-border-secondary overflow-hidden">
+            <ModalHeader className="px-6 py-4 border-b border-separator flex items-center justify-between shrink-0">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">
                   {isEditing ? `Chỉnh sửa Danh mục: ${categoryToEdit?.code}` : "Tạo Danh mục Tour Mới"}
@@ -253,20 +229,20 @@ export default function TourCategoryModal({
                 {/* General Settings */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                       Mã Danh mục (Code) *
                     </Label>
                     <Input
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="vd: island-cano, land-car..."
-                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-bold outline-none"
+                      className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold outline-none"
                       required
                     />
                   </div>
 
                   <div>
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                       Thứ tự hiển thị (Sort)
                     </Label>
                     <NumberField
@@ -274,59 +250,42 @@ export default function TourCategoryModal({
                       value={sortOrder}
                       onChange={(val) => setSortOrder(val ?? 0)}
                     >
-                      <Input className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-bold outline-none" />
+                      <Input className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold outline-none" />
                     </NumberField>
                   </div>
 
                   <div className="flex flex-col justify-center">
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
                       Trạng thái hoạt động
                     </Label>
                     <div className="flex items-center gap-2 h-10">
                       <Checkbox
                         isSelected={active}
                         onChange={setActive}
-                        className="text-xs font-bold text-slate-700 dark:text-slate-300"
+                        className="rounded-full text-xs font-bold text-slate-700 dark:text-slate-300"
                       >
-                        {active ? "Kích hoạt (Hiển thị)" : "Tạm ẩn"}
+                        <CheckboxContent className={`${active ? ' text-emerald-600' : ' text-red-600'} rounded-full`}>
+                          <CheckboxControl className="rounded-full border-1 border-separator">
+                            <CheckboxIndicator />
+                          </CheckboxControl>
+                          {active ? "Hiển thị" : "Tạm ẩn"}
+                        </CheckboxContent>
                       </Checkbox>
                     </div>
                   </div>
                 </div>
 
                 {/* Icon Selection */}
-                <div>
-                  <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Icon biểu tượng
-                  </Label>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {AVAILABLE_ICONS.map((ic) => {
-                      const IconComp = ic.icon;
-                      const isSelected = icon === ic.id;
-                      return (
-                        <button
-                          key={ic.id}
-                          type="button"
-                          onClick={() => setIcon(ic.id)}
-                          className={clsx(
-                            "flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer",
-                            isSelected
-                              ? "bg-accent/10 border-accent text-accent shadow-sm"
-                              : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700"
-                          )}
-                        >
-                          <IconComp size={18} className="mb-1" />
-                          <span className="text-[10px] truncate max-w-full">{ic.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <SvgIconPickerField
+                  value={icon}
+                  onChange={setIcon}
+                  label="Icon biểu tượng (Raw SVG text)"
+                />
 
                 {/* Multi-language Translations Section */}
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
+                <div className="border-t border-separator pt-5">
                   <div className="flex items-center justify-between mb-3">
-                    <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <Label className="block text-xs font-bold uppercase tracking-wider">
                       Bản dịch đa ngôn ngữ
                     </Label>
                     <div className="flex gap-1 bg-slate-100 dark:bg-[var(--bg-card)] p-1 rounded-xl">
@@ -353,33 +312,33 @@ export default function TourCategoryModal({
                     </div>
                   </div>
 
-                  <div className="space-y-3 bg-slate-50/50 dark:bg-[var(--bg-card)]/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="space-y-3 bg-slate-50/50 dark:bg-[var(--bg-card)]/40 p-4 rounded-xl border border-separator">
                     <div>
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <Label className="block text-xs font-bold mb-1">
                         Tên Danh mục ({activeFormLocale.toUpperCase()}) *
                       </Label>
                       <Input
                         value={translations[activeFormLocale as keyof typeof translations].name}
                         onChange={(e) => handleTranslationChange("name", e.target.value)}
                         placeholder={`Tên danh mục bằng ngôn ngữ ${activeFormLocale.toUpperCase()}...`}
-                        className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-bold outline-none"
+                        className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold outline-none"
                       />
                     </div>
 
                     <div>
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <Label className="block text-xs font-bold mb-1">
                         Đường dẫn tĩnh (Slug)
                       </Label>
                       <Input
                         value={translations[activeFormLocale as keyof typeof translations].slug}
                         onChange={(e) => handleTranslationChange("slug", e.target.value)}
                         placeholder={`Slug cho ${activeFormLocale.toUpperCase()}...`}
-                        className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-medium outline-none text-slate-600 dark:text-slate-400"
+                        className="w-full h-10 px-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-medium outline-none text-slate-600 dark:text-slate-400"
                       />
                     </div>
 
                     <div>
-                      <Label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
+                      <Label className="block text-xs font-bold mb-1">
                         Mô tả ngắn ({activeFormLocale.toUpperCase()})
                       </Label>
                       <textarea
@@ -387,27 +346,28 @@ export default function TourCategoryModal({
                         onChange={(e) => handleTranslationChange("description", e.target.value)}
                         placeholder={`Mô tả ngắn về danh mục này...`}
                         rows={2}
-                        className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] text-xs font-medium outline-none resize-none"
+                        className="w-full p-3 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-medium outline-none resize-none"
                       />
                     </div>
                   </div>
                 </div>
               </ModalBody>
 
-              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0">
+              <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
                 <Button
                   type="button"
+                  variant="outline"
                   onPress={onClose}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] rounded-xl border-none cursor-pointer"
+                  className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 >
                   Hủy
                 </Button>
                 <Button
                   type="submit"
                   isDisabled={loading}
-                  className="px-5 py-2 text-xs font-bold text-white bg-accent hover:bg-accent-hover rounded-xl border-none flex items-center gap-1.5 cursor-pointer shadow-md"
+                  className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                 >
-                  {loading ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
+                  {loading ? <RefreshCw className="animate-spin mr-1.5" size={15} /> : <Save className="mr-1.5" size={15} />}
                   {isEditing ? "Lưu thay đổi" : "Tạo danh mục"}
                 </Button>
               </ModalFooter>
