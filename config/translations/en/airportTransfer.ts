@@ -138,14 +138,4 @@ export const airportTransfer = {
   baggageCount: "Number of bags",
   baggageWeight: "Luggage weight (kg)",
   capacityWarning: "The selected vehicle category does not have enough capacity for your passengers or luggage weight. Please choose a larger vehicle.",
-  homeSection: {
-    title: "Cam Ranh Airport Transfer ⇌ Nha Trang",
-    subtitle: "All-inclusive transfers from Cam Ranh International Airport (CXR) to Nha Trang city center. Always on time, free waiting on flight delays, transparent fixed rates.",
-    cityCenter: "Nha Trang City Center",
-    distanceText: "Distance ~35 km • Travel time ~35-40 mins along the scenic coastal boulevard",
-    freeNameBoard: "Free name board",
-    delayCovered: "Flight delay covered",
-    perTrip: "/trip",
-    viewAll: "View service details",
-  },
 };

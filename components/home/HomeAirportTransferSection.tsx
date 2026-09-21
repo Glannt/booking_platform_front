@@ -50,11 +50,10 @@ export function HomeAirportTransferSection({
   className = "",
 }: HomeAirportTransferSectionProps) {
   const { t, language } = useI18n();
-  const hs = t.airportTransfer.homeSection;
 
-  const resolvedTitle = title ?? hs.title;
-  const resolvedSubtitle = subtitle ?? hs.subtitle;
-  const resolvedViewAllText = viewAllText || hs.viewAll;
+  const resolvedTitle = title ?? t.airportTransfer.title;
+  const resolvedSubtitle = subtitle ?? t.airportTransfer.subtitle;
+  const resolvedViewAllText = viewAllText;
   const resolvedViewAllLink = viewAllLink.startsWith("/")
     ? `/${language}${viewAllLink}`
     : viewAllLink;
@@ -80,7 +79,7 @@ export function HomeAirportTransferSection({
               const capacity = pickLocal(pkg.capacityText, language);
               const luggage = pickLocal(pkg.luggageText, language);
               const features = pickLocal(pkg.features, language);
-              const bookingHref = `/${language}/airport-transfer?pickup=${t.airportTransfer.camRanhAirport}&destination=${hs.cityCenter}&direction=to-nhatrang`;
+              const bookingHref = `/${language}/airport-transfer?pickup=${t.airportTransfer.camRanhAirport}&destination=${t.airportTransfer.nhaTrangCenter}&direction=to-nhatrang`;
 
               return (
                 <div
@@ -166,7 +165,7 @@ export function HomeAirportTransferSection({
                               {formatPriceSync(pkg.minPrice, language)}
                             </span>
                             <span className="text-xs font-bold text-foreground/60">
-                              {hs.perTrip}
+                              {t.airportTransfer.priceUnit}
                             </span>
                           </div>
                         )}

@@ -640,16 +640,6 @@ priceSchemaInfoKm: string;
       baggageCount: string;
       baggageWeight: string;
       capacityWarning: string;
-      homeSection: {
-        title: string;
-        subtitle: string;
-        cityCenter: string;
-        distanceText: string;
-        freeNameBoard: string;
-        delayCovered: string;
-        perTrip: string;
-        viewAll: string;
-      };
     };
   rentCar: {
     title: string;
