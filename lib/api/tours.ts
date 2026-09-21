@@ -1,6 +1,7 @@
 import { apiFetch, ApiResponse } from "./client";
 import { MediaDto } from "./media";
 import type { ComponentItem } from "@/types/routeComponents";
+import type { DepositType } from "@/types/deposit";
 
 export interface TourTranslationDto {
   id?: number;
@@ -21,7 +22,6 @@ export interface TourOptionDto {
   id?: number;
   iconUrl?: string;
   colorText?: string;
-  colorIcon?: string;
   translations: TourOptionTranslationDto[];
 }
 
@@ -193,6 +193,9 @@ export interface TourDto {
   isRecommended?: boolean;
   successfulBookingsCount?: number;
   totalRevenue?: number;
+  depositType?: DepositType;
+  depositRate?: number;
+  depositAmount?: number;
   translations: TourTranslationDto[];
   options: TourOptionDto[];
   days: TourDayDto[];
@@ -216,6 +219,9 @@ export interface CreateTourRequest {
   isRecommended?: boolean;
   thumbnailId?: number;
   imageIds?: number[];
+  depositType?: DepositType;
+  depositRate?: number;
+  depositAmount?: number;
   translations: TourTranslationDto[];
   options: TourOptionDto[];
   days: TourDayDto[];

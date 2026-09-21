@@ -29,6 +29,25 @@ export interface SectionDto {
   translations: SectionTranslationDto[];
 }
 
+/**
+ * Sort sections for display by `orderIndex` ascending.
+ * Tie-break: when two sections share the same `orderIndex`, `SYSTEM_CATALOG`
+ * wins (renders above other types).
+ *
+ * ponytail: backend already sorts by orderIndex (findActiveByPagePath) but does
+ * NOT apply the SYSTEM_CATALOG tie-break, so we normalize client-side from one
+ * place. If the backend ever adds the tie-break, this can be deleted.
+ */
+export function sortSectionsForDisplay(sections: SectionDto[]): SectionDto[] {
+  return [...sections].sort((a, b) => {
+    const order = (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+    if (order !== 0) return order;
+    const aSystem = a.sectionType === "SYSTEM_CATALOG" ? 0 : 1;
+    const bSystem = b.sectionType === "SYSTEM_CATALOG" ? 0 : 1;
+    return aSystem - bSystem;
+  });
+}
+
 export interface CreateSectionRequest {
   sectionName: string;
   sectionType: string;

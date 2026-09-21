@@ -38,6 +38,7 @@ export interface SelfDriveRentalDto {
   minimumDays?: number;
   active: boolean;
   isContactOnly?: boolean;
+  sortOrder?: number;
 }
 export type RentalDto = SelfDriveRentalDto;
 

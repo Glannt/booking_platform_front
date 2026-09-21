@@ -1,4 +1,5 @@
 import { apiFetch, ApiResponse, ApiOptions } from "./client";
+import type { DepositType } from "@/types/deposit";
 
 export interface VehicleCategoryTranslationDto {
   id?: number;
@@ -508,6 +509,7 @@ export interface AirportRouteDto {
   airportId?: number;
   name?: string;
   airportName?: string;
+  airportCode?: string;
   distanceKm?: number;
   originName?: string;
   destinationName?: string;
@@ -516,6 +518,9 @@ export interface AirportRouteDto {
   destinationLat?: number;
   destinationLng?: number;
   active: boolean;
+  depositType?: DepositType;
+  depositRate?: number;
+  depositAmount?: number;
 }
 
 export async function getAirportRoutes(): Promise<ApiResponse<PaginatedResponse<AirportRouteDto>>> {
@@ -559,6 +564,9 @@ export interface AirportTransferPrice {
   feeOverchargeFixed?: number;
   currency: string;
   active: boolean;
+  depositType?: DepositType | null;
+  depositRate?: number | null;
+  depositAmount?: number | null;
 }
 
 export interface SurchargeRule {
