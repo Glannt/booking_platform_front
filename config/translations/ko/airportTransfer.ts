@@ -138,4 +138,14 @@ export const airportTransfer = {
   baggageCount: "수하물 개수",
   baggageWeight: "수하물 무게 (kg)",
   capacityWarning: "선택한 차량은 승객 수 또는 수하물 무게를 수용하기에 충분하지 않습니다. 더 큰 차량을 선택해 주세요.",
+  homeSection: {
+    title: "캄란 공항 ⇌ 나트랑 공항 픽업",
+    subtitle: "캄란 국제공항(CXR)에서 나트랑 시내까지 올인클루시브 픽업. 정시 도착 보장, 항공기 지연 시 무료 대기, 투명한 고정 요금.",
+    cityCenter: "나트랑 시내 중심",
+    distanceText: "거리 약 35km • 이동 시간 약 35-40분, 해안 대로를 따라 이동",
+    freeNameBoard: "네임보드 무료",
+    delayCovered: "항공기 지연 대기 무료",
+    perTrip: "/편도",
+    viewAll: "서비스 자세히 보기",
+  },
 };

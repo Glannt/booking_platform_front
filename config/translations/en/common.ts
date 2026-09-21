@@ -36,6 +36,7 @@ export const common = {
   option: "Option",
   overview: "Overview",
   bookNow: "Book Now",
+  followUs: "Follow us",
   edit: "Edit",
   bookingInProgress: "Booking...",
   reviewBeforeConfirm: "Please review the information below before finalizing your booking request.",

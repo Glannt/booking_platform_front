@@ -36,6 +36,7 @@ export const common = {
   option: "Вариант",
   overview: "Обзор",
   bookNow: "Забронировать",
+  followUs: "Подписывайтесь",
   edit: "Изменить",
   bookingInProgress: "Бронирование...",
   reviewBeforeConfirm: "Пожалуйста, проверьте информацию ниже перед подтверждением запроса на бронирование.",

@@ -36,6 +36,7 @@ export const common = {
   option: "Tùy chọn",
   overview: "Tổng quan",
   bookNow: "Đặt ngay",
+  followUs: "Theo dõi chúng tôi",
   edit: "Chỉnh sửa",
   bookingInProgress: "Đang đặt...",
   reviewBeforeConfirm: "Vui lòng kiểm tra kỹ thông tin trước khi hoàn tất yêu cầu đặt.",

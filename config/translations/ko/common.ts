@@ -36,6 +36,7 @@ export const common = {
   option: "옵션",
   overview: "개요",
   bookNow: "바로 예약",
+  followUs: "팔로우하세요",
   edit: "수정",
   bookingInProgress: "예약 중...",
   reviewBeforeConfirm: "예약 요청을 완료하기 전에 아래 정보를 확인해 주세요.",

@@ -138,4 +138,14 @@ export const airportTransfer = {
   baggageCount: "Số kiện hành lý",
   baggageWeight: "Khối lượng hành lý (kg)",
   capacityWarning: "Dòng xe đã chọn không đủ chỗ cho số lượng khách hoặc khối lượng hành lý của bạn. Vui lòng chọn xe lớn hơn.",
+  homeSection: {
+    // title: "Xe đưa đón Sân bay Cam Ranh ⇌ Nha Trang",
+    // subtitle: "Trọn gói từ Sân bay Quốc tế Cam Ranh (CXR) về trung tâm TP. Nha Trang. Đúng giờ tuyệt đối, miễn phí chờ khi hoãn chuyến, giá niêm yết minh bạch.",
+    // cityCenter: "Trung tâm TP. Nha Trang",
+    // distanceText: "Cự ly ~35 km • Thời gian di chuyển ~35-40 phút qua đại lộ Nguyễn Tất Thành ven biển thơ mộng",
+    // freeNameBoard: "Miễn phí bảng tên",
+    // delayCovered: "Không phí chờ delay",
+    perTrip: "/chuyến",
+    viewAll: "Xem chi tiết dịch vụ",
+  },
 };
