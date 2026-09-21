@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import { Button, Input, Table, toast, Select, ListBox, Tooltip } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
-import ServiceDetailModal from "@/components/admin/services/ServiceDetailModal";
-import ServiceCreateModal from "@/components/admin/services/ServiceCreateModal";
-import ServiceDeleteModal from "@/components/admin/services/ServiceDeleteModal";
+import {
+  ServiceCreateModal,
+  ServiceDetailModal,
+  ServiceDeleteModal,
+} from "@/components/admin/services";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 
@@ -223,7 +225,16 @@ export default function ServicesManagementPage() {
 
   return (
     <div className="w-full space-y-6">
-
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+          <Sparkles className="text-primary" size={26} />
+          Quản lý Dịch vụ
+        </h1>
+        <p className="text-xs text-foreground/60 mt-1">
+          Thiết lập danh mục dịch vụ, các tùy chọn dịch vụ đi kèm và quản lý giá bán.
+        </p>
+      </div>
 
       {/* Categories Seeding Info & Search Filters */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white dark:bg-black p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">

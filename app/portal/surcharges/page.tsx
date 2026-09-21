@@ -13,9 +13,11 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import { SurchargeCreateUpdateModal } from "@/components/admin/surcharges/SurchargeCreateUpdateModal";
-import { SurchargeDetailModal } from "@/components/admin/surcharges/SurchargeDetailModal";
-import { MappingModal } from "@/components/admin/surcharges/MappingModal";
+import {
+  SurchargeCreateUpdateModal,
+  SurchargeDetailModal,
+  MappingModal,
+} from "@/components/admin/surcharges";
 import {
   Button,
   Chip,

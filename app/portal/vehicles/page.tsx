@@ -16,11 +16,12 @@ import { Button, Pagination, SearchField, Spinner, Table, Tabs, toast, Tooltip }
 
 import { StatusChip } from "@/components/StatusChip";
 import { ImageGrid } from "@/components/ImageGallery";
-import VehicleCreateModal from "@/components/admin/vehicles/VehicleCreateModal";
-import VehicleDetailModal from "@/components/admin/vehicles/VehicleDetailModal";
-
-import VehicleCategoryCreateModal from "@/components/admin/vehicles/VehicleCategoryCreateModal";
-import VehicleCategoryDetailModal from "@/components/admin/vehicles/VehicleCategoryDetailModal";
+import {
+  VehicleCreateModal,
+  VehicleDetailModal,
+  VehicleCategoryCreateModal,
+  VehicleCategoryDetailModal,
+} from "@/components/admin/vehicles";
 
 import {
   getVehicles,
@@ -577,7 +578,16 @@ export default function VehiclesManagementPage() {
 
   return (
     <div className="w-full space-y-6">
-
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+          <Car className="text-primary" size={26} />
+          Quản lý Đội Xe
+        </h1>
+        <p className="text-xs text-foreground/60 mt-1">
+          Thiết lập danh sách phương tiện, phân loại danh mục xe và quản lý hình ảnh đội xe.
+        </p>
+      </div>
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 dark:border-black/10 gap-6">

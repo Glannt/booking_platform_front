@@ -16,17 +16,21 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import { RouteCreateUpdateModal } from "@/components/admin/intercity/RouteCreateUpdateModal";
-import { RouteDetailModal } from "@/components/admin/intercity/RouteDetailModal";
-import { PriceCreateUpdateModal } from "@/components/admin/intercity/PriceCreateUpdateModal";
-import { PriceDetailModal } from "@/components/admin/intercity/PriceDetailModal";
-import { SharedRouteModal } from "@/components/admin/intercity/SharedRouteModal";
-import { SharedOfficeModal } from "@/components/admin/intercity/SharedOfficeModal";
+import {
+  RouteCreateUpdateModal,
+  RouteDetailModal,
+  PriceCreateUpdateModal,
+  PriceDetailModal,
+  SharedRouteCreateUpdateModal,
+  SharedRouteDetailModal,
+  SharedOfficeModal,
+  SharedRouteModal,
+} from "@/components/admin/intercity";
 import type { SortDescriptor } from "@heroui/react";
 import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Tooltip, Typography, Popover } from "@heroui/react";
 import clsx from "clsx";
 import { useI18n } from "@/context/LanguageContext";
-import { AppStatusChip } from "@/components/common/AppStatusChip";
+import { AppStatusChip } from "@/components/common";
 
 import {
   getIntercityRoutes,
@@ -56,11 +60,11 @@ import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
 import { calcIntercityPrice, calcIntercityPrivatePrice } from "@/lib/pricing";
 import MultiImageUpload from "@/components/MultiImageUpload";
 import { backendUrl } from "@/lib/api/client";
-import { IntercityDepartureTimeModal } from "@/components/admin/vehicles/IntercityDepartureTimeModal";
+import { IntercityDepartureTimeModal } from "@/components/admin/vehicles";
 
 import { ColumnInterface } from "@/lib/interface/column.interface";
 import { headerColumns } from "@/config/headerColumns";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { PageSizeSelect } from "@/components/common";
 
 type TabKey = "routes" | "prices" | "shared_routes" | "offices";
 
@@ -139,6 +143,8 @@ export default function IntercityManagementPage() {
   const [sharedRoutes, setSharedRoutes] = useState<SharedRouteDto[]>([]);
   const [sharedRouteModalOpen, setSharedRouteModalOpen] = useState(false);
   const [editingSharedRoute, setEditingSharedRoute] = useState<SharedRouteDto | null>(null);
+  const [selectedSharedRouteForDetail, setSelectedSharedRouteForDetail] = useState<SharedRouteDto | null>(null);
+  const [sharedRouteDetailOpen, setSharedRouteDetailOpen] = useState(false);
 
   // Shared offices state
   const [sharedOffices, setSharedOffices] = useState<SharedOfficeDto[]>([]);
@@ -544,6 +550,17 @@ export default function IntercityManagementPage() {
 
   return (
     <div className="w-full space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+          <Route className="text-primary" size={26} />
+          Quản lý Tuyến xe Liên tỉnh
+        </h1>
+        <p className="text-xs text-foreground/60 mt-1">
+          Cấu hình danh sách tuyến đường liên tỉnh, bảng giá chi tiết theo loại xe và tuyến xe ghép.
+        </p>
+      </div>
+
       {/* Tabs */}
       <div className="flex border-b border-separator gap-6">
         <Tabs
@@ -1241,6 +1258,27 @@ export default function IntercityManagementPage() {
                                     <Button
                                       isIconOnly
                                       size="sm"
+                                      variant="tertiary"
+                                      aria-label={t.common?.details || "Xem chi tiết"}
+                                      onPress={() => {
+                                        setSelectedSharedRouteForDetail(r);
+                                        setSharedRouteDetailOpen(true);
+                                      }}
+                                    >
+                                      <Eye size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content>
+                                    <Tooltip.Arrow />
+                                    {t.common?.details || "Xem chi tiết"}
+                                  </Tooltip.Content>
+                                </Tooltip>
+
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
                                       variant="secondary"
                                       aria-label="Chỉnh sửa"
                                       onPress={() => {
@@ -1369,6 +1407,26 @@ export default function IntercityManagementPage() {
           </>
         ) : null}
       </div>
+
+      {/* Shared Route Detail Modal */}
+      {selectedSharedRouteForDetail && (
+        <SharedRouteDetailModal
+          isOpen={sharedRouteDetailOpen}
+          onClose={() => {
+            setSharedRouteDetailOpen(false);
+            setSelectedSharedRouteForDetail(null);
+          }}
+          route={selectedSharedRouteForDetail}
+          offices={sharedOffices}
+          onEdit={() => {
+            const toEdit = selectedSharedRouteForDetail;
+            setSharedRouteDetailOpen(false);
+            setSelectedSharedRouteForDetail(null);
+            setEditingSharedRoute(toEdit);
+            setSharedRouteModalOpen(true);
+          }}
+        />
+      )}
 
       {/* Shared Route Modal */}
       {sharedRouteModalOpen && (

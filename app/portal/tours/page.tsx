@@ -47,17 +47,18 @@ import {
     ModalBody,
     ModalFooter
 } from "@heroui/react";
-import { SvgIconRenderer } from "@/components/common/SvgIconRenderer";
+import { SvgIconRenderer, AppStatusChip } from "@/components/common";
 import { StatusChip } from "@/components/StatusChip";
-import { AppStatusChip } from "@/components/common/AppStatusChip";
 
-import TourCreateUpdateModal from "@/components/admin/tours/TourCreateUpdateModal";
-import TourDetailModal from "@/components/admin/tours/TourDetailModal";
-import TourCategoryModal from "@/components/admin/tours/TourCategoryModal";
-import TourPolicyCreateUpdateModal from "@/components/admin/tours/TourPolicyCreateUpdateModal";
-import TourPolicyDeleteModal from "@/components/admin/tours/TourPolicyDeleteModal";
-import TourConfigModal from "@/components/admin/tours/TourConfigModal";
-import TourPackageModal from "@/components/admin/tours/TourPackageModal";
+import {
+    TourCreateUpdateModal,
+    TourDetailModal,
+    TourCategoryModal,
+    TourPolicyCreateUpdateModal,
+    TourPolicyDeleteModal,
+    TourConfigModal,
+    TourPackageModal,
+} from "@/components/admin/tours";
 import {
     TourPolicyDto,
     getAdminTourPolicies,
@@ -619,6 +620,17 @@ export default function ToursManagementPage() {
 
     return (
         <div className="w-full space-y-6">
+            {/* Page Header */}
+            <div>
+                <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+                    <Compass className="text-primary" size={26} />
+                    Quản lý Tour Du Lịch
+                </h1>
+                <p className="text-xs text-foreground/60 mt-1">
+                    Quản lý danh sách tour du lịch, lịch trình chi tiết, giá vé và thông tin liên quan.
+                </p>
+            </div>
+
             {/* Top Navigation Tabs */}
             <div className="flex items-center gap-2 border-b border-separator pb-3">
                 <button

@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
   Layers,
   Edit3,
+  Sparkles,
 } from "lucide-react";
 import {
   Button,
@@ -26,16 +27,17 @@ import {
   Tooltip
 } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
-import SectionCreateModal from "@/components/admin/sections/SectionCreateModal";
-import SectionDetailModal from "@/components/admin/sections/SectionDetailModal";
+import { SectionCreateModal, SectionDetailModal } from "@/components/admin/sections";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 import {
   getSectionsByPagePath,
   deleteSection,
+  createSection,
   SectionDto,
 } from "@/lib/api/sections";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { DEFAULT_HOME_SECTIONS } from "@/lib/api/section-templates";
+import { PageSizeSelect } from "@/components/common";
 
 const PAGE_PATHS = [
   { value: "/", label: "Trang chủ" },
@@ -98,6 +100,8 @@ export default function SectionsManagementPage() {
     fetchSections();
   }, [filterPagePath]);
 
+  const [initLoading, setInitLoading] = useState(false);
+
   const handleDelete = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa section này không?")) return;
     try {
@@ -106,6 +110,35 @@ export default function SectionsManagementPage() {
       setSections((prev) => prev.filter((s) => s.id !== id));
     } catch {
       showToast("Xóa section thất bại.", "error");
+    }
+  };
+
+  const handleInitDefaultSections = async () => {
+    if (!window.confirm("Bạn có muốn khởi tạo các Sections mẫu cho Trang chủ? Các section đã tồn tại sẽ không bị tạo trùng.")) {
+      return;
+    }
+    setInitLoading(true);
+    try {
+      let createdCount = 0;
+      for (const defSec of DEFAULT_HOME_SECTIONS) {
+        const exists = sections.some(
+          (s) => s.sectionType === defSec.sectionType && s.sectionName === defSec.sectionName
+        );
+        if (!exists) {
+          await createSection(defSec as any);
+          createdCount++;
+        }
+      }
+      if (createdCount > 0) {
+        showToast(`Đã khởi tạo thành công ${createdCount} sections mẫu cho Trang chủ!`, "success");
+      } else {
+        showToast("Tất cả sections mẫu đã tồn tại trong hệ thống.", "success");
+      }
+      await fetchSections();
+    } catch (err: any) {
+      showToast("Khởi tạo thất bại: " + (err?.message || "Lỗi máy chủ"), "error");
+    } finally {
+      setInitLoading(false);
     }
   };
 
@@ -166,17 +199,30 @@ export default function SectionsManagementPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Filter Bar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white dark:bg-black/10 p-6 rounded-2xl border border-yellow-100 dark:border-yellow-100 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 flex-grow max-w-2xl">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-accent/10 text-accent">
+              <Layers size={22} />
+            </span>
+            <span>Quản lý Sections & Banner Trang Chủ</span>
+          </h1>
+          <p className="text-xs text-foreground/60 mt-1">
+            Cấu hình giao diện động, banner tiếp thị và các section sản phẩm cho toàn hệ thống
+          </p>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white dark:bg-[var(--bg-surface)] p-4 rounded-2xl border border-separator shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 flex-grow">
           <SearchField
-            name="search"
+            className="w-72"
             value={searchTerm}
-            onChange={(e: string) => setSearchTerm(e)}
-            fullWidth
-            className="min-w-[200px]"
+            onChange={setSearchTerm}
           >
-            <SearchField.Group className="rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-transparent text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
+            <SearchField.Group className="h-10 border border-separator rounded-xl">
               <SearchField.SearchIcon />
               <SearchField.Input
                 className="w-full"
@@ -202,11 +248,11 @@ export default function SectionsManagementPage() {
             }}
             className="w-56"
           >
-            <Select.Trigger className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[var(--bg-card)] text-sm font-bold text-slate-850 dark:text-slate-200 flex items-center justify-between cursor-pointer min-w-[200px]">
+            <Select.Trigger className="h-10 px-3 rounded-xl border border-separator bg-muted/40 dark:bg-[var(--bg-card)] text-sm font-bold text-foreground flex items-center justify-between cursor-pointer min-w-[200px]">
               <Select.Value />
               <Select.Indicator />
             </Select.Trigger>
-            <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
+            <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
               <ListBox>
                 {PAGE_PATHS.map((p) => (
                   <ListBox.Item key={p.value} id={p.value} textValue={p.label}>
@@ -222,12 +268,25 @@ export default function SectionsManagementPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button
             variant="outline"
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-muted/50 hover:bg-muted dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-foreground/80 shadow-sm border border-separator cursor-pointer"
             onClick={fetchSections}
           >
             <RefreshCw size={16} className="mr-1.5" />
             Làm mới
           </Button>
+
+          {filterPagePath === "/" && (
+            <Button
+              variant="secondary"
+              isDisabled={initLoading}
+              className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+              onClick={handleInitDefaultSections}
+            >
+              {initLoading ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={16} />}
+              <span>Khởi tạo Sections mẫu</span>
+            </Button>
+          )}
+
           <Button
             className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
             onClick={() => {
@@ -396,7 +455,7 @@ export default function SectionsManagementPage() {
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800">
           <p className="text-xs text-slate-500">
             Hiển thị {sorted.length === 0 ? 0 : (page - 1) * pageSize + 1}–
-            {Math.min(page * pageSize, sorted.length)} / {sorted.length}
+            {Math.min(page * pageSize, sorted.length)} / {sorted.length} kết quả
           </p>
           <Pagination size="sm">
             <Pagination.Content>

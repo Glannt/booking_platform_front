@@ -11,12 +11,10 @@ import {
   getCurrencies, deleteCurrency, syncCurrencyRates,
   CurrencyDto
 } from "@/lib/api/currencies";
-import CurrencyCreateModal from "@/components/admin/currencies/CurrencyCreateModal";
-import CurrencyDetailModal from "@/components/admin/currencies/CurrencyDetailModal";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { CurrencyCreateModal, CurrencyDetailModal } from "@/components/admin/currencies";
+import { PageSizeSelect, AppStatusChip } from "@/components/common";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
-import { AppStatusChip } from "@/components/common/AppStatusChip";
 
 export default function CurrenciesPage() {
   const { t } = useI18n();

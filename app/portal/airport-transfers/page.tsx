@@ -16,9 +16,13 @@ import { Button, Chip, Pagination, SearchField, Spinner, Table, Tabs, toast, Too
 import { StatusChip } from "@/components/StatusChip";
 import clsx from "clsx";
 
-import AirportRouteModal from "@/components/admin/vehicles/AirportRouteModal";
-import AirportTransferModal from "@/components/admin/vehicles/AirportTransferModal";
-import AirportModal from "@/components/admin/vehicles/AirportModal";
+import {
+  AirportModal,
+  AirportRouteCreateUpdateModal,
+  AirportRouteDetailModal,
+  AirportTransferCreateUpdateModal,
+  AirportTransferDetailModal,
+} from "@/components/admin/vehicles";
 
 import {
   getVehicleCategories,
@@ -55,13 +59,13 @@ export default function AirportTransferManagementPage() {
   const [selectedAirport, setSelectedAirport] = useState<AirportDto | null>(null);
   const [airportDefaultEditMode, setAirportDefaultEditMode] = useState(false);
 
-  const [routeModalOpen, setRouteModalOpen] = useState(false);
+  const [routeDetailOpen, setRouteDetailOpen] = useState(false);
+  const [routeFormOpen, setRouteFormOpen] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<AirportRouteDto | null>(null);
-  const [routeDefaultEditMode, setRouteDefaultEditMode] = useState(false);
 
-  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [transferDetailOpen, setTransferDetailOpen] = useState(false);
+  const [transferFormOpen, setTransferFormOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState<AirportTransferPrice | null>(null);
-  const [transferDefaultEditMode, setTransferDefaultEditMode] = useState(false);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") toast.success(message);
@@ -136,8 +140,58 @@ export default function AirportTransferManagementPage() {
 
   const handleAdd = () => {
     if (activeTab === "airports") { setSelectedAirport(null); setAirportDefaultEditMode(true); setAirportModalOpen(true); }
-    else if (activeTab === "routes") { setSelectedRoute(null); setRouteDefaultEditMode(true); setRouteModalOpen(true); }
-    else { setSelectedTransfer(null); setTransferDefaultEditMode(true); setTransferModalOpen(true); }
+    else if (activeTab === "routes") { setSelectedRoute(null); setRouteFormOpen(true); }
+    else { setSelectedTransfer(null); setTransferFormOpen(true); }
+  };
+
+  const getRouteAirportDisplay = (r: AirportRouteDto) => {
+    const matched = r.airportId
+      ? airports.find(a => a.id === r.airportId)
+      : airports.find(a => a.code && r.code?.toUpperCase().includes(a.code.toUpperCase()));
+    if (matched) {
+      return `${matched.name} (${matched.code})`;
+    }
+    return r.airportName || "N/A";
+  };
+
+  const getRouteDistanceDisplay = (r: AirportRouteDto) => {
+    if (r.distanceKm != null && r.distanceKm > 0) {
+      return `${r.distanceKm} km`;
+    }
+    const matchedPrice = transfers.find(t => t.airportRouteId === r.id);
+    if (matchedPrice?.baseKm) {
+      return `${matchedPrice.baseKm} km (Cơ bản)`;
+    }
+    return "—";
+  };
+
+  const getRouteDepositDisplay = (r: AirportRouteDto) => {
+    if (r.depositType === "FIXED") {
+      return r.depositAmount ? `${r.depositAmount.toLocaleString()} VND (Cố định)` : "Cố định";
+    }
+    return `${r.depositRate ?? 20}%`;
+  };
+
+  const getTransferDepositDisplay = (tr: AirportTransferPrice) => {
+    if (tr.depositType === "FIXED") {
+      return tr.depositAmount ? `${tr.depositAmount.toLocaleString()} VND (Cố định)` : "Cố định";
+    }
+    if (tr.depositType === "PERCENT") {
+      return `${tr.depositRate ?? 20}%`;
+    }
+    // Inherit from route default
+    const route = routes.find(r => r.id === tr.airportRouteId);
+    if (route) {
+      const rateStr = route.depositType === "FIXED"
+        ? (route.depositAmount ? `${route.depositAmount.toLocaleString()} VND` : "Cố định")
+        : `${route.depositRate ?? 20}%`;
+      return (
+        <span className="text-foreground/70">
+          {rateStr} <span className="text-[10px] text-primary font-bold">(kế thừa tuyến)</span>
+        </span>
+      );
+    }
+    return "20% (mặc định)";
   };
 
   // ── Airports ──
@@ -263,6 +317,17 @@ export default function AirportTransferManagementPage() {
 
   return (
     <div className="w-full space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+          <Plane className="text-primary" size={26} />
+          Đưa đón Sân bay
+        </h1>
+        <p className="text-xs text-foreground/60 mt-1">
+          Quản lý danh sách sân bay, cấu hình tuyến đường và bảng giá xe đưa đón sân bay.
+        </p>
+      </div>
+
       {/* Tabs */}
       <div className="flex border-b border-separator gap-6">
         <Tabs
@@ -299,7 +364,7 @@ export default function AirportTransferManagementPage() {
       {/* Toolbar */}
       <div className="flex flex-col lg:flex-row justify-between gap-4 p-6 rounded-2xl border">
         <SearchField name="search" value={searchTerm} onChange={(e: string) => setSearchTerm(e)} fullWidth className="min-w-[200px]">
-          <SearchField.Group className="rounded-xl border border-border bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
+          <SearchField.Group className="rounded-xl border border-border bg-slate-50 dark:bg-black/10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold">
             <SearchField.SearchIcon />
             <SearchField.Input className="w-full" placeholder={
               activeTab === "airports"
@@ -344,8 +409,8 @@ export default function AirportTransferManagementPage() {
         ) : activeTab === "airports" ? (
           filteredAirports.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <Plane className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Không tìm thấy kết quả</h3>
+              <Plane className="text-foreground/30 mb-4" size={48} />
+              <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy kết quả</h3>
             </div>
           ) : (
             <Table>
@@ -472,8 +537,8 @@ export default function AirportTransferManagementPage() {
         ) : activeTab === "routes" ? (
           filteredRoutes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <Route className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Không tìm thấy kết quả</h3>
+              <Route className="text-foreground/30 mb-4" size={48} />
+              <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy kết quả</h3>
             </div>
           ) : (
             <Table>
@@ -504,8 +569,13 @@ export default function AirportTransferManagementPage() {
                       <Table.Row key={r.id} id={String(r.id)}>
                         <Table.Cell>#{r.id}</Table.Cell>
                         <Table.Cell className="font-bold">{r.code}</Table.Cell>
-                        <Table.Cell>{r.airportName || "N/A"}</Table.Cell>
-                        <Table.Cell>{r.distanceKm ? `${r.distanceKm} km` : "—"}</Table.Cell>
+                        <Table.Cell className="font-medium text-foreground">{getRouteAirportDisplay(r)}</Table.Cell>
+                        <Table.Cell>{getRouteDistanceDisplay(r)}</Table.Cell>
+                        <Table.Cell>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300/40">
+                            {getRouteDepositDisplay(r)}
+                          </span>
+                        </Table.Cell>
                         <Table.Cell>
                           <StatusChip status={String(r.active)} type="active" />
                         </Table.Cell>
@@ -518,7 +588,7 @@ export default function AirportTransferManagementPage() {
                                   size="sm"
                                   variant="tertiary"
                                   aria-label="Xem tuyến sân bay"
-                                  onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(false); setRouteModalOpen(true); }}
+                                  onPress={() => { setSelectedRoute(r); setRouteDetailOpen(true); }}
                                 >
                                   <Eye size={16} />
                                 </Button>
@@ -536,7 +606,7 @@ export default function AirportTransferManagementPage() {
                                   size="sm"
                                   variant="secondary"
                                   aria-label="Chỉnh sửa tuyến sân bay"
-                                  onPress={() => { setSelectedRoute(r); setRouteDefaultEditMode(true); setRouteModalOpen(true); }}
+                                  onPress={() => { setSelectedRoute(r); setRouteFormOpen(true); }}
                                 >
                                   <Edit3 size={16} />
                                 </Button>
@@ -600,8 +670,8 @@ export default function AirportTransferManagementPage() {
         ) : (
           filteredTransfers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <DollarSign className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Không tìm thấy kết quả</h3>
+              <DollarSign className="text-foreground/30 mb-4" size={48} />
+              <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy kết quả</h3>
             </div>
           ) : (
             <Table>
@@ -643,7 +713,7 @@ export default function AirportTransferManagementPage() {
                             <span className="font-bold text-emerald-600 dark:text-emerald-400">
                               +{t.zoneBufferKm ?? 2} km
                             </span>
-                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">
+                            <span className="text-foreground/50 block text-[10px]">
                               (đến {((t.baseKm ?? 0) + (t.zoneBufferKm ?? 2)).toFixed(1)} km)
                             </span>
                           </Table.Cell>
@@ -659,6 +729,9 @@ export default function AirportTransferManagementPage() {
                               </span>
                             )}
                           </Table.Cell>
+                          <Table.Cell className="text-xs font-semibold">
+                            {getTransferDepositDisplay(t)}
+                          </Table.Cell>
                           <Table.Cell>
                             <StatusChip status={String(t.active)} type="active" />
                           </Table.Cell>
@@ -671,7 +744,7 @@ export default function AirportTransferManagementPage() {
                                     size="sm"
                                     variant="tertiary"
                                     aria-label="Xem bảng giá đưa đón"
-                                    onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(false); setTransferModalOpen(true); }}
+                                    onPress={() => { setSelectedTransfer(t); setTransferDetailOpen(true); }}
                                   >
                                     <Eye size={16} />
                                   </Button>
@@ -689,7 +762,7 @@ export default function AirportTransferManagementPage() {
                                     size="sm"
                                     variant="secondary"
                                     aria-label="Chỉnh sửa bảng giá đưa đón"
-                                    onPress={() => { setSelectedTransfer(t); setTransferDefaultEditMode(true); setTransferModalOpen(true); }}
+                                    onPress={() => { setSelectedTransfer(t); setTransferFormOpen(true); }}
                                   >
                                     <Edit3 size={16} />
                                   </Button>
@@ -755,8 +828,68 @@ export default function AirportTransferManagementPage() {
       </div>
 
       <AirportModal isOpen={airportModalOpen} onClose={() => { setAirportModalOpen(false); setSelectedAirport(null); setAirportDefaultEditMode(false); }} airport={selectedAirport} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={airportDefaultEditMode} />
-      <AirportRouteModal isOpen={routeModalOpen} onClose={() => { setRouteModalOpen(false); setSelectedRoute(null); }} route={selectedRoute} airports={airports} categories={categories} routes={routes} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={routeDefaultEditMode} />
-      <AirportTransferModal isOpen={transferModalOpen} onClose={() => { setTransferModalOpen(false); setSelectedTransfer(null); }} transfer={selectedTransfer} routes={routes} categories={categories} onSaveSuccess={fetchData} showToast={showToast} defaultEditMode={transferDefaultEditMode} />
+      
+      {/* Route Modals */}
+      {selectedRoute && (
+        <AirportRouteDetailModal
+          isOpen={routeDetailOpen}
+          onClose={() => {
+            setRouteDetailOpen(false);
+            setSelectedRoute(null);
+          }}
+          route={selectedRoute}
+          airports={airports}
+          categories={categories}
+          routes={routes}
+          onEdit={() => {
+            setRouteDetailOpen(false);
+            setRouteFormOpen(true);
+          }}
+          onPriceChanged={fetchData}
+          showToast={showToast}
+        />
+      )}
+      <AirportRouteCreateUpdateModal
+        isOpen={routeFormOpen}
+        onClose={() => {
+          setRouteFormOpen(false);
+          setSelectedRoute(null);
+        }}
+        route={selectedRoute}
+        airports={airports}
+        onSaveSuccess={fetchData}
+        showToast={showToast}
+      />
+
+      {/* Transfer Modals */}
+      {selectedTransfer && (
+        <AirportTransferDetailModal
+          isOpen={transferDetailOpen}
+          onClose={() => {
+            setTransferDetailOpen(false);
+            setSelectedTransfer(null);
+          }}
+          transfer={selectedTransfer}
+          routes={routes}
+          categories={categories}
+          onEdit={() => {
+            setTransferDetailOpen(false);
+            setTransferFormOpen(true);
+          }}
+        />
+      )}
+      <AirportTransferCreateUpdateModal
+        isOpen={transferFormOpen}
+        onClose={() => {
+          setTransferFormOpen(false);
+          setSelectedTransfer(null);
+        }}
+        transfer={selectedTransfer}
+        routes={routes}
+        categories={categories}
+        onSaveSuccess={fetchData}
+        showToast={showToast}
+      />
     </div>
   );
 }

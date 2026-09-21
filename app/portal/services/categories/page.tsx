@@ -16,10 +16,9 @@ import {
 } from "lucide-react";
 import { Button, Input, Table, toast, Tooltip } from "@heroui/react";
 import clsx from "clsx";
-import CategoryCreateModal from "@/components/admin/categories/CategoryCreateModal";
-import CategoryDetailModal from "@/components/admin/categories/CategoryDetailModal";
+import { CategoryCreateModal, CategoryDetailModal } from "@/components/admin/categories";
 import { headerColumns } from "@/config/headerColumns";
-import { AppStatusChip } from "@/components/common/AppStatusChip";
+import { AppStatusChip } from "@/components/common";
 
 import { getCategories, deleteCategory, ServiceCategoryDto, ServiceCategoryTranslationDto } from "@/lib/api/categories";
 import { backendUrl } from "@/lib/api/client";
@@ -33,19 +32,6 @@ const fallbackCategories: ServiceCategoryDto[] = [
     translations: [
       { locale: "vi", name: "Tour Du Lịch", slug: "tour-du-lich", description: "Các tour tham quan trọn gói" },
       { locale: "en", name: "Sightseeing Tours", slug: "sightseeing-tours", description: "All-inclusive guided sightseeing tours" },
-      { locale: "ko", name: "관광 투어", slug: "sightseeing-tours-ko", description: "가이드 관광 투어 상품" },
-      { locale: "ru", name: "Экскурсии", slug: "sightseeing-tours-ru", description: "Экскурсионные туры" }
-    ]
-  },
-  {
-    id: 2,
-    iconImageId: 102,
-    status: "published",
-    translations: [
-      { locale: "vi", name: "Dịch Vụ Xe", slug: "dich-vu-xe", description: "Thuê xe và đưa đón sân bay" },
-      { locale: "en", name: "Car Transfers", slug: "car-transfers", description: "Private airport pickup and vehicle transfers" },
-      { locale: "ko", name: "차량 샌딩", slug: "car-transfers-ko", description: "개인 공항 픽업 및 차량 샌딩" },
-      { locale: "ru", name: "Трансферы", slug: "car-transfers-ru", description: "Аренда авто и трансферы" }
     ]
   }
 ];
@@ -127,16 +113,29 @@ export default function ServiceCategoriesPage() {
 
   return (
     <div className="w-full space-y-6">
-
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-accent/10 text-accent">
+              <Layers size={22} />
+            </span>
+            <span>Danh mục Tour & Dịch vụ</span>
+          </h1>
+          <p className="text-xs text-foreground/60 mt-1">
+            Phân loại và cấu hình danh mục các tour du lịch, bảng giá dịch vụ
+          </p>
+        </div>
+      </div>
 
       {/* Search & Actions */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-white dark:bg-black p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-surface p-6 rounded-2xl border border-separator shadow-sm">
         <div className="relative flex-grow max-w-xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40" size={18} />
           <Input
             type="text"
             placeholder="Tìm kiếm danh mục..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-separator bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -145,11 +144,11 @@ export default function ServiceCategoriesPage() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button
             variant="outline"
-            className="rounded-xl font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-200 shadow-sm border border-transparent"
+            className="rounded-xl font-bold bg-muted hover:bg-muted/80 text-foreground shadow-sm border border-separator"
             onClick={fetchCategories}
           >
             <RefreshCw size={16} className="mr-1.5" />
-            "Làm Mới"
+            Làm Mới
           </Button>
 
           <Button
@@ -157,26 +156,26 @@ export default function ServiceCategoriesPage() {
             onClick={() => setCreateModalOpen(true)}
           >
             <Plus size={16} />
-            <span>{"Thêm Danh Mục"}</span>
+            <span>Thêm Danh Mục</span>
           </Button>
         </div>
       </div>
 
       {/* Category List Card/Table */}
-      <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">"Đang tải danh mục..."</p>
+            <p className="text-sm font-bold text-foreground/60">Đang tải danh mục...</p>
           </div>
         ) : filteredCategories.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Layers className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              "Chưa có danh mục nào"
+            <Layers className="text-foreground/30 mb-4" size={48} />
+            <h3 className="text-lg font-bold text-foreground mb-1">
+              Chưa có danh mục nào
             </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              "Hãy tạo danh mục dịch vụ đầu tiên để phân loại các tour du lịch và bảng giá xe."
+            <p className="text-sm text-foreground/60 max-w-sm">
+              Hãy tạo danh mục dịch vụ đầu tiên để phân loại các tour du lịch và bảng giá xe.
             </p>
           </div>
         ) : (
@@ -184,7 +183,7 @@ export default function ServiceCategoriesPage() {
             <Table aria-label="Bảng quản lý danh mục" className="w-full text-left">
               <Table.ScrollContainer>
                 <Table.Content>
-                  <Table.Header className="bg-slate-50 dark:bg-[var(--bg-card)]/20 border-b border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                  <Table.Header className="bg-muted/30 border-b border-separator text-foreground/60 text-xs font-bold uppercase tracking-wider">
                     {headerColumns.serviceCategories(t).map((col) => (
                       <Table.Column
                         key={col.id}
@@ -196,23 +195,23 @@ export default function ServiceCategoriesPage() {
                       </Table.Column>
                     ))}
                   </Table.Header>
-                  <Table.Body className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <Table.Body className="divide-y divide-separator">
                     {filteredCategories.map((cat) => {
                       const trans = cat.translations.find(t => t.locale === language) || cat.translations[0];
                       return (
                         <Table.Row
                           key={cat.id}
-                          className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-page)]/20 transition-colors duration-150"
+                          className="hover:bg-muted/20 transition-colors duration-150"
                         >
-                          <Table.Cell className="px-6 py-4 font-mono text-xs text-slate-400">#{cat.id}</Table.Cell>
-                          <Table.Cell className="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                          <Table.Cell className="px-6 py-4 font-mono text-xs text-foreground/40">#{cat.id}</Table.Cell>
+                          <Table.Cell className="px-6 py-4 font-bold text-foreground">
                             <div>
                               <span>{trans?.name || "Untitled Category"}</span>
-                              <span className="block text-xs font-medium text-slate-400 mt-0.5 line-clamp-1">{trans?.description || "No description."}</span>
+                              <span className="block text-xs font-medium text-foreground/50 mt-0.5 line-clamp-1">{trans?.description || "No description."}</span>
                             </div>
                           </Table.Cell>
-                          <Table.Cell className="px-6 py-4 font-mono text-xs text-slate-500">{trans?.slug || "no-slug"}</Table.Cell>
-                          <Table.Cell className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                          <Table.Cell className="px-6 py-4 font-mono text-xs text-foreground/60">{trans?.slug || "no-slug"}</Table.Cell>
+                          <Table.Cell className="px-6 py-4 text-sm font-semibold text-foreground/70">
                             {cat.iconImageId ? `#${cat.iconImageId}` : "—"}
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4">

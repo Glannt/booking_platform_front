@@ -193,130 +193,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     }
   };
 
-  const isBookingsMgmt = pathname?.startsWith("/portal/bookings") || pathname?.startsWith("/admin/bookings");
-  const isBookingTours = pathname === "/portal/bookings" || pathname === "/admin/bookings";
-  const isBookingSelfDrive = pathname?.startsWith("/portal/bookings/self-drive") || pathname?.startsWith("/admin/bookings/self-drive");
-  const isBookingIntercity = pathname?.startsWith("/portal/bookings/intercity") || pathname?.startsWith("/admin/bookings/intercity");
-  const isBookingAirport = pathname?.startsWith("/portal/bookings/airport-transfers") || pathname?.startsWith("/admin/bookings/airport-transfers");
-  const isToursMgmt = pathname?.startsWith("/portal/tours") || pathname?.startsWith("/admin/tours");
-  const isVehiclesMgmt = pathname?.startsWith("/portal/vehicles") || pathname?.startsWith("/admin/vehicles");
-  const isFaqsMgmt = pathname?.startsWith("/portal/services/faqs") || pathname?.startsWith("/admin/services/faqs");
-  const isSettings = pathname?.startsWith("/portal/settings") || pathname?.startsWith("/admin/settings");
-  const isRoles = pathname?.startsWith("/portal/roles") || pathname?.startsWith("/admin/roles");
-  const isSections = pathname?.startsWith("/portal/sections") || pathname?.startsWith("/admin/sections");
-  const isContactsMgmt = pathname?.startsWith("/portal/contacts") || pathname?.startsWith("/admin/contacts");
-  const isRentalBookings = pathname?.startsWith("/portal/rental-bookings") || pathname?.startsWith("/admin/rental-bookings");
-  const isIntercityMgmt = pathname?.startsWith("/portal/intercity") || pathname?.startsWith("/admin/intercity");
-  const isSurchargesMgmt = pathname?.startsWith("/portal/surcharges") || pathname?.startsWith("/admin/surcharges");
-  const isCurrenciesMgmt = pathname?.startsWith("/portal/currencies") || pathname?.startsWith("/admin/currencies");
-  const isFlightsMgmt = pathname?.startsWith("/portal/flights") || pathname?.startsWith("/admin/flights");
-
-  const getPageTitle = () => {
-    if (isBookingSelfDrive) {
-      return "Quản lý Đơn đặt xe tự lái";
-    }
-    if (isBookingIntercity) {
-      return "Quản lý Đơn đặt xe Liên tỉnh";
-    }
-    if (isBookingAirport) {
-      return "Quản lý Đơn đưa đón sân bay";
-    }
-    if (isRentalBookings) {
-      return "Quản lý Đơn thuê xe tự lái";
-    }
-    if (isIntercityMgmt) {
-      return "Quản lý Tuyến xe Liên tỉnh";
-    }
-    if (isSurchargesMgmt) {
-      return "Quản lý Phụ thu";
-    }
-    if (isContactsMgmt) {
-      return "Cấu hình Liên hệ";
-    }
-    if (isCurrenciesMgmt) {
-      return "Tiền tệ & Tỉ giá";
-    }
-    if (isRoles) {
-      return "Quản lý Phân quyền";
-    }
-    if (isSections) {
-      return "Quản lý Sections / Banner";
-    }
-    if (isBookingTours) {
-      return "Quản lý Đơn đặt Tours";
-    }
-    if (isBookingsMgmt) {
-      return "Quản lý Đơn đặt";
-    }
-    if (isFaqsMgmt) {
-      return "Quản lý Feedback & Đánh giá";
-    }
-    if (isToursMgmt) {
-      return "Quản lý Tour Du Lịch";
-    }
-    if (isVehiclesMgmt) {
-      return "Quản lý Xe";
-    }
-    if (isFlightsMgmt) {
-      return "Tra cứu chuyến bay";
-    }
-    if (isSettings) {
-      return "Cài đặt tài khoản";
-    }
-    return "Tổng quan Hệ thống";
-  };
-
-  const getPageSubtitle = () => {
-    if (isBookingSelfDrive) {
-      return "Quản lý danh sách đơn đặt xe tự lái, trạng thái và thông tin khách hàng.";
-    }
-    if (isBookingIntercity) {
-      return "Quản lý danh sách đơn đặt xe liên tỉnh, trạng thái và thông tin khách hàng.";
-    }
-    if (isBookingAirport) {
-      return "Quản lý danh sách đơn đặt đưa đón sân bay, trạng thái và thông tin khách hàng.";
-    }
-    if (isRentalBookings) {
-      return "Theo dõi danh sách, trạng thái thanh toán và thông tin giao nhận xe tự lái.";
-    }
-    if (isIntercityMgmt) {
-      return "Cấu hình danh sách tuyến đường liên tỉnh, bảng giá chi tiết theo loại xe và phụ phí thời gian.";
-    }
-    if (isContactsMgmt) {
-      return "Quản lý các kênh liên hệ của khách hàng như Zalo, Phone, KakaoTalk, Whatsapp.";
-    }
-    if (isCurrenciesMgmt) {
-      return "Quản lý loại tiền tệ, tỉ giá so với VND và hiển thị giá theo ngôn ngữ.";
-    }
-    if (isBookingTours) {
-      return "Theo dõi và cập nhật trạng thái đơn đặt tour, dịch vụ, thông tin khách hàng và thanh toán.";
-    }
-    if (isBookingsMgmt) {
-      return "Theo dõi và quản lý tất cả các đơn đặt trong hệ thống.";
-    }
-    if (isFaqsMgmt) {
-      return "Tạo và quản lý đánh giá khách hàng, chọn hiển thị trên trang chủ.";
-    }
-    if (isToursMgmt) {
-      return "Quản lý danh sách tour du lịch, lịch trình chi tiết, giá vé và thông tin liên quan.";
-    }
-    if (isVehiclesMgmt) {
-      return "Thiết lập đội xe, danh mục xe, tuyến đường và bảng giá đưa đón sân bay.";
-    }
-    if (isRoles) {
-      return "Quản lý quyền hạn của từng vai trò quản trị viên.";
-    }
-    if (isSections) {
-      return "Quản lý banner, nội dung hiển thị trên từng trang của website.";
-    }
-    if (isFlightsMgmt) {
-      return "Tra cứu thông tin chuyến bay theo số hiệu và xem lịch sử tra cứu.";
-    }
-    if (isSettings) {
-      return "Thiết lập cấu hình tài khoản và phân quyền quản trị.";
-    }
-    return "Báo cáo số liệu đặt xe, doanh thu và kiểm tra lịch sử hoạt động.";
-  };
+  const isDashboard = pathname === "/portal" || pathname === "/admin";
 
   const isLoginPage = pathname === "/portal/login" || pathname === "/admin/login";
 
@@ -354,7 +231,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   <Button
                     isIconOnly
                     variant="ghost"
-                    className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 shadow-sm bg-transparent"
+                    className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-separator text-foreground/70 shadow-sm bg-transparent"
                     onClick={() => mobileDrawerState.open()}
                     aria-label="Open menu"
                   >
@@ -391,20 +268,22 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   </Drawer.Backdrop>
                 </Drawer>
 
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    {getPageTitle()}
-                  </h1>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    {getPageSubtitle()}
-                  </p>
-                </div>
+                {isDashboard && (
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+                      Tổng quan Hệ thống
+                    </h1>
+                    <p className="text-sm font-medium text-foreground/60 mt-1">
+                      Báo cáo số liệu đặt xe, doanh thu và kiểm tra lịch sử hoạt động.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Header Actions */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 ml-auto">
                 {/* Theme Selector */}
-                <ThemeSwitch className="flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:border-slate-300 w-10 h-10 rounded-xl text-slate-700 dark:text-slate-200 shadow-sm min-w-0 p-0 flex-shrink-0" />
+                <ThemeSwitch className="flex items-center justify-center border border-separator hover:border-foreground/30 w-10 h-10 rounded-xl text-foreground/80 shadow-sm min-w-0 p-0 flex-shrink-0" />
               </div>
             </div>
 

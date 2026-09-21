@@ -29,10 +29,10 @@ import {
   Tooltip
 } from "@heroui/react";
 import clsx from "clsx";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { PageSizeSelect } from "@/components/common";
 
 import { StatusChip } from "@/components/StatusChip";
-import BookingEditModal from "@/components/admin/bookings/BookingEditModal";
+import { BookingEditModal } from "@/components/admin/bookings";
 import {
   BookingDto,
   BookingItemDto,

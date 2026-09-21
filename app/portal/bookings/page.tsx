@@ -29,10 +29,12 @@ import {
 } from "@heroui/react";
 import { BookingDto, getBookings } from "@/lib/api/bookings";
 import { StatusChip } from "@/components/StatusChip";
-import BookingDetailModal from "@/components/admin/bookings/BookingDetailModal";
-import BookingEditModal from "@/components/admin/bookings/BookingEditModal";
-import BookingDeleteModal from "@/components/admin/bookings/BookingDeleteModal";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import {
+  BookingDetailModal,
+  BookingEditModal,
+  BookingDeleteModal,
+} from "@/components/admin/bookings";
+import { PageSizeSelect } from "@/components/common";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 
@@ -257,6 +259,17 @@ export default function BookingsManagementPage() {
 
   return (
     <div className="w-full space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+          <Calendar className="text-primary" size={26} />
+          Quản lý Đơn đặt
+        </h1>
+        <p className="text-xs text-foreground/60 mt-1">
+          Theo dõi và quản lý tất cả các đơn đặt dịch vụ trong hệ thống.
+        </p>
+      </div>
+
       {/* Search & Filters */}
       <div className="flex flex-col gap-4 bg-white dark:bg-black p-6 rounded-2xl border border-separator shadow-sm">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">

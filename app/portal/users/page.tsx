@@ -14,15 +14,16 @@ import {
 } from "lucide-react";
 import { Button, Input, Table, toast, Tooltip } from "@heroui/react";
 import { getUsers, AdminUserDto } from "@/lib/api/users";
-import UserCreateModal from "@/components/admin/users/UserCreateModal";
-import UserDetailModal from "@/components/admin/users/UserDetailModal";
-import UserDeleteModal from "@/components/admin/users/UserDeleteModal";
-import RolePermissionsTab from "@/components/admin/users/RolePermissionsTab";
+import {
+  UserCreateModal,
+  UserDetailModal,
+  UserDeleteModal,
+  RolePermissionsTab,
+} from "@/components/admin/users";
 import { useAuthStore } from "@/lib/store/authStore";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { PageSizeSelect, AppStatusChip } from "@/components/common";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
-import { AppStatusChip } from "@/components/common/AppStatusChip";
 
 const roleColors: Record<string, string> = {
   ADMIN: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
@@ -123,6 +124,17 @@ export default function UsersManagementPage() {
 
   return (
     <div className="w-full space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2.5">
+          <Users className="text-primary" size={26} />
+          Quản lý Tài khoản & Phân quyền
+        </h1>
+        <p className="text-xs text-foreground/60 mt-1">
+          Quản trị danh sách người dùng, cập nhật thông tin và thiết lập phân quyền theo vai trò.
+        </p>
+      </div>
+
       {/* Top Main Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2">
         <button

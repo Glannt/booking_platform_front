@@ -62,13 +62,15 @@ import { useI18n } from "@/context/LanguageContext";
 import { ColumnInterface } from "@/lib/interface/column.interface";
 import { headerColumns } from "@/config/headerColumns";
 
-import { SelfDriveCreateUpdateModal } from "@/components/admin/self-drive/SelfDriveCreateUpdateModal";
-import { SelfDriveDeleteModal } from "@/components/admin/self-drive/SelfDriveDeleteModal";
-import { SelfDriveDetailModal } from "@/components/admin/self-drive/SelfDriveDetailModal";
-import { SelfDrivePolicyCreateUpdateModal } from "@/components/admin/self-drive/SelfDrivePolicyCreateUpdateModal";
-import { SelfDrivePolicyDeleteModal } from "@/components/admin/self-drive/SelfDrivePolicyDeleteModal";
-import { SvgIconRenderer } from "@/components/admin/self-drive/SvgIconRenderer";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import {
+  SelfDriveCreateUpdateModal,
+  SelfDriveDeleteModal,
+  SelfDriveDetailModal,
+  SelfDrivePolicyCreateUpdateModal,
+  SelfDrivePolicyDeleteModal,
+  SvgIconRenderer,
+} from "@/components/admin/self-drive";
+import { PageSizeSelect } from "@/components/common";
 
 type TabKey = "rentals" | "policies";
 
@@ -295,6 +297,8 @@ export default function AdminSelfDrivePage() {
       let cmp = 0;
       if (col === "id") {
         cmp = a.id - b.id;
+      } else if (col === "sortOrder") {
+        cmp = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
       } else if (col === "category") {
         cmp = getCategoryName(a.vehicleCategoryId).localeCompare(getCategoryName(b.vehicleCategoryId));
       } else if (col === "deposit") {
@@ -984,6 +988,12 @@ export default function AdminSelfDrivePage() {
                         return (
                           <Table.Row key={item.id} id={String(item.id)}>
                             <Table.Cell>#{item.id}</Table.Cell>
+
+                            <Table.Cell>
+                              <span className="font-bold text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[var(--bg-elevated)]">
+                                #{item.sortOrder ?? 0}
+                              </span>
+                            </Table.Cell>
 
                             <Table.Cell>
                               <div className="flex items-center gap-2.5">

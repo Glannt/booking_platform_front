@@ -11,8 +11,7 @@ import {
   Checkbox,
   SearchField,
 } from "@heroui/react";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
-import { AppStatusChip } from "@/components/common/AppStatusChip";
+import { PageSizeSelect, AppStatusChip } from "@/components/common";
 import {
   Tag,
   Plus,
@@ -28,12 +27,17 @@ import {
   RotateCcw,
   UserPlus,
   History,
+  Eye,
 } from "lucide-react";
 import { PriceDiscountDto } from "@/lib/api/discount";
 import { useAdminDiscounts, useDeleteDiscount } from "@/lib/queries/useDiscounts";
-import { DiscountModal } from "@/components/admin/discount/DiscountModal";
-import { GrantVoucherModal } from "@/components/admin/discount/GrantVoucherModal";
-import { PromotionAuditModal } from "@/components/admin/discount/PromotionAuditModal";
+import {
+  DiscountCreateUpdateModal,
+  DiscountDetailModal,
+  DiscountModal,
+  GrantVoucherModal,
+  PromotionAuditModal,
+} from "@/components/admin/discount";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 
@@ -59,6 +63,9 @@ export default function DiscountsPortalPage() {
 
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [selectedForAudit, setSelectedForAudit] = useState<PriceDiscountDto | null>(null);
+
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedForDetail, setSelectedForDetail] = useState<PriceDiscountDto | null>(null);
 
   const scopeParam = selectedScopes.length === 1 ? selectedScopes[0] : undefined;
   const { data, isLoading, refetch } = useAdminDiscounts(page, pageSize, scopeParam);
@@ -137,6 +144,11 @@ export default function DiscountsPortalPage() {
   const handleOpenCreate = () => {
     setEditingDiscount(null);
     setIsModalOpen(true);
+  };
+
+  const handleOpenDetail = (d: PriceDiscountDto) => {
+    setSelectedForDetail(d);
+    setIsDetailModalOpen(true);
   };
 
   const handleOpenEdit = (d: PriceDiscountDto) => {
@@ -801,6 +813,26 @@ export default function DiscountsPortalPage() {
                             </Tooltip.Content>
                           </Tooltip>
 
+                          {/* View Discount Details */}
+                          <Tooltip delay={300} closeDelay={100}>
+                            <Tooltip.Trigger>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="tertiary"
+                                aria-label={t.common?.details || "Xem chi tiết"}
+                                onPress={() => handleOpenDetail(d)}
+                                className="cursor-pointer"
+                              >
+                                <Eye size={16} />
+                              </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Tooltip.Arrow />
+                              {t.common?.details || "Xem chi tiết"}
+                            </Tooltip.Content>
+                          </Tooltip>
+
                           {/* Redemptions & Grants Audit */}
                           <Tooltip delay={300} closeDelay={100}>
                             <Tooltip.Trigger>
@@ -917,6 +949,24 @@ export default function DiscountsPortalPage() {
         }}
         initialData={editingDiscount}
       />
+
+      {/* Modal detail */}
+      {selectedForDetail && (
+        <DiscountDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedForDetail(null);
+          }}
+          promotion={selectedForDetail}
+          onEdit={() => {
+            const itemToEdit = selectedForDetail;
+            setIsDetailModalOpen(false);
+            setSelectedForDetail(null);
+            handleOpenEdit(itemToEdit);
+          }}
+        />
+      )}
 
       {/* Modal grant voucher to customer */}
       {selectedForGrant && (
