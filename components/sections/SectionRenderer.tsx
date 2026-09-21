@@ -293,8 +293,8 @@ function SystemCatalogSection({
   } catch {}
 
   const systemSource = config.systemSource || "tours";
-  const limit = config.limit || 8;
-  const linkUrl = config.linkUrl || "";
+  const limit = config.itemLimit || config.limit || 8;
+  const linkUrl = config.viewAllLink || config.linkUrl || "";
   const title = trans?.title || undefined;
   const subtitle = trans?.subtitle || trans?.description || undefined;
 

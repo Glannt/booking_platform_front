@@ -12,7 +12,6 @@ import {
   ArrowUpDown,
   Layers,
   Edit3,
-  Sparkles,
 } from "lucide-react";
 import {
   Button,
@@ -33,10 +32,8 @@ import { headerColumns } from "@/config/headerColumns";
 import {
   getSectionsByPagePath,
   deleteSection,
-  createSection,
   SectionDto,
 } from "@/lib/api/sections";
-import { DEFAULT_HOME_SECTIONS } from "@/lib/api/section-templates";
 import { PageSizeSelect } from "@/components/common";
 
 const PAGE_PATHS = [
@@ -100,8 +97,6 @@ export default function SectionsManagementPage() {
     fetchSections();
   }, [filterPagePath]);
 
-  const [initLoading, setInitLoading] = useState(false);
-
   const handleDelete = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa section này không?")) return;
     try {
@@ -110,35 +105,6 @@ export default function SectionsManagementPage() {
       setSections((prev) => prev.filter((s) => s.id !== id));
     } catch {
       showToast("Xóa section thất bại.", "error");
-    }
-  };
-
-  const handleInitDefaultSections = async () => {
-    if (!window.confirm("Bạn có muốn khởi tạo các Sections mẫu cho Trang chủ? Các section đã tồn tại sẽ không bị tạo trùng.")) {
-      return;
-    }
-    setInitLoading(true);
-    try {
-      let createdCount = 0;
-      for (const defSec of DEFAULT_HOME_SECTIONS) {
-        const exists = sections.some(
-          (s) => s.sectionType === defSec.sectionType && s.sectionName === defSec.sectionName
-        );
-        if (!exists) {
-          await createSection(defSec as any);
-          createdCount++;
-        }
-      }
-      if (createdCount > 0) {
-        showToast(`Đã khởi tạo thành công ${createdCount} sections mẫu cho Trang chủ!`, "success");
-      } else {
-        showToast("Tất cả sections mẫu đã tồn tại trong hệ thống.", "success");
-      }
-      await fetchSections();
-    } catch (err: any) {
-      showToast("Khởi tạo thất bại: " + (err?.message || "Lỗi máy chủ"), "error");
-    } finally {
-      setInitLoading(false);
     }
   };
 
@@ -274,18 +240,6 @@ export default function SectionsManagementPage() {
             <RefreshCw size={16} className="mr-1.5" />
             Làm mới
           </Button>
-
-          {filterPagePath === "/" && (
-            <Button
-              variant="secondary"
-              isDisabled={initLoading}
-              className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
-              onClick={handleInitDefaultSections}
-            >
-              {initLoading ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={16} />}
-              <span>Khởi tạo Sections mẫu</span>
-            </Button>
-          )}
 
           <Button
             className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
