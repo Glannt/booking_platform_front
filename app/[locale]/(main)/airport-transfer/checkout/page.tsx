@@ -55,10 +55,12 @@ export default function AirportTransferCheckoutPage() {
   const depositCalc = useMemo(() => {
     return calculateDeposit({
       totalAmount: finalTotalPrice,
-      depositType: DepositType.PERCENT,
+      depositType: draft?.payload?.depositType || DepositType.PERCENT,
+      depositRate: draft?.payload?.depositRate ?? undefined,
+      depositAmount: draft?.payload?.depositAmount ?? undefined,
       defaultRate: 20,
     });
-  }, [finalTotalPrice]);
+  }, [finalTotalPrice, draft]);
 
   useEffect(() => {
     const d = loadBookingDraft();
@@ -246,7 +248,7 @@ export default function AirportTransferCheckoutPage() {
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                 <ShieldCheck size={15} className="text-amber-600 shrink-0" />
-                {t.discounts?.depositRequired || "Tiền đặt cọc"} ({depositCalc.depositRate}%)
+                {t.discounts?.depositRequired || "Tiền đặt cọc"} {depositCalc.depositType === DepositType.FIXED ? "(Cố định)" : `(${depositCalc.depositRate}%)`}
               </span>
               <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
                 {formatPrice(depositCalc.depositAmount)}

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { translations } from "@/config/translations";
 import { getActiveSectionsServer } from "@/lib/api/sections";
 import type { SectionDto } from "@/lib/api/sections";
+import { getActiveAirports, type AirportDto } from "@/lib/api/fleet";
 import AirportTransferClient from "./AirportTransferClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -23,15 +24,25 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function AirportTransferPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const activeLocale = locale || "vi";
-  let sections: SectionDto[] = [];
-  try {
-    sections = await getActiveSectionsServer("/airport-transfer", activeLocale);
-  } catch {
-    sections = [];
-  }
+
+  const [sectionsRes, airportsRes] = await Promise.allSettled([
+    getActiveSectionsServer("/airport-transfer", activeLocale),
+    getActiveAirports(),
+  ]);
+
+  const sections: SectionDto[] =
+    sectionsRes.status === "fulfilled" && Array.isArray(sectionsRes.value)
+      ? sectionsRes.value
+      : [];
+
+  const initialAirports: AirportDto[] =
+    airportsRes.status === "fulfilled" && Array.isArray(airportsRes.value?.data)
+      ? airportsRes.value.data
+      : [];
+
   return (
     <Suspense fallback={null}>
-      <AirportTransferClient sections={sections} />
+      <AirportTransferClient sections={sections} initialAirports={initialAirports} />
     </Suspense>
   );
 }

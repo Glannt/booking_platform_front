@@ -488,13 +488,13 @@ export default function SelfDriveConfirmClient({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 font-sans pb-16">
+    <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] font-sans pb-16">
       {/* 1. Header Section */}
       <section className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-5 pb-4 space-y-3">
         {/* Breadcrumb Navigation */}
         <nav
           aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-sm text-slate-400 font-medium overflow-hidden whitespace-nowrap"
+          className="flex items-center gap-1.5 text-sm font-medium overflow-hidden whitespace-nowrap"
         >
           <Link href={`/${language}`} className="hover:text-accent transition-colors">
             {t.nav.home}
@@ -511,7 +511,7 @@ export default function SelfDriveConfirmClient({
             {categoryData?.name || t.selfDrive.heroTitle}
           </Link>
           <ChevronRight size={14} className="shrink-0 opacity-60" />
-          <span className="text-slate-700 dark:text-slate-300 font-semibold truncate">
+          <span className="font-semibold truncate">
             {t.selfDrive.confirmBadge}
           </span>
         </nav>
@@ -525,11 +525,11 @@ export default function SelfDriveConfirmClient({
                 variant="accent"
               />
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black dark:text-white tracking-tight leading-snug">
               {t.selfDrive.bookingDetails}
             </h1>
             {categoryData && (
-              <p className="text-sm sm:text-base text-slate-500 font-medium">
+              <p className="text-sm sm:text-base font-medium">
                 {categoryData.name} • {categoryData.capacity} {t.selfDrive.seatsCount}
               </p>
             )}
@@ -538,7 +538,7 @@ export default function SelfDriveConfirmClient({
           <button
             type="button"
             onClick={() => router.back()}
-            className="inline-flex items-center gap-1.5 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] px-4 py-2 rounded-full text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer border border-slate-200 dark:border-slate-800 shadow-2xs shrink-0"
+            className="inline-flex items-center gap-1.5 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] px-4 py-2 rounded-full text-sm font-bold transition-colors cursor-pointer border border-slate-200 dark:border-slate-800 shadow-2xs shrink-0"
           >
             <ArrowLeft size={16} />
             {t.selfDrive.back}
@@ -584,11 +584,11 @@ export default function SelfDriveConfirmClient({
                           />
                         )}
                       </div>
-                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
+                      <h3 className="text-base sm:text-lg font-extrabold dark:text-white leading-tight">
                         {categoryData?.name || <Skeleton className="w-32 h-5 rounded" />}
                       </h3>
                       {/* {selectedConcreteVehicle && (
-                        <p className="text-sm text-slate-500 font-medium mt-0.5">
+                        <p className="text-sm font-medium mt-0.5">
                           Xe: {selectedConcreteVehicle.brand} {selectedConcreteVehicle.model} ({selectedConcreteVehicle.year})
                         </p>
                       )} */}
@@ -597,12 +597,12 @@ export default function SelfDriveConfirmClient({
 
                   {categoryData && categoryData.pricePerDay > 0 && (
                     <div className="sm:text-right shrink-0">
-                      <span className="text-sm text-slate-400 font-bold uppercase tracking-wider block">
+                      <span className="text-sm font-bold uppercase tracking-wider block">
                         {t.selfDrive.dailyRateLabel}
                       </span>
                       <div className="text-base font-black text-accent">
                         {categoryData.pricePerDay.toLocaleString("vi-VN")}đ
-                        <span className="text-sm font-normal text-slate-400">/{t.selfDrive.perTrip}</span>
+                        <span className="text-sm font-normal">/{t.selfDrive.perTrip}</span>
                       </div>
                     </div>
                   )}
@@ -610,7 +610,7 @@ export default function SelfDriveConfirmClient({
 
                 {/* 1. Fuel Selection (Tất cả nhiên liệu, Xăng, Dầu Diesel, Điện, Hybrid) */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-extrabold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5 pl-1">
+                  <Label className="text-sm font-extrabold uppercase tracking-wider flex items-center gap-1.5 pl-1">
                     <Fuel size={16} className="text-accent" />
                     <span>{t.selfDrive.fuel}</span>
                   </Label>
@@ -620,7 +620,7 @@ export default function SelfDriveConfirmClient({
                       onClick={() => handleFuelSelect("all")}
                       className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${selectedFuelType === "all"
                         ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                        : "bg-slate-50 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        : "bg-slate-50 dark:bg-[var(--bg-card)]   border-slate-200 dark:border-slate-800 hover:border-slate-300"
                         }`}
                     >
                       {t.selfDrive.allFuels}
@@ -630,7 +630,7 @@ export default function SelfDriveConfirmClient({
                       onClick={() => handleFuelSelect("petrol")}
                       className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${selectedFuelType === "petrol"
                         ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                        : "bg-slate-50 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        : "bg-slate-50 dark:bg-[var(--bg-card)]   border-slate-200 dark:border-slate-800 hover:border-slate-300"
                         }`}
                     >
                       {t.selfDrive.petrol}
@@ -640,7 +640,7 @@ export default function SelfDriveConfirmClient({
                       onClick={() => handleFuelSelect("diesel")}
                       className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${selectedFuelType === "diesel"
                         ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                        : "bg-slate-50 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        : "bg-slate-50 dark:bg-[var(--bg-card)]   border-slate-200 dark:border-slate-800 hover:border-slate-300"
                         }`}
                     >
                       {t.selfDrive.diesel}
@@ -650,7 +650,7 @@ export default function SelfDriveConfirmClient({
                       onClick={() => handleFuelSelect("electric")}
                       className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${selectedFuelType === "electric"
                         ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                        : "bg-slate-50 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        : "bg-slate-50 dark:bg-[var(--bg-card)]   border-slate-200 dark:border-slate-800 hover:border-slate-300"
                         }`}
                     >
                       {t.selfDrive.electric}
@@ -660,7 +660,7 @@ export default function SelfDriveConfirmClient({
                       onClick={() => handleFuelSelect("hybrid")}
                       className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all border cursor-pointer ${selectedFuelType === "hybrid"
                         ? "bg-accent text-accent-foreground border-accent shadow-sm"
-                        : "bg-slate-50 dark:bg-[var(--bg-card)] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        : "bg-slate-50 dark:bg-[var(--bg-card)]   border-slate-200 dark:border-slate-800 hover:border-slate-300"
                         }`}
                     >
                       {t.selfDrive.hybrid}
@@ -673,16 +673,16 @@ export default function SelfDriveConfirmClient({
                   {/* Header row with Pickup & Return summary cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {/* Pickup Card */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-accent/15 text-accent flex items-center justify-center font-bold shrink-0">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-border flex items-center justify-between gap-2 sm:gap-3 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-accent/15 text-accent flex items-center justify-center font-bold shrink-0">
                           <CalendarDays size={18} />
                         </div>
-                        <div>
-                          <Label isRequired className="text-sm font-extrabold uppercase tracking-wider block">
+                        <div className="min-w-0">
+                          <Label isRequired className="text-xs sm:text-sm font-extrabold uppercase tracking-wider block truncate">
                             {t.selfDrive.pickupDate}
                           </Label>
-                          <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                          <span className="text-xs sm:text-base font-black dark:text-white block truncate">
                             {dateRange?.start ? formatToDisplayDate(dateRange.start) : "--/--/----"}
                           </span>
                         </div>
@@ -697,31 +697,31 @@ export default function SelfDriveConfirmClient({
                           popoverTitle={t.selfDrive.confirmTime}
                           language={language}
                           isRequired
-                          triggerClassName="bg-white dark:bg-[var(--bg-surface)] border h-10 text-sm font-semibold"
+                          triggerClassName="bg-background dark:bg-[var(--bg-surface)] border h-9 sm:h-10 text-xs sm:text-sm font-semibold"
                         />
                       </div>
                     </div>
 
                     {/* Return Card */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-border flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
                           <CalendarDays size={18} />
                         </div>
-                        <div>
-                          <Label isRequired className="text-sm font-extrabold uppercase tracking-wider block">
+                        <div className="min-w-0">
+                          <Label isRequired className="text-xs sm:text-sm font-extrabold uppercase tracking-wider block truncate">
                             {t.selfDrive.returnDate}
                           </Label>
-                          <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                          <span className="text-xs sm:text-base font-black dark:text-white block truncate">
                             {dateRange?.end ? formatToDisplayDate(dateRange.end) : "--/--/----"}
                           </span>
                         </div>
                       </div>
 
                       {/* Auto-calculated rental duration badge */}
-                      <div className="px-3 py-1.5 rounded-xl bg-accent/10 dark:bg-accent/20 border border-accent/30 text-accent font-black text-sm shrink-0 flex items-center gap-1.5">
-                        <Clock size={15} />
-                        <span>
+                      <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-accent/10 dark:bg-accent/20 border border-accent/30 text-accent font-black text-xs sm:text-sm shrink-0 flex items-center gap-1 sm:gap-1.5 max-w-full">
+                        <Clock size={14} className="shrink-0" />
+                        <span className="truncate">
                           {dateRange?.start && dateRange?.end && dateRange.start.compare(dateRange.end) === 0
                             ? t.selfDrive.sameDayRental
                             : t.selfDrive.calculatedDays.replace("{days}", String(rentalDays))}
@@ -732,7 +732,7 @@ export default function SelfDriveConfirmClient({
 
                   {/* Quick Presets */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                    <span className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 pl-1 flex items-center gap-1">
+                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider pl-1 flex items-center gap-1 text-foreground/70">
                       <Sparkles size={14} className="text-accent" />
                       <span>{t.selfDrive.rentalPeriod}</span>
                     </span>
@@ -744,7 +744,7 @@ export default function SelfDriveConfirmClient({
                           const s = dateRange?.start || today(getLocalTimeZone());
                           setDateRange({ start: s, end: s });
                         }}
-                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent text-slate-600 dark:text-slate-300 transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-800"
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent transition-colors cursor-pointer border border-border"
                       >
                         {t.selfDrive.preset1Day}
                       </button>
@@ -754,7 +754,7 @@ export default function SelfDriveConfirmClient({
                           const s = dateRange?.start || today(getLocalTimeZone());
                           setDateRange({ start: s, end: s.add({ days: 2 }) });
                         }}
-                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent text-slate-600 dark:text-slate-300 transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-800"
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent transition-colors cursor-pointer border border-border"
                       >
                         {t.selfDrive.preset2Days}
                       </button>
@@ -764,7 +764,7 @@ export default function SelfDriveConfirmClient({
                           const s = dateRange?.start || today(getLocalTimeZone());
                           setDateRange({ start: s, end: s.add({ days: 3 }) });
                         }}
-                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent text-slate-600 dark:text-slate-300 transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-800"
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent transition-colors cursor-pointer border border-border"
                       >
                         {t.selfDrive.preset3Days}
                       </button>
@@ -774,7 +774,7 @@ export default function SelfDriveConfirmClient({
                           const s = dateRange?.start || today(getLocalTimeZone());
                           setDateRange({ start: s, end: s.add({ days: 7 }) });
                         }}
-                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent text-slate-600 dark:text-slate-300 transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-800"
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white dark:bg-[var(--bg-card)] hover:bg-accent/15 hover:text-accent transition-colors cursor-pointer border border-border"
                       >
                         {t.selfDrive.preset1Week}
                       </button>
@@ -782,7 +782,7 @@ export default function SelfDriveConfirmClient({
                   </div>
 
                   {/* Embedded HeroUI RangeCalendar */}
-                  <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 flex justify-center">
+                  <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-border flex justify-center">
                     <RangeCalendar
                       aria-label={t.selfDrive.rentalPeriod}
                       firstDayOfWeek="mon"
@@ -794,20 +794,20 @@ export default function SelfDriveConfirmClient({
                       className="w-full max-w-sm mx-auto"
                     >
                       <RangeCalendar.Header className="flex items-center justify-between mb-3 px-1">
-                        <RangeCalendar.Heading className="text-sm sm:text-base font-black text-slate-900 dark:text-white" />
+                        <RangeCalendar.Heading className="text-sm sm:text-base font-black dark:text-white" />
                         <div className="flex items-center gap-1">
                           <RangeCalendar.NavButton
                             slot="previous"
-                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] cursor-pointer text-slate-600 dark:text-slate-300 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors"
                           />
                           <RangeCalendar.NavButton
                             slot="next"
-                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] cursor-pointer text-slate-600 dark:text-slate-300 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors"
                           />
                         </div>
                       </RangeCalendar.Header>
                       <RangeCalendar.Grid className="w-full">
-                        <RangeCalendar.GridHeader className="text-slate-400 dark:text-slate-500 text-sm font-bold">
+                        <RangeCalendar.GridHeader className="text-sm font-bold text-foreground/50">
                           {(day) => (
                             <RangeCalendar.HeaderCell className="w-full text-center py-1">
                               {day}
@@ -823,7 +823,7 @@ export default function SelfDriveConfirmClient({
 
                   {/* Realtime Pricing Formula Breakdown */}
                   <div className="p-3.5 rounded-xl bg-accent/5 dark:bg-[var(--bg-surface)] border border-accent/20 flex items-center justify-between text-sm font-semibold">
-                    <span className="text-slate-600 dark:text-slate-300">
+                    <span className="">
                       {categoryData?.pricePerDay ? `${categoryData.pricePerDay.toLocaleString("vi-VN")}đ` : "0đ"} × {rentalDays} {t.selfDrive.dayUnit}
                     </span>
                     <span className="font-extrabold text-accent text-sm sm:text-base">
@@ -844,7 +844,7 @@ export default function SelfDriveConfirmClient({
                     placeholder={t.selfDrive.pickupLocationPlaceholder}
                     value={pickupLocation}
                     onChange={(e) => setPickupLocation(e.target.value)}
-                    className="w-full border-1 border-[var(--accent-border)] shadow-sm dark:shadow-none text-sm font-semibold outline-none placeholder:text-slate-400"
+                    className="w-full border-1 border-[var(--accent-border)] shadow-sm dark:shadow-none text-sm font-semibold outline-none"
                   />
 
                 </TextField>
@@ -963,7 +963,7 @@ export default function SelfDriveConfirmClient({
                     isSoldOut
                   }
                   className={`w-full h-12 rounded-2xl font-black text-sm shadow-md gap-2 border-none transition-all ${isSoldOut
-                    ? "bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 cursor-not-allowed"
+                    ? "bg-slate-200 dark:bg-zinc-800  dark:text-zinc-500 cursor-not-allowed"
                     : "bg-accent text-accent-foreground hover:bg-accent-hover cursor-pointer"
                     }`}
                 >
@@ -999,7 +999,7 @@ export default function SelfDriveConfirmClient({
             />
 
             <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">
+              <h3 className="text-sm font-black uppercase tracking-wider">
                 {t.selfDrive.bookingSummary}
               </h3>
 
@@ -1012,29 +1012,29 @@ export default function SelfDriveConfirmClient({
               ) : categoryData ? (
                 <>
                   <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                    <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                       <span>{t.selfDrive.vehicleLabel}</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-extrabold text-right max-w-[60%] truncate">
+                      <span className="font-extrabold text-right max-w-[60%] truncate">
                         {categoryData.name}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                    <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                       <span>{t.selfDrive.capacityLabel}</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                      <span className="font-extrabold">
                         {categoryData.capacity} {t.selfDrive.seatsCount}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                    <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                       <span>{t.selfDrive.fuel}</span>
                       <span className="text-accent font-extrabold">{getFuelDisplayLabel()}</span>
                     </div>
 
                     {dateRange?.start && (
-                      <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                      <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                         <span>{t.selfDrive.pickupDate}</span>
-                        <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                        <span className="font-extrabold">
                           {formatToDisplayDate(dateRange.start)} ({String(timeValue.hour).padStart(2, "0")}:
                           {String(timeValue.minute).padStart(2, "0")} {timeValue.period})
                         </span>
@@ -1042,17 +1042,17 @@ export default function SelfDriveConfirmClient({
                     )}
 
                     {dateRange?.end && (
-                      <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                      <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                         <span>{t.selfDrive.returnDate}</span>
-                        <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                        <span className="font-extrabold">
                           {formatToDisplayDate(dateRange.end)}
                         </span>
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                    <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                       <span>{t.selfDrive.durationLabel}</span>
-                      <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                      <span className="font-extrabold">
                         {dateRange?.start && dateRange?.end && dateRange.start.compare(dateRange.end) === 0
                           ? t.selfDrive.sameDayRental
                           : `${rentalDays} ${t.selfDrive.dayUnit}`}
@@ -1060,9 +1060,9 @@ export default function SelfDriveConfirmClient({
                     </div>
 
                     {pickupLocation && (
-                      <div className="flex justify-between items-start text-sm font-bold text-slate-400 uppercase tracking-wide">
+                      <div className="flex justify-between items-start text-sm font-bold uppercase tracking-wide">
                         <span className="shrink-0">{t.selfDrive.pickupLocationLabel}</span>
-                        <span className="text-slate-800 dark:text-slate-200 font-extrabold text-right max-w-[60%] truncate">
+                        <span className="font-extrabold text-right max-w-[60%] truncate">
                           {pickupLocation}
                         </span>
                       </div>
@@ -1071,9 +1071,9 @@ export default function SelfDriveConfirmClient({
 
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
                     {categoryData.pricePerDay > 0 && (
-                      <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase tracking-wide">
+                      <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wide">
                         <span>{t.selfDrive.dailyRateLabel}</span>
-                        <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                        <span className="font-extrabold">
                           {categoryData.pricePerDay.toLocaleString("vi-VN")}đ
                         </span>
                       </div>
@@ -1109,9 +1109,9 @@ export default function SelfDriveConfirmClient({
                         : "Tiền thế chân xe cố định quy định theo phân khúc xe."}
                     </p>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold">
                       <span>{t.discounts.remainingPayment}:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                      <span className="font-bold">
                         {depositCalc.remainingAmount.toLocaleString("vi-VN")}đ
                       </span>
                     </div>
@@ -1119,7 +1119,7 @@ export default function SelfDriveConfirmClient({
 
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700 dark:text-slate-300 font-black">
+                      <span className="text-sm font-black">
                         {t.selfDrive.estTotalLabel}
                       </span>
                       {isCalculating ? (
@@ -1133,10 +1133,10 @@ export default function SelfDriveConfirmClient({
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-slate-400 text-center py-4">{t.selfDrive.noVehicleSelected}</p>
+                <p className="text-sm text-center py-4">{t.selfDrive.noVehicleSelected}</p>
               )}
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-sm text-slate-400 font-medium">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-sm font-medium">
                 <ShieldCheck size={14} className="text-accent" />
                 <span>{t.selfDrive.guarantee}</span>
               </div>

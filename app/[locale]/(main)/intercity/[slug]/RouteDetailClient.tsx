@@ -99,9 +99,14 @@ interface CategoryWithVehicles {
 interface RouteDetailClientProps {
   sections: SectionDto[];
   routeIdentifier: string | number;
+  initialRoute?: IntercityRouteDto | null;
 }
 
-export default function RouteDetailClient({ sections, routeIdentifier }: RouteDetailClientProps) {
+export default function RouteDetailClient({
+  sections,
+  routeIdentifier,
+  initialRoute,
+}: RouteDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t } = useI18n();
@@ -119,10 +124,10 @@ export default function RouteDetailClient({ sections, routeIdentifier }: RouteDe
     return `/${language}${url === "/" ? "" : url}`;
   };
 
-  const [route, setRoute] = useState<IntercityRouteDto | null>(null);
+  const [route, setRoute] = useState<IntercityRouteDto | null>(initialRoute || null);
   const [linkedSharedRoute, setLinkedSharedRoute] = useState<SharedRouteDto | null>(null);
   const [categories, setCategories] = useState<CategoryWithVehicles[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialRoute);
 
   // Service Type: "PRIVATE" (Xe riêng) vs "SHARED" (Vé xe ghép chỗ)
   const [serviceType, setServiceType] = useState<"PRIVATE" | "SHARED">("PRIVATE");
@@ -1692,7 +1697,7 @@ export default function RouteDetailClient({ sections, routeIdentifier }: RouteDe
                       }}
                       popoverTitle="Chọn giờ xuất phát"
                       language={language}
-                      triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                      triggerClassName="bg-white dark:bg-[var(--bg-surface)]"
                     />
                   )}
                   {isDepartureTimeInvalid && (

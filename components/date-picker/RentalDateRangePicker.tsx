@@ -56,12 +56,12 @@ export function RentalDateRangePicker({
   return (
     <div className={`space-y-3 ${className}`}>
       {label && (
-        <div className="flex items-center justify-between">
-          <Label className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
+          <Label className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-foreground/80 truncate">
             {label}
           </Label>
           {rentalDays > 0 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-accent/15 text-accent">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-accent/15 text-accent shrink-0 max-w-full truncate">
               <CalendarDays size={12} />
               <span>
                 {rentalDays} {t.rentCar?.dayUnit || "ngày"}
@@ -73,17 +73,17 @@ export function RentalDateRangePicker({
 
       {/* Date Preview Strip */}
       {displayRange && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 text-xs">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-background dark:bg-[var(--bg-card)] border border-border text-xs">
           <div className="flex items-center gap-2">
             <CalendarIcon size={14} className="text-accent" />
-            <span className="font-bold text-slate-800 dark:text-slate-200">
+            <span className="font-bold text-foreground">
               {displayRange.start}
             </span>
           </div>
-          <span className="text-slate-400 font-bold">→</span>
+          <span className="text-foreground/40 font-bold">→</span>
           <div className="flex items-center gap-2">
             <CalendarIcon size={14} className="text-accent" />
-            <span className="font-bold text-slate-800 dark:text-slate-200">
+            <span className="font-bold text-foreground">
               {displayRange.end}
             </span>
           </div>
@@ -96,28 +96,28 @@ export function RentalDateRangePicker({
           <button
             type="button"
             onClick={() => handlePreset(1)}
-            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-slate-300 hover:border-accent hover:text-accent cursor-pointer transition-colors"
+            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-border bg-white dark:bg-[var(--bg-surface)] text-foreground/80 hover:border-accent hover:text-accent cursor-pointer transition-colors"
           >
             +1 {t.rentCar?.dayUnit || "ngày"}
           </button>
           <button
             type="button"
             onClick={() => handlePreset(2)}
-            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-slate-300 hover:border-accent hover:text-accent cursor-pointer transition-colors"
+            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-border bg-white dark:bg-[var(--bg-surface)] text-foreground/80 hover:border-accent hover:text-accent cursor-pointer transition-colors"
           >
             +2 {t.rentCar?.dayUnit || "ngày"}
           </button>
           <button
             type="button"
             onClick={() => handlePreset(3)}
-            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-slate-300 hover:border-accent hover:text-accent cursor-pointer transition-colors"
+            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-border bg-white dark:bg-[var(--bg-surface)] text-foreground/80 hover:border-accent hover:text-accent cursor-pointer transition-colors"
           >
             +3 {t.rentCar?.dayUnit || "ngày"}
           </button>
           <button
             type="button"
             onClick={() => handlePreset(7)}
-            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] text-slate-700 dark:text-slate-300 hover:border-accent hover:text-accent cursor-pointer transition-colors"
+            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-border bg-white dark:bg-[var(--bg-surface)] text-foreground/80 hover:border-accent hover:text-accent cursor-pointer transition-colors"
           >
             +7 {t.rentCar?.dayUnit || "ngày"}
           </button>
@@ -129,7 +129,7 @@ export function RentalDateRangePicker({
         className={`p-3 sm:p-4 rounded-2xl bg-white dark:bg-[var(--bg-card)] border ${
           isInvalid
             ? "border-red-500"
-            : "border-slate-200/80 dark:border-slate-800"
+            : "border-border"
         } flex justify-center shadow-xs`}
       >
         <RangeCalendar
@@ -143,20 +143,20 @@ export function RentalDateRangePicker({
           className="w-full max-w-sm mx-auto"
         >
           <RangeCalendar.Header className="flex items-center justify-between mb-3 px-1">
-            <RangeCalendar.Heading className="text-xs font-black text-slate-900 dark:text-white" />
+            <RangeCalendar.Heading className="text-xs font-black text-foreground" />
             <div className="flex items-center gap-1">
               <RangeCalendar.NavButton
                 slot="previous"
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer text-slate-600 dark:text-slate-300 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-[var(--bg-elevated)] cursor-pointer text-foreground/70 transition-colors"
               />
               <RangeCalendar.NavButton
                 slot="next"
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer text-slate-600 dark:text-slate-300 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-[var(--bg-elevated)] cursor-pointer text-foreground/70 transition-colors"
               />
             </div>
           </RangeCalendar.Header>
           <RangeCalendar.Grid className="w-full">
-            <RangeCalendar.GridHeader className="text-slate-400 dark:text-slate-500 text-[10px] font-bold">
+            <RangeCalendar.GridHeader className="text-foreground/40 text-[10px] font-bold">
               {(day) => (
                 <RangeCalendar.HeaderCell className="w-full text-center py-1">
                   {day}

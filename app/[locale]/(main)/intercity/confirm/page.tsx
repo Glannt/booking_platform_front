@@ -1483,10 +1483,10 @@ export default function RentCarConfirmPage() {
                             setEditTime(timeValueToString(v));
                           }}
                           label={t.rentCar.customDepartureTime}
-                          labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                          labelClassName="text-sm font-bold uppercase tracking-wider text-foreground/60 block"
                           popoverTitle="Chọn giờ xuất phát"
                           language={language}
-                          triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                          triggerClassName="bg-white dark:bg-[var(--bg-surface)]"
                           isRequired
                         />
                       </div>
@@ -1615,10 +1615,10 @@ export default function RentCarConfirmPage() {
                             setEditTime(timeValueToString(v));
                           }}
                           label="Giờ đi"
-                          labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                          labelClassName="text-sm font-bold uppercase tracking-wider text-foreground/60 block"
                           popoverTitle="Chọn giờ xuất phát chiều đi"
                           language={language}
-                          triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                          triggerClassName="bg-white dark:bg-[var(--bg-surface)]"
                           isRequired
                         />
                         <div className="space-y-1">
@@ -1630,10 +1630,10 @@ export default function RentCarConfirmPage() {
                               if (errors.returnTime) setErrors((prev) => ({ ...prev, returnTime: "" }));
                             }}
                             label="Giờ về"
-                            labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                            labelClassName="text-sm font-bold uppercase tracking-wider text-foreground/60 block"
                             popoverTitle="Chọn giờ xuất phát chiều về"
                             language={language}
-                            triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                            triggerClassName="bg-white dark:bg-[var(--bg-surface)]"
                             isRequired
                           />
                           {errors.returnTime && (
@@ -1705,10 +1705,10 @@ export default function RentCarConfirmPage() {
                           setEditTime(timeValueToString(v));
                         }}
                         label={t.rentCar.time}
-                        labelClassName="text-sm font-bold uppercase tracking-wider text-slate-400 block"
+                        labelClassName="text-sm font-bold uppercase tracking-wider text-foreground/60 block"
                         popoverTitle="Chọn giờ xuất phát"
                         language={language}
-                        triggerClassName="bg-slate-50 dark:bg-[var(--bg-card)]"
+                        triggerClassName="bg-white dark:bg-[var(--bg-surface)]"
                         isRequired
                       />
                     </div>

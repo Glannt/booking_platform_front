@@ -43,7 +43,7 @@ import { ImageGalleryGrid } from "@/components/ImageGalleryGrid";
 import { DetailCMSSections } from "@/components/sections/detail/DetailSectionRenderer";
 import { getCanonicalSlug } from "@/lib/slug-helpers";
 import { getPublicSelfDrivePolicies, type SelfDrivePolicyDto } from "@/lib/api/self-drive-policy";
-import { SvgIconRenderer } from "@/components/admin/self-drive/SvgIconRenderer";
+import { SvgIconRenderer } from "@/components/admin/self-drive";
 
 interface RentalWithPrice extends RentalDto {
   dailyRate: number;
@@ -293,7 +293,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] text-slate-900 dark:text-slate-100 flex flex-col font-sans">
+      <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] flex flex-col font-sans">
         <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 space-y-6">
           <Skeleton className="h-8 w-48 rounded-lg" />
           <Skeleton className="h-96 w-full rounded-3xl" />
@@ -314,7 +314,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
   if (!category) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] flex flex-col items-center justify-center gap-4">
-        <p className="text-base font-bold text-slate-500 dark:text-zinc-400">{t.common.noResults}</p>
+        <p className="text-base font-bold dark:text-zinc-400">{t.common.noResults}</p>
         <Button onClick={() => router.push(prefixUrl("/self-drive"))} className="bg-accent text-accent-foreground text-sm font-bold px-4 py-2 rounded-xl border-none cursor-pointer">
           {t.common.goBack}
         </Button>
@@ -323,24 +323,24 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] dark:bg-[var(--bg-page)] text-slate-900 dark:text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#faf9f6] dark:bg-[var(--bg-page)] flex flex-col font-sans">
       {/* Top Breadcrumb Navigation */}
       <section className="bg-white/80 dark:bg-[var(--bg-surface)] backdrop-blur border-b border-slate-200/80 dark:border-zinc-800">
         <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               onClick={() => router.push(prefixUrl("/self-drive"))}
-              className="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-accent bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] border-none rounded-full px-3.5 py-1.5 cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 text-sm font-bold hover:text-accent bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-slate-200 dark:hover:bg-[var(--bg-elevated)] border-none rounded-full px-3.5 py-1.5 cursor-pointer transition-colors"
             >
               <ArrowLeft size={15} />
               <span>{t.common.goBack}</span>
             </Button>
-            <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-zinc-500 font-semibold">
+            <div className="flex items-center gap-2 text-sm dark:text-zinc-500 font-semibold">
               <Link href={prefixUrl("/self-drive")} className="hover:text-accent transition-colors no-underline text-inherit">
                 {t.selfDrive.title}
               </Link>
               <span>/</span>
-              <span className="text-slate-800 dark:text-white font-bold">{getCatName(category)}</span>
+              <span className="dark:text-white font-bold">{getCatName(category)}</span>
             </div>
           </div>
         </div>
@@ -362,11 +362,11 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 variant="default"
               />
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-950 dark:text-white tracking-tight leading-snug">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black dark:text-white tracking-tight leading-snug">
               {getCatName(category)}
             </h1>
             {getCatDesc(category) && (
-              <p className="text-sm sm:text-base text-slate-500 dark:text-zinc-400 font-medium mt-1 max-w-2xl leading-relaxed">
+              <p className="text-sm sm:text-base dark:text-zinc-400 font-medium mt-1 max-w-2xl leading-relaxed">
                 {getCatDesc(category)}
               </p>
             )}
@@ -401,17 +401,20 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
             {/* 1. Concrete Vehicles List (Rendered Inline instead of modal) */}
             <div className="bg-white dark:bg-[var(--bg-card)] p-6 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-5">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
-                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-black dark:text-white flex items-center gap-2">
                   <Car size={22} className="text-accent" />
                   <span>{t.selfDrive.categoryVehiclesList}</span>
                 </h2>
-                <span className="text-sm text-slate-400 dark:text-zinc-500 font-bold">
+                <span className="text-sm dark:text-zinc-500 font-bold">
                   {vehicles.length} {t.selfDrive.type.toLowerCase()}
                 </span>
               </div>
+              <p className="text-xs font-medium -mt-2 opacity-75">
+                {t.selfDrive.categoryVehiclesNote}
+              </p>
 
               {vehicles.length === 0 ? (
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] text-sm text-slate-500 dark:text-zinc-400 font-medium">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-surface)] text-sm dark:text-zinc-400 font-medium">
                   {t.selfDrive.noVehiclesInCategory}
                 </div>
               ) : (
@@ -444,7 +447,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                               />
                             ) : (
-                              <div className="flex flex-col items-center gap-1 text-slate-400">
+                              <div className="flex flex-col items-center gap-1">
                                 <Car size={26} className="opacity-40" />
                                 <span className="text-sm font-semibold">{t.selfDrive.noPhotos}</span>
                               </div>
@@ -452,8 +455,8 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                           </div>
 
                           {/* Model & Year */}
-                          <h4 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                            {v.brand} {v.model} <span className="text-sm text-slate-400 font-medium">({v.year})</span>
+                          <h4 className="text-base font-extrabold dark:text-white leading-tight">
+                            {v.brand} {v.model} <span className="text-sm font-medium">({v.year})</span>
                           </h4>
 
                           {/* Quick Specs Chips */}
@@ -485,7 +488,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                         {/* Card footer */}
                         <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
                           <span className="text-sm sm:text-base font-black text-accent">
-                            {dailyRate.toLocaleString("vi-VN")}đ <span className="text-sm font-normal text-slate-400">/{t.selfDrive.dayUnit}</span>
+                            {dailyRate.toLocaleString("vi-VN")}đ <span className="text-sm font-normal">/{t.selfDrive.dayUnit}</span>
                           </span>
                         </div>
                       </div>
@@ -497,7 +500,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
 
             {/* 2. Key specifications Card */}
             <div className="bg-white dark:bg-[var(--bg-card)] p-6 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-6">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black dark:text-white tracking-tight">
                 {t.selfDrive.keySpecifications}
               </h2>
 
@@ -506,10 +509,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Users size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.seats}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {seatsCount}
                     </span>
                   </div>
@@ -519,10 +522,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Gauge size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.transmission}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {t.selfDrive.transmissionAuto}
                     </span>
                   </div>
@@ -532,10 +535,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Fuel size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.filterFuel}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {selectedVehicle?.fuelType
                         ? (t.selfDrive[selectedVehicle.fuelType as keyof typeof t.selfDrive] as string || selectedVehicle.fuelType)
                         : t.selfDrive.diesel}
@@ -547,10 +550,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Cpu size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.engine}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {engineSpec}
                     </span>
                   </div>
@@ -560,10 +563,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Luggage size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.luggage}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {selectedVehicle?.luggage || 4} {t.selfDrive.bags}
                     </span>
                   </div>
@@ -573,10 +576,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Route size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.consumption}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {`6.5 ${t.selfDrive.consumptionUnit}`}
                     </span>
                   </div>
@@ -586,10 +589,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <Calendar size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.year}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white">
                       {selectedVehicle?.year || 2024}
                     </span>
                   </div>
@@ -599,10 +602,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 <div className="flex items-start gap-3">
                   <ShieldCheck size={22} className="text-accent shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
-                    <span className="block text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                    <span className="block text-sm font-bold dark:text-zinc-500 uppercase tracking-wider">
                       {t.selfDrive.type}
                     </span>
-                    <span className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-white uppercase">
+                    <span className="block text-base sm:text-lg font-extrabold dark:text-white uppercase">
                       {category.code || "SUV"}
                     </span>
                   </div>
@@ -612,7 +615,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
 
             {/* 3. Features & amenities Card */}
             <div className="bg-white dark:bg-[var(--bg-card)] p-6 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-6">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black dark:text-white tracking-tight">
                 {t.selfDrive.featuresAndAmenities}
               </h2>
 
@@ -622,7 +625,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                     <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                       <Check size={14} strokeWidth={3} />
                     </div>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
+                    <span className="text-sm font-semibold dark:text-zinc-200">
                       {item}
                     </span>
                   </div>
@@ -632,7 +635,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
 
             {/* 4. Rental policies Card */}
             <div className="bg-white dark:bg-[var(--bg-card)] p-6 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-sm space-y-6">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black dark:text-white tracking-tight">
                 {t.selfDrive.rentalPolicies}
               </h2>
 
@@ -649,7 +652,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                   ))}
                 </div>
               ) : policies.length === 0 ? (
-                <p className="text-sm text-slate-400 py-4 italic">
+                <p className="text-sm py-4 italic">
                   Chưa có chính sách nào được cấu hình.
                 </p>
               ) : (
@@ -668,11 +671,11 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                           <SvgIconRenderer svgString={pol.icon} className="w-full h-full text-accent" />
                         </div>
                         <div className="space-y-1 flex-1">
-                          <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                          <h4 className="text-sm sm:text-base font-extrabold dark:text-white">
                             {title}
                           </h4>
                           {desc && (
-                            <p className="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed font-medium">
+                            <p className="text-sm dark:text-zinc-400 leading-relaxed font-medium">
                               {desc}
                             </p>
                           )}
@@ -695,19 +698,19 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
 
               {/* Vehicle Title */}
               <div>
-                <h3 className="text-2xl font-black text-slate-950 dark:text-white tracking-tight leading-snug">
+                <h3 className="text-2xl font-black dark:text-white tracking-tight leading-snug">
                   {vehicleTitle}
                 </h3>
 
                 {/* Rating & Location */}
-                <div className="flex flex-wrap items-center gap-3 pt-2 text-sm font-semibold text-slate-500 dark:text-zinc-400">
+                <div className="flex flex-wrap items-center gap-3 pt-2 text-sm font-semibold dark:text-zinc-400">
                   <div className="flex items-center gap-1">
                     <Star size={15} className="text-accent fill-accent" />
-                    <span className="font-extrabold text-slate-800 dark:text-white">4.9</span>
+                    <span className="font-extrabold dark:text-white">4.9</span>
                     <span>· 128 {t.selfDrive.reviews}</span>
                   </div>
                   <span>·</span>
-                  <div className="flex items-center gap-1 text-slate-600 dark:text-zinc-300">
+                  <div className="flex items-center gap-1 dark:text-zinc-300">
                     <MapPin size={14} className="text-accent" />
                     <span>{t.selfDrive.locationDefault}</span>
                   </div>
@@ -717,10 +720,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
               {/* Price & Unlimited Km Included */}
               <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-black text-slate-950 dark:text-white">
+                  <span className="text-3xl font-black dark:text-white">
                     {new Intl.NumberFormat("vi-VN").format(dailyRate)}đ
                   </span>
-                  <span className="text-sm font-bold text-slate-400 dark:text-zinc-500">
+                  <span className="text-sm font-bold dark:text-zinc-500">
                     / {t.selfDrive.dayUnit}
                   </span>
                 </div>
@@ -731,7 +734,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
               </div>
 
               {/* Service Highlights */}
-              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80 text-sm font-semibold text-slate-600 dark:text-zinc-300">
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800/80 text-sm font-semibold dark:text-zinc-300">
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={16} className="text-accent" />
                   <span>{t.selfDrive.support247}</span>
@@ -754,8 +757,8 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                 </Button>
               </div>
 
-              <p className="text-sm text-center text-slate-400 dark:text-zinc-500 font-medium">
-                🔒 {t.selfDrive.guaranteeText}
+              <p className="text-sm text-center dark:text-zinc-500 font-medium">
+                {t.selfDrive.guaranteeText}
               </p>
             </div>
 
@@ -766,10 +769,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                   <Phone size={18} />
                 </div>
                 <div>
-                  <h5 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                  <h5 className="text-sm sm:text-base font-extrabold dark:text-white">
                     {t.selfDrive.contactSupportLabel}
                   </h5>
-                  <p className="text-sm text-slate-500 dark:text-zinc-400 font-bold">
+                  <p className="text-sm dark:text-zinc-400 font-bold">
                     {contacts.phone || "0764.971.971"}
                   </p>
                 </div>
@@ -789,10 +792,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
           <section className="pt-8 border-t border-slate-200/80 dark:border-zinc-800 space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black dark:text-white tracking-tight">
                   {t.selfDrive.otherCategories}
                 </h2>
-                <p className="text-sm text-slate-400 dark:text-zinc-500 font-medium mt-0.5">
+                <p className="text-sm dark:text-zinc-500 font-medium mt-0.5">
                   {otherCategories.length} {t.selfDrive.type.toLowerCase()}
                 </p>
               </div>
@@ -822,7 +825,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                           />
                         ) : (
-                          <div className="flex flex-col items-center gap-1.5 text-slate-400">
+                          <div className="flex flex-col items-center gap-1.5">
                             <Car size={32} className="opacity-40" />
                             <span className="text-sm font-semibold">{t.selfDrive.noPhotos}</span>
                           </div>
@@ -834,10 +837,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
 
                       {/* Content */}
                       <div className="p-4 space-y-2">
-                        <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white group-hover:text-accent transition-colors truncate">
+                        <h3 className="text-sm sm:text-base font-extrabold dark:text-white group-hover:text-accent transition-colors truncate">
                           {otherName}
                         </h3>
-                        <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-zinc-400 font-medium">
+                        <div className="flex items-center gap-1.5 text-sm dark:text-zinc-400 font-medium">
                           <Users size={14} className="text-accent shrink-0" />
                           <span>{otherCat.minSeat}-{otherCat.maxSeat} {t.common.seats}</span>
                         </div>
@@ -848,10 +851,10 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
                     <div className="p-4 pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">
                       {otherPrice ? (
                         <div className="text-sm sm:text-base font-black text-accent">
-                          {otherPrice.toLocaleString("vi-VN")}đ <span className="text-sm font-normal text-slate-400">/{t.selfDrive.dayUnit}</span>
+                          {otherPrice.toLocaleString("vi-VN")}đ <span className="text-sm font-normal">/{t.selfDrive.dayUnit}</span>
                         </div>
                       ) : (
-                        <div className="text-sm font-bold text-slate-400">{t.selfDrive.contactForInfo}</div>
+                        <div className="text-sm font-bold">{t.selfDrive.contactForInfo}</div>
                       )}
                       <span className="text-sm font-bold text-accent flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
                         {t.selfDrive.viewDetails} <ChevronRight size={14} />

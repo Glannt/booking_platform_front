@@ -46,25 +46,29 @@ import {
 interface TourDetailClientProps {
   sections: SectionDto[];
   tourIdentifier: string | number;
+  initialTour?: TourDto | null;
 }
 
 export default function TourDetailClient({
   sections,
   tourIdentifier,
+  initialTour,
 }: TourDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t } = useI18n();
 
-  const [tour, setTour] = useState<TourDto | null>(null);
-  const [selectedPackage, setSelectedPackage] = useState<TourPackageDto | null>(null);
+  const defaultPkg = initialTour?.packages?.find((p) => p.active) || initialTour?.packages?.[0] || null;
+  const [tour, setTour] = useState<TourDto | null>(initialTour || null);
+  const [selectedPackage, setSelectedPackage] = useState<TourPackageDto | null>(defaultPkg);
   const [adultCount, setAdultCount] = useState<number>(2);
   const [childCount, setChildCount] = useState<number>(0);
   const [infantCount, setInfantCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialTour);
   const [contentModalOpen, setContentModalOpen] = useState(false);
   const [policies, setPolicies] = useState<TourPolicyDto[]>([]);
   const [policiesLoading, setPoliciesLoading] = useState(true);
+  const isFirstRender = React.useRef(Boolean(initialTour));
 
   useEffect(() => {
     let isMounted = true;
@@ -84,6 +88,10 @@ export default function TourDetailClient({
   }, []);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -346,7 +354,7 @@ export default function TourDetailClient({
 
           {duration && (
             <HighlightBadge
-              icon={<Clock size={14} className="text-accent" />}
+              icon={<Clock size={14} />}
               value={duration}
               variant="default"
             />

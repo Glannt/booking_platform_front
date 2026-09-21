@@ -42,7 +42,7 @@ function ScrollColumn({ items, selected, onSelect, label }: ScrollColumnProps) {
   return (
     <div className="flex flex-col items-center gap-1 flex-1">
       {/* Column label */}
-      <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+      <span className="text-[9px] font-extrabold uppercase tracking-widest text-foreground/50 mb-1">
         {label}
       </span>
 
@@ -75,7 +75,7 @@ function ScrollColumn({ items, selected, onSelect, label }: ScrollColumnProps) {
               style={{ height: ITEM_H, scrollSnapAlign: "center" }}
               className={`flex items-center justify-center cursor-pointer select-none text-sm font-bold transition-all duration-150 ${selected === i
                 ? "text-accent scale-110 font-black"
-                : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                : "text-foreground/40 hover:text-foreground"
                 }`}
             >
               {item}
@@ -126,7 +126,7 @@ export function TimePicker({
   value,
   onChange,
   label,
-  labelClassName = "text-[11px] font-extrabold uppercase tracking-wider text-black dark:text-slate-400 mb-1.5 pl-1 block",
+  labelClassName = "text-[11px] font-extrabold uppercase tracking-wider text-foreground mb-1.5 pl-1 block",
   popoverTitle,
   className,
   popoverClassName,
@@ -149,10 +149,10 @@ export function TimePicker({
   const isBorderless = triggerClassName && /\b(border-none|p-0|h-auto)\b/.test(triggerClassName);
   
   const triggerBase = isBorderless
-    ? "flex items-center gap-1.5 w-full text-slate-800 dark:text-slate-100 font-bold text-left cursor-pointer outline-none transition-colors"
-    : "flex items-center gap-2 h-10 w-full border border-border rounded-xl px-3 text-slate-800 dark:text-slate-100 text-sm font-bold text-left cursor-pointer hover:border-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+    ? "flex items-center gap-1.5 w-full text-foreground font-bold text-left cursor-pointer outline-none transition-colors"
+    : "flex items-center gap-2 h-10 w-full border border-border rounded-xl px-3 text-foreground text-sm font-bold text-left cursor-pointer hover:border-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
   
-  const triggerDefaultBg = (overrideBg || isBorderless) ? "" : " bg-slate-50 dark:bg-[var(--bg-surface)]";
+  const triggerDefaultBg = (overrideBg || isBorderless) ? "" : " bg-background dark:bg-[var(--bg-surface)]";
   const triggerClasses = `${triggerBase}${triggerDefaultBg}${triggerClassName ? ` ${triggerClassName}` : ""}${isInvalid ? " border-red-500" : ""}`;
 
   // Default popover title falls back to i18n string
@@ -183,13 +183,13 @@ export function TimePicker({
         onClick={() => setOpen((v) => !v)}
         className={triggerClasses}
       >
-        {!hideIcon && <Clock size={15} className="text-slate-400 dark:text-slate-500 shrink-0" />}
+        {!hideIcon && <Clock size={15} className="text-foreground/50 shrink-0" />}
         <span className="flex-1 truncate">
           {display}
         </span>
         <ChevronDown
           size={13}
-          className={`text-slate-400 dark:text-slate-500 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`text-foreground/40 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -203,7 +203,7 @@ export function TimePicker({
         <div className={`absolute top-full z-50 w-72 bg-white dark:bg-[var(--bg-surface)] border border-border-secondary rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up mt-2 ${popoverClassName || "left-0"}`}>
           {/* Header */}
           <div className="px-4 pt-3.5 pb-2 border-b border-separator">
-            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            <p className="text-[10px] font-extrabold uppercase tracking-widest text-foreground/50">
               {headerTitle}
             </p>
           </div>
@@ -219,7 +219,7 @@ export function TimePicker({
             />
 
             {/* Separator */}
-            <div className="flex items-center pb-1 text-slate-300 dark:text-slate-600 font-black text-lg select-none">:</div>
+            <div className="flex items-center pb-1 text-foreground/30 font-black text-lg select-none">:</div>
 
             {/* Minutes */}
             <ScrollColumn
@@ -230,7 +230,7 @@ export function TimePicker({
             />
 
             {/* Divider */}
-            <div className="w-px bg-slate-100 dark:bg-[var(--bg-elevated)] mx-1 self-stretch" />
+            <div className="w-px bg-border dark:bg-[var(--bg-elevated)] mx-1 self-stretch" />
 
             {/* AM / PM */}
             <ScrollColumn
@@ -246,7 +246,7 @@ export function TimePicker({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="w-full h-10 rounded-xl bg-accent hover:bg-accent-hover text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full h-10 rounded-xl bg-accent hover:bg-accent-hover text-accent-foreground text-xs font-extrabold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Check size={14} />
               {language === "vi" ? `Xác nhận · ${display}` : `Confirm · ${display}`}

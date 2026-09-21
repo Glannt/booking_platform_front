@@ -42,11 +42,12 @@ export default async function TourDetailPage({ params }: { params: Promise<{ slu
     }
   }
 
-  let sections: SectionDto[] = [];
-  try {
-    sections = await getActiveSectionsServer("/tours", locale);
-  } catch {
-    sections = [];
-  }
-  return <TourDetailClient sections={sections} tourIdentifier={slug} />;
+  const [sectionsRes, tourRes] = await Promise.allSettled([
+    getActiveSectionsServer("/tours", locale),
+    getTourByIdOrSlug(slug),
+  ]);
+  const sections: SectionDto[] = sectionsRes.status === "fulfilled" ? sectionsRes.value : [];
+  const initialTour = tourRes.status === "fulfilled" && tourRes.value?.data ? tourRes.value.data : null;
+
+  return <TourDetailClient sections={sections} tourIdentifier={slug} initialTour={initialTour} />;
 }

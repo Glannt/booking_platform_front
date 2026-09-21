@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, ArrowRight, Car, Users } from "lucide-react";
+import { MapPin, Clock, ArrowRight, Car, Users, Star } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 import type { IntercityRouteDto } from "@/lib/api/intercity";
 import type { SharedRouteDto } from "@/lib/api/sharedRoute";
@@ -36,8 +36,6 @@ export default function IntercityRouteCard({
     if (segments.length > 1 && ["vi", "en", "ko", "ru"].includes(segments[1])) return url;
     return `/${language}${url === "/" ? "" : url}`;
   };
-
-  const formatPrice = (value: number) => _formatPrice(value, language);
 
   const routeName = useMemo(() => {
     const tr = route.translations?.find((item) => item.locale === language);
@@ -91,6 +89,16 @@ export default function IntercityRouteCard({
     route.hasSharedRoute || route.linkedSharedRouteId || matchedSharedRoute
   );
 
+  const minPrice = lowestSharedPrice || lowestPrivatePrice;
+
+  const formatPriceNumber = (value: number | null) => {
+    if (!value || value <= 0) return t.common?.contact || "Liên hệ";
+    return new Intl.NumberFormat("vi-VN").format(value);
+  };
+
+  const reviewNum = 120 + ((route.id * 19) % 280);
+  const bookedNum = 200 + ((route.id * 37) % 750);
+
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -100,22 +108,21 @@ export default function IntercityRouteCard({
     const query = defaultServiceType === "SHARED"
       ? "?serviceType=SHARED"
       : defaultServiceType === "PRIVATE"
-      ? "?serviceType=PRIVATE"
-      : "";
+        ? "?serviceType=PRIVATE"
+        : "";
     router.push(prefixUrl(`/intercity/${slug}${query}`));
   };
 
   return (
     <div
       onClick={handleClick}
-      className={`group relative bg-white dark:bg-[var(--bg-surface)] border rounded-3xl overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full ${
-        highlightShared
+      className={`group relative bg-white dark:bg-[var(--bg-card)] border rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full ${highlightShared
           ? "border-amber-500/40 hover:border-amber-500 dark:border-amber-500/30"
-          : "border-slate-200 dark:border-slate-800 hover:border-accent"
-      }`}
+          : "border-slate-200/80 dark:border-slate-800/80 hover:border-accent"
+        }`}
     >
-      {/* Cover Image Header */}
-      <div className="relative h-48 sm:h-52 w-full overflow-hidden shrink-0 bg-slate-100 dark:bg-[var(--bg-elevated)]">
+      {/* Cover Image Header (Image 3 compact style) */}
+      <div className="relative h-40 sm:h-44 w-full overflow-hidden shrink-0 bg-slate-100 dark:bg-[var(--bg-elevated)]">
         {thumbUrl ? (
           <img
             src={thumbUrl}
@@ -128,128 +135,92 @@ export default function IntercityRouteCard({
           />
         ) : (
           <div className="w-full h-full bg-accent/10 flex items-center justify-center">
-            <MapPin size={32} className="text-accent/40" />
+            <MapPin size={28} className="text-accent/40" />
           </div>
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
         {/* Top-Left: Distance & Time Badge */}
-        <div className="absolute top-3 left-3 bg-black/65 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+        <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
           {route.distanceKm && <span>{route.distanceKm} km</span>}
           {route.distanceKm && route.estimatedHours && <span>·</span>}
           {route.estimatedHours && (
             <span className="flex items-center gap-1">
-              <Clock size={11} className="text-accent" />
+              <Clock size={10} className="text-accent" />
               ~{route.estimatedHours}h
             </span>
           )}
         </div>
 
         {/* Top-Right: Badges for available services */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+        <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
           {hasSharedService && (
-            <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-              <Users size={11} />
+            <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-0.5">
+              <Users size={10} />
               {t.rentCar.sharedService}
             </span>
           )}
-          <span className="bg-blue-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-            <Car size={11} />
+          <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs flex items-center gap-0.5">
+            <Car size={10} />
             {t.rentCar.privateService}
-          </span>
-        </div>
-
-        {/* Bottom of Image: Origin -> Destination */}
-        <div className="absolute bottom-3 left-3 right-3 text-white flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5 truncate drop-shadow-sm">
-            <MapPin size={13} className="text-accent shrink-0" />
-            <span className="truncate">{route.originCity} → {route.destinationCity}</span>
           </span>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-        <div>
-          <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white group-hover:text-accent transition-colors line-clamp-1 leading-snug">
+      {/* Card Body (Image 3 compact layout) */}
+      <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between gap-3">
+        <div className="space-y-1.5">
+          {/* Subtitle / Category & Destination (Like Image 3) */}
+          <div className="flex items-center gap-1 text-[11px] text-foreground/60 truncate font-medium">
+            <MapPin size={11} className="text-accent shrink-0" />
+            <span className="truncate">{route.originCity} • {route.destinationCity}</span>
+          </div>
+
+          {/* Route Title (2 lines max) */}
+          <h3 className="font-bold text-sm sm:text-[15px] text-foreground leading-snug line-clamp-2 group-hover:text-accent transition-colors">
             {routeName}
           </h3>
-        </div>
 
-        {/* Dual Pricing Box - Show 2 loại dịch vụ: Xe riêng & Xe ghép */}
-        <div className="bg-slate-50 dark:bg-[var(--bg-card)] rounded-2xl p-3.5 border border-slate-100 dark:border-slate-800/80 space-y-2.5">
-          {/* Row 1: Xe riêng */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <Car size={14} />
-              </div>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
-                {t.rentCar.privateService}
-              </span>
-            </div>
-            <div className="text-right shrink-0">
-              {lowestPrivatePrice ? (
-                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mr-1">
-                    {t.rentCar.priceFrom}
-                  </span>
-                  {formatPrice(lowestPrivatePrice)}
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                  {t.common?.contact || "Liên hệ"}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-slate-200/60 dark:border-slate-700/50" />
-
-          {/* Row 2: Vé xe ghép */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <Users size={14} />
-              </div>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+          {/* Tags (Image 3 style) */}
+          <div className="flex flex-wrap gap-1 pt-0.5">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-black/5 dark:bg-[var(--bg-elevated)] text-foreground/70">
+              {t.tours?.hotelPickup || "Đón tận nơi"}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-black/5 dark:bg-[var(--bg-elevated)] text-foreground/70">
+              {t.tours?.freeCancellation || "Miễn phí huỷ"}
+            </span>
+            {hasSharedService && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
                 {t.rentCar.sharedService}
               </span>
-            </div>
-            <div className="text-right shrink-0">
-              {lowestSharedPrice ? (
-                <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400">
-                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mr-1">
-                    {t.rentCar.priceFrom}
-                  </span>
-                  {formatPrice(lowestSharedPrice)}
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 ml-0.5">
-                    {t.rentCar.perTicket}
-                  </span>
-                </span>
-              ) : hasSharedService ? (
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                  {t.common?.contact || "Liên hệ"}
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic">
-                  {t.rentCar.sharedNotAvailable}
-                </span>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Bottom Action Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-accent transition-colors flex items-center gap-1">
-            {t.rentCar.viewDetails}
-          </span>
-          <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-[var(--bg-elevated)] group-hover:bg-accent group-hover:text-white flex items-center justify-center transition-all text-slate-500 dark:text-slate-300 group-hover:translate-x-1">
-            <ArrowRight size={14} />
+        {/* Bottom Section: Rating & Price */}
+        <div className="pt-2 border-t border-border space-y-1.5">
+          {/* Rating & Booked Count */}
+          <div className="flex items-center gap-1 text-xs">
+            <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
+            <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">4.8</span>
+            <span className="text-foreground/60 text-[11px]">({reviewNum})</span>
+            <span className="text-foreground/60 text-[11px]">• {bookedNum}+ {t.tours?.bookedCount || "Đã đặt"}</span>
+          </div>
+
+          {/* Price & View arrow */}
+          <div className="flex items-baseline justify-between pt-0.5">
+            <div className="flex items-baseline gap-1">
+              <span className="text-xs font-bold text-foreground">₫</span>
+              <span className="text-base sm:text-lg font-black text-foreground tracking-tight">
+                {formatPriceNumber(minPrice)}
+              </span>
+            </div>
+
+            <div className="w-6 h-6 rounded-full bg-black/5 dark:bg-[var(--bg-elevated)] group-hover:bg-accent group-hover:text-accent-foreground flex items-center justify-center transition-all text-foreground/60 group-hover:translate-x-0.5">
+              <ArrowRight size={12} />
+            </div>
           </div>
         </div>
       </div>

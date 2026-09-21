@@ -118,26 +118,6 @@ export const Navbar = () => {
     return `/${language}${url === "/" ? "" : url}`;
   };
 
-  const isTransparentRoute =
-    pathname === `/${language}` ||
-    pathname === `/${language}/intercity` ||
-    pathname === `/${language}/self-drive` ||
-    pathname === `/${language}/airport-transfer` ||
-    pathname === `/${language}/tours` ||
-    pathname === "/" ||
-    pathname === "/intercity" ||
-    pathname === "/self-drive" ||
-    pathname === "/airport-transfer" ||
-    pathname === "/tours";
-  const showTransparent = isTransparentRoute && !isScrolled;
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    handleScroll();
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const getLanguageLabel = (lang: Language) => {
     const found = LANGUAGES.find(l => l.code === lang);
     return found ? `${found.flag} ${found.code.toUpperCase()}` : lang.toUpperCase();
@@ -185,11 +165,7 @@ export const Navbar = () => {
   );
 
   return (
-    <nav className={`${isTransparentRoute ? "fixed" : "sticky"
-      } top-0 left-0 right-0 z-40 w-full border-b transition-all duration-300 ${showTransparent
-        ? "bg-transparent border-transparent text-white"
-        : "bg-background/70 backdrop-blur-lg border-separator text-foreground shadow-sm"
-      }`}>
+    <nav className="sticky top-0 left-0 right-0 z-40 w-full border-b transition-all duration-300 bg-white/95 dark:bg-[var(--bg-surface)]/95 backdrop-blur-md border-slate-200/80 dark:border-slate-800 text-foreground shadow-xs">
       <header className="mx-auto flex h-16 max-w-[1536px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 xl:px-10">
         {/* Left branding and Desktop nav */}
         <div className="flex items-center gap-6">
@@ -199,10 +175,7 @@ export const Navbar = () => {
               alt="Minh Khoa Travel"
               className="w-9 h-9 object-contain rounded-md"
             />
-            <p className={`font-extrabold text-base tracking-tight transition-all duration-300 leading-tight ${showTransparent
-              ? "text-white"
-              : "text-foreground"
-              }`}>
+            <p className="font-extrabold text-base tracking-tight leading-tight text-foreground">
               Minh Khoa Travel
             </p>
           </NextLink>
@@ -211,10 +184,7 @@ export const Navbar = () => {
           <ul className="hidden lg:flex items-center gap-5 ml-4">
             <li>
               <NextLink
-                className={`text-sm font-semibold transition-colors no-underline ${showTransparent
-                  ? "text-white/95 hover:text-white"
-                  : "text-foreground-600 hover:text-accent"
-                  }`}
+                className="text-sm font-semibold transition-colors no-underline text-foreground-600 hover:text-accent"
                 href={prefixUrl("/")}
               >
                 {t.nav.home}
@@ -231,10 +201,7 @@ export const Navbar = () => {
               <button
                 type="button"
                 onClick={() => setIsServicesOpen((prev) => !prev)}
-                className={`flex items-center gap-1.5 text-sm font-semibold transition-colors cursor-pointer outline-none bg-transparent border-none py-2 ${showTransparent
-                  ? "text-white/95 hover:text-white"
-                  : "text-foreground-600 hover:text-accent"
-                  }`}
+                className="flex items-center gap-1.5 text-sm font-semibold transition-colors cursor-pointer outline-none bg-transparent border-none py-2 text-foreground-600 hover:text-accent"
               >
                 <span>{t.nav.services}</span>
                 <ChevronDown size={14} className={`opacity-70 transition-transform duration-200 ${isServicesOpen ? "rotate-180" : ""}`} />
@@ -319,10 +286,7 @@ export const Navbar = () => {
 
             <li>
               <NextLink
-                className={`text-sm font-semibold transition-colors no-underline ${showTransparent
-                  ? "text-white/95 hover:text-white"
-                  : "text-foreground-600 hover:text-accent"
-                  }`}
+                className="text-sm font-semibold transition-colors no-underline text-foreground-600 hover:text-accent"
                 href={prefixUrl("/about")}
               >
                 {t.nav.about}
@@ -335,7 +299,7 @@ export const Navbar = () => {
         <div className="hidden lg:flex items-center gap-3">
           {languageSelector}
           <div className="w-px h-6 bg-divider mx-1" />
-          <ThemeSwitch className={showTransparent ? "text-white" : "text-foreground"} />
+          <ThemeSwitch className="text-foreground" />
 
           {isAuthenticated && user ? (
             <Dropdown>
@@ -347,10 +311,10 @@ export const Navbar = () => {
                   >
                     {(user.fullname || user.email || "?").charAt(0).toUpperCase()}
                   </Avatar>
-                  <span className={`text-xs font-semibold max-w-[100px] truncate ${showTransparent ? "text-white" : "text-foreground"}`}>
+                  <span className="text-xs font-semibold max-w-[100px] truncate text-foreground">
                     {user.fullname || user.email}
                   </span>
-                  <ChevronDown size={12} className={`opacity-60 ${showTransparent ? "text-white" : "text-foreground"}`} />
+                  <ChevronDown size={12} className="opacity-60 text-foreground" />
                 </div>
               </Dropdown.Trigger>
               <Dropdown.Popover className="min-w-[200px] rounded-md">
@@ -397,8 +361,7 @@ export const Navbar = () => {
             <div className="flex items-center gap-2">
               <NextLink
                 href={`/${language}/login`}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-default-100 transition-colors no-underline ${showTransparent ? "text-white hover:bg-white/10" : "text-foreground"
-                  }`}
+                className="text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-default-100 transition-colors no-underline text-foreground"
               >
                 {t.auth.login}
               </NextLink>
@@ -415,14 +378,11 @@ export const Navbar = () => {
         {/* Right side items (Mobile) */}
         <div className="flex lg:hidden items-center gap-2">
           {languageSelector}
-          <ThemeSwitch className={showTransparent ? "text-white" : "text-foreground"} />
+          <ThemeSwitch className="text-foreground" />
           <button
             aria-expanded={isMenuOpen}
             aria-label="Toggle menu"
-            className={`p-2 rounded-md transition-colors ${showTransparent
-              ? "hover:bg-white/10 text-white"
-              : "hover:bg-default-100 text-foreground"
-              }`}
+            className="p-2 rounded-md transition-colors hover:bg-default-100 text-foreground"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

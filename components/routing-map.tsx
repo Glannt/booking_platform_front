@@ -125,13 +125,13 @@ export function RoutingMap({
       if (mapRef.current) {
         // Clean up markers and layers safely if they exist
         if (routeLayerRef.current) {
-          try { mapRef.current.removeLayer(routeLayerRef.current); } catch (e) {}
+          try { mapRef.current.removeLayer(routeLayerRef.current); } catch (e) { }
         }
         if (airportMarkerRef.current) {
-          try { mapRef.current.removeLayer(airportMarkerRef.current); } catch (e) {}
+          try { mapRef.current.removeLayer(airportMarkerRef.current); } catch (e) { }
         }
         if (targetMarkerRef.current) {
-          try { mapRef.current.removeLayer(targetMarkerRef.current); } catch (e) {}
+          try { mapRef.current.removeLayer(targetMarkerRef.current); } catch (e) { }
         }
         routeLayerRef.current = null;
         airportMarkerRef.current = null;
@@ -244,12 +244,12 @@ export function RoutingMap({
           if (airportMarkerRef.current) {
             try {
               activeMap.removeLayer(airportMarkerRef.current);
-            } catch (e) {}
+            } catch (e) { }
           }
           if (targetMarkerRef.current) {
             try {
               activeMap.removeLayer(targetMarkerRef.current);
-            } catch (e) {}
+            } catch (e) { }
           }
 
           // Add markers with correct start/end labels depending on direction
@@ -301,7 +301,7 @@ export function RoutingMap({
         <div className="flex items-center gap-2">
           {routeInfo && (
             <span className="text-[11px] font-extrabold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full">
-              📍 {routeInfo.distance} ~ {routeInfo.duration} phút
+              {routeInfo.distance} ~ {routeInfo.duration} phút
             </span>
           )}
           {isMaximized && (
@@ -328,9 +328,9 @@ export function RoutingMap({
           title={isMaximized ? "Thu nhỏ" : "Phóng to"}
         >
           {isMaximized ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" /></svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
           )}
         </button>
         {isLoading && (

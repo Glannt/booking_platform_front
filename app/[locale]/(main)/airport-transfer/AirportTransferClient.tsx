@@ -86,9 +86,10 @@ interface VehicleOption {
 
 interface AirportTransferClientProps {
   sections: SectionDto[];
+  initialAirports?: AirportDto[];
 }
 
-export default function AirportTransferClient({ sections }: AirportTransferClientProps) {
+export default function AirportTransferClient({ sections, initialAirports = [] }: AirportTransferClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t } = useI18n();
@@ -172,9 +173,19 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   const heroSection = sections.find(s => s.sectionType === "HERO_BANNER") || null;
 
   // Airport & Route data from API
-  const [airports, setAirports] = useState<AirportDto[]>([]);
-  const [selectedAirport, setSelectedAirport] = useState<AirportDto | null>(null);
-  const [airportSearchText, setAirportSearchText] = useState("");
+  const defaultInitialAirport = useMemo(() => {
+    if (!initialAirports || initialAirports.length === 0) return null;
+    return initialAirports.find(a => a.isDefault) || initialAirports.find(a => a.code === "CXR") || initialAirports[0] || null;
+  }, [initialAirports]);
+
+  const [airports, setAirports] = useState<AirportDto[]>(initialAirports);
+  const [selectedAirport, setSelectedAirport] = useState<AirportDto | null>(defaultInitialAirport);
+  const [airportSearchText, setAirportSearchText] = useState(() => {
+    if (defaultInitialAirport) {
+      return `${getAirportName(defaultInitialAirport)} (${defaultInitialAirport.code})`;
+    }
+    return "";
+  });
   const [showAirportSuggestions, setShowAirportSuggestions] = useState(false);
 
   useEffect(() => {
@@ -197,7 +208,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
   const [routes, setRoutes] = useState<AirportRouteDto[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<AirportRouteDto | null>(null);
   const [transferPrices, setTransferPrices] = useState<AirportTransferPrice[]>([]);
-  const [airportsLoading, setAirportsLoading] = useState(true);
+  const [airportsLoading, setAirportsLoading] = useState(initialAirports.length === 0);
   const [routesLoading, setRoutesLoading] = useState(false);
 
   // Route toggle
@@ -278,8 +289,9 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     }
   };
 
-  // Fetch active airports on mount
+  // Fetch active airports on mount if not already preloaded
   useEffect(() => {
+    if (initialAirports.length > 0) return;
     getActiveAirports()
       .then(res => {
         if (res && res.data) {
@@ -538,6 +550,20 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     }
 
     if (trip === "return") setTripType("return");
+
+    const flight = searchParams.get("flightNumber");
+    if (flight) setFlightNumber(flight);
+
+    const pass = searchParams.get("passengers");
+    if (pass) {
+      const pNum = parseInt(pass, 10);
+      if (!isNaN(pNum) && pNum > 0) setPassengerCount(pNum);
+    }
+
+    const returnDateStr = searchParams.get("returnDate");
+    if (returnDateStr) {
+      try { setReturnDateValue(parseDate(returnDateStr)); } catch { }
+    }
   }, [searchParams, airports, airportsLoading, language]);
 
   // Restore booking form from checkout draft (back-navigation preservation)
@@ -853,14 +879,31 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
 
   const finalPrice = unitPrice + surchargeAmount;
 
+  const selectedTransferPrice = useMemo(() => {
+    if (!selectedVehicle) return null;
+    return transferPrices.find((p) => p.vehicleCategoryId === selectedVehicle.categoryId) || null;
+  }, [selectedVehicle, transferPrices]);
+
   const depositCalc = useMemo(() => {
     if (!isFormComplete || !selectedVehicle || finalPrice <= 0) return null;
+
+    // Prioritize vehicle custom deposit, then route default deposit, then default 20%
+    const depType = selectedTransferPrice?.depositType || selectedRoute?.depositType || DepositType.PERCENT;
+    const depRate = selectedTransferPrice?.depositType
+      ? selectedTransferPrice.depositRate
+      : (selectedRoute?.depositRate ?? DEFAULT_MODULE_DEPOSIT_RATES.AIRPORT);
+    const depAmount = selectedTransferPrice?.depositType
+      ? selectedTransferPrice.depositAmount
+      : selectedRoute?.depositAmount;
+
     return calculateDeposit({
       totalAmount: finalPrice,
-      depositType: DepositType.PERCENT,
+      depositType: depType,
+      depositRate: depRate ?? undefined,
+      depositAmount: depAmount ?? undefined,
       defaultRate: DEFAULT_MODULE_DEPOSIT_RATES.AIRPORT,
     });
-  }, [finalPrice, isFormComplete, selectedVehicle]);
+  }, [finalPrice, isFormComplete, selectedVehicle, selectedTransferPrice, selectedRoute]);
 
   const finalPriceDisplay = useMemo(() => {
     if (!isFormComplete || !selectedVehicle) return "—";
@@ -959,7 +1002,12 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
       ...(tripType === "return" && returnDateValue ? [{ label: t.airportTransfer.returnDate, value: `${returnDateValue.toString()} ${returnTimeValue.hour}:${String(returnTimeValue.minute).padStart(2, "0")} ${returnTimeValue.period}` }] : []),
       ...(nhaTrangAddress ? [{ label: t.airportTransfer.address, value: nhaTrangAddress }] : []),
       ...(depositCalc ? [
-        { label: t.discounts?.depositRequired || "Tiền đặt cọc", value: `${formatPrice(depositCalc.depositAmount)} (${depositCalc.depositRate}%)` },
+        { 
+          label: t.discounts?.depositRequired || "Tiền đặt cọc", 
+          value: depositCalc.depositType === DepositType.FIXED 
+            ? `${formatPrice(depositCalc.depositAmount)} (Cố định)`
+            : `${formatPrice(depositCalc.depositAmount)} (${depositCalc.depositRate}%)`
+        },
         { label: t.discounts?.remainingPayment || "Thanh toán còn lại", value: formatPrice(depositCalc.remainingAmount) },
       ] : []),
     ];
@@ -1019,46 +1067,48 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
 
       {/* Hero Banner Area */}
-      <section className="relative w-full min-h-[300px] flex items-center pt-28 pb-14 px-6 overflow-hidden">
+      <section className="relative w-full min-h-[320px] md:min-h-[360px] flex flex-col justify-center items-center pt-12 md:pt-16 pb-8 md:pb-12 px-4 sm:px-6 lg:px-8 xl:px-10">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 overflow-hidden bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: heroSection?.imageUrls?.[0]
               ? `url('${heroSection.imageUrls[0]}')`
               : `url('')`
           }}
         >
-          <div className="absolute inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-[1.5px]" />
+          <div className="absolute inset-0 bg-black/65 dark:bg-black/75 backdrop-blur-[1px]" />
         </div>
 
-        <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10 text-white">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-white/10 dark:bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-3">
+        <div className="max-w-[1536px] mx-auto w-full flex flex-col items-center justify-center text-center gap-4 relative z-10 text-white my-auto pt-4 pb-4">
+          <div className="space-y-3 max-w-3xl">
+            <div className="inline-flex items-center gap-2 bg-white/10 dark:bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
               <Sparkles size={12} className="text-accent animate-spin-slow" />
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-100">
                 {heroSection?.translations?.find(tr => tr.locale === language)?.subtitle || t.airportTransfer.subtitle}
               </span>
             </div>
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight drop-shadow-md">
               {heroSection?.translations?.find(tr => tr.locale === language)?.title || t.airportTransfer.title}
             </h1>
             <FormattedDescription
               description={heroSection?.translations?.find(tr => tr.locale === language)?.description || t.airportTransfer.heroDesc}
-              className="mt-2 text-sm md:text-base text-slate-200 max-w-3xl font-medium"
+              className="mt-2 text-sm md:text-base text-slate-200 max-w-2xl mx-auto font-medium"
             />
+            <div className="flex items-center justify-center pt-1">
+              <a
+                href="tel:0764971971"
+                className="inline-flex items-center gap-2.5 bg-accent hover:bg-accent-hover text-accent-foreground px-5 py-2.5 rounded-full text-xs font-black transition-all shadow-md hover:scale-105 active:scale-95 no-underline border-none"
+              >
+                <Phone size={14} />
+                <span>Hotline: 0764 971 971</span>
+              </a>
+            </div>
           </div>
-          <a
-            href="tel:0764971971"
-            className="flex items-center gap-2.5 bg-accent hover:bg-accent-hover text-white px-5 py-3 rounded-full text-sm font-black transition-all shadow-lg hover:scale-105 active:scale-95 no-underline shrink-0 border-none"
-          >
-            <Phone size={16} />
-            <span>Hotline: 0764 971 971</span>
-          </a>
         </div>
       </section>
 
       {/* Main Content Area */}
-      <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-8 sm:pt-12 pb-12 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* Left Column: Form & Car Choices */}
         <div className="lg:col-span-8 space-y-6">
@@ -1907,7 +1957,7 @@ export default function AirportTransferClient({ sections }: AirportTransferClien
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                       <ShieldCheck size={15} className="text-amber-600 shrink-0" />
-                      {t.discounts?.depositRequired || "Tiền đặt cọc"} ({depositCalc.depositRate}%)
+                      {t.discounts?.depositRequired || "Tiền đặt cọc"} {depositCalc.depositType === DepositType.FIXED ? "(Cố định)" : `(${depositCalc.depositRate}%)`}
                     </span>
                     <span className="text-sm font-black text-amber-700 dark:text-amber-400">
                       {formatPrice(depositCalc.depositAmount)}
