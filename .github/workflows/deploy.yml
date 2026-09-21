@@ -3,6 +3,11 @@ name: Build, Push & Deploy Frontend
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
 
 jobs:
   build-and-push:
@@ -37,14 +42,14 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: SSH vào VPS và deploy bản mới
+      - name: Blue-Green deploy Frontend
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
           script: |
+            set -e
             cd /opt/projects/minhkhoatravel
-            docker compose pull frontend
-            docker compose up -d frontend
-            docker image prune -f
+            ./scripts/deploy-bluegreen.sh frontend ${{ github.sha }}
