@@ -18,7 +18,7 @@ import type { RentalDto, RentalPriceDto } from "@/lib/api/selfDrive";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 import { formatPriceSync } from "@/lib/format";
 import { useI18n } from "@/context/LanguageContext";
-import { ScopedDiscountTab } from "../discount/ScopedDiscountTab";
+import { ScopedDiscountTab, ActivePromotionBadge } from "@/components/admin/discount";
 
 interface SelfDriveDetailModalProps {
   isOpen: boolean;
@@ -39,13 +39,10 @@ export function SelfDriveDetailModal({
   if (!rental) return null;
 
   const cat = rental.category;
-  const trans =
-    cat?.translations?.find((t) => t.locale === language) ||
-    cat?.translations?.find((t) => t.locale === "vi") ||
-    cat?.translations?.[0];
-  const catName = trans?.name || cat?.code || `Phân khúc #${rental.vehicleCategoryId}`;
-  const seatText = cat ? `${cat.minSeat}-${cat.maxSeat} chỗ` : "";
-  const luggageText = cat ? `${cat.minLuggage}-${cat.maxLuggage} ${cat.unitLuggage || "vali"}` : "";
+  const catTrans = cat?.translations?.find((t) => t.locale === language) || cat?.translations?.[0];
+  const catName = catTrans?.name || cat?.code || `Xe #${rental.id}`;
+  const seatText = cat ? `${cat.minSeat}${cat.maxSeat > cat.minSeat ? `-${cat.maxSeat}` : ""} chỗ` : undefined;
+  const luggageText = cat ? `${cat.minLuggage}${cat.maxLuggage > cat.minLuggage ? `-${cat.maxLuggage}` : ""} ${cat.unitLuggage || "vali"}` : undefined;
 
   const activePrice = rental.prices?.find((p) => p.active);
   const isPercent = rental.depositType === "PERCENT" || Boolean(rental.depositRate);
@@ -62,10 +59,10 @@ export function SelfDriveDetailModal({
                   <KeyRound size={18} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                  <h3 className="text-base font-bold text-foreground">
                     Chi tiết cấu hình xe tự lái #{rental.id}
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-foreground/60">
                     {catName} - Thông tin phân khúc, điều kiện cọc & khuyến mãi
                   </p>
                 </div>
@@ -85,7 +82,7 @@ export function SelfDriveDetailModal({
                 className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
                   activeTab === "INFO"
                     ? "border-accent text-accent"
-                    : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    : "border-transparent text-foreground/60 hover:text-foreground"
                 }`}
               >
                 <Car size={14} />
@@ -97,7 +94,7 @@ export function SelfDriveDetailModal({
                 className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${
                   activeTab === "DISCOUNTS"
                     ? "border-accent text-accent"
-                    : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    : "border-transparent text-foreground/60 hover:text-foreground"
                 }`}
               >
                 <Tag size={14} />
@@ -110,29 +107,33 @@ export function SelfDriveDetailModal({
                 <>
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Phân khúc xe:</span>
-                      <span className="font-black text-slate-900 dark:text-white text-sm">{catName}</span>
+                      <span className="text-foreground/70 font-bold">Phân khúc xe:</span>
+                      <span className="font-black text-foreground text-sm">{catName}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Số chỗ ngồi:</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">{seatText || "Chưa xác định"}</span>
+                      <span className="text-foreground/70 font-bold">Số chỗ ngồi:</span>
+                      <span className="font-semibold text-foreground/80">{seatText || "Chưa xác định"}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Quy cách hành lý:</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">{luggageText || "Chưa xác định"}</span>
+                      <span className="text-foreground/70 font-bold">Quy cách hành lý:</span>
+                      <span className="font-semibold text-foreground/80">{luggageText || "Chưa xác định"}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Số lượng xe trong đội:</span>
+                      <span className="text-foreground/70 font-bold">Số lượng xe trong đội:</span>
                       <span className="font-black text-accent">{rental.vehiclesCount || 0} xe</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground/70 font-bold">Thứ tự ưu tiên hiển thị:</span>
+                      <span className="font-bold text-foreground">#{rental.sortOrder ?? 0}</span>
                     </div>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Hình thức đặt cọc:</span>
+                      <span className="text-foreground/70 font-bold">Hình thức đặt cọc:</span>
                       <span className="font-black text-amber-600 dark:text-amber-400 text-sm">
                         {rental.isContactOnly ? (
-                          <span className="text-slate-400 text-xs italic font-normal">Theo thỏa thuận khi báo giá</span>
+                          <span className="text-foreground/50 text-xs italic font-normal">Theo thỏa thuận khi báo giá</span>
                         ) : isPercent ? (
                           <span>{rental.depositRate || 30}% (tính từ tổng giá đơn hàng)</span>
                         ) : (
@@ -141,22 +142,28 @@ export function SelfDriveDetailModal({
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Số ngày tối thiểu:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{rental.minimumDays || 1} ngày</span>
+                      <span className="text-foreground/70 font-bold">Số ngày tối thiểu:</span>
+                      <span className="font-bold text-foreground">{rental.minimumDays || 1} ngày</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400 font-bold">Đơn giá ngày:</span>
-                      {rental.isContactOnly ? (
-                        <span className="text-amber-500 font-bold text-xs bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                          Liên hệ báo giá
-                        </span>
-                      ) : activePrice && activePrice.amount > 0 ? (
-                        <span className="font-black text-accent text-sm">
-                          {formatPriceSync(Number(activePrice.amount), "vi")} /ngày
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 italic">Chưa set giá</span>
-                      )}
+                    <div className="flex flex-col gap-2 pt-1 border-t border-separator/60">
+                      <div className="flex items-center justify-between">
+                        <span className="text-foreground/70 font-bold">Đơn giá ngày:</span>
+                        <div className="flex items-center gap-2">
+                          <ActivePromotionBadge scopeType="SELF_DRIVE" scopeRefId={rental.id} compact />
+                          {rental.isContactOnly ? (
+                            <span className="text-amber-500 font-bold text-xs bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                              Liên hệ báo giá
+                            </span>
+                          ) : activePrice && activePrice.amount > 0 ? (
+                            <span className="font-black text-accent text-sm">
+                              {formatPriceSync(Number(activePrice.amount), "vi")} /ngày
+                            </span>
+                          ) : (
+                            <span className="text-foreground/50 italic">Chưa set giá</span>
+                          )}
+                        </div>
+                      </div>
+                      <ActivePromotionBadge scopeType="SELF_DRIVE" scopeRefId={rental.id} className="mt-1" />
                     </div>
                   </div>
                 </>
@@ -174,7 +181,7 @@ export function SelfDriveDetailModal({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-foreground/80 transition-colors cursor-pointer"
               >
                 Đóng
               </Button>
@@ -198,3 +205,5 @@ export function SelfDriveDetailModal({
     </Modal>
   );
 }
+
+export default SelfDriveDetailModal;

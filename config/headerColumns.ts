@@ -212,6 +212,7 @@ export const getSurchargeMappingHeaderColumns = (t: any): HeaderColumn[] => [
    ========================================================================== */
 export const getSelfDriveRentalHeaderColumns = (t: any): HeaderColumn[] => [
   createCol("id", "ID", { isRowHeader: true, sortable: true }),
+  createCol("sortOrder", "Thứ tự", { sortable: true }),
   createCol("category", "Phân khúc xe", { sortable: true }),
   createCol("vehicles", "Số lượng xe", { sortable: false }),
   createCol("deposit", "Tiền cọc", { sortable: true }),
@@ -273,6 +274,7 @@ export const getAirportRouteHeaderColumns = (t: any): HeaderColumn[] => [
   createCol("code", "Mã tuyến", { sortable: true }),
   createCol("airport", "Sân bay", { sortable: false }),
   createCol("distanceKm", "Km", { sortable: true }),
+  createCol("deposit", "Cọc mặc định", { sortable: false }),
   createCol("active", t?.common?.status || "Trạng thái", { sortable: true }),
   createCol("actions", t?.common?.actions || "Thao tác", { sortable: false }),
 ];
@@ -285,6 +287,7 @@ export const getAirportTransferHeaderColumns = (t: any): HeaderColumn[] => [
   createCol("zoneBufferKm", "Vùng đệm Zone", { sortable: true }),
   createCol("baseAmount", "Giá trong km", { sortable: true }),
   createCol("perKmAmount", "Giá / km thêm", { sortable: true }),
+  createCol("deposit", "Đặt cọc", { sortable: false }),
   createCol("active", t?.common?.status || "Trạng thái", { sortable: true }),
   createCol("actions", t?.common?.actions || "Thao tác", { sortable: false }),
 ];

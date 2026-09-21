@@ -21,7 +21,7 @@ import {
 import { Save, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 import ImageUpload from "@/components/ImageUpload";
-import ExpandableTextArea from "@/components/admin/common/ExpandableTextArea";
+import { ExpandableTextArea } from "@/components/admin/common";
 
 import { createVehicleCategory, VehicleCategoryDto, VehicleCategoryTranslationDto } from "@/lib/api/fleet";
 

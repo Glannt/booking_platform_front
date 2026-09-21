@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import { type IntercityRoutePriceDto, type IntercityRouteDto } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
+import { ActivePromotionSection } from "@/components/admin/discount";
 
 interface PriceDetailModalProps {
   isOpen: boolean;
@@ -36,7 +37,8 @@ export function PriceDetailModal({
 }: PriceDetailModalProps) {
   if (!price) return null;
 
-  const routeObj = routes.find((r) => r.id === (price.routeId || Number(price.scopeRefId)));
+  const routeRefId = price.routeId || Number(price.scopeRefId);
+  const routeObj = routes.find((r) => r.id === routeRefId);
   const catObj = categories.find((c) => c.id === price.vehicleCategoryId);
 
   const getRouteName = (r: IntercityRouteDto | undefined) => {
@@ -79,7 +81,7 @@ export function PriceDetailModal({
           <ModalDialog className="max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <ModalCloseTrigger />
             <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
-              <Typography type="h3" className="text-base font-bold text-slate-800 dark:text-slate-100">
+              <Typography type="h3" className="text-base font-bold text-foreground">
                 Chi tiết cấu hình giá xe
               </Typography>
             </ModalHeader>
@@ -87,12 +89,12 @@ export function PriceDetailModal({
             <ModalBody className="p-6 space-y-4 overflow-y-auto max-h-[65vh]">
               {/* Route detail */}
               <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                   Tuyến đường áp dụng
                 </p>
                 <div className="flex items-center gap-2">
                   <MapPin size={16} className="text-accent" />
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-sm font-bold text-foreground">
                     {getRouteName(routeObj)}
                   </span>
                 </div>
@@ -100,24 +102,31 @@ export function PriceDetailModal({
 
               {/* Vehicle category detail */}
               <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                   Dòng xe áp dụng
                 </p>
                 <div className="flex items-center gap-2">
                   <Car size={16} className="text-blue-500" />
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-sm font-bold text-foreground">
                     {getCategoryName(catObj)}
                   </span>
                 </div>
               </div>
 
+              {/* Active Promotions on this Route */}
+              <ActivePromotionSection
+                scopeType="INTERCITY_ROUTE"
+                scopeRefId={routeRefId || undefined}
+                showEmpty
+              />
+
               {/* Pricing Type Banner */}
               <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                  <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                     Hình thức tính giá
                   </p>
-                  <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                  <span className="text-sm font-extrabold text-foreground">
                     {isDailyRate ? "Thuê theo ngày (DAILY_RATE)" : "Trong ngày (Một chiều / Khứ hồi)"}
                   </span>
                 </div>
@@ -131,7 +140,7 @@ export function PriceDetailModal({
               {isDailyRate ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                       Đơn giá / ngày
                     </p>
                     <div className="flex items-center gap-2">
@@ -143,22 +152,22 @@ export function PriceDetailModal({
                   </div>
 
                   <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                       Số ngày tối thiểu
                     </p>
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    <span className="text-sm font-bold text-foreground">
                       {price.minDays || price.minimumDays || 1} ngày
                     </span>
                   </div>
 
                   {price.kmIncludedPerDay != null && (
                     <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                         Giới hạn km / ngày
                       </p>
                       <div className="flex items-center gap-2">
                         <Gauge size={16} className="text-blue-500" />
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                        <span className="text-sm font-bold text-foreground">
                           {price.kmIncludedPerDay} km / ngày
                         </span>
                       </div>
@@ -167,11 +176,11 @@ export function PriceDetailModal({
 
                   {price.overagePricePerKm != null && (
                     <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                         Phí vượt km
                       </p>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                        {price.overagePricePerKm.toLocaleString()} {price.currency || "VND"} / km
+                      <span className="text-sm font-bold text-foreground">
+                        {price.overagePricePerKm.toLocaleString()} ${price.currency || "VND"} / km
                       </span>
                     </div>
                   )}
@@ -179,7 +188,7 @@ export function PriceDetailModal({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                       Giá một chiều
                     </p>
                     <div className="flex items-center gap-2">
@@ -192,11 +201,11 @@ export function PriceDetailModal({
 
                   <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
                         Giá khứ hồi
                       </p>
                       {isFallbackRoundTrip && (
-                        <span className="text-[10px] bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-bold">
+                        <span className="text-[10px] bg-slate-200 dark:bg-[var(--bg-elevated)] text-foreground/70 px-1.5 py-0.5 rounded font-bold">
                           2× Một chiều
                         </span>
                       )}
@@ -211,11 +220,11 @@ export function PriceDetailModal({
 
                   {price.waitingFee != null && price.waitingFee > 0 && (
                     <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator col-span-2">
-                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                         Phí chờ quá giờ
                       </p>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                        {price.waitingFee.toLocaleString()} {price.currency || "VND"} / giờ
+                      <span className="text-sm font-bold text-foreground">
+                        {price.waitingFee.toLocaleString()} ${price.currency || "VND"} / giờ
                       </span>
                     </div>
                   )}
@@ -225,10 +234,10 @@ export function PriceDetailModal({
               {/* Status detail */}
               <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                  <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                     Trạng thái kích hoạt
                   </p>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-sm font-bold text-foreground">
                     {price.active ? "Đang hoạt động" : "Tạm ngưng / Ẩn"}
                   </span>
                 </div>
@@ -245,7 +254,7 @@ export function PriceDetailModal({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-foreground/80 transition-colors cursor-pointer"
               >
                 Đóng
               </Button>
@@ -264,3 +273,5 @@ export function PriceDetailModal({
     </Modal>
   );
 }
+
+export default PriceDetailModal;

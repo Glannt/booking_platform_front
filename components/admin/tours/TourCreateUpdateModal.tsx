@@ -31,7 +31,7 @@ import {
     TextArea,
     Chip,
 } from "@heroui/react";
-import { Save, Plus, Trash2, RefreshCw, Shuffle, Edit, Edit3, Package, Compass } from "lucide-react";
+import { Save, Plus, Trash2, RefreshCw, Shuffle, Edit, Edit3, Package, Compass, ShieldCheck } from "lucide-react";
 import clsx from "clsx";
 
 import {
@@ -130,6 +130,11 @@ export default function TourCreateUpdateModal({
     const [imageIds, setImageIds] = useState<number[]>([]);
     const [thumbnailId, setThumbnailId] = useState<number | null>(null);
 
+    // Deposit policy
+    const [depositType, setDepositType] = useState<"PERCENT" | "FIXED">("PERCENT");
+    const [depositRate, setDepositRate] = useState<number>(30);
+    const [depositAmount, setDepositAmount] = useState<string>("");
+
     useEffect(() => {
         if (isOpen) {
             if (editingTour) {
@@ -185,6 +190,9 @@ export default function TourCreateUpdateModal({
                 setPackages(normalizedPkgs);
                 setImageIds(editingTour.imageIds || []);
                 setThumbnailId(editingTour.thumbnailId || null);
+                setDepositType((editingTour.depositType as "PERCENT" | "FIXED") || "PERCENT");
+                setDepositRate(editingTour.depositRate != null ? Number(editingTour.depositRate) : 30);
+                setDepositAmount(editingTour.depositAmount != null ? String(editingTour.depositAmount) : "");
             } else {
                 setTourCategoryId(categories[0]?.id || 0);
                 setDurationDays(1);
@@ -207,6 +215,9 @@ export default function TourCreateUpdateModal({
                 setPackages([]);
                 setImageIds([]);
                 setThumbnailId(null);
+                setDepositType("PERCENT");
+                setDepositRate(30);
+                setDepositAmount("");
             }
             setActiveTab("INFO");
             setActiveFormLocale("vi");
@@ -231,7 +242,6 @@ export default function TourCreateUpdateModal({
             {
                 iconUrl: "check",
                 colorText: "#1e293b",
-                colorIcon: "#3b82f6",
                 translations: [
                     { locale: "vi", content: "" },
                     { locale: "en", content: "" },
@@ -327,7 +337,6 @@ export default function TourCreateUpdateModal({
             id: opt.id,
             iconUrl: opt.iconUrl,
             colorText: opt.colorText,
-            colorIcon: opt.colorIcon,
             translations: (opt.translations || []).map((tr) => ({
                 id: tr.id,
                 locale: tr.locale,
@@ -355,7 +364,10 @@ export default function TourCreateUpdateModal({
                 return Boolean(name);
             }),
             thumbnailId: thumbnailId || undefined,
-            imageIds: imageIds.length > 0 ? imageIds : undefined
+            imageIds: imageIds.length > 0 ? imageIds : undefined,
+            depositType,
+            depositRate: depositType === "PERCENT" ? Number(depositRate) : undefined,
+            depositAmount: depositType === "FIXED" && depositAmount ? Number(depositAmount) : undefined
         };
 
         setLoading(true);
@@ -584,6 +596,98 @@ export default function TourCreateUpdateModal({
 
                                             <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
+                                            {/* Deposit Policy Configuration */}
+                                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[var(--bg-card)] space-y-3">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                    <div>
+                                                        <Label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                                                            <ShieldCheck size={15} className="text-amber-500 shrink-0" />
+                                                            <span>{t.discounts.depositConfig}</span>
+                                                        </Label>
+                                                        <p className="text-[11px] text-foreground/60 mt-0.5">
+                                                            {language === "vi" ? "Áp dụng chung cho đặt tour, tính theo tổng giá sau khuyến mãi." : "Applied to tour bookings, based on total price after promotion."}
+                                                        </p>
+                                                    </div>
+                                                    {/* Type Toggle */}
+                                                    <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[var(--bg-surface)] p-0.5 shrink-0">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDepositType("PERCENT")}
+                                                            className={`text-[11px] font-bold px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                                                                depositType === "PERCENT"
+                                                                    ? "bg-accent text-accent-foreground shadow-xs"
+                                                                    : "text-foreground/60 hover:text-foreground"
+                                                            }`}
+                                                        >
+                                                            {t.discounts.depositPercent}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDepositType("FIXED")}
+                                                            className={`text-[11px] font-bold px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                                                                depositType === "FIXED"
+                                                                    ? "bg-accent text-accent-foreground shadow-xs"
+                                                                    : "text-foreground/60 hover:text-foreground"
+                                                            }`}
+                                                        >
+                                                            {t.discounts.depositFixed}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {depositType === "PERCENT" ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <div className="w-32">
+                                                                <NumberField
+                                                                    value={depositRate}
+                                                                    onChange={(v) => setDepositRate(v || 0)}
+                                                                    minValue={0}
+                                                                    maxValue={100}
+                                                                    className="w-full"
+                                                                >
+                                                                    <NumberField.Group className="w-full">
+                                                                        <NumberField.Input className="w-full px-3 py-1.5 rounded-xl border border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground text-sm font-bold h-[36px]" />
+                                                                    </NumberField.Group>
+                                                                </NumberField>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                {[10, 20, 30, 50, 100].map((rate) => (
+                                                                    <button
+                                                                        key={rate}
+                                                                        type="button"
+                                                                        onClick={() => setDepositRate(rate)}
+                                                                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
+                                                                            depositRate === rate
+                                                                                ? "bg-accent/15 text-accent border-accent/40"
+                                                                                : "border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-foreground/70"
+                                                                        }`}
+                                                                    >
+                                                                        {rate}%
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <NumberField
+                                                            value={Number(depositAmount)}
+                                                            onChange={(v) => setDepositAmount(v !== undefined ? String(v) : "")}
+                                                            minValue={0}
+                                                            className="w-full sm:max-w-xs"
+                                                        >
+                                                            <NumberField.Group className="w-full">
+                                                                <NumberField.Input
+                                                                    placeholder={t.discounts.fixedDepositAmount}
+                                                                    className="w-full px-3 py-2 rounded-xl border border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground text-sm font-semibold h-[36px] outline-none"
+                                                                />
+                                                            </NumberField.Group>
+                                                        </NumberField>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {/* Translation Tabs Section */}
                                             <div className="space-y-4">
                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -811,69 +915,13 @@ export default function TourCreateUpdateModal({
                                                                     <TourOptionIconPicker
                                                                         value={opt.iconUrl || ""}
                                                                         onChange={(val) => handleOptionChange(index, "iconUrl", val)}
-                                                                        colorIcon={opt.colorIcon}
                                                                         language={language}
                                                                     />
                                                                 </div>
 
-                                                                {/* ROW 3: Màu icon, Màu chữ & Nút Xóa (1 Row ngang) */}
+                                                                {/* ROW 3: Màu chữ & Nút Xóa (1 Row ngang) */}
                                                                 <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
                                                                     <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-                                                                        {/* Màu Icon */}
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                                                                                {language === "vi" ? "Màu Icon:" : "Icon Color:"}
-                                                                            </span>
-                                                                            <ColorPicker
-                                                                                value={safeParseColor(opt.colorIcon, "#3b82f6")}
-                                                                                onChange={(color) => handleOptionChange(index, "colorIcon", color.toString("hex"))}
-                                                                            >
-                                                                                <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-surface)] cursor-pointer shadow-2xs hover:border-accent transition-colors">
-                                                                                    <ColorSwatch size="xs" color={safeParseColor(opt.colorIcon, "#3b82f6")} />
-                                                                                    <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300">
-                                                                                        {opt.colorIcon || "#3b82f6"}
-                                                                                    </span>
-                                                                                </ColorPicker.Trigger>
-                                                                                <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-[var(--bg-surface)] border border-divider shadow-xl rounded-xl z-50">
-                                                                                    <ColorArea
-                                                                                        aria-label="Color area"
-                                                                                        className="max-w-full h-32 rounded-lg"
-                                                                                        colorSpace="hsb"
-                                                                                        xChannel="saturation"
-                                                                                        yChannel="brightness"
-                                                                                    >
-                                                                                        <ColorArea.Thumb />
-                                                                                    </ColorArea>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <ColorSlider aria-label="Hue slider" channel="hue" className="flex-grow" colorSpace="hsb">
-                                                                                            <ColorSlider.Track>
-                                                                                                <ColorSlider.Thumb />
-                                                                                            </ColorSlider.Track>
-                                                                                        </ColorSlider>
-                                                                                        <Button
-                                                                                            type="button"
-                                                                                            isIconOnly
-                                                                                            size="sm"
-                                                                                            variant="outline"
-                                                                                            aria-label="Chọn màu biểu tượng ngẫu nhiên"
-                                                                                            className="h-8 w-8 rounded-lg bg-slate-50 border border-divider"
-                                                                                            onClick={() => handleOptionChange(index, "colorIcon", "hsl(" + Math.floor(Math.random() * 360) + ", 75%, 50%)")}
-                                                                                        >
-                                                                                            <Shuffle size={12} />
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                    <ColorField aria-label="Color field">
-                                                                                        <ColorField.Group variant="secondary">
-                                                                                            <ColorField.Prefix>
-                                                                                                <ColorSwatch size="xs" />
-                                                                                            </ColorField.Prefix>
-                                                                                            <ColorField.Input className="text-xs" />
-                                                                                        </ColorField.Group>
-                                                                                    </ColorField>
-                                                                                </ColorPicker.Popover>
-                                                                            </ColorPicker>
-                                                                        </div>
-
                                                                         {/* Màu Chữ */}
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">

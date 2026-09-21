@@ -27,7 +27,7 @@ const ITEM_TYPES: { value: ComparisonItemData["type"]; label: string }[] = [
 ];
 
 const ITEM_TYPE_STYLE: Record<ComparisonItemData["type"], string> = {
-  title: "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[var(--bg-card)]",
+  title: "text-foreground bg-default-100 dark:bg-[var(--bg-card)]",
   badge: "text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30",
   description:
     "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30",
@@ -42,7 +42,7 @@ interface CardEditorProps {
 }
 
 function CardEditor({ label, accent, items, onChange }: CardEditorProps) {
-  const accentText = accent === "amber" ? "text-amber-600" : "text-accent";
+  const accentText = accent === "amber" ? "text-amber-600 dark:text-amber-400" : "text-accent";
   const accentBorder =
     accent === "amber"
       ? "border-amber-200 dark:border-amber-950/40"
@@ -89,7 +89,7 @@ function CardEditor({ label, accent, items, onChange }: CardEditorProps) {
       </div>
 
       {items.length === 0 && (
-        <p className="text-[11px] italic text-slate-400">
+        <p className="text-[11px] italic text-foreground/50">
           Chưa có dữ liệu. Nhấn “Thêm dòng” để bắt đầu.
         </p>
       )}
@@ -97,14 +97,14 @@ function CardEditor({ label, accent, items, onChange }: CardEditorProps) {
       {items.map((rawItem, index) => (
         <div
           key={index}
-          className="flex items-center gap-2 rounded-lg border border-separator bg-slate-50/50 dark:bg-[var(--bg-card)] p-1.5"
+          className="flex items-center gap-2 rounded-lg border border-separator bg-default-50 dark:bg-[var(--bg-card)] p-1.5"
         >
           <div className="flex flex-col">
             <button
               type="button"
               onClick={() => move(index, -1)}
               disabled={index === 0}
-              className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer border-none bg-transparent"
+              className="p-0.5 text-foreground/50 hover:text-foreground disabled:opacity-30 cursor-pointer border-none bg-transparent"
             >
               <ChevronUp size={12} />
             </button>
@@ -112,7 +112,7 @@ function CardEditor({ label, accent, items, onChange }: CardEditorProps) {
               type="button"
               onClick={() => move(index, 1)}
               disabled={index === items.length - 1}
-              className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 disabled:opacity-30 cursor-pointer border-none bg-transparent"
+              className="p-0.5 text-foreground/50 hover:text-foreground disabled:opacity-30 cursor-pointer border-none bg-transparent"
             >
               <ChevronDown size={12} />
             </button>
@@ -141,7 +141,7 @@ function CardEditor({ label, accent, items, onChange }: CardEditorProps) {
                     key={t.value}
                     id={t.value}
                     textValue={t.label}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-200 flex items-center justify-between"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer hover:bg-default-100 dark:hover:bg-[var(--bg-card)] text-foreground flex items-center justify-between"
                   >
                     {t.label}
                     <ListBox.ItemIndicator />
@@ -163,7 +163,7 @@ function CardEditor({ label, accent, items, onChange }: CardEditorProps) {
                     ? "Ví dụ: Xe riêng 4-45 chỗ"
                     : "Điểm nổi bật... (dùng {price} để chèn giá vé)"
             }
-            className="flex-1 min-w-0 bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none border-none placeholder:text-slate-400"
+            className="flex-1 min-w-0 bg-transparent text-xs text-foreground outline-none border-none placeholder:text-foreground/40"
           />
 
           <button
@@ -193,30 +193,30 @@ export function ComparisonKeyValueEditor({
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-[11px] font-bold block">
+          <label className="text-[11px] font-bold text-foreground block">
             Tiêu đề khối so sánh
           </label>
           <input
             value={data.title}
             onChange={(e) => onChange({ ...data, title: e.target.value })}
             placeholder="So sánh hình thức di chuyển"
-            className="w-full px-3 py-2 border-1 border-separator rounded-xl text-xs font-bold bg-slate-50/50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-accent"
+            className="w-full px-3 py-2 border-1 border-separator rounded-xl text-xs font-bold bg-default-50 dark:bg-[var(--bg-card)] text-foreground outline-none focus:ring-2 focus:ring-accent placeholder:text-foreground/40"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-[11px] font-bold block">
+          <label className="text-[11px] font-bold text-foreground block">
             Phụ đề lớn
           </label>
           <input
             value={data.subtitle}
             onChange={(e) => onChange({ ...data, subtitle: e.target.value })}
             placeholder="Loại hình dịch vụ"
-            className="w-full px-3 py-2 border-1 border-separator rounded-xl text-xs font-bold bg-slate-50/50 dark:bg-[var(--bg-card)] text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-accent"
+            className="w-full px-3 py-2 border-1 border-separator rounded-xl text-xs font-bold bg-default-50 dark:bg-[var(--bg-card)] text-foreground outline-none focus:ring-2 focus:ring-accent placeholder:text-foreground/40"
           />
         </div>
       </div>
 
-      <Typography type="h4" className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+      <Typography type="h4" className="text-xs font-extrabold text-foreground uppercase tracking-wider">
         Cấu hình 2 thẻ so sánh
       </Typography>
 

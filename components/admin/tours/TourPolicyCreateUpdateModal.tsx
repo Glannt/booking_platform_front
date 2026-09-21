@@ -22,7 +22,7 @@ import {
   ModalCloseTrigger,
 } from "@heroui/react";
 import { X, Sparkles, ShieldCheck, BadgeCheck, Clock, FileText, AlertCircle, Info, CalendarCheck, MapPin, RefreshCw, Save } from "lucide-react";
-import { SvgIconRenderer } from "@/components/admin/self-drive/SvgIconRenderer";
+import { SvgIconRenderer } from "@/components/admin/self-drive";
 import type { TourPolicyDto, TourPolicyTranslationDto } from "@/lib/api/tour-policy";
 import { useI18n } from "@/context/LanguageContext";
 

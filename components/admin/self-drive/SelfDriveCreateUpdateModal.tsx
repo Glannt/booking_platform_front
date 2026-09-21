@@ -53,6 +53,7 @@ export function SelfDriveCreateUpdateModal({
   const [active, setActive] = useState<boolean>(true);
   const [driverRequired, setDriverRequired] = useState<boolean>(false);
   const [isContactOnly, setIsContactOnly] = useState<boolean>(false);
+  const [sortOrder, setSortOrder] = useState<number>(0);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
@@ -68,6 +69,7 @@ export function SelfDriveCreateUpdateModal({
       setActive(editingRental.active);
       setDriverRequired(editingRental.driverRequired || false);
       setIsContactOnly(editingRental.isContactOnly || false);
+      setSortOrder(editingRental.sortOrder ?? 0);
 
       const activePrice = editingRental.prices?.find((p) => p.active) || editingRental.prices?.[0];
       const curPrice = activePrice ? Number(activePrice.amount) : 1000000;
@@ -87,6 +89,7 @@ export function SelfDriveCreateUpdateModal({
       setActive(true);
       setDriverRequired(false);
       setIsContactOnly(false);
+      setSortOrder(0);
     }
   }, [editingRental, categories, isOpen]);
 
@@ -166,6 +169,7 @@ export function SelfDriveCreateUpdateModal({
           active,
           driverRequired,
           isContactOnly,
+          sortOrder: Number(sortOrder) || 0,
         },
         isContactOnly ? 0 : Number(dailyPrice)
       );
@@ -468,6 +472,24 @@ export function SelfDriveCreateUpdateModal({
                     </div>
                   </>
                 )}
+
+                {/* Thứ tự ưu tiên hiển thị (sortOrder) */}
+                <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator">
+                  <Label className="text-xs font-bold uppercase tracking-wider block">
+                    Thứ tự ưu tiên hiển thị (sortOrder)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={String(sortOrder)}
+                    onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
+                    placeholder="VD: 1, 2, 3..."
+                    className="w-full h-11 px-3.5 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-xs font-semibold outline-none focus:border-accent"
+                  />
+                  <span className="text-[11px] text-foreground/60 block">
+                    Số nhỏ hơn sẽ được ưu tiên hiển thị trước (Top 4 dòng xe ở trang chủ)
+                  </span>
+                </div>
 
                 {/* Interactive Active Button Selector */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator space-y-2.5">

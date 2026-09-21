@@ -346,21 +346,21 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
     <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-bold">Content Data (Dữ liệu nội dung)</Label>
+        <Label className="text-sm font-bold">Dữ liệu nội dung</Label>
         <div className="flex items-center gap-1">
           {mode === "json" && (
             <>
               <button
                 type="button"
                 onClick={() => setRawJson(prettyJson(rawJson))}
-                className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                className="flex items-center gap-1 text-[10px] font-bold text-foreground/70 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-default-100 dark:hover:bg-[var(--bg-card)]"
               >
                 <Braces size={11} /> Format
               </button>
               <button
                 type="button"
                 onClick={copyJson}
-                className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                className="flex items-center gap-1 text-[10px] font-bold text-foreground/70 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-default-100 dark:hover:bg-[var(--bg-card)]"
               >
                 {copied ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
                 {copied ? "Đã copy" : "Copy"}
@@ -370,14 +370,14 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
           <button
             type="button"
             onClick={mode === "tree" ? switchToJson : switchToTree}
-            className="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+            className="flex items-center gap-1 text-[10px] font-bold text-foreground/70 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded-md hover:bg-default-100 dark:hover:bg-[var(--bg-card)]"
           >
             {mode === "tree" ? <><Braces size={12} /> JSON</> : <><List size={12} /> Tree</>}
           </button>
         </div>
       </div>
 
-      {hints && <p className="text-[10px] text-slate-400 font-medium">{hints.description}</p>}
+      {hints && <p className="text-[10px] text-foreground/60 font-medium">{hints.description}</p>}
 
       {/* Tree mode */}
       {mode === "tree" && (
@@ -395,8 +395,8 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
           ))}
 
           {unusedHints.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50 dark:bg-[var(--bg-card)]/50 rounded-md border border-slate-200 dark:border-zinc-700">
-              <span className="text-[10px] text-slate-400 font-bold self-center">Gợi ý schema chuẩn:</span>
+            <div className="flex flex-wrap items-center gap-1.5 p-2 bg-default-50 dark:bg-[var(--bg-card)]/50 rounded-md border border-divider">
+              <span className="text-[10px] text-foreground/60 font-bold self-center">Gợi ý schema chuẩn:</span>
               {unusedHints.map((k) => (
                 <button
                   key={k}
@@ -411,7 +411,7 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
           )}
 
           {showAddKey ? (
-            <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-[var(--bg-muted)] rounded-md border border-divider">
+            <div className="flex items-center gap-2 p-2 bg-default-50 dark:bg-[var(--bg-muted)] rounded-md border border-divider">
               <Input
                 placeholder="Tên key mới..."
                 value={newKeyName}
@@ -443,7 +443,7 @@ export function KeyValueEditor({ value, onChange, sectionType, pagePath }: KeyVa
             <button
               type="button"
               onClick={() => setShowAddKey(true)}
-              className="flex items-center gap-1.5 w-full justify-center py-2 rounded-md border border-dashed border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors cursor-pointer bg-transparent"
+              className="flex items-center gap-1.5 w-full justify-center py-2 rounded-md border border-dashed border-divider text-xs font-bold text-foreground/70 hover:text-accent hover:border-accent transition-colors cursor-pointer bg-transparent"
             >
               <Plus size={14} /> Thêm Key tùy chỉnh
             </button>
@@ -510,7 +510,7 @@ function TypeSelector({ value, onChange, className = "" }: TypeSelectorProps) {
               onClick={() => onChange(t.value)}
               className={`text-[10px] font-bold px-2 py-1 rounded text-left transition-colors cursor-pointer border-none ${value === t.value
                   ? `${t.color} font-black`
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)]"
+                  : "text-foreground/70 hover:bg-default-100 dark:hover:bg-[var(--bg-card)]"
                 }`}
             >
               {t.label}
@@ -690,7 +690,7 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
         <button
           type="button"
           onClick={onToggle}
-          className="p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+          className="p-0.5 rounded text-foreground/50 hover:text-foreground transition-colors cursor-pointer"
         >
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
@@ -719,7 +719,7 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
         <button
           type="button"
           onClick={onRemove}
-          className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+          className="p-1 rounded text-foreground/50 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
         >
           <X size={13} />
         </button>
@@ -771,55 +771,39 @@ function ExpandableNode({ nodeKey, value, vType, expanded, onToggle, onChange, o
                 ))}
                 <button
                   type="button"
-                  onClick={() => addPresetItem(createEmptyText2)}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all cursor-pointer border border-blue-200 dark:border-blue-800"
-                >
-                  + Đa ngữ (VI/EN)
-                </button>
-                <button
-                  type="button"
                   onClick={() => addPresetItem(createEmptyText4)}
                   className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
                 >
-                  + Đa ngữ (4 ngôn ngữ)
+                  <Sparkles size={10} />
+                  + Đa ngữ (4 ngôn ngữ: VI/EN/KO/RU)
                 </button>
                 <button
                   type="button"
                   onClick={addChild}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-300 hover:bg-slate-200 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-default-100 text-foreground/80 dark:bg-[var(--bg-card)] hover:bg-default-200 transition-all cursor-pointer"
                 >
                   <Plus size={10} /> Item trống
                 </button>
               </div>
             </div>
           ) : (
-            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
+            <div className="pt-2 border-t border-divider space-y-1.5">
               <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    let defaultVal: any = "";
-                    addPresetKey("vi", defaultVal);
-                    addPresetKey("en", defaultVal);
-                  }}
-                  className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all cursor-pointer border border-emerald-200 dark:border-emerald-800"
-                >
-                  + Đa ngữ (VI/EN)
-                </button>
                 <button
                   type="button"
                   onClick={() => {
                     let defaultVal: any = "";
                     ["vi", "en", "ko", "ru"].forEach(lang => addPresetKey(lang, defaultVal));
                   }}
-                  className="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-600 hover:text-white transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
                 >
-                  + Đa ngữ (4 thứ tiếng)
+                  <Sparkles size={10} />
+                  + Đa ngữ (4 ngôn ngữ: VI/EN/KO/RU)
                 </button>
                 <button
                   type="button"
                   onClick={addChild}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-300 hover:bg-slate-200 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-default-100 text-foreground/80 dark:bg-[var(--bg-card)] hover:bg-default-200 transition-all cursor-pointer"
                 >
                   <Plus size={10} /> Thêm key
                 </button>
@@ -927,7 +911,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
         />
       )}
 
-      <span className="text-slate-300 dark:text-slate-600 mt-2 shrink-0">:</span>
+      <span className="text-foreground/30 mt-2 shrink-0">:</span>
 
       {isColorKey ? (
         <div className="flex-grow max-w-[200px] mt-0.5">
@@ -939,10 +923,10 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
               commitValue(hex);
             }}
           >
-            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 h-7 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-black cursor-pointer w-full justify-between">
+            <ColorPicker.Trigger className="flex items-center gap-1.5 px-2.5 h-7 rounded-md border border-divider bg-white dark:bg-black cursor-pointer w-full justify-between">
               <div className="flex items-center gap-1.5">
                 <ColorSwatch size="xs" color={safeParseColor(tmpVal, "#ffffff")} />
-                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-350">{tmpVal || "#ffffff"}</span>
+                <span className="text-[10px] font-bold text-foreground/80">{tmpVal || "#ffffff"}</span>
               </div>
             </ColorPicker.Trigger>
             <ColorPicker.Popover className="gap-2 p-3 bg-white dark:bg-black border border-divider shadow-xl rounded-md z-50">
@@ -1045,7 +1029,7 @@ function LeafNode({ nodeKey, value, vType, onChange, onRename, onRemove, onTypeC
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="px-2.5 h-8 rounded-md bg-slate-100 dark:bg-[var(--bg-card)] hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border border-slate-200 dark:border-slate-700"
+                className="px-2.5 h-8 rounded-md bg-default-100 dark:bg-[var(--bg-card)] hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground text-foreground text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer border border-divider"
                 title="Tải ảnh từ máy tính"
               >
                 {uploading ? <Loader2 size={12} className="animate-spin text-accent" /> : <Upload size={12} />}

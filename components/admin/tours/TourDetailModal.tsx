@@ -26,13 +26,14 @@ import {
     Clock,
     Users,
     Tag,
+    ShieldCheck,
 } from "lucide-react";
 import clsx from "clsx";
 
 import { TourDto, TourCategoryDto, getPackagePrice, getPackagePriceItem, formatPassengerCondition } from "@/lib/api/tours";
 import { getIconComponent } from "@/lib/utils/icons";
 import { parseBulletList } from "@/lib/utils/bullet-helper";
-import { ScopedDiscountTab } from "@/components/admin/discount/ScopedDiscountTab";
+import { ScopedDiscountTab } from "@/components/admin/discount";
 import { useI18n } from "@/context/LanguageContext";
 import MultiImageUpload from "@/components/MultiImageUpload";
 
@@ -228,6 +229,26 @@ export default function TourDetailModal({
 
                                     <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
 
+                                    {/* Deposit Policy */}
+                                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)]">
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <ShieldCheck size={15} className="text-amber-500 shrink-0" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                {language === "vi" ? "Chính sách đặt cọc" : "Deposit Policy"}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm font-black text-slate-900 dark:text-white">
+                                            {tour.depositType === "FIXED" && tour.depositAmount != null
+                                                ? `${Number(tour.depositAmount).toLocaleString("vi-VN")} ${language === "vi" ? "đ (cố định)" : "VND (fixed)"}`
+                                                : `${tour.depositRate ?? 30}% (${language === "vi" ? "theo phần trăm" : "percentage"})`}
+                                        </p>
+                                        <p className="text-[11px] text-foreground/50 mt-0.5">
+                                            {language === "vi"
+                                                ? "Áp dụng khi khách đặt tour, tính theo tổng giá sau khuyến mãi."
+                                                : "Applied when customers book this tour, based on total price after promotion."}
+                                        </p>
+                                    </div>
+
                                     {/* Tour Translations Section */}
                                     <div className="space-y-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -407,9 +428,9 @@ export default function TourDetailModal({
                                                     >
                                                         <div
                                                             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                                                            style={{ backgroundColor: `${opt.colorIcon || "#3b82f6"}15` }}
+                                                            style={{ backgroundColor: `${opt.colorText || "#3b82f6"}15` }}
                                                         >
-                                                            {renderOptionIcon(opt.iconUrl, opt.colorIcon || "#3b82f6")}
+                                                            {renderOptionIcon(opt.iconUrl, opt.colorText || "#3b82f6")}
                                                         </div>
                                                         <div className="min-w-0 flex-1">
                                                             <span

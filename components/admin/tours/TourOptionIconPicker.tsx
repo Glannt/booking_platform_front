@@ -6,7 +6,6 @@ import { SvgIconPickerField } from "@/components/common/SvgIconPickerField";
 interface TourOptionIconPickerProps {
   value: string;
   onChange: (value: string) => void;
-  colorIcon?: string;
   language: string;
   compact?: boolean;
 }
@@ -14,7 +13,6 @@ interface TourOptionIconPickerProps {
 export function TourOptionIconPicker({
   value,
   onChange,
-  colorIcon,
   language,
   compact = false
 }: TourOptionIconPickerProps) {
@@ -22,7 +20,6 @@ export function TourOptionIconPicker({
     <SvgIconPickerField
       value={value}
       onChange={onChange}
-      colorIcon={colorIcon}
       compact={compact}
       label={language === "vi" ? "Icon biểu tượng (Raw SVG text)" : "Option Icon (Raw SVG text)"}
       placeholder={language === "vi" ? "Dán mã SVG (<svg ...>...</svg>) vào đây..." : "Paste SVG code here..."}

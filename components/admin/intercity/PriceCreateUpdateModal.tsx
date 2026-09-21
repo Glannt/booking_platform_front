@@ -27,7 +27,7 @@ import {
 } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 import { Calendar, Clock, DollarSign, Car, Route as RouteIcon, Info, RefreshCw, Save } from "lucide-react";
-import MultiLanguageTranslationInput from "@/components/admin/common/MultiLanguageTranslationInput";
+import { MultiLanguageTranslationInput } from "@/components/admin/common";
 
 interface PriceCreateUpdateModalProps {
   isOpen: boolean;

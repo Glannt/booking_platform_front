@@ -47,8 +47,8 @@ import {
   DEFAULT_ROUTE_EXCLUSIONS,
   DEFAULT_COMPARISON_DATA,
   type ComparisonComponentData,
-} from "@/types/routeComponents";
-import { ComparisonKeyValueEditor } from "@/components/admin/intercity/ComparisonKeyValueEditor";
+} from "@/types";
+import { ComparisonKeyValueEditor } from "./ComparisonKeyValueEditor";
 import { slugify } from "@/lib/slug-helpers";
 
 interface RouteCreateUpdateModalProps {

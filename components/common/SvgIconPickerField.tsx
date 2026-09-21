@@ -88,7 +88,6 @@ export const DEFAULT_TRAVEL_SVG_PRESETS: SvgPreset[] = [
 interface SvgIconPickerFieldProps {
   value: string;
   onChange: (value: string) => void;
-  colorIcon?: string;
   label?: string;
   placeholder?: string;
   compact?: boolean;
@@ -98,7 +97,6 @@ interface SvgIconPickerFieldProps {
 export const SvgIconPickerField: React.FC<SvgIconPickerFieldProps> = ({
   value,
   onChange,
-  colorIcon,
   label = "Biểu tượng SVG (Raw SVG text)",
   placeholder = "Dán mã SVG (<svg ...>...</svg>) vào đây...",
   compact = false,
@@ -133,10 +131,9 @@ export const SvgIconPickerField: React.FC<SvgIconPickerFieldProps> = ({
             Preview
           </span>
           <div
-            style={{ color: colorIcon || undefined }}
             className="w-10 h-10 rounded-xl bg-accent/15 text-accent flex items-center justify-center p-2 shadow-sm"
           >
-            <SvgIconRenderer svgString={value} className="w-full h-full text-current" style={{ color: colorIcon || undefined }} />
+            <SvgIconRenderer svgString={value} className="w-full h-full text-current" />
           </div>
         </div>
       </div>
