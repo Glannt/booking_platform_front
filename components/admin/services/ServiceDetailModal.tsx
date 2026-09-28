@@ -47,7 +47,7 @@ interface ServiceDetailModalProps {
   categories: ServiceCategoryDto[];
   language: string;
   backendUrl: string;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
   defaultEditMode?: boolean;
 }
@@ -141,7 +141,7 @@ const TimelineEditor = ({
             <Input
               type="text"
               className="flex-grow px-2 py-1 text-xs rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-              placeholder={language === "vi" ? "Nội dung hoạt động..." : "Activity content..."}
+              placeholder={"Nội dung hoạt động..."}
               value={item.content}
               onChange={(e) => handleItemChange(idx, "content", e.target.value)}
             />
@@ -161,7 +161,7 @@ const TimelineEditor = ({
         className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-primary hover:text-primary-600 bg-primary/10 dark:bg-primary/5 rounded-xl transition-colors cursor-pointer border-none mt-1"
       >
         <PlusCircle size={12} />
-        {language === "vi" ? "Thêm hoạt động" : "Add Activity"}
+        {"Thêm hoạt động"}
       </Button>
     </div>
   );
@@ -316,9 +316,9 @@ export default function ServiceDetailModal({
 
   // Price Formatter helper
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
+    return new Intl.NumberFormat("vi-VN", {
       style: "currency",
-      currency: language === "vi" ? "VND" : "USD",
+      currency: "VND",
       maximumFractionDigits: 0
     }).format(price);
   };
@@ -500,9 +500,7 @@ export default function ServiceDetailModal({
     const activeTrans = formData.translations?.find(t => t.locale === activeFormLocale);
     if (!activeTrans || !activeTrans.name.trim()) {
       showToast(
-        language === "vi"
-          ? "Tên Tour ở ngôn ngữ hiện tại là bắt buộc!"
-          : "Tour Name in current tab language is required!",
+        "Tên Tour ở ngôn ngữ hiện tại là bắt buộc!",
         "error"
       );
       return;
@@ -603,20 +601,18 @@ export default function ServiceDetailModal({
     try {
       await updateService(service.id, payload);
       showToast(
-        language === "vi" ? "Cập nhật tour thành công!" : "Tour updated successfully!",
+        "Cập nhật tour thành công!",
         "success"
       );
       setIsEditing(false);
-      onSaveSuccess();
+      await onSaveSuccess?.();
     } catch (err: any) {
       showToast(
-        language === "vi"
-          ? "Lỗi kết nối. Thay đổi đã giả lập thành công!"
-          : "API Connection failed. Changes mocked locally!",
+        "Lỗi kết nối. Thay đổi đã giả lập thành công!",
         "success"
       );
       setIsEditing(false);
-      onSaveSuccess();
+      await onSaveSuccess?.();
     } finally {
       setLoading(false);
     }
@@ -624,10 +620,10 @@ export default function ServiceDetailModal({
 
   const getVehicleLabel = (vt: string) => {
     switch (vt) {
-      case "sedan": return language === "vi" ? "Xe 4-5 chỗ (Sedan)" : "4-5 Seats (Sedan)";
-      case "suv": return language === "vi" ? "Xe 7 chỗ (SUV)" : "7 Seats (SUV)";
-      case "van": return language === "vi" ? "Xe 16 chỗ (Van)" : "16 Seats (Van)";
-      case "bus": return language === "vi" ? "Xe 29-45 chỗ (Bus)" : "29-45 Seats (Bus)";
+      case "sedan": return "Xe 4-5 chỗ (Sedan)";
+      case "suv": return "Xe 7 chỗ (SUV)";
+      case "van": return "Xe 16 chỗ (Van)";
+      case "bus": return "Xe 29-45 chỗ (Bus)";
       default: return vt;
     }
   };
@@ -649,12 +645,10 @@ export default function ServiceDetailModal({
               <form onSubmit={handleSaveChanges} className="flex flex-col h-full overflow-hidden">
                 <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-[var(--bg-surface)] py-4 px-6 flex flex-col gap-0.5 shrink-0">
                   <span id="service-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                    {language === "vi" ? "Chỉnh sửa Thông tin Tour" : "Edit Tour / Service"}
+                    {"Chỉnh sửa Thông tin Tour"}
                   </span>
                   <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                    {language === "vi"
-                      ? `Chỉnh sửa cấu hình tour: ${service.translations.find(t => t.locale === "vi")?.name || ""}`
-                      : `Editing tour: ${service.translations.find(t => t.locale === "en")?.name || ""}`}
+                    {`Chỉnh sửa cấu hình tour: ${service.translations.find(t => t.locale === "vi")?.name || ""}`}
                   </span>
                 </ModalHeader>
 
@@ -665,7 +659,7 @@ export default function ServiceDetailModal({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                            {language === "vi" ? "Danh mục dịch vụ" : "Service Category"}
+                            {"Danh mục dịch vụ"}
                           </Label>
                           <Select
                             className="w-full"
@@ -697,7 +691,7 @@ export default function ServiceDetailModal({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                            {language === "vi" ? "Trạng thái hiển thị" : "Status"}
+                            {"Trạng thái hiển thị"}
                           </Label>
                           <Select
                             className="w-full"
@@ -710,12 +704,12 @@ export default function ServiceDetailModal({
                             </Select.Trigger>
                             <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                               <ListBox>
-                                <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"}>
-                                  {language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"}
+                                <ListBox.Item id="published" textValue={"Kích hoạt hiển thị (Published)"}>
+                                  {"Kích hoạt hiển thị (Published)"}
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="draft" textValue={language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"}>
-                                  {language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"}
+                                <ListBox.Item id="draft" textValue={"Bản nháp / Ẩn (Draft)"}>
+                                  {"Bản nháp / Ẩn (Draft)"}
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
                               </ListBox>
@@ -729,10 +723,10 @@ export default function ServiceDetailModal({
                               <Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>
                               <div className="text-left">
                                 <span className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 leading-tight">
-                                  {language === "vi" ? "Áp dụng giá theo loại vé/xe" : "Pricing by ticket type/vehicle type"}
+                                  {"Áp dụng giá theo loại vé/xe"}
                                 </span>
                                 <span className="block text-[9px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
-                                  {language === "vi" ? "Tự động tính giá trọn gói theo loại vé/xe" : "Enable pricing per ticket type/vehicle type"}
+                                  {"Tự động tính giá trọn gói theo loại vé/xe"}
                                 </span>
                               </div>
                             </Checkbox.Content>
@@ -744,7 +738,7 @@ export default function ServiceDetailModal({
                       <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-black/10 space-y-4 mt-4">
                         <div className="flex items-center justify-between">
                           <Label className="block text-xs font-bold uppercase tracking-wider">
-                            {language === "vi" ? "Phân loại / Loại tính giá vé" : "Ticket / Pricing Option Type"}
+                            {"Phân loại / Loại tính giá vé"}
                           </Label>
                           <Button
                             type="button"
@@ -752,15 +746,14 @@ export default function ServiceDetailModal({
                             className="text-xs text-primary font-bold hover:underline"
                           >
                             {isCreatingOptionType
-                              ? (language === "vi" ? "Hủy" : "Cancel")
-                              : (language === "vi" ? "+ Thêm loại mới" : "+ Create New Type")}
+                              ? ("Hủy"): ("+ Thêm loại mới")}
                           </Button>
                         </div>
 
                         {!isCreatingOptionType ? (
                           <Select
                             className="w-full"
-                            placeholder={language === "vi" ? "-- Chọn loại vé --" : "-- Select Option Type --"}
+                            placeholder={"-- Chọn loại vé --"}
                             selectedKey={formData.serviceOptionTypeId ? String(formData.serviceOptionTypeId) : undefined}
                             onSelectionChange={(key) => {
                               const val = key as string;
@@ -779,7 +772,7 @@ export default function ServiceDetailModal({
                               <ListBox>
                                 {optionTypes.map((ot) => {
                                   const tr = ot.translations.find((t) => t.locale === language) || ot.translations[0];
-                                  const name = `${tr?.name || ""} (${ot.code} - ${ot.systemType === "VEHICLE" ? (language === "vi" ? "Theo xe" : "By Vehicle") : (language === "vi" ? "Theo người" : "By Person")})`;
+                                  const name = `${tr?.name || ""} (${ot.code} - ${ot.systemType === "VEHICLE" ? ("Theo xe"): ("Theo người")})`;
                                   return (
                                     <ListBox.Item key={ot.id} id={String(ot.id)} textValue={name}>
                                       {name}
@@ -805,7 +798,7 @@ export default function ServiceDetailModal({
                               </TextField>
                               <div>
                                 <Label className="block text-[10px] font-bold uppercase mb-1">
-                                  {language === "vi" ? "Kiểu cấu hình" : "System Type"}
+                                  {"Kiểu cấu hình"}
                                 </Label>
                                 <Select
                                   className="w-full"
@@ -818,12 +811,12 @@ export default function ServiceDetailModal({
                                   </Select.Trigger>
                                   <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                                     <ListBox>
-                                      <ListBox.Item id="PERSON" textValue={language === "vi" ? "Theo đầu người (Person)" : "By Person"}>
-                                        {language === "vi" ? "Theo đầu người (Person)" : "By Person"}
+                                      <ListBox.Item id="PERSON" textValue={"Theo đầu người (Person)"}>
+                                        {"Theo đầu người (Person)"}
                                         <ListBox.ItemIndicator />
                                       </ListBox.Item>
-                                      <ListBox.Item id="VEHICLE" textValue={language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"}>
-                                        {language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"}
+                                      <ListBox.Item id="VEHICLE" textValue={"Theo thông số xe (Vehicle)"}>
+                                        {"Theo thông số xe (Vehicle)"}
                                         <ListBox.ItemIndicator />
                                       </ListBox.Item>
                                     </ListBox>
@@ -858,7 +851,7 @@ export default function ServiceDetailModal({
                               onClick={async () => {
                                 if (!newOptionTypeCode.trim() || !newOptionTypeNameVi.trim() || !newOptionTypeNameEn.trim()) {
                                   showToast(
-                                    language === "vi" ? "Vui lòng nhập đầy đủ thông tin!" : "Please fill in all fields!",
+                                    "Vui lòng nhập đầy đủ thông tin!",
                                     "error"
                                   );
                                   return;
@@ -885,20 +878,20 @@ export default function ServiceDetailModal({
                                     setNewOptionTypeNameVi("");
                                     setNewOptionTypeNameEn("");
                                     showToast(
-                                      language === "vi" ? "Tạo loại vé mới thành công!" : "New type created successfully!",
+                                      "Tạo loại vé mới thành công!",
                                       "success"
                                     );
                                   }
                                 } catch (err) {
                                   showToast(
-                                    language === "vi" ? "Không thể tạo loại vé mới." : "Could not create new type.",
+                                    "Không thể tạo loại vé mới.",
                                     "error"
                                   );
                                 }
                               }}
                               className="w-full py-1.5 px-3 rounded-lg bg-accent hover:bg-accent-hover text-accent-foreground text-xs font-bold transition-colors cursor-pointer border-none"
                             >
-                              {language === "vi" ? "Lưu loại vé" : "Save Type"}
+                              {"Lưu loại vé"}
                             </Button>
                           </div>
                         )}
@@ -908,7 +901,7 @@ export default function ServiceDetailModal({
                     {/* Thumbnail upload */}
                     <div className="bg-slate-50/50 dark:bg-black/10 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col justify-center animate-fade-in">
                       <ImageUpload
-                        label={language === "vi" ? "Ảnh Đại Diện Tour" : "Tour Thumbnail Image"}
+                        label={"Ảnh Đại Diện Tour"}
                         value={formData.thumbnailId}
                         onChange={(id) => setFormData({ ...formData, thumbnailId: id || undefined })}
                       />
@@ -921,7 +914,7 @@ export default function ServiceDetailModal({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                        {language === "vi" ? "Thông tin chi tiết (Đa ngôn ngữ)" : "Detailed Content Translations"}
+                        {"Thông tin chi tiết (Đa ngôn ngữ)"}
                       </Label>
                       <div className="flex bg-slate-100 dark:bg-black p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                         {["vi", "en", "ko", "ru"].map((loc) => (
@@ -944,11 +937,11 @@ export default function ServiceDetailModal({
                       <div>
                         <TextField className="w-full">
                           <Label className="text-xs font-bold uppercase tracking-wider">
-                            {language === "vi" ? "Tên tour hiển thị" : "Tour Name"} ({activeFormLocale.toUpperCase()})
+                            {"Tên tour hiển thị"} ({activeFormLocale.toUpperCase()})
                           </Label>
                           <Input
                             type="text"
-                            placeholder={language === "vi" ? "e.g. Tour Bà Nà Hills..." : "e.g. Ba Na Hills Day Tour..."}
+                            placeholder={"e.g. Tour Bà Nà Hills..."}
                             value={editActiveTrans.name || ""}
                             onChange={(e) => handleTranslationChange("name", e.target.value)}
                             className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator"
@@ -958,12 +951,12 @@ export default function ServiceDetailModal({
 
                       <div>
                         <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                          {language === "vi" ? "Mô tả ngắn gọn" : "Short Description"} ({activeFormLocale.toUpperCase()})
+                          {"Mô tả ngắn gọn"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <textarea
                           rows={2}
                           className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
-                          placeholder={language === "vi" ? "Mô tả tổng quan về chuyến đi..." : "Overview description of the trip..."}
+                          placeholder={"Mô tả tổng quan về chuyến đi..."}
                           value={editActiveTrans.description || ""}
                           onChange={(e) => handleTranslationChange("description", e.target.value)}
                         />
@@ -971,12 +964,12 @@ export default function ServiceDetailModal({
 
                       <div>
                         <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                          {language === "vi" ? "Nội dung chi tiết dịch vụ" : "Full Content details"} ({activeFormLocale.toUpperCase()})
+                          {"Nội dung chi tiết dịch vụ"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <textarea
                           rows={4}
                           className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
-                          placeholder={language === "vi" ? "Bao gồm xe đưa đón, ăn uống buffet, lịch trình..." : "Includes transport details, tickets, buffet meals..."}
+                          placeholder={"Bao gồm xe đưa đón, ăn uống buffet, lịch trình..."}
                           value={editActiveTrans.content || ""}
                           onChange={(e) => handleTranslationChange("content", e.target.value)}
                         />
@@ -991,7 +984,7 @@ export default function ServiceDetailModal({
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                          {language === "vi" ? "Tùy chọn vé & phân hạng giá bán" : "Pricing Options & Vehicle Classes"}
+                          {"Tùy chọn vé & phân hạng giá bán"}
                         </Label>
                       </div>
                       <Button
@@ -1005,19 +998,17 @@ export default function ServiceDetailModal({
                           }`}
                       >
                         <PlusCircle size={14} />
-                        {language === "vi" ? "Thêm Tùy Chọn" : "Add Option"}
+                        {"Thêm Tùy Chọn"}
                       </Button>
                     </div>
 
                     {!formData.serviceOptionTypeId ? (
                       <div className="text-center py-8 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                        {language === "vi"
-                          ? "Vui lòng chọn Phân loại / Loại tính giá vé ở trên để bắt đầu thêm các tùy chọn vé."
-                          : "Please select a Pricing Option Type above to start configuring tickets."}
+                        {"Vui lòng chọn Phân loại / Loại tính giá vé ở trên để bắt đầu thêm các tùy chọn vé."}
                       </div>
                     ) : (!formData.options || formData.options.length === 0) ? (
                       <div className="text-center py-6 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                        {language === "vi" ? "Chưa cấu hình tùy chọn giá vé." : "No specific pricing options configured yet."}
+                        {"Chưa cấu hình tùy chọn giá vé."}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1033,8 +1024,7 @@ export default function ServiceDetailModal({
                               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                                 <span className="text-xs font-extrabold text-slate-700 dark:text-slate-350">
                                   {isVehicle
-                                    ? (language === "vi" ? `THÔNG TIN XE #${idx + 1}` : `VEHICLE SPEC #${idx + 1}`)
-                                    : (language === "vi" ? `LỰA CHỌN #${idx + 1}` : `OPTION #${idx + 1}`)}
+                                    ? (`THÔNG TIN XE #${idx + 1}`): (`LỰA CHỌN #${idx + 1}`)}
                                 </span>
                                 <button
                                   type="button"
@@ -1058,7 +1048,7 @@ export default function ServiceDetailModal({
                                           fullWidth
                                         >
                                           <Label className="block text-[11px] font-bold mb-1">
-                                            {language === "vi" ? "Giá áp dụng (VND)" : "Price (VND)"}
+                                            {"Giá áp dụng (VND)"}
                                           </Label>
                                           <NumberField.Group className="border-1 border-separator">
                                             <NumberField.Input />
@@ -1069,7 +1059,7 @@ export default function ServiceDetailModal({
                                       <div>
                                         <TextField className="w-full">
                                           <Label className="text-xs font-bold uppercase tracking-wider">
-                                            {language === "vi" ? "Hiệu xe / Hãng xe" : "Vehicle Brand / Model"}
+                                            {"Hiệu xe / Hãng xe"}
                                           </Label>
                                           <Input
                                             type="text"
@@ -1089,7 +1079,7 @@ export default function ServiceDetailModal({
                                           fullWidth
                                         >
                                           <Label className="block text-[11px] font-bold mb-1">
-                                            {language === "vi" ? "Số chỗ ngồi" : "Seat Capacity"}
+                                            {"Số chỗ ngồi"}
                                           </Label>
                                           <NumberField.Group className="border-1 border-separator">
                                             <NumberField.DecrementButton />
@@ -1107,7 +1097,7 @@ export default function ServiceDetailModal({
                                           fullWidth
                                         >
                                           <Label className="block text-[11px] font-bold mb-1">
-                                            {language === "vi" ? "Hành lý tối đa (kg)" : "Max Luggage (kg)"}
+                                            {"Hành lý tối đa (kg)"}
                                           </Label>
                                           <NumberField.Group className="border-1 border-separator">
                                             <NumberField.DecrementButton />
@@ -1135,7 +1125,7 @@ export default function ServiceDetailModal({
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                       <TextField className="w-full">
                                         <Label className="text-xs font-bold uppercase tracking-wider">
-                                          {language === "vi" ? `Tên xe / Hạng xe (${activeOptionsLocale.toUpperCase()})` : `Class Name (${activeOptionsLocale.toUpperCase()})`}
+                                          {`Tên xe / Hạng xe (${activeOptionsLocale.toUpperCase()})`}
                                         </Label>
                                         <Input
                                           type="text"
@@ -1148,7 +1138,7 @@ export default function ServiceDetailModal({
 
                                       <TextField className="w-full">
                                         <Label className="text-xs font-bold uppercase tracking-wider">
-                                          {language === "vi" ? `Mô tả ngắn/Mẫu xe (${activeOptionsLocale.toUpperCase()})` : `Description (${activeOptionsLocale.toUpperCase()})`}
+                                          {`Mô tả ngắn/Mẫu xe (${activeOptionsLocale.toUpperCase()})`}
                                         </Label>
                                         <Input
                                           type="text"
@@ -1163,7 +1153,7 @@ export default function ServiceDetailModal({
 
                                   <div className="flex flex-col justify-center">
                                     <ImageUpload
-                                      label={language === "vi" ? "Ảnh đại diện Xe" : "Vehicle Image"}
+                                      label={"Ảnh đại diện Xe"}
                                       value={opt.thumbnailId}
                                       onChange={(id) => handleOptionChange(idx, "thumbnailId", id || undefined)}
                                     />
@@ -1181,7 +1171,7 @@ export default function ServiceDetailModal({
                                         fullWidth
                                       >
                                         <Label className="block text-[11px] font-bold mb-1">
-                                          {language === "vi" ? "Giá vé áp dụng (VND)" : "Price (VND)"}
+                                          {"Giá vé áp dụng (VND)"}
                                         </Label>
                                         <NumberField.Group className="border-1 border-separator">
                                           <NumberField.Input />
@@ -1208,7 +1198,7 @@ export default function ServiceDetailModal({
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <TextField className="w-full">
                                       <Label className="text-xs font-bold uppercase tracking-wider">
-                                        {language === "vi" ? `Tên phân loại (${activeOptionsLocale.toUpperCase()})` : `Class Name (${activeOptionsLocale.toUpperCase()})`}
+                                        {`Tên phân loại (${activeOptionsLocale.toUpperCase()})`}
                                       </Label>
                                       <Input
                                         type="text"
@@ -1221,7 +1211,7 @@ export default function ServiceDetailModal({
 
                                     <TextField className="w-full">
                                       <Label className="text-xs font-bold uppercase tracking-wider">
-                                        {language === "vi" ? `Mô tả (${activeOptionsLocale.toUpperCase()})` : `Description (${activeOptionsLocale.toUpperCase()})`}
+                                        {`Mô tả (${activeOptionsLocale.toUpperCase()})`}
                                       </Label>
                                       <Input
                                         type="text"
@@ -1248,7 +1238,7 @@ export default function ServiceDetailModal({
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                          {language === "vi" ? "Lịch trình hoạt động chi tiết" : "Daily Itinerary Day Schedule"}
+                          {"Lịch trình hoạt động chi tiết"}
                         </Label>
                       </div>
                       <Button
@@ -1257,13 +1247,13 @@ export default function ServiceDetailModal({
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl transition-colors cursor-pointer border-none"
                       >
                         <PlusCircle size={14} />
-                        {language === "vi" ? "Thêm Ngày Lịch Trình" : "Add Day"}
+                        {"Thêm Ngày Lịch Trình"}
                       </Button>
                     </div>
 
                     {(!formData.itineraries || formData.itineraries.length === 0) ? (
                       <div className="text-center py-6 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs">
-                        {language === "vi" ? "Chưa có lịch trình." : "No itineraries planned."}
+                        {"Chưa có lịch trình."}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1274,7 +1264,7 @@ export default function ServiceDetailModal({
                           >
                             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                               <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
-                                {language === "vi" ? `NGÀY ${itin.dayNumber}` : `DAY ${itin.dayNumber}`}
+                                {`NGÀY ${itin.dayNumber}`}
                               </span>
                               <button
                                 type="button"
@@ -1287,7 +1277,7 @@ export default function ServiceDetailModal({
 
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {language === "vi" ? "Ngôn ngữ" : "Language"}
+                                {"Ngôn ngữ"}
                               </span>
                               <div className="flex bg-slate-100 dark:bg-black p-0.5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                                 {["vi", "en", "ko", "ru"].map(loc => (
@@ -1307,7 +1297,7 @@ export default function ServiceDetailModal({
                             <div>
                               <TextField className="w-full">
                                 <Label className="text-xs font-bold uppercase tracking-wider">
-                                  {language === "vi" ? `Tiêu đề ngày (${activeItinLocale.toUpperCase()})` : `Day Title (${activeItinLocale.toUpperCase()})`}
+                                  {`Tiêu đề ngày (${activeItinLocale.toUpperCase()})`}
                                 </Label>
                                 <Input
                                   type="text"
@@ -1321,7 +1311,7 @@ export default function ServiceDetailModal({
 
                             <div>
                               <Label className="block text-[11px] font-bold mb-1">
-                                {language === "vi" ? `Lịch trình chi tiết (${activeItinLocale.toUpperCase()})` : `Timeline Events (${activeItinLocale.toUpperCase()})`}
+                                {`Lịch trình chi tiết (${activeItinLocale.toUpperCase()})`}
                               </Label>
                               <TimelineEditor
                                 timelineStr={itin.translations.find(t => t.locale === activeItinLocale)?.timeline || ""}
@@ -1342,10 +1332,10 @@ export default function ServiceDetailModal({
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                          {language === "vi" ? "Câu hỏi thường gặp (FAQs)" : "Frequently Asked Questions (FAQs)"}
+                          {"Câu hỏi thường gặp (FAQs)"}
                         </Label>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          {language === "vi" ? "Cấu hình các câu hỏi và câu trả lời cho dịch vụ này." : "Configure Q&A for this service."}
+                          {"Cấu hình các câu hỏi và câu trả lời cho dịch vụ này."}
                         </p>
                       </div>
                       <Button
@@ -1354,13 +1344,13 @@ export default function ServiceDetailModal({
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl transition-colors cursor-pointer border-none"
                       >
                         <PlusCircle size={14} />
-                        {language === "vi" ? "Thêm Câu Hỏi" : "Add FAQ"}
+                        {"Thêm Câu Hỏi"}
                       </Button>
                     </div>
 
                     {(!formData.faqs || formData.faqs.length === 0) ? (
                       <div className="text-center py-6 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                        {language === "vi" ? "Chưa có câu hỏi thường gặp." : "No FAQs added yet."}
+                        {"Chưa có câu hỏi thường gặp."}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1371,7 +1361,7 @@ export default function ServiceDetailModal({
                           >
                             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                               <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
-                                {language === "vi" ? `CÂU HỎI #${idx + 1}` : `FAQ #${idx + 1}`}
+                                {`CÂU HỎI #${idx + 1}`}
                               </span>
                               <button
                                 type="button"
@@ -1384,7 +1374,7 @@ export default function ServiceDetailModal({
 
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                {language === "vi" ? "Ngôn ngữ" : "Language"}
+                                {"Ngôn ngữ"}
                               </span>
                               <div className="flex bg-slate-100 dark:bg-black p-0.5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                                 {["vi", "en", "ko", "ru"].map(loc => (
@@ -1404,7 +1394,7 @@ export default function ServiceDetailModal({
                             <div className="grid grid-cols-1 gap-3">
                               <TextField className="w-full">
                                 <Label className="text-xs font-bold uppercase tracking-wider">
-                                  {language === "vi" ? `Câu hỏi (${activeFaqLocale.toUpperCase()})` : `Question (${activeFaqLocale.toUpperCase()})`}
+                                  {`Câu hỏi (${activeFaqLocale.toUpperCase()})`}
                                 </Label>
                                 <Input
                                   type="text"
@@ -1416,7 +1406,7 @@ export default function ServiceDetailModal({
                               </TextField>
                               <div>
                                 <Label className="block text-[11px] font-bold mb-1">
-                                  {language === "vi" ? `Trả lời (${activeFaqLocale.toUpperCase()})` : `Answer (${activeFaqLocale.toUpperCase()})`}
+                                  {`Trả lời (${activeFaqLocale.toUpperCase()})`}
                                 </Label>
                                 <textarea
                                   rows={2}
@@ -1442,7 +1432,7 @@ export default function ServiceDetailModal({
                     onClick={() => setIsEditing(false)}
                     isDisabled={loading}
                   >
-                    {language === "vi" ? "Quay lại" : "Back"}
+                    {"Quay lại"}
                   </Button>
                   <Button
                     type="submit"
@@ -1454,7 +1444,7 @@ export default function ServiceDetailModal({
                     ) : (
                       <Save size={15} className="mr-1.5" />
                     )}
-                    {language === "vi" ? "Lưu" : "Save Changes"}
+                    {"Lưu"}
                   </Button>
                 </ModalFooter>
               </form>
@@ -1470,8 +1460,7 @@ export default function ServiceDetailModal({
                     : "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50"
                     }`}>
                     {service.status === "published"
-                      ? (language === "vi" ? "Hoạt động" : "Published")
-                      : (language === "vi" ? "Bản nháp" : "Draft")}
+                      ? ("Hoạt động"): ("Bản nháp")}
                   </span>
                 </ModalHeader>
 
@@ -1488,7 +1477,7 @@ export default function ServiceDetailModal({
                           </div>
                           <div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === "vi" ? "Danh mục" : "Category"}
+                              {"Danh mục"}
                             </span>
                             <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">
                               {categoryLabel}
@@ -1505,12 +1494,11 @@ export default function ServiceDetailModal({
                           </div>
                           <div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === "vi" ? "Chế độ giá" : "Pricing Mode"}
+                              {"Chế độ giá"}
                             </span>
                             <span className="text-xs font-extrabold text-slate-850 dark:text-slate-100">
                               {service.applyVehiclePricing
-                                ? (language === "vi" ? "Giá theo loại xe" : "Pricing by vehicle type")
-                                : (language === "vi" ? "Giá theo loại vé" : "Pricing by ticket type")}
+                                ? ("Giá theo loại xe"): ("Giá theo loại vé")}
                             </span>
                           </div>
                         </div>
@@ -1520,10 +1508,10 @@ export default function ServiceDetailModal({
                       {/* Short description */}
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                          {language === "vi" ? "Mô tả ngắn gọn" : "Short Description"}
+                          {"Mô tả ngắn gọn"}
                         </span>
                         <p className="text-xs font-medium text-slate-600 dark:text-slate-350 bg-slate-50/50 dark:bg-black/10 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-850">
-                          {currentTrans?.description || (language === "vi" ? "Chưa nhập mô tả." : "No description entered.")}
+                          {currentTrans?.description || ("Chưa nhập mô tả.")}
                         </p>
                       </div>
                     </div>
@@ -1546,10 +1534,10 @@ export default function ServiceDetailModal({
                   {/* Full Content Info */}
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      {language === "vi" ? "Chi tiết nội dung tour" : "Detailed content details"}
+                      {"Chi tiết nội dung tour"}
                     </span>
                     <div className="bg-slate-50/50 dark:bg-black/10 p-4 rounded-2xl border border-slate-150 dark:border-slate-800/60 text-xs font-semibold leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                      {currentTrans?.content || (language === "vi" ? "Chưa có mô tả chi tiết lịch trình dịch vụ." : "No detailed content details defined.")}
+                      {currentTrans?.content || ("Chưa có mô tả chi tiết lịch trình dịch vụ.")}
                     </div>
                   </div>
 
@@ -1558,11 +1546,11 @@ export default function ServiceDetailModal({
                   {/* Options details list */}
                   <div className="space-y-3">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      {language === "vi" ? "Các tùy chọn phân hạng vé áp dụng" : "Configured Ticket Tiers & Prices"}
+                      {"Các tùy chọn phân hạng vé áp dụng"}
                     </span>
                     {(!service.options || service.options.length === 0) ? (
                       <div className="text-xs text-slate-400 font-medium italic">
-                        {language === "vi" ? "Chưa cấu hình tùy chọn giá vé cho tour này." : "No specific pricing options configured."}
+                        {"Chưa cấu hình tùy chọn giá vé cho tour này."}
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1579,7 +1567,7 @@ export default function ServiceDetailModal({
                                 </span>
                               </div>
                               <span className="text-[11px] font-medium text-slate-400">
-                                {trOpt?.description || (language === "vi" ? "Không có mô tả chi tiết." : "No description.")}
+                                {trOpt?.description || ("Không có mô tả chi tiết.")}
                               </span>
                               {(opt.vehicleType || opt.seatCapacity || opt.vehicleBrand || opt.maxLuggage) && (
                                 <div className="flex flex-wrap items-center gap-1.5 mt-1 pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
@@ -1596,7 +1584,7 @@ export default function ServiceDetailModal({
                                   )}
                                   {opt.seatCapacity && (
                                     <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-black dark:text-slate-400">
-                                      {opt.seatCapacity} {language === "vi" ? "Ghế" : "Seats"}
+                                      {opt.seatCapacity} {"Ghế"}
                                     </span>
                                   )}
                                   {opt.maxLuggage && (
@@ -1618,11 +1606,11 @@ export default function ServiceDetailModal({
                   {/* Itinerary daily schedule details */}
                   <div className="space-y-4">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      {language === "vi" ? "Lịch trình hoạt động chi tiết" : "Daily Tour Schedule Itineraries"}
+                      {"Lịch trình hoạt động chi tiết"}
                     </span>
                     {(!service.itineraries || service.itineraries.length === 0) ? (
                       <div className="text-xs text-slate-400 font-medium italic">
-                        {language === "vi" ? "Chưa thiết lập lịch trình chi tiết từng ngày." : "No day-by-day itineraries planned yet."}
+                        {"Chưa thiết lập lịch trình chi tiết từng ngày."}
                       </div>
                     ) : (
                       <div className="space-y-4 border-l border-slate-200 dark:border-slate-800 ml-2.5 pl-5 relative">
@@ -1634,7 +1622,7 @@ export default function ServiceDetailModal({
                               <span className="absolute -left-[26px] top-1.5 w-3 h-3 rounded-full bg-indigo-600 ring-4 ring-white dark:ring-[var(--bg-surface)] flex-shrink-0" />
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                                 <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
-                                  {language === "vi" ? `NGÀY ${itin.dayNumber}` : `DAY ${itin.dayNumber}`}
+                                  {`NGÀY ${itin.dayNumber}`}
                                 </span>
                                 <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
                                   {trItin?.dayTitle || ""}
@@ -1669,7 +1657,7 @@ export default function ServiceDetailModal({
                                 if (parsed.length === 0) {
                                   return (
                                     <p className="text-xs text-slate-450 italic mt-1 pl-1">
-                                      {language === "vi" ? "Chưa có hoạt động nào được ghi nhận." : "No activities recorded."}
+                                      {"Chưa có hoạt động nào được ghi nhận."}
                                     </p>
                                   );
                                 }
@@ -1703,11 +1691,11 @@ export default function ServiceDetailModal({
                   {/* FAQs Read-Only Display */}
                   <div className="space-y-4">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      {language === "vi" ? "Câu hỏi thường gặp (FAQs)" : "Frequently Asked Questions (FAQs)"}
+                      {"Câu hỏi thường gặp (FAQs)"}
                     </span>
                     {(!service.faqs || service.faqs.length === 0) ? (
                       <div className="text-xs text-slate-400 font-medium italic">
-                        {language === "vi" ? "Chưa thiết lập câu hỏi thường gặp." : "No FAQs configured yet."}
+                        {"Chưa thiết lập câu hỏi thường gặp."}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -1738,7 +1726,7 @@ export default function ServiceDetailModal({
                     className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
-                    {language === "vi" ? "Đóng lại" : "Close"}
+                    {"Đóng lại"}
                   </Button>
                   <Button
                     type="button"
@@ -1746,7 +1734,7 @@ export default function ServiceDetailModal({
                     className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
                   >
                     <Edit3 size={15} className="mr-1.5" />
-                    {language === "vi" ? "Chỉnh sửa thông tin" : "Edit Tour Details"}
+                    {"Chỉnh sửa thông tin"}
                   </Button>
                 </ModalFooter>
               </div>

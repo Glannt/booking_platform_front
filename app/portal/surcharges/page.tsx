@@ -52,6 +52,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 import { AppStatusChip } from "@/components/common/AppStatusChip";
 import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { TableEmptyState, RowActionButtons } from "@/components/common";
 
 type TabKey = "rules" | "mappings";
 
@@ -291,8 +292,8 @@ export default function SurchargesAdminPage() {
         await createSurchargeRule(dto);
         toast.success(tr.saveSuccess);
       }
+      await loadData();
       setIsRuleFormOpen(false);
-      loadData();
     } catch (err: any) {
       toast.danger(err.message || "Lỗi khi lưu quy tắc phụ thu");
     } finally {
@@ -343,8 +344,8 @@ export default function SurchargesAdminPage() {
         await createOrUpdateModuleSurchargeMapping(dto);
       }
       toast.success(tr.saveSuccess);
+      await loadData();
       setIsMappingModalOpen(false);
-      loadData();
     } catch (err: any) {
       toast.danger(err.message || "Lỗi khi lưu ánh xạ");
     } finally {
@@ -416,8 +417,8 @@ export default function SurchargesAdminPage() {
       }
 
       toast.success(tr.saveSuccess);
+      await loadData();
       setIsMappingModalOpen(false);
-      loadData();
     } catch (err: any) {
       toast.danger(err.message || "Lỗi khi lưu ánh xạ");
     } finally {
@@ -805,11 +806,11 @@ export default function SurchargesAdminPage() {
           </div>
         ) : activeTab === "rules" ? (
           filteredRules.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <Sparkles className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Không tìm thấy quy tắc nào</h3>
-              <p className="text-xs text-slate-500">Thử thay đổi bộ lọc tìm kiếm hoặc tạo quy tắc mới.</p>
-            </div>
+            <TableEmptyState
+              icon={Sparkles}
+              title="Không tìm thấy quy tắc nào"
+              description="Thử thay đổi bộ lọc tìm kiếm hoặc tạo quy tắc mới."
+            />
           ) : (
             <Table>
               <Table.ScrollContainer>
@@ -966,11 +967,11 @@ export default function SurchargesAdminPage() {
         ) : (
           /* Tab 2: Mappings Table */
           filteredMappings.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <Layers className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">Không tìm thấy ánh xạ nào</h3>
-              <p className="text-xs text-slate-500">Chưa có ánh xạ quy tắc nào cho module đã chọn.</p>
-            </div>
+            <TableEmptyState
+              icon={Layers}
+              title="Không tìm thấy ánh xạ nào"
+              description="Chưa có ánh xạ quy tắc nào cho module đã chọn."
+            />
           ) : (
             <Table>
               <Table.ScrollContainer>
@@ -1042,31 +1043,12 @@ export default function SurchargesAdminPage() {
                         </Table.Cell>
 
                         <Table.Cell>
-                          <div className="flex items-center gap-1.5">
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button isIconOnly size="sm" variant="secondary" aria-label="Chỉnh sửa" onPress={() => handleEditMapping(m)}>
-                                  <Edit3 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Chỉnh sửa
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button isIconOnly size="sm" variant="danger" aria-label="Gỡ ánh xạ" onPress={() => m.id && handleDeleteMapping(m.id)}>
-                                  <Trash2 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                <Tooltip.Arrow />
-                                Gỡ ánh xạ
-                              </Tooltip.Content>
-                            </Tooltip>
-                          </div>
+                          <RowActionButtons
+                            onEdit={() => handleEditMapping(m)}
+                            editLabel="Chỉnh sửa"
+                            onDelete={() => m.id && handleDeleteMapping(m.id)}
+                            deleteLabel="Gỡ ánh xạ"
+                          />
                         </Table.Cell>
                       </Table.Row>
                     ))}

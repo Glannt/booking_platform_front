@@ -40,7 +40,7 @@ export interface VehicleCreateUpdateModalProps {
   categories: VehicleCategoryDto[];
   language?: string;
   backendUrl?: string;
-  onSaveSuccess: (savedVehicle?: VehicleDto) => void;
+  onSaveSuccess: (savedVehicle?: VehicleDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -142,12 +142,12 @@ export default function VehicleCreateUpdateModal({
     e.preventDefault();
 
     if (!brand.trim() || !model.trim()) {
-      showToast(language === "vi" ? "Vui lòng nhập hãng xe và mẫu xe!" : "Please enter brand and model!", "error");
+      showToast("Vui lòng nhập hãng xe và mẫu xe!", "error");
       return;
     }
 
     if (!typeId) {
-      showToast(language === "vi" ? "Vui lòng chọn danh mục xe!" : "Please select vehicle category!", "error");
+      showToast("Vui lòng chọn danh mục xe!", "error");
       return;
     }
 
@@ -172,16 +172,16 @@ export default function VehicleCreateUpdateModal({
     try {
       if (isEdit && editingVehicle?.id) {
         const res = await updateVehicle(editingVehicle.id, payload);
-        showToast(language === "vi" ? "Cập nhật xe thành công!" : "Vehicle updated successfully!", "success");
-        onSaveSuccess(res.data);
+        showToast("Cập nhật xe thành công!", "success");
+        await onSaveSuccess?.(res.data);
       } else {
         const res = await createVehicle(payload);
-        showToast(language === "vi" ? "Thêm xe mới thành công!" : "New vehicle created successfully!", "success");
-        onSaveSuccess(res.data);
+        showToast("Thêm xe mới thành công!", "success");
+        await onSaveSuccess?.(res.data);
       }
       onClose();
     } catch (err) {
-      showToast(language === "vi" ? "Có lỗi xảy ra khi lưu xe." : "Failed to save vehicle.", "error");
+      showToast("Có lỗi xảy ra khi lưu xe.", "error");
     } finally {
       setLoading(false);
     }
@@ -207,13 +207,10 @@ export default function VehicleCreateUpdateModal({
                 <div>
                   <h2 id="vehicle-form-title" className="text-lg font-extrabold">
                     {isEdit
-                      ? (language === "vi" ? `Chỉnh Sửa Xe: ${brand} ${model} (${licensePlate || "Chưa có biển"})` : `Edit Vehicle: ${brand} ${model}`)
-                      : (language === "vi" ? "Thêm Xe Mới" : "Add New Vehicle")}
+                      ? (`Chỉnh Sửa Xe: ${brand} ${model} (${licensePlate || "Chưa có biển"})`): ("Thêm Xe Mới")}
                   </h2>
                   <p className="text-xs font-medium">
-                    {language === "vi"
-                      ? "Thiết lập cấu hình thông số kỹ thuật xe, thuộc tính, tiện nghi và phân loại nhóm xe."
-                      : "Configure vehicle specifications, attributes, amenities, and category mapping."}
+                    {"Thiết lập cấu hình thông số kỹ thuật xe, thuộc tính, tiện nghi và phân loại nhóm xe."}
                   </p>
                 </div>
               </div>
@@ -227,7 +224,7 @@ export default function VehicleCreateUpdateModal({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <TextField isRequired className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider">
-                          {language === "vi" ? "Hãng xe" : "Brand"}
+                          {"Hãng xe"}
                         </Label>
                         <Input
                           type="text"
@@ -240,7 +237,7 @@ export default function VehicleCreateUpdateModal({
 
                       <TextField isRequired className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider">
-                          {language === "vi" ? "Mẫu xe" : "Model"}
+                          {"Mẫu xe"}
                         </Label>
                         <Input
                           type="text"
@@ -253,7 +250,7 @@ export default function VehicleCreateUpdateModal({
 
                       <TextField className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider">
-                          {language === "vi" ? "Biển số xe" : "License Plate"}
+                          {"Biển số xe"}
                         </Label>
                         <Input
                           type="text"
@@ -271,14 +268,14 @@ export default function VehicleCreateUpdateModal({
                           isRequired
                           fullWidth
                           name="typeId"
-                          placeholder={language === "vi" ? "-- Chọn loại xe --" : "-- Select category --"}
+                          placeholder={"-- Chọn loại xe --"}
                           selectedKey={String(typeId)}
                           onSelectionChange={(key) => {
                             if (key) setTypeId(Number(key));
                           }}
                         >
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-1">
-                            {language === "vi" ? "Danh mục phân loại xe" : "Vehicle Category"}
+                            {"Danh mục phân loại xe"}
                           </Label>
                           <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-separator bg-white dark:bg-[var(--bg-card)] focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[42px]">
                             <Select.Value />
@@ -315,7 +312,7 @@ export default function VehicleCreateUpdateModal({
                           maxValue={new Date().getFullYear() + 2}
                         >
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-1">
-                            {language === "vi" ? "Năm sản xuất" : "Year"}
+                            {"Năm sản xuất"}
                           </Label>
                           <NumberField.Group className="flex items-center w-full rounded-xl border border-separator bg-white dark:bg-[var(--bg-card)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[42px]">
                             <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
@@ -336,7 +333,7 @@ export default function VehicleCreateUpdateModal({
                           }}
                         >
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-1">
-                            {language === "vi" ? "Loại nhiên liệu" : "Fuel Type"}
+                            {"Loại nhiên liệu"}
                           </Label>
                           <Select.Trigger className="w-full px-3 py-2 rounded-xl border border-separator bg-white dark:bg-[var(--bg-card)] focus:outline-none focus:ring-2 focus:ring-primary text-sm font-bold flex items-center justify-between cursor-pointer h-[42px]">
                             <Select.Value />
@@ -345,9 +342,9 @@ export default function VehicleCreateUpdateModal({
                           <Select.Popover className="bg-white dark:bg-[var(--bg-card)] border border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                             <ListBox>
                               {[
-                                { id: "petrol", label: language === "vi" ? "Xăng (Petrol)" : "Petrol" },
-                                { id: "diesel", label: language === "vi" ? "Dầu Diesel" : "Diesel" },
-                                { id: "electric", label: language === "vi" ? "Điện (Electric)" : "Electric" },
+                                { id: "petrol", label: "Xăng (Petrol)" },
+                                { id: "diesel", label: "Dầu Diesel" },
+                                { id: "electric", label: "Điện (Electric)" },
                                 { id: "hybrid", label: "Hybrid" },
                               ].map((item) => (
                                 <ListBox.Item
@@ -373,7 +370,7 @@ export default function VehicleCreateUpdateModal({
                           minValue={0}
                         >
                           <Label className="block text-xs font-bold uppercase tracking-wider mb-1">
-                            {language === "vi" ? "Số hành lý" : "Luggage"}
+                            {"Số hành lý"}
                           </Label>
                           <NumberField.Group className="flex items-center w-full rounded-xl border border-separator bg-white dark:bg-[var(--bg-card)] overflow-hidden focus-within:ring-2 focus-within:ring-primary h-[42px]">
                             <NumberField.Input className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full font-bold" />
@@ -383,7 +380,7 @@ export default function VehicleCreateUpdateModal({
 
                       <TextField className="w-full">
                         <Label className="block text-xs font-bold uppercase tracking-wider mb-1">
-                          {language === "vi" ? "Đơn vị tính" : "Unit"}
+                          {"Đơn vị tính"}
                         </Label>
                         <Input
                           type="text"
@@ -409,7 +406,7 @@ export default function VehicleCreateUpdateModal({
                           </Checkbox.Content>
                         </Checkbox>
                         <Label htmlFor="vehicle-active" className="text-sm font-bold cursor-pointer select-none">
-                          {language === "vi" ? "Kích hoạt hoạt động" : "Active / Available"}
+                          {"Kích hoạt hoạt động"}
                         </Label>
                       </div>
 
@@ -426,7 +423,7 @@ export default function VehicleCreateUpdateModal({
                           </Checkbox.Content>
                         </Checkbox>
                         <Label htmlFor="vehicle-can-rent" className="text-sm font-bold cursor-pointer select-none">
-                          {language === "vi" ? "Cho thuê tự lái" : "Allow Self-Drive"}
+                          {"Cho thuê tự lái"}
                         </Label>
                       </div>
                     </div>
@@ -437,7 +434,7 @@ export default function VehicleCreateUpdateModal({
                         thumbnailId={thumbnailId}
                         onImageIdsChange={(newImageIds) => setImageIds(newImageIds)}
                         onThumbnailChange={(newThumbnailId) => setThumbnailId(newThumbnailId)}
-                        label={language === "vi" ? "Hình ảnh Xe (Tải lên & Chọn ảnh đại diện)" : "Vehicle Images"}
+                        label={"Hình ảnh Xe (Tải lên & Chọn ảnh đại diện)"}
                       />
                     </div>
                   </div>
@@ -452,11 +449,11 @@ export default function VehicleCreateUpdateModal({
                             <Layers size={18} />
                           </div>
                           <div>
-                            <span className="text-sm font-black uppercase tracking-wider block">
-                              {language === "vi" ? "Thuộc tính & Phụ kiện (Add-ons)" : "Attributes & Add-ons"}
+                            <span className="text-sm font-black text-black dark:text-white uppercase tracking-wider block">
+                              {"Thuộc tính & Phụ kiện (Add-ons)"}
                             </span>
                             <span className="text-xs">
-                              {language === "vi" ? "Chọn các thuộc tính cấu hình trang bị cho xe này" : "Select equipped attributes and add-ons"}
+                              {"Chọn các thuộc tính cấu hình trang bị cho xe này"}
                             </span>
                           </div>
                         </div>
@@ -480,11 +477,10 @@ export default function VehicleCreateUpdateModal({
                                         key={ao.id}
                                         type="button"
                                         onClick={() => toggleAddOn(ao.id)}
-                                        className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer border-2 ${
-                                          isSelected
-                                            ? "bg-primary text-white border-primary shadow-sm"
-                                            : "bg-muted/40 border-border hover:border-primary/50"
-                                        }`}
+                                        className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer border-2 ${isSelected
+                                          ? "bg-primary border-green-300 shadow-sm"
+                                          : "bg-muted/40 border-border hover:border-primary/50"
+                                          }`}
                                       >
                                         {isSelected && <Check size={14} />}
                                         <span>{aoTr?.name || ao.value || ao.code}</span>
@@ -508,10 +504,10 @@ export default function VehicleCreateUpdateModal({
                           </div>
                           <div>
                             <span className="text-sm font-black uppercase tracking-wider block">
-                              {language === "vi" ? "Tiện nghi trang bị (Amenities)" : "Equipped Amenities"}
+                              {"Tiện nghi trang bị (Amenities)"}
                             </span>
                             <span className="text-xs">
-                              {language === "vi" ? "Chọn các tiện nghi sẵn có trên xe cho khách hàng" : "Select available onboard amenities"}
+                              {"Chọn các tiện nghi sẵn có trên xe cho khách hàng"}
                             </span>
                           </div>
                         </div>
@@ -535,11 +531,10 @@ export default function VehicleCreateUpdateModal({
                                         key={am.id}
                                         type="button"
                                         onClick={() => toggleAmenity(am.id)}
-                                        className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer border-2 ${
-                                          isSelected
-                                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                                            : "bg-muted/40 border-border hover:border-emerald-500/50"
-                                        }`}
+                                        className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all cursor-pointer border-2 ${isSelected
+                                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                          : "bg-muted/40 border-border hover:border-emerald-500/50"
+                                          }`}
                                       >
                                         {isSelected && <Check size={14} />}
                                         <span>{amTr?.name || am.code}</span>
@@ -564,7 +559,7 @@ export default function VehicleCreateUpdateModal({
                   isDisabled={loading}
                   className="rounded-xl font-bold text-xs h-10 px-4 border border-border cursor-pointer transition-colors"
                 >
-                  {language === "vi" ? "Hủy" : "Cancel"}
+                  {"Hủy"}
                 </Button>
                 <Button
                   type="submit"
@@ -576,7 +571,7 @@ export default function VehicleCreateUpdateModal({
                   ) : (
                     <Save size={15} className="mr-1.5" />
                   )}
-                  {isEdit ? (language === "vi" ? "Lưu thay đổi" : "Save Changes") : (language === "vi" ? "Tạo xe mới" : "Create Vehicle")}
+                  {isEdit ? ("Lưu thay đổi"): ("Tạo xe mới")}
                 </Button>
               </ModalFooter>
             </form>

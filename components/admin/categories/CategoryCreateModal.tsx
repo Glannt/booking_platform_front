@@ -29,7 +29,7 @@ interface CategoryCreateModalProps {
   onClose: () => void;
   language: string;
   backendUrl: string;
-  onSaveSuccess: (newCat?: ServiceCategoryDto) => void;
+  onSaveSuccess: (newCat?: ServiceCategoryDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -100,7 +100,7 @@ export default function CategoryCreateModal({
     // Validate active locale has a name
     const activeTrans = formData.translations?.find(t => t.locale === activeFormLocale);
     if (!activeTrans || !activeTrans.name.trim()) {
-      showToast(language === "vi" ? "Tên danh mục là bắt buộc!" : "Category Name in active tab language is required!", "error");
+      showToast("Tên danh mục là bắt buộc!", "error");
       return;
     }
 
@@ -120,8 +120,8 @@ export default function CategoryCreateModal({
     setLoading(true);
     try {
       const result = await createCategory(payload);
-      showToast(language === "vi" ? "Đã thêm danh mục thành công!" : "New Category created successfully!", "success");
-      onSaveSuccess(result.data);
+      showToast("Đã thêm danh mục thành công!", "success");
+      await onSaveSuccess?.(result.data);
       onClose();
     } catch (err: any) {
       showToast("API connection failed. Action simulated locally.", "success");
@@ -132,7 +132,7 @@ export default function CategoryCreateModal({
         status: payload.status || "published",
         translations: cleanTranslations as ServiceCategoryTranslationDto[]
       };
-      onSaveSuccess(simulated);
+      await onSaveSuccess?.(simulated);
       onClose();
     } finally {
       setLoading(false);
@@ -148,10 +148,10 @@ export default function CategoryCreateModal({
             <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <h2 id="category-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  {language === "vi" ? "Thêm mới Danh Mục" : "Add New Category"}
+                  {"Thêm mới Danh Mục"}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  {language === "vi" ? "Thiết lập nhóm phân loại và hỗ trợ hiển thị đa ngôn ngữ." : "Configure category taxonomies and translations."}
+                  {"Thiết lập nhóm phân loại và hỗ trợ hiển thị đa ngôn ngữ."}
                 </p>
               </div>
             </ModalHeader>
@@ -161,7 +161,7 @@ export default function CategoryCreateModal({
                 {/* Icon Image Uploader */}
                 <div className="bg-slate-50/50 dark:bg-black/10 p-4 rounded-2xl border border-divider">
                   <ImageUpload
-                    label={language === "vi" ? "Ảnh Biểu Tượng Danh Mục" : "Category Icon Image"}
+                    label={"Ảnh Biểu Tượng Danh Mục"}
                     value={formData.iconImageId}
                     onChange={(id) => setFormData(prev => ({ ...prev, iconImageId: id || undefined }))}
                   />
@@ -171,7 +171,7 @@ export default function CategoryCreateModal({
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                      {language === "vi" ? "Trạng thái hiển thị" : "Status"}
+                      {"Trạng thái hiển thị"}
                     </Label>
                     <Select
                       className="w-full"
@@ -184,12 +184,12 @@ export default function CategoryCreateModal({
                       </Select.Trigger>
                       <Select.Popover className="bg-white dark:bg-black border-1 border-separator rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                         <ListBox>
-                          <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị" : "Published"}>
-                            {language === "vi" ? "Kích hoạt hiển thị" : "Published"}
+                          <ListBox.Item id="published" textValue={"Kích hoạt hiển thị"}>
+                            {"Kích hoạt hiển thị"}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
-                          <ListBox.Item id="draft" textValue={language === "vi" ? "Ẩn / Bản nháp" : "Draft"}>
-                            {language === "vi" ? "Ẩn / Bản nháp" : "Draft"}
+                          <ListBox.Item id="draft" textValue={"Ẩn / Bản nháp"}>
+                            {"Ẩn / Bản nháp"}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
                         </ListBox>
@@ -204,7 +204,7 @@ export default function CategoryCreateModal({
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                      {language === "vi" ? "Nội dung dịch thuật danh mục" : "Category Translations"}
+                      {"Nội dung dịch thuật danh mục"}
                     </Label>
                     {/* Language selection tabs */}
                     <div className="flex items-center gap-1 bg-slate-100 dark:bg-black p-1 rounded-xl w-fit">
@@ -230,7 +230,7 @@ export default function CategoryCreateModal({
                     <div>
                       <TextField className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider">
-                          {language === "vi" ? "Tên Danh Mục" : "Category Name"} ({activeFormLocale.toUpperCase()})
+                          {"Tên Danh Mục"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <Input
                           type="text"
@@ -245,7 +245,7 @@ export default function CategoryCreateModal({
                     <div>
                       <TextField className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider">
-                          {language === "vi" ? "Đường dẫn (Slug)" : "SEO Slug"} ({activeFormLocale.toUpperCase()})
+                          {"Đường dẫn (Slug)"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <Input
                           type="text"
@@ -260,7 +260,7 @@ export default function CategoryCreateModal({
 
                   <div>
                     <Label className="block text-xs font-bold mb-1.5">
-                      {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
+                      {"Mô tả ngắn"} ({activeFormLocale.toUpperCase()})
                     </Label>
                     <textarea
                       rows={3}
@@ -281,7 +281,7 @@ export default function CategoryCreateModal({
                   onClick={onClose}
                   isDisabled={loading}
                 >
-                  {language === "vi" ? "Hủy bỏ" : "Cancel"}
+                  {"Hủy bỏ"}
                 </Button>
                 <Button
                   type="submit"
@@ -293,7 +293,7 @@ export default function CategoryCreateModal({
                   ) : (
                     <Save size={15} className="mr-1.5" />
                   )}
-                  {language === "vi" ? "Lưu Danh Mục" : "Save Category"}
+                  {"Lưu Danh Mục"}
                 </Button>
               </ModalFooter>
             </form>

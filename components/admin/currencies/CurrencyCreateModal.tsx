@@ -12,7 +12,7 @@ import { createCurrency, CurrencyDto, CurrencyTranslationDto } from "@/lib/api/c
 interface CurrencyCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSuccess: (newCurrency?: CurrencyDto) => void;
+  onSaveSuccess: (newCurrency?: CurrencyDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -74,7 +74,7 @@ export default function CurrencyCreateModal({
         active,
         translations: cleanTranslations,
       });
-      onSaveSuccess(result);
+      await onSaveSuccess?.(result);
     } catch (err: any) {
       showToast(err?.message || "Lỗi khi tạo", "error");
     } finally {

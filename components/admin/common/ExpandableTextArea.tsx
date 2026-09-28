@@ -74,10 +74,10 @@ export default function ExpandableTextArea({
                     variant="ghost"
                     onPress={() => setIsOpen(true)}
                     className="h-7 px-2.5 text-xs font-semibold flex items-center gap-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] rounded-lg transition-colors cursor-pointer shrink-0"
-                    aria-label={language === "vi" ? "Phóng to khung soạn thảo" : "Expand editor"}
+                    aria-label={"Phóng to khung soạn thảo"}
                 >
                     <Maximize2 size={13} />
-                    <span>{language === "vi" ? "Phóng to" : "Expand"}</span>
+                    <span>{"Phóng to"}</span>
                 </Button>
             </div>
 
@@ -106,12 +106,10 @@ export default function ExpandableTextArea({
                                     </div>
                                     <div>
                                         <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
-                                            {modalTitle || (language === "vi" ? "Soạn thảo nội dung chi tiết" : "Edit Content")}
+                                            {modalTitle || ("Soạn thảo nội dung chi tiết")}
                                         </h3>
                                         <p className="text-[11px] text-slate-400">
-                                            {language === "vi"
-                                                ? "Khung soạn thảo mở rộng giúp dễ dàng nhập và quản lý danh sách"
-                                                : "Expanded editor for convenient list management"}
+                                            {"Khung soạn thảo mở rộng giúp dễ dàng nhập và quản lý danh sách"}
                                         </p>
                                     </div>
                                 </div>
@@ -138,12 +136,10 @@ export default function ExpandableTextArea({
                                     {/* Footer stats */}
                                     <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
                                         <span>
-                                            {language === "vi"
-                                                ? `Số dòng: ${lineCount} | Ký tự: ${charCount}`
-                                                : `Lines: ${lineCount} | Characters: ${charCount}`}
+                                            {`Số dòng: ${lineCount} | Ký tự: ${charCount}`}
                                         </span>
                                         <span className="italic">
-                                            {language === "vi" ? "Gợi ý: Mỗi dòng bắt đầu bằng '-' để tự định dạng danh sách" : "Tip: Start each line with '-' for bullet points"}
+                                            {"Gợi ý: Mỗi dòng bắt đầu bằng '-' để tự định dạng danh sách"}
                                         </span>
                                     </div>
                                 </ModalBody>
@@ -155,7 +151,7 @@ export default function ExpandableTextArea({
                                         onPress={handleClose}
                                         className="px-4 py-2 text-xs font-bold rounded-xl cursor-pointer"
                                     >
-                                        {language === "vi" ? "Hủy" : "Cancel"}
+                                        {"Hủy"}
                                     </Button>
                                     <Button
                                         type="button"
@@ -164,7 +160,7 @@ export default function ExpandableTextArea({
                                         className="px-4 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
                                     >
                                         <Check size={14} />
-                                        <span>{language === "vi" ? "Xong / Áp dụng" : "Done / Apply"}</span>
+                                        <span>{"Xong / Áp dụng"}</span>
                                     </Button>
                                 </ModalFooter>
                             </div>

@@ -16,6 +16,7 @@ import {
 } from "@/lib/api/feedback";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
+import { TableLoadingState, TableEmptyState } from "@/components/common";
 
 export default function AdminFeedbackPage() {
   const { t } = useI18n();
@@ -150,8 +151,8 @@ export default function AdminFeedbackPage() {
         await updateFeedback(savingId!, payload);
         showToast("Cập nhật feedback thành công!", "success");
       }
+      await fetchFeedbacks();
       setModalOpen(false);
-      fetchFeedbacks();
     } catch {
       showToast("Lỗi kết nối server.", "error");
       setLoading(false);
@@ -215,20 +216,13 @@ export default function AdminFeedbackPage() {
       {/* Table */}
       <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">Đang tải...</p>
-          </div>
+          <TableLoadingState message="Đang tải..." />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <MessageSquare className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              Chưa có feedback nào
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              Tạo feedback để hiển thị trên trang chủ.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={MessageSquare}
+            title="Chưa có feedback nào"
+            description="Tạo feedback để hiển thị trên trang chủ."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Feedback management table" className="w-full text-left">

@@ -28,7 +28,7 @@ export interface VehicleDetailModalProps {
   categories: VehicleCategoryDto[];
   language?: string;
   backendUrl?: string;
-  onSaveSuccess: (updatedVehicle?: VehicleDto) => void;
+  onSaveSuccess: (updatedVehicle?: VehicleDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
   defaultEditMode?: boolean;
   onEdit?: (vehicle: VehicleDto) => void;
@@ -84,12 +84,9 @@ export default function VehicleDetailModal({
 
   const fuelLabel =
     vehicle.fuelType === "petrol"
-      ? (language === "vi" ? "Xăng (Petrol)" : "Petrol")
-      : vehicle.fuelType === "diesel"
-      ? (language === "vi" ? "Dầu Diesel" : "Diesel")
-      : vehicle.fuelType === "electric"
-      ? (language === "vi" ? "Điện (Electric)" : "Electric")
-      : vehicle.fuelType || "—";
+      ? ("Xăng (Petrol)"): vehicle.fuelType === "diesel"
+      ? ("Dầu Diesel"): vehicle.fuelType === "electric"
+      ? ("Điện (Electric)"): vehicle.fuelType || "—";
 
   return (
     <Modal
@@ -113,7 +110,7 @@ export default function VehicleDetailModal({
                     {vehicle.brand} {vehicle.model}
                   </h2>
                   <p className="text-xs font-medium">
-                    {language === "vi" ? "Chi tiết thông số kỹ thuật, hình ảnh, thuộc tính và tiện nghi xe" : "Vehicle specifications, media, attributes and equipped amenities"}
+                    {"Chi tiết thông số kỹ thuật, hình ảnh, thuộc tính và tiện nghi xe"}
                   </p>
                 </div>
               </div>
@@ -126,7 +123,7 @@ export default function VehicleDetailModal({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Car size={15} className="text-primary" />
                     <span className="text-xs font-bold uppercase tracking-wider block">
-                      {language === "vi" ? "Hãng & Dòng xe" : "Brand & Model"}
+                      {"Hãng & Dòng xe"}
                     </span>
                   </div>
                   <span className="text-base font-bold block">
@@ -138,7 +135,7 @@ export default function VehicleDetailModal({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Hash size={15} className="text-primary" />
                     <span className="text-xs font-bold uppercase tracking-wider block">
-                      {language === "vi" ? "Biển số xe" : "License Plate"}
+                      {"Biển số xe"}
                     </span>
                   </div>
                   <span className="text-base font-bold font-mono text-primary block">
@@ -150,7 +147,7 @@ export default function VehicleDetailModal({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Layers size={15} className="text-primary" />
                     <span className="text-xs font-bold uppercase tracking-wider block">
-                      {language === "vi" ? "Danh mục xe" : "Category"}
+                      {"Danh mục xe"}
                     </span>
                   </div>
                   <span className="text-base font-bold block">
@@ -162,7 +159,7 @@ export default function VehicleDetailModal({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Calendar size={15} className="text-primary" />
                     <span className="text-xs font-bold uppercase tracking-wider block">
-                      {language === "vi" ? "Năm sản xuất" : "Year"}
+                      {"Năm sản xuất"}
                     </span>
                   </div>
                   <span className="text-base font-bold block">
@@ -176,7 +173,7 @@ export default function VehicleDetailModal({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Fuel size={15} className="text-amber-500" />
                     <span className="text-xs font-bold uppercase tracking-wider block">
-                      {language === "vi" ? "Nhiên liệu" : "Fuel"}
+                      {"Nhiên liệu"}
                     </span>
                   </div>
                   <span className="text-base font-bold block">
@@ -188,7 +185,7 @@ export default function VehicleDetailModal({
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Briefcase size={15} className="text-primary" />
                     <span className="text-xs font-bold uppercase tracking-wider block">
-                      {language === "vi" ? "Sức chứa hành lý" : "Luggage"}
+                      {"Sức chứa hành lý"}
                     </span>
                   </div>
                   <span className="text-base font-bold block">
@@ -198,7 +195,7 @@ export default function VehicleDetailModal({
 
                 <div className="p-4 rounded-xl border border-border bg-card">
                   <span className="text-xs font-bold uppercase tracking-wider block mb-1.5">
-                    {language === "vi" ? "Trạng thái hoạt động" : "Status"}
+                    {"Trạng thái hoạt động"}
                   </span>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
@@ -208,14 +205,13 @@ export default function VehicleDetailModal({
                     }`}
                   >
                     {vehicle.active
-                      ? (language === "vi" ? "Đang hoạt động" : "Active")
-                      : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
+                      ? ("Đang hoạt động"): ("Ngừng hoạt động")}
                   </span>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-card">
                   <span className="text-xs font-bold uppercase tracking-wider block mb-1.5">
-                    {language === "vi" ? "Cho thuê tự lái" : "Self-Drive"}
+                    {"Cho thuê tự lái"}
                   </span>
                   <span
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
@@ -225,8 +221,7 @@ export default function VehicleDetailModal({
                     }`}
                   >
                     {vehicle.canRent
-                      ? (language === "vi" ? "Cho phép tự lái" : "Allowed")
-                      : (language === "vi" ? "Chỉ kèm tài xế" : "Chauffeur only")}
+                      ? ("Cho phép tự lái"): ("Chỉ kèm tài xế")}
                   </span>
                 </div>
               </div>
@@ -240,7 +235,7 @@ export default function VehicleDetailModal({
                     </div>
                     <div>
                       <span className="text-sm font-black uppercase tracking-wider block">
-                        {language === "vi" ? "Thuộc tính & Phụ kiện kèm xe (Add-ons)" : "Equipped Attributes & Add-ons"}
+                        {"Thuộc tính & Phụ kiện kèm xe (Add-ons)"}
                       </span>
                     </div>
                   </div>
@@ -269,7 +264,7 @@ export default function VehicleDetailModal({
                     </div>
                     <div>
                       <span className="text-sm font-black uppercase tracking-wider block">
-                        {language === "vi" ? "Tiện nghi trang bị (Amenities)" : "Equipped Amenities"}
+                        {"Tiện nghi trang bị (Amenities)"}
                       </span>
                     </div>
                   </div>
@@ -295,7 +290,7 @@ export default function VehicleDetailModal({
                   imageIds={vehicle.imageIds || []}
                   thumbnailId={vehicle.thumbnailId ?? undefined}
                   readOnly
-                  label={language === "vi" ? "Hình ảnh Xe" : "Vehicle Images"}
+                  label={"Hình ảnh Xe"}
                 />
               </div>
             </ModalBody>
@@ -306,7 +301,7 @@ export default function VehicleDetailModal({
                 onClick={onClose}
                 className="rounded-xl font-bold text-xs h-10 px-4 border border-border bg-white dark:bg-[var(--bg-card)] hover:bg-muted text-foreground transition-colors cursor-pointer"
               >
-                {language === "vi" ? "Đóng" : "Close"}
+                {"Đóng"}
               </Button>
               <Button
                 variant="secondary"
@@ -320,7 +315,7 @@ export default function VehicleDetailModal({
                 className="rounded-xl font-bold text-xs h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300/60 dark:border-amber-700/50 shadow-xs cursor-pointer transition-colors"
               >
                 <Edit3 size={15} className="mr-1.5" />
-                {language === "vi" ? "Chỉnh sửa xe" : "Edit Vehicle"}
+                {"Chỉnh sửa xe"}
               </Button>
             </ModalFooter>
           </ModalDialog>

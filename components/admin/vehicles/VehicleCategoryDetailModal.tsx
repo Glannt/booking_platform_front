@@ -34,7 +34,7 @@ interface VehicleCategoryDetailModalProps {
   category: VehicleCategoryDto | null;
   language: string;
   backendUrl: string;
-  onSaveSuccess: (updatedCat?: VehicleCategoryDto) => void;
+  onSaveSuccess: (updatedCat?: VehicleCategoryDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
   defaultEditMode?: boolean;
 }
@@ -115,7 +115,7 @@ export default function VehicleCategoryDetailModal({
       });
 
       setTranslations(newTrans);
-      setActiveFormLocale(language === "vi" ? "vi" : "en");
+      setActiveFormLocale("vi");
     }
   }, [isOpen, category, language]);
 
@@ -153,9 +153,7 @@ export default function VehicleCategoryDetailModal({
 
     if (isCodeInvalid || isMinSeatInvalid || isMaxSeatInvalid || isMinLuggageInvalid || isMaxLuggageInvalid || isNameInvalid || isSlugInvalid) {
       showToast(
-        language === "vi"
-          ? "Vui lòng kiểm tra và điền đầy đủ các thông tin bắt buộc!"
-          : "Please check and fill in all required fields!",
+        "Vui lòng kiểm tra và điền đầy đủ các thông tin bắt buộc!",
         "error"
       );
       return;
@@ -187,8 +185,8 @@ export default function VehicleCategoryDetailModal({
     setLoading(true);
     try {
       const res = await updateVehicleCategory(category.id, payload);
-      showToast(language === "vi" ? "Cập nhật danh mục xe thành công!" : "Vehicle category updated successfully!", "success");
-      onSaveSuccess(res.data);
+      showToast("Cập nhật danh mục xe thành công!", "success");
+      await onSaveSuccess?.(res.data);
       onClose();
     } catch (err) {
       showToast("API connection failed. Action simulated locally.", "success");
@@ -197,7 +195,7 @@ export default function VehicleCategoryDetailModal({
         ...category,
         ...payload
       } as VehicleCategoryDto;
-      onSaveSuccess(simulated);
+      await onSaveSuccess?.(simulated);
       onClose();
     } finally {
       setLoading(false);
@@ -215,13 +213,12 @@ export default function VehicleCategoryDetailModal({
             <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <h2 id="vehicle-category-details-title" className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>{isEditMode ? (language === "vi" ? "Chỉnh sửa Danh mục Xe" : "Edit Vehicle Category") : (language === "vi" ? "Chi tiết Danh mục Xe" : "Vehicle Category Details")}</span>
+                  <span>{isEditMode ? ("Chỉnh sửa Danh mục Xe"): ("Chi tiết Danh mục Xe")}</span>
                   <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500">#{category.id}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isEditMode
-                    ? (language === "vi" ? "Cập nhật thông số số ghế, hành lý và dịch thuật danh mục." : "Update seating capacity, luggage limit, and translations.")
-                    : (language === "vi" ? "Xem thông tin số ghế, giới hạn hành lý và các bản dịch." : "View seating capacity, luggage limit, and translations.")}
+                    ? ("Cập nhật thông số số ghế, hành lý và dịch thuật danh mục."): ("Xem thông tin số ghế, giới hạn hành lý và các bản dịch.")}
                 </p>
               </div>
             </ModalHeader>
@@ -233,7 +230,7 @@ export default function VehicleCategoryDetailModal({
                     {/* Category Thumbnail Preview */}
                     <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-divider flex flex-col gap-2">
                       <Label className="block text-xs font-bold uppercase tracking-wider">
-                        {language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail"}
+                        {"Ảnh đại diện danh mục"}
                       </Label>
                       {category.thumbnailUrl ? (
                         <div className="w-32 h-20 rounded-xl overflow-hidden border border-divider bg-slate-100 dark:bg-[var(--bg-card)]">
@@ -245,7 +242,7 @@ export default function VehicleCategoryDetailModal({
                         </div>
                       ) : (
                         <span className="text-xs font-semibold text-slate-500">
-                          {language === "vi" ? "Chưa có ảnh đại diện" : "No thumbnail image"}
+                          {"Chưa có ảnh đại diện"}
                         </span>
                       )}
                     </div>
@@ -253,7 +250,7 @@ export default function VehicleCategoryDetailModal({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          {language === "vi" ? "Mã danh mục (Code)" : "Category Code"}
+                          {"Mã danh mục (Code)"}
                         </span>
                         <span className="text-sm font-mono font-bold text-slate-800 dark:text-slate-100">
                           {code || "—"}
@@ -262,19 +259,19 @@ export default function VehicleCategoryDetailModal({
 
                       <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          {language === "vi" ? "Số chỗ ngồi" : "Seats"}
+                          {"Số chỗ ngồi"}
                         </span>
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                          {minSeat === maxSeat ? minSeat : `${minSeat}-${maxSeat}`} {language === "vi" ? "chỗ" : "seats"}
+                          {minSeat === maxSeat ? minSeat : `${minSeat}-${maxSeat}`} {"chỗ"}
                         </span>
                       </div>
 
                       <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-3 rounded-xl border border-divider">
                         <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                          {language === "vi" ? "Số lượng hành lý" : "Luggage limit"}
+                          {"Số lượng hành lý"}
                         </span>
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                          {minLuggage}-{maxLuggage} {unitLuggage || (language === "vi" ? "kiện" : "bags")}
+                          {minLuggage}-{maxLuggage} {unitLuggage || ("kiện")}
                         </span>
                       </div>
                     </div>
@@ -284,12 +281,12 @@ export default function VehicleCategoryDetailModal({
                         ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-900/50"
                         : "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/50"
                         }`}>
-                        {active ? (language === "vi" ? "Đang hoạt động" : "Active / Available") : (language === "vi" ? "Ngừng hoạt động" : "Inactive / Unavailable")}
+                        {active ? ("Đang hoạt động"): ("Ngừng hoạt động")}
                       </div>
 
                       {isDefault && (
                         <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900/50">
-                          {language === "vi" ? "Danh mục mặc định" : "Default category"}
+                          {"Danh mục mặc định"}
                         </div>
                       )}
                     </div>
@@ -354,7 +351,7 @@ export default function VehicleCategoryDetailModal({
                     {/* Category Thumbnail Image Upload */}
                     <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-divider">
                       <ImageUpload
-                        label={language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail Image"}
+                        label={"Ảnh đại diện danh mục"}
                         value={thumbnailId}
                         onChange={(id) => setThumbnailId(id || undefined)}
                       />
@@ -366,7 +363,7 @@ export default function VehicleCategoryDetailModal({
                         <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SEDAN_4" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                         {isCodeInvalid && (
                           <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                            {language === "vi" ? "Mã danh mục không được để trống." : "Category code is required."}
+                            {"Mã danh mục không được để trống."}
                           </FieldError>
                         )}
                       </TextField>
@@ -397,7 +394,7 @@ export default function VehicleCategoryDetailModal({
                           </NumberField.Group>
                           {isMinSeatInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                              {language === "vi" ? "Ghế tối thiểu phải lớn hơn hoặc bằng 1." : "Min seats must be at least 1."}
+                              {"Ghế tối thiểu phải lớn hơn hoặc bằng 1."}
                             </FieldError>
                           )}
                         </NumberField>
@@ -422,7 +419,7 @@ export default function VehicleCategoryDetailModal({
                           </NumberField.Group>
                           {isMaxSeatInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                              {language === "vi" ? "Ghế tối đa không được nhỏ hơn ghế tối thiểu." : "Max seats cannot be less than min seats."}
+                              {"Ghế tối đa không được nhỏ hơn ghế tối thiểu."}
                             </FieldError>
                           )}
                         </NumberField>
@@ -447,7 +444,7 @@ export default function VehicleCategoryDetailModal({
                           </NumberField.Group>
                           {isMinLuggageInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                              {language === "vi" ? "Hành lý tối thiểu không được âm." : "Min luggage cannot be negative."}
+                              {"Hành lý tối thiểu không được âm."}
                             </FieldError>
                           )}
                         </NumberField>
@@ -472,7 +469,7 @@ export default function VehicleCategoryDetailModal({
                           </NumberField.Group>
                           {isMaxLuggageInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                              {language === "vi" ? "Hành lý tối đa không được nhỏ hơn hành lý tối thiểu." : "Max luggage cannot be less than min luggage."}
+                              {"Hành lý tối đa không được nhỏ hơn hành lý tối thiểu."}
                             </FieldError>
                           )}
                         </NumberField>
@@ -494,7 +491,7 @@ export default function VehicleCategoryDetailModal({
                           </Checkbox.Content>
                         </Checkbox>
                         <Label htmlFor="category-active" className="text-sm font-bold cursor-pointer select-none">
-                          {language === "vi" ? "Kích hoạt danh mục" : "Active / Available"}
+                          {"Kích hoạt danh mục"}
                         </Label>
                       </div>
 
@@ -512,7 +509,7 @@ export default function VehicleCategoryDetailModal({
                           </Checkbox.Content>
                         </Checkbox>
                         <Label htmlFor="category-default" className="text-sm font-bold cursor-pointer select-none">
-                          {language === "vi" ? "Danh mục mặc định" : "Default category"}
+                          {"Danh mục mặc định"}
                         </Label>
                       </div>
                     </div>
@@ -522,7 +519,7 @@ export default function VehicleCategoryDetailModal({
                     <div className="space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                          {language === "vi" ? "Nội dung dịch thuật Danh mục *" : "Category Translations *"}
+                          {"Nội dung dịch thuật Danh mục *"}
                         </Label>
                         <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-surface)] p-1 rounded-xl w-fit">
                           {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
@@ -549,7 +546,7 @@ export default function VehicleCategoryDetailModal({
                           <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.name || ""} onChange={(e) => handleTranslationChange("name", e.target.value)} placeholder="e.g. Xe 4 chỗ (Sedan)" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                           {isNameInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                              {language === "vi" ? "Tên danh mục không được để trống." : "Category name is required."}
+                              {"Tên danh mục không được để trống."}
                             </FieldError>
                           )}
                         </TextField>
@@ -559,7 +556,7 @@ export default function VehicleCategoryDetailModal({
                           <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.slug || ""} onChange={(e) => handleTranslationChange("slug", e.target.value)} placeholder="xe-4-cho-sedan" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                           {isSlugInvalid && (
                             <FieldError className="text-[10px] text-rose-500 font-bold mt-1">
-                              {language === "vi" ? "Đường dẫn không được để trống." : "Slug is required."}
+                              {"Đường dẫn không được để trống."}
                             </FieldError>
                           )}
                         </TextField>
@@ -594,7 +591,7 @@ export default function VehicleCategoryDetailModal({
                       className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                       onClick={onClose}
                     >
-                      {language === "vi" ? "Đóng" : "Close"}
+                      {"Đóng"}
                     </Button>
                     <Button
                       aria-label="Chỉnh sửa"
@@ -608,7 +605,7 @@ export default function VehicleCategoryDetailModal({
                       }}
                     >
                       <Edit3 size={15} className="mr-1.5" />
-                      {language === "vi" ? "Chỉnh sửa" : "Edit"}
+                      {"Chỉnh sửa"}
                     </Button>
                   </>
                 ) : (
@@ -620,7 +617,7 @@ export default function VehicleCategoryDetailModal({
                       onClick={() => setIsEditMode(false)}
                       isDisabled={loading}
                     >
-                      {language === "vi" ? "Hủy" : "Cancel"}
+                      {"Hủy"}
                     </Button>
                     <Button
                       key="btn-save"
@@ -633,7 +630,7 @@ export default function VehicleCategoryDetailModal({
                       ) : (
                         <Save size={15} className="mr-1.5" />
                       )}
-                      {language === "vi" ? "Lưu thay đổi" : "Save changes"}
+                      {"Lưu thay đổi"}
                     </Button>
                   </>
                 )}

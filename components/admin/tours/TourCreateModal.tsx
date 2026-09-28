@@ -12,7 +12,7 @@ export interface TourCreateModalProps {
     categories: TourCategoryDto[];
     language?: string;
     backendUrl?: string;
-    onSaveSuccess: (newTour?: TourDto) => void;
+    onSaveSuccess: (newTour?: TourDto) => void | Promise<void>;
     showToast: (msg: string, type: "success" | "error") => void;
 }
 

@@ -3,16 +3,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
-  Trash2,
   RefreshCw,
   Plane,
   Route,
-  DollarSign,
-  Eye,
-  Edit3
+  DollarSign
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Chip, Pagination, SearchField, Spinner, Table, Tabs, toast, Tooltip } from "@heroui/react";
+import { Button, Chip, Pagination, SearchField, Spinner, Table, Tabs, toast } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
 import clsx from "clsx";
 
@@ -42,6 +39,7 @@ import { ColumnInterface } from "@/lib/interface/column.interface";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { TableEmptyState, RowActionButtons } from "@/components/common";
 
 export default function AirportTransferManagementPage() {
   const { t } = useI18n();
@@ -408,10 +406,10 @@ export default function AirportTransferManagementPage() {
           </div>
         ) : activeTab === "airports" ? (
           filteredAirports.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <Plane className="text-foreground/30 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy kết quả</h3>
-            </div>
+            <TableEmptyState
+              icon={Plane}
+              title="Không tìm thấy kết quả"
+            />
           ) : (
             <Table>
               <Table.ScrollContainer>
@@ -447,61 +445,15 @@ export default function AirportTransferManagementPage() {
                           <StatusChip status={String(a.active)} type="active" />
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="tertiary"
-                                  aria-label="Xem sân bay"
-                                  onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(false); setAirportModalOpen(true); }}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Xem chi tiết
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="secondary"
-                                  aria-label="Chỉnh sửa sân bay"
-                                  onPress={() => { setSelectedAirport(a); setAirportDefaultEditMode(true); setAirportModalOpen(true); }}
-                                >
-                                  <Edit3 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Chỉnh sửa
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="danger"
-                                  aria-label="Xóa sân bay"
-                                  onPress={() => handleDeleteAirport(a.id!)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                <Tooltip.Arrow />
-                                Xóa
-                              </Tooltip.Content>
-                            </Tooltip>
-                          </div>
+                          <RowActionButtons
+                            className="justify-end"
+                            onView={() => { setSelectedAirport(a); setAirportDefaultEditMode(false); setAirportModalOpen(true); }}
+                            viewLabel="Xem chi tiết"
+                            onEdit={() => { setSelectedAirport(a); setAirportDefaultEditMode(true); setAirportModalOpen(true); }}
+                            editLabel="Chỉnh sửa"
+                            onDelete={() => handleDeleteAirport(a.id!)}
+                            deleteLabel="Xóa"
+                          />
                         </Table.Cell>
                       </Table.Row>
                     ))}
@@ -536,10 +488,10 @@ export default function AirportTransferManagementPage() {
           )
         ) : activeTab === "routes" ? (
           filteredRoutes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <Route className="text-foreground/30 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy kết quả</h3>
-            </div>
+            <TableEmptyState
+              icon={Route}
+              title="Không tìm thấy kết quả"
+            />
           ) : (
             <Table>
               <Table.ScrollContainer>
@@ -580,61 +532,15 @@ export default function AirportTransferManagementPage() {
                           <StatusChip status={String(r.active)} type="active" />
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="tertiary"
-                                  aria-label="Xem tuyến sân bay"
-                                  onPress={() => { setSelectedRoute(r); setRouteDetailOpen(true); }}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Xem chi tiết
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="secondary"
-                                  aria-label="Chỉnh sửa tuyến sân bay"
-                                  onPress={() => { setSelectedRoute(r); setRouteFormOpen(true); }}
-                                >
-                                  <Edit3 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Chỉnh sửa
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="danger"
-                                  aria-label="Xóa tuyến sân bay"
-                                  onPress={() => handleDeleteRoute(r.id!)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                <Tooltip.Arrow />
-                                Xóa
-                              </Tooltip.Content>
-                            </Tooltip>
-                          </div>
+                          <RowActionButtons
+                            className="justify-end"
+                            onView={() => { setSelectedRoute(r); setRouteDetailOpen(true); }}
+                            viewLabel="Xem chi tiết"
+                            onEdit={() => { setSelectedRoute(r); setRouteFormOpen(true); }}
+                            editLabel="Chỉnh sửa"
+                            onDelete={() => handleDeleteRoute(r.id!)}
+                            deleteLabel="Xóa"
+                          />
                         </Table.Cell>
                       </Table.Row>
                     ))}
@@ -669,10 +575,10 @@ export default function AirportTransferManagementPage() {
           )
         ) : (
           filteredTransfers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-              <DollarSign className="text-foreground/30 mb-4" size={48} />
-              <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy kết quả</h3>
-            </div>
+            <TableEmptyState
+              icon={DollarSign}
+              title="Không tìm thấy kết quả"
+            />
           ) : (
             <Table>
               <Table.ScrollContainer>
@@ -736,61 +642,15 @@ export default function AirportTransferManagementPage() {
                             <StatusChip status={String(t.active)} type="active" />
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="tertiary"
-                                    aria-label="Xem bảng giá đưa đón"
-                                    onPress={() => { setSelectedTransfer(t); setTransferDetailOpen(true); }}
-                                  >
-                                    <Eye size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Xem chi tiết
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="secondary"
-                                    aria-label="Chỉnh sửa bảng giá đưa đón"
-                                    onPress={() => { setSelectedTransfer(t); setTransferFormOpen(true); }}
-                                  >
-                                    <Edit3 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Chỉnh sửa
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="danger"
-                                    aria-label="Xóa bảng giá đưa đón"
-                                    onPress={() => handleDeleteTransfer(t.id!)}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                  <Tooltip.Arrow />
-                                  Xóa
-                                </Tooltip.Content>
-                              </Tooltip>
-                            </div>
+                            <RowActionButtons
+                              className="justify-end"
+                              onView={() => { setSelectedTransfer(t); setTransferDetailOpen(true); }}
+                              viewLabel="Xem chi tiết"
+                              onEdit={() => { setSelectedTransfer(t); setTransferFormOpen(true); }}
+                              editLabel="Chỉnh sửa"
+                              onDelete={() => handleDeleteTransfer(t.id!)}
+                              deleteLabel="Xóa"
+                            />
                           </Table.Cell>
                         </Table.Row>
                       );

@@ -36,7 +36,7 @@ interface AirportTransferCreateUpdateModalProps {
   transfer?: AirportTransferPrice | null;
   routes: AirportRouteDto[];
   categories: VehicleCategoryDto[];
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
   defaultRouteDeposit?: {
     depositType?: DepositType;
@@ -154,7 +154,7 @@ export function AirportTransferCreateUpdateModal({
       }
 
       showToast("Lưu cấu hình giá thành công!", "success");
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch {
       showToast("Lưu cấu hình thất bại!", "error");

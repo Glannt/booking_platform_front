@@ -38,7 +38,7 @@ interface BookingEditModalProps {
   onClose: () => void;
   booking: BookingDto | null;
   language?: string;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -249,7 +249,7 @@ export default function BookingEditModal({
         customerNotes: formData.customerNotes?.trim() || undefined,
       });
       showToast(t.surchargeEngine?.saveSuccess || "Cập nhật thành công!", "success");
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch (err: any) {
       console.error(err);

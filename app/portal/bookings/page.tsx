@@ -4,9 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   RefreshCw,
-  Eye,
-  Edit3,
-  Trash2,
   Calendar,
   AlertCircle,
   TrendingUp,
@@ -23,7 +20,6 @@ import {
   Select,
   ListBox,
   Pagination,
-  Tooltip,
   Popover,
   Checkbox
 } from "@heroui/react";
@@ -34,7 +30,13 @@ import {
   BookingEditModal,
   BookingDeleteModal,
 } from "@/components/admin/bookings";
-import { PageSizeSelect } from "@/components/common";
+import {
+  PageSizeSelect,
+  TableLoadingState,
+  TableEmptyState,
+  PaymentStatusChip,
+  RowActionButtons,
+} from "@/components/common";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 
@@ -93,8 +95,8 @@ export default function BookingsManagementPage() {
     }
   };
 
-  const handleSaveSuccess = () => {
-    fetchBookings();
+  const handleSaveSuccess = async () => {
+    await fetchBookings();
   };
 
   // Toggle filter helpers
@@ -536,20 +538,13 @@ export default function BookingsManagementPage() {
       {/* Main List */}
       <div className="bg-white dark:bg-black rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">Đang tải danh sách đơn đặt tour...</p>
-          </div>
+          <TableLoadingState message="Đang tải danh sách đơn đặt tour..." />
         ) : filteredBookings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Calendar className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              Không tìm thấy đơn đặt nào
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              Không có đơn đặt tour nào khớp với bộ lọc tìm kiếm hiện tại.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Calendar}
+            title="Không tìm thấy đơn đặt nào"
+            description="Không có đơn đặt tour nào khớp với bộ lọc tìm kiếm hiện tại."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý đơn đặt" className="w-full text-left">
@@ -609,17 +604,7 @@ export default function BookingsManagementPage() {
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4">
                             <div className="flex flex-col gap-1 items-start">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                b.paymentStatus === "PAID"
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                                  : b.paymentStatus === "DEPOSITED"
-                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                                  : b.paymentStatus === "REFUNDED"
-                                  ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-                                  : "border-slate-500/10 text-slate-600 dark:text-slate-400 border-border/50"
-                              }`}>
-                                {b.paymentStatus === "PAID" ? "Đã thanh toán" : b.paymentStatus === "DEPOSITED" ? "Đã đặt cọc" : b.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Chưa thanh toán"}
-                              </span>
+                              <PaymentStatusChip status={b.paymentStatus} />
                               {(b.assignedDriver || b.assignedVehicle) && (
                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col mt-0.5">
                                   {b.assignedDriver && <span>TX: <strong className="text-slate-700 dark:text-slate-300">{b.assignedDriver}</strong></span>}
@@ -635,70 +620,24 @@ export default function BookingsManagementPage() {
                             {formatDate(b.createdAt)}
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="tertiary"
-                                    aria-label="Xem chi tiết đơn hàng"
-                                    onPress={() => {
-                                      setSelectedBooking(b);
-                                      setDetailsModalOpen(true);
-                                    }}
-                                  >
-                                    <Eye size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Xem chi tiết
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="secondary"
-                                    aria-label="Chỉnh sửa đơn hàng"
-                                    onPress={() => {
-                                      setSelectedBooking(b);
-                                      setEditModalOpen(true);
-                                    }}
-                                  >
-                                    <Edit3 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Chỉnh sửa
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="danger"
-                                    aria-label="Xóa đơn hàng"
-                                    onPress={() => {
-                                      setSelectedBooking(b);
-                                      setDeleteModalOpen(true);
-                                    }}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                  <Tooltip.Arrow />
-                                  Xóa
-                                </Tooltip.Content>
-                              </Tooltip>
-                            </div>
+                            <RowActionButtons
+                              className="justify-end"
+                              onView={() => {
+                                setSelectedBooking(b);
+                                setDetailsModalOpen(true);
+                              }}
+                              viewLabel="Xem chi tiết"
+                              onEdit={() => {
+                                setSelectedBooking(b);
+                                setEditModalOpen(true);
+                              }}
+                              editLabel="Chỉnh sửa"
+                              onDelete={() => {
+                                setSelectedBooking(b);
+                                setDeleteModalOpen(true);
+                              }}
+                              deleteLabel="Xóa"
+                            />
                           </Table.Cell>
                         </Table.Row>
                       );

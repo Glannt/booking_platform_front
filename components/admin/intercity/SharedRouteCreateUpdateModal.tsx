@@ -39,7 +39,7 @@ import { Bus, Clock, Plus, Trash2, Link as LinkIcon, Calendar, X, RefreshCw, Sav
 interface SharedRouteCreateUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   editingRoute?: SharedRouteDto | null;
   offices: SharedOfficeDto[];
 }
@@ -370,7 +370,7 @@ export function SharedRouteCreateUpdateModal({
         toast.success("Tạo tuyến xe ghép mới thành công!");
       }
 
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch {
       toast.danger("Có lỗi xảy ra khi lưu tuyến xe ghép.");

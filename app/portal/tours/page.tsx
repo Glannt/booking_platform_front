@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
     Search,
     Plus,
@@ -8,7 +9,6 @@ import {
     RefreshCw,
     Compass,
     Layers,
-    Eye,
     Edit3,
     Settings2,
     ShieldCheck,
@@ -47,7 +47,7 @@ import {
     ModalBody,
     ModalFooter
 } from "@heroui/react";
-import { SvgIconRenderer, AppStatusChip } from "@/components/common";
+import { SvgIconRenderer, AppStatusChip, AlertModal, TableLoadingState, TableEmptyState, RowActionButtons } from "@/components/common";
 import { StatusChip } from "@/components/StatusChip";
 
 import {
@@ -55,7 +55,6 @@ import {
     TourDetailModal,
     TourCategoryModal,
     TourPolicyCreateUpdateModal,
-    TourPolicyDeleteModal,
     TourConfigModal,
     TourPackageModal,
 } from "@/components/admin/tours";
@@ -152,6 +151,7 @@ export default function ToursManagementPage() {
     const [tours, setTours] = useState<TourDto[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchTerm, setSearchTerm] = useState<string>("");
+    const debouncedSearch = useDebounce(searchTerm, 400);
     const [categorySearchTerm, setCategorySearchTerm] = useState<string>("");
 
     // Tour Modals
@@ -201,7 +201,7 @@ export default function ToursManagementPage() {
 
             let loadedTours: TourDto[] = [];
             try {
-                const toursRes = await getTours({ search: searchTerm || undefined });
+                const toursRes = await getTours({ search: debouncedSearch || undefined });
                 if (toursRes.data?.content) {
                     loadedTours = toursRes.data.content;
                 }
@@ -221,7 +221,7 @@ export default function ToursManagementPage() {
 
     useEffect(() => {
         fetchInitialData();
-    }, [searchTerm]);
+    }, [debouncedSearch]);
 
     const handleSavePolicy = async (payload: Partial<TourPolicyDto>) => {
         if (editingPolicy) {
@@ -287,8 +287,8 @@ export default function ToursManagementPage() {
         }
     };
 
-    const handleSaveSuccess = () => {
-        fetchInitialData();
+    const handleSaveSuccess = async () => {
+        await fetchInitialData();
     };
 
     // Filter Tours State
@@ -968,20 +968,13 @@ export default function ToursManagementPage() {
                     {/* Main Tour List */}
                     <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator shadow-sm overflow-hidden">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                <RefreshCw className="animate-spin text-accent" size={32} />
-                                <p className="text-sm font-bold text-slate-500">Đang tải danh sách tour...</p>
-                            </div>
+                            <TableLoadingState message="Đang tải danh sách tour..." />
                         ) : filteredTours.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                                <Compass className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-                                    Không tìm thấy kết quả
-                                </h3>
-                                <p className="text-sm text-slate-500 max-w-sm">
-                                    Không có tour du lịch nào khớp với bộ lọc tìm kiếm hiện tại.
-                                </p>
-                            </div>
+                            <TableEmptyState
+                                icon={Compass}
+                                title="Không tìm thấy kết quả"
+                                description="Không có tour du lịch nào khớp với bộ lọc tìm kiếm hiện tại."
+                            />
                         ) : (
                             <Table aria-label="Bảng danh sách Tour du lịch">
                                 <Table.ScrollContainer>
@@ -1083,67 +1076,20 @@ export default function ToursManagementPage() {
                                                             <StatusChip status={t.status || (t.active ? "ACTIVE" : "INACTIVE")} type="tour" />
                                                         </Table.Cell>
                                                         <Table.Cell className="px-6 py-4">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Tooltip delay={300} closeDelay={100}>
-                                                                    <Tooltip.Trigger>
-                                                                        <Button
-                                                                            isIconOnly
-                                                                            size="sm"
-                                                                            variant="tertiary"
-                                                                            aria-label="Xem chi tiết"
-                                                                            onPress={() => {
-                                                                                setSelectedTour(t);
-                                                                                setDetailsModalOpen(true);
-                                                                            }}
-                                                                        >
-                                                                            <Eye size={16} />
-                                                                        </Button>
-                                                                    </Tooltip.Trigger>
-                                                                    <Tooltip.Content>
-                                                                        <Tooltip.Arrow />
-                                                                        Xem chi tiết
-                                                                    </Tooltip.Content>
-                                                                </Tooltip>
-
-                                                                <Tooltip delay={300} closeDelay={100}>
-                                                                    <Tooltip.Trigger>
-                                                                        <Button
-                                                                            isIconOnly
-                                                                            size="sm"
-                                                                            variant="secondary"
-                                                                            aria-label="Chỉnh sửa"
-                                                                            onPress={() => {
-                                                                                setSelectedTour(t);
-                                                                                setCreateModalOpen(true);
-                                                                            }}
-                                                                        >
-                                                                            <Edit3 size={16} />
-                                                                        </Button>
-                                                                    </Tooltip.Trigger>
-                                                                    <Tooltip.Content>
-                                                                        <Tooltip.Arrow />
-                                                                        Chỉnh sửa
-                                                                    </Tooltip.Content>
-                                                                </Tooltip>
-
-                                                                <Tooltip delay={300} closeDelay={100}>
-                                                                    <Tooltip.Trigger>
-                                                                        <Button
-                                                                            isIconOnly
-                                                                            size="sm"
-                                                                            variant="danger"
-                                                                            aria-label="Xóa tour"
-                                                                            onPress={() => handleDeleteTour(t.id)}
-                                                                        >
-                                                                            <Trash2 size={16} />
-                                                                        </Button>
-                                                                    </Tooltip.Trigger>
-                                                                    <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                                                        <Tooltip.Arrow />
-                                                                        Xóa tour
-                                                                    </Tooltip.Content>
-                                                                </Tooltip>
-                                                            </div>
+                                                            <RowActionButtons
+                                                                onView={() => {
+                                                                    setSelectedTour(t);
+                                                                    setDetailsModalOpen(true);
+                                                                }}
+                                                                viewLabel="Xem chi tiết"
+                                                                onEdit={() => {
+                                                                    setSelectedTour(t);
+                                                                    setCreateModalOpen(true);
+                                                                }}
+                                                                editLabel="Chỉnh sửa"
+                                                                onDelete={() => handleDeleteTour(t.id)}
+                                                                deleteLabel="Xóa tour"
+                                                            />
                                                         </Table.Cell>
                                                     </Table.Row>
                                                 );
@@ -1242,30 +1188,25 @@ export default function ToursManagementPage() {
                     {/* Category Table */}
                     <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator shadow-sm overflow-hidden">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                <RefreshCw className="animate-spin text-accent" size={32} />
-                                <p className="text-sm font-bold text-slate-500">Đang tải danh mục tour...</p>
-                            </div>
+                            <TableLoadingState message="Đang tải danh mục tour..." />
                         ) : filteredCategories.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                                <Layers className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-                                    Chưa có danh mục nào
-                                </h3>
-                                <p className="text-sm text-slate-500 max-w-sm mb-4">
-                                    Hãy tạo danh mục tour đầu tiên để phân loại các tour du lịch.
-                                </p>
-                                <Button
-                                    className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
-                                    onClick={() => {
-                                        setSelectedCategory(null);
-                                        setCatModalOpen(true);
-                                    }}
-                                >
-                                    <Plus size={16} />
-                                    <span>Tạo danh mục ngay</span>
-                                </Button>
-                            </div>
+                            <TableEmptyState
+                                icon={Layers}
+                                title="Chưa có danh mục nào"
+                                description="Hãy tạo danh mục tour đầu tiên để phân loại các tour du lịch."
+                                action={
+                                    <Button
+                                        className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+                                        onClick={() => {
+                                            setSelectedCategory(null);
+                                            setCatModalOpen(true);
+                                        }}
+                                    >
+                                        <Plus size={16} />
+                                        <span>Tạo danh mục ngay</span>
+                                    </Button>
+                                }
+                            />
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -1310,46 +1251,16 @@ export default function ToursManagementPage() {
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <div className="flex items-center justify-end gap-1.5">
-                                                            <Tooltip delay={300} closeDelay={100}>
-                                                                <Tooltip.Trigger>
-                                                                    <Button
-                                                                        isIconOnly
-                                                                        size="sm"
-                                                                        variant="secondary"
-                                                                        aria-label="Chỉnh sửa danh mục"
-                                                                        onPress={() => {
-                                                                            setSelectedCategory(cat);
-                                                                            setCatModalOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <Edit3 size={16} />
-                                                                    </Button>
-                                                                </Tooltip.Trigger>
-                                                                <Tooltip.Content>
-                                                                    <Tooltip.Arrow />
-                                                                    Chỉnh sửa danh mục
-                                                                </Tooltip.Content>
-                                                            </Tooltip>
-
-                                                            <Tooltip delay={300} closeDelay={100}>
-                                                                <Tooltip.Trigger>
-                                                                    <Button
-                                                                        isIconOnly
-                                                                        size="sm"
-                                                                        variant="danger"
-                                                                        aria-label="Xóa danh mục"
-                                                                        onPress={() => handleDeleteCategory(cat.id)}
-                                                                    >
-                                                                        <Trash2 size={16} />
-                                                                    </Button>
-                                                                </Tooltip.Trigger>
-                                                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                                                    <Tooltip.Arrow />
-                                                                    Xóa danh mục
-                                                                </Tooltip.Content>
-                                                            </Tooltip>
-                                                        </div>
+                                                        <RowActionButtons
+                                                            className="justify-end"
+                                                            onEdit={() => {
+                                                                setSelectedCategory(cat);
+                                                                setCatModalOpen(true);
+                                                            }}
+                                                            editLabel="Chỉnh sửa danh mục"
+                                                            onDelete={() => handleDeleteCategory(cat.id)}
+                                                            deleteLabel="Xóa danh mục"
+                                                        />
                                                     </td>
                                                 </tr>
                                             );
@@ -1459,30 +1370,25 @@ export default function ToursManagementPage() {
                     {/* Policies Table */}
                     <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator shadow-sm overflow-hidden">
                         {policiesLoading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                <RefreshCw className="animate-spin text-accent" size={32} />
-                                <p className="text-sm font-bold text-slate-500">Đang tải chính sách tour...</p>
-                            </div>
+                            <TableLoadingState message="Đang tải chính sách tour..." />
                         ) : filteredPolicies.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                                <ShieldCheck className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-                                    Chưa có chính sách nào
-                                </h3>
-                                <p className="text-sm text-slate-500 max-w-sm mb-4">
-                                    Hãy tạo chính sách đầu tiên (hủy tour, bảo hiểm, an toàn...) để hiển thị trên trang chi tiết tour.
-                                </p>
-                                <Button
-                                    className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
-                                    onClick={() => {
-                                        setEditingPolicy(null);
-                                        setPolicyModalOpen(true);
-                                    }}
-                                >
-                                    <Plus size={16} />
-                                    <span>Tạo chính sách ngay</span>
-                                </Button>
-                            </div>
+                            <TableEmptyState
+                                icon={ShieldCheck}
+                                title="Chưa có chính sách nào"
+                                description="Hãy tạo chính sách đầu tiên (hủy tour, bảo hiểm, an toàn...) để hiển thị trên trang chi tiết tour."
+                                action={
+                                    <Button
+                                        className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+                                        onClick={() => {
+                                            setEditingPolicy(null);
+                                            setPolicyModalOpen(true);
+                                        }}
+                                    >
+                                        <Plus size={16} />
+                                        <span>Tạo chính sách ngay</span>
+                                    </Button>
+                                }
+                            />
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -1530,49 +1436,19 @@ export default function ToursManagementPage() {
                                                         </button>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <div className="flex items-center justify-end gap-1.5">
-                                                            <Tooltip delay={300} closeDelay={100}>
-                                                                <Tooltip.Trigger>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        isIconOnly
-                                                                        variant="secondary"
-                                                                        aria-label="Sửa chính sách"
-                                                                        onPress={() => {
-                                                                            setEditingPolicy(pol);
-                                                                            setPolicyModalOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <Edit3 size={14} />
-                                                                    </Button>
-                                                                </Tooltip.Trigger>
-                                                                <Tooltip.Content>
-                                                                    <Tooltip.Arrow />
-                                                                    Sửa chính sách
-                                                                </Tooltip.Content>
-                                                            </Tooltip>
-
-                                                            <Tooltip delay={300} closeDelay={100}>
-                                                                <Tooltip.Trigger>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        isIconOnly
-                                                                        variant="danger"
-                                                                        aria-label="Xóa chính sách"
-                                                                        onPress={() => {
-                                                                            setPolicyToDelete(pol);
-                                                                            setDeletePolicyModalOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </Button>
-                                                                </Tooltip.Trigger>
-                                                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                                                    <Tooltip.Arrow />
-                                                                    Xóa chính sách
-                                                                </Tooltip.Content>
-                                                            </Tooltip>
-                                                        </div>
+                                                        <RowActionButtons
+                                                            className="justify-end"
+                                                            onEdit={() => {
+                                                                setEditingPolicy(pol);
+                                                                setPolicyModalOpen(true);
+                                                            }}
+                                                            editLabel="Sửa chính sách"
+                                                            onDelete={() => {
+                                                                setPolicyToDelete(pol);
+                                                                setDeletePolicyModalOpen(true);
+                                                            }}
+                                                            deleteLabel="Xóa chính sách"
+                                                        />
                                                     </td>
                                                 </tr>
                                             );
@@ -1719,20 +1595,13 @@ export default function ToursManagementPage() {
                     {/* Table Container */}
                     <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator shadow-sm overflow-hidden">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                <RefreshCw className="animate-spin text-accent" size={32} />
-                                <p className="text-sm font-bold text-slate-500">Đang tải dữ liệu gói tour & bảng giá...</p>
-                            </div>
+                            <TableLoadingState message="Đang tải dữ liệu gói tour & bảng giá..." />
                         ) : filteredTourPackages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                                <Tag className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-                                    Không tìm thấy gói tour nào
-                                </h3>
-                                <p className="text-sm text-slate-500 max-w-sm">
-                                    Không có gói tour nào khớp với bộ lọc tìm kiếm hiện tại.
-                                </p>
-                            </div>
+                            <TableEmptyState
+                                icon={Tag}
+                                title="Không tìm thấy gói tour nào"
+                                description="Không có gói tour nào khớp với bộ lọc tìm kiếm hiện tại."
+                            />
                         ) : (
                             <Table aria-label="Bảng danh sách gói tour và bảng giá">
                                 <Table.ScrollContainer>
@@ -2029,16 +1898,32 @@ export default function ToursManagementPage() {
                 existingPolicies={policies}
             />
 
-            {/* Tour Policy Delete Modal */}
-            <TourPolicyDeleteModal
+            {/* Tour Policy Delete Confirmation */}
+            <AlertModal
                 isOpen={deletePolicyModalOpen}
                 onClose={() => {
                     setDeletePolicyModalOpen(false);
                     setPolicyToDelete(null);
                 }}
                 onConfirm={handleConfirmDeletePolicy}
-                policyCode={policyToDelete?.code}
-                submitting={deletingPolicy}
+                variant="danger"
+                title="Xác nhận xóa chính sách tour"
+                description={
+                    <div className="space-y-3">
+                        <p className="font-medium">
+                            Bạn có chắc chắn muốn xóa chính sách{" "}
+                            <span className="font-extrabold text-slate-900 dark:text-white font-mono bg-slate-100 dark:bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
+                                {policyToDelete?.code}
+                            </span>{" "}
+                            không?
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                            Lưu ý: Thao tác này không thể hoàn tác và chính sách này sẽ không còn hiển thị trên trang chi tiết tour.
+                        </p>
+                    </div>
+                }
+                confirmText="Xác nhận xóa"
+                isLoading={deletingPolicy}
             />
 
             {/* Tour Config Modal */}
@@ -2056,8 +1941,8 @@ export default function ToursManagementPage() {
                     setSelectedCategory(null);
                 }}
                 categoryToEdit={selectedCategory}
-                onSaveSuccess={() => {
-                    fetchInitialData();
+                onSaveSuccess={async () => {
+                    await fetchInitialData();
                 }}
                 showToast={showToast}
             />
@@ -2088,8 +1973,8 @@ export default function ToursManagementPage() {
                 editingTour={selectedTour}
                 categories={categories}
                 backendUrl={backendUrl}
-                onSaveSuccess={() => {
-                    fetchInitialData();
+                onSaveSuccess={async () => {
+                    await fetchInitialData();
                 }}
                 showToast={showToast}
             />

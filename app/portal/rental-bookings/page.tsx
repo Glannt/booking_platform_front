@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Search,
   RefreshCw,
-  Eye,
   Car,
   MapPin,
   Calendar,
@@ -27,11 +26,10 @@ import {
   toast,
   Label,
   Select,
-  ListBox,
-  Tooltip
+  ListBox
 } from "@heroui/react";
 import clsx from "clsx";
-import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { PageSizeSelect, TableLoadingState, TableEmptyState, RowActionButtons } from "@/components/common";
 
 import { StatusChip } from "@/components/StatusChip";
 import {
@@ -304,20 +302,13 @@ export default function RentalBookingsPage() {
       {/* Table */}
       <div className="bg-white dark:bg-black rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">Đang tải danh sách đặt chỗ cho thuê...</p>
-          </div>
+          <TableLoadingState message="Đang tải danh sách đặt chỗ cho thuê..." />
         ) : paginatedItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Car className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              Không tìm thấy đặt chỗ cho thuê nào
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              Không có đặt chỗ liên tỉnh hoặc tự lái nào khớp với bộ lọc tìm kiếm hiện tại.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Car}
+            title="Không tìm thấy đặt chỗ cho thuê nào"
+            description="Không có đặt chỗ liên tỉnh hoặc tự lái nào khớp với bộ lọc tìm kiếm hiện tại."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý đặt chỗ cho thuê" className="w-full text-left">
@@ -373,43 +364,13 @@ export default function RentalBookingsPage() {
                           <StatusChip status={ri.booking.bookingStatus} type="booking" />
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="tertiary"
-                                  aria-label="Xem chi tiết"
-                                  onPress={() => handleViewDetail(ri)}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Xem chi tiết
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="secondary"
-                                  aria-label="Cập nhật trạng thái"
-                                  onPress={() => handleOpenEdit(ri)}
-                                >
-                                  <Edit3 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Cập nhật trạng thái
-                              </Tooltip.Content>
-                            </Tooltip>
-                          </div>
+                          <RowActionButtons
+                            className="justify-end"
+                            onView={() => handleViewDetail(ri)}
+                            viewLabel="Xem chi tiết"
+                            onEdit={() => handleOpenEdit(ri)}
+                            editLabel="Cập nhật trạng thái"
+                          />
                         </Table.Cell>
                       </Table.Row>
                     ))}

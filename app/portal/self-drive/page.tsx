@@ -3,12 +3,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
-  Trash2,
   RefreshCw,
   Car,
   KeyRound,
-  Edit3,
-  Eye,
   Search,
   ShieldCheck,
   CheckCircle2,
@@ -25,12 +22,10 @@ import {
   SearchField,
   Select,
   ListBox,
-  Spinner,
   Switch,
   Table,
   Tabs,
   toast,
-  Tooltip,
   Popover,
   Checkbox,
 } from "@heroui/react";
@@ -64,13 +59,11 @@ import { headerColumns } from "@/config/headerColumns";
 
 import {
   SelfDriveCreateUpdateModal,
-  SelfDriveDeleteModal,
   SelfDriveDetailModal,
   SelfDrivePolicyCreateUpdateModal,
-  SelfDrivePolicyDeleteModal,
   SvgIconRenderer,
 } from "@/components/admin/self-drive";
-import { PageSizeSelect } from "@/components/common";
+import { PageSizeSelect, AlertModal, TableLoadingState, RowActionButtons } from "@/components/common";
 
 type TabKey = "rentals" | "policies";
 
@@ -182,13 +175,18 @@ export default function AdminSelfDrivePage() {
       setCategories(catRes?.data?.content || []);
       setVehicles(vehRes?.data?.content || []);
 
-      const pMap: Record<number, RentalPriceDto[]> = {};
+      // ponytail: prices never change on the backend outside this page's save
+      // handler (which patches pricesMap), so reuse already-fetched prices instead
+      // of re-hitting the per-rental endpoint for every row on every reload.
+      // Ceiling: still N requests on first load — needs a backend bulk endpoint to go lower.
+      const pMap: Record<number, RentalPriceDto[]> = { ...pricesMap };
+      const missingIds = rentalList.filter((r) => !pMap[r.id]).map((r) => r.id);
       await Promise.all(
-        rentalList.map(async (r) => {
+        missingIds.map(async (id) => {
           try {
-            const pRes = await getRentalPricesByRental(r.id);
+            const pRes = await getRentalPricesByRental(id);
             if (pRes?.data) {
-              pMap[r.id] = pRes.data;
+              pMap[id] = pRes.data;
             }
           } catch { }
         })
@@ -369,28 +367,42 @@ export default function AdminSelfDrivePage() {
         const existingPrices = pricesMap[savedRentalId] || [];
         const activePrice = existingPrices.find((p) => p.active) || existingPrices[0];
         if (activePrice && activePrice.id) {
-          await updateRentalPrice(savedRentalId, activePrice.id, {
+          const updated = await updateRentalPrice(savedRentalId, activePrice.id, {
             rentalId: savedRentalId,
             vehicleCategoryId: payload.vehicleCategoryId,
             amount: priceAmount,
             currency: "VND",
             active: payload.active ?? true,
           });
+          if (updated?.data) {
+            setPricesMap(prev => ({
+              ...prev,
+              [savedRentalId]: (prev[savedRentalId] || []).map(p =>
+                p.id === updated.data.id ? updated.data : p
+              ),
+            }));
+          }
         } else {
-          await createRentalPrice(savedRentalId, {
+          const created = await createRentalPrice(savedRentalId, {
             rentalId: savedRentalId,
             vehicleCategoryId: payload.vehicleCategoryId,
             amount: priceAmount,
             currency: "VND",
             active: payload.active ?? true,
           });
+          if (created?.data) {
+            setPricesMap(prev => ({
+              ...prev,
+              [savedRentalId]: [...(prev[savedRentalId] || []), created.data],
+            }));
+          }
         }
       } catch (err) {
         console.error("Failed to save rental price:", err);
       }
     }
 
-    fetchRentalsData();
+    await fetchRentalsData();
   };
 
   const handleToggleActive = async (rental: RentalDto) => {
@@ -440,9 +452,9 @@ export default function AdminSelfDrivePage() {
     try {
       await deleteRental(deletingId);
       toast.success("Đã xóa cấu hình xe tự lái!");
+      await fetchRentalsData();
       setDeleteOpen(false);
       setDeletingId(null);
-      fetchRentalsData();
     } catch {
       toast.danger("Không thể xóa cấu hình xe");
     } finally {
@@ -523,7 +535,7 @@ export default function AdminSelfDrivePage() {
       await createSelfDrivePolicy(payload);
       toast.success("Đã thêm mới chính sách thuê xe!");
     }
-    fetchPoliciesData();
+    await fetchPoliciesData();
   };
 
   const handleTogglePolicyActive = async (policy: SelfDrivePolicyDto) => {
@@ -549,9 +561,9 @@ export default function AdminSelfDrivePage() {
     try {
       await deleteSelfDrivePolicy(deletingPolicy.id);
       toast.success("Đã xóa chính sách thành công!");
+      await fetchPoliciesData();
       setPolicyDeleteOpen(false);
       setDeletingPolicy(null);
-      fetchPoliciesData();
     } catch {
       toast.danger("Không thể xóa chính sách");
     } finally {
@@ -939,10 +951,7 @@ export default function AdminSelfDrivePage() {
           {/* Table */}
           <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-separator shadow-sm overflow-hidden">
             {loading ? (
-              <div className="flex flex-col items-center justify-center p-16 space-y-3">
-                <Spinner size="lg" />
-                <p className="text-xs text-slate-500 font-semibold">Đang tải danh sách xe tự lái...</p>
-              </div>
+              <TableLoadingState message="Đang tải danh sách xe tự lái..." />
             ) : paginatedRentals.length === 0 ? (
               <div className="text-center py-16 px-4 space-y-2">
                 <KeyRound size={36} className="text-slate-300 mx-auto" />
@@ -1061,64 +1070,17 @@ export default function AdminSelfDrivePage() {
                             </Table.Cell>
 
                             <Table.Cell>
-                              <div className="flex items-center gap-1.5">
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      variant="tertiary"
-                                      isIconOnly
-                                      size="sm"
-                                      onPress={() => handleOpenDetail(item)}
-                                      aria-label="Xem chi tiết"
-                                    >
-                                      <Eye size={14} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    Xem chi tiết
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      variant="secondary"
-                                      isIconOnly
-                                      size="sm"
-                                      onPress={() => handleOpenEdit(item)}
-                                      aria-label="Chỉnh sửa"
-                                    >
-                                      <Edit3 size={14} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    Chỉnh sửa
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      variant="danger"
-                                      isIconOnly
-                                      size="sm"
-                                      onPress={() => {
-                                        setDeletingId(item.id);
-                                        setDeleteOpen(true);
-                                      }}
-                                      aria-label="Xóa"
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                    <Tooltip.Arrow />
-                                    Xóa
-                                  </Tooltip.Content>
-                                </Tooltip>
-                              </div>
+                              <RowActionButtons
+                                onView={() => handleOpenDetail(item)}
+                                viewLabel="Xem chi tiết"
+                                onEdit={() => handleOpenEdit(item)}
+                                editLabel="Chỉnh sửa"
+                                onDelete={() => {
+                                  setDeletingId(item.id);
+                                  setDeleteOpen(true);
+                                }}
+                                deleteLabel="Xóa"
+                              />
                             </Table.Cell>
                           </Table.Row>
                         );
@@ -1343,10 +1305,7 @@ export default function AdminSelfDrivePage() {
           {/* Policies Table */}
           <div className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-separator shadow-sm overflow-hidden">
             {policiesLoading ? (
-              <div className="flex flex-col items-center justify-center p-16 space-y-3">
-                <Spinner size="lg" />
-                <p className="text-xs text-slate-500 font-semibold">Đang tải danh sách chính sách...</p>
-              </div>
+              <TableLoadingState message="Đang tải danh sách chính sách..." />
             ) : paginatedPolicies.length === 0 ? (
               <div className="text-center py-16 px-4 space-y-2">
                 <ShieldCheck size={36} className="text-slate-300 mx-auto" />
@@ -1439,46 +1398,15 @@ export default function AdminSelfDrivePage() {
                             </Table.Cell>
 
                             <Table.Cell>
-                              <div className="flex items-center gap-1.5">
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      variant="secondary"
-                                      isIconOnly
-                                      size="sm"
-                                      onPress={() => handleOpenEditPolicy(item)}
-                                      aria-label="Chỉnh sửa chính sách"
-                                    >
-                                      <Edit3 size={14} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    Chỉnh sửa chính sách
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      variant="danger"
-                                      isIconOnly
-                                      size="sm"
-                                      onPress={() => {
-                                        setDeletingPolicy(item);
-                                        setPolicyDeleteOpen(true);
-                                      }}
-                                      aria-label="Xóa chính sách"
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                    <Tooltip.Arrow />
-                                    Xóa chính sách
-                                  </Tooltip.Content>
-                                </Tooltip>
-                              </div>
+                              <RowActionButtons
+                                onEdit={() => handleOpenEditPolicy(item)}
+                                editLabel="Chỉnh sửa chính sách"
+                                onDelete={() => {
+                                  setDeletingPolicy(item);
+                                  setPolicyDeleteOpen(true);
+                                }}
+                                deleteLabel="Xóa chính sách"
+                              />
                             </Table.Cell>
                           </Table.Row>
                         );
@@ -1550,11 +1478,15 @@ export default function AdminSelfDrivePage() {
         }}
       />
 
-      <SelfDriveDeleteModal
+      <AlertModal
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDeleteConfirm}
-        submitting={submitting}
+        variant="danger"
+        title="Xác nhận xóa cấu hình xe?"
+        description="Hành động này không thể hoàn tác và sẽ xóa cấu hình xe tự lái này khỏi hệ thống."
+        confirmText="Xóa vĩnh viễn"
+        isLoading={submitting}
       />
 
       {/* Policies Modals */}
@@ -1566,12 +1498,28 @@ export default function AdminSelfDrivePage() {
         existingPolicies={policies}
       />
 
-      <SelfDrivePolicyDeleteModal
+      <AlertModal
         isOpen={policyDeleteOpen}
         onClose={() => setPolicyDeleteOpen(false)}
         onConfirm={handleDeletePolicyConfirm}
-        policyCode={deletingPolicy?.code}
-        submitting={policySubmitting}
+        variant="danger"
+        title="Xác nhận xóa chính sách"
+        description={
+          <div className="space-y-3">
+            <p className="font-medium">
+              Bạn có chắc chắn muốn xóa chính sách{" "}
+              <span className="font-extrabold text-slate-900 dark:text-white font-mono bg-slate-100 dark:bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
+                {deletingPolicy?.code}
+              </span>{" "}
+              không?
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Lưu ý: Thao tác này không thể hoàn tác và chính sách này sẽ không còn hiển thị trên trang chi tiết xe tự lái.
+            </p>
+          </div>
+        }
+        confirmText="Xác nhận xóa"
+        isLoading={policySubmitting}
       />
     </div>
   );

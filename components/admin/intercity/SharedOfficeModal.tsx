@@ -28,7 +28,7 @@ import { Building2, MapPin, RefreshCw, Save } from "lucide-react";
 interface SharedOfficeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   editingOffice?: SharedOfficeDto | null;
 }
 
@@ -96,7 +96,7 @@ export function SharedOfficeModal({
         toast.success("Thêm mới văn phòng thành công!");
       }
 
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch {
       toast.danger("Có lỗi xảy ra khi lưu văn phòng.");

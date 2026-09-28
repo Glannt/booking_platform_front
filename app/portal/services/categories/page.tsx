@@ -18,7 +18,7 @@ import { Button, Input, Table, toast, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import { CategoryCreateModal, CategoryDetailModal } from "@/components/admin/categories";
 import { headerColumns } from "@/config/headerColumns";
-import { AppStatusChip } from "@/components/common";
+import { AppStatusChip, TableLoadingState, TableEmptyState } from "@/components/common";
 
 import { getCategories, deleteCategory, ServiceCategoryDto, ServiceCategoryTranslationDto } from "@/lib/api/categories";
 import { backendUrl } from "@/lib/api/client";
@@ -92,7 +92,7 @@ export default function ServiceCategoriesPage() {
     }
   };
 
-  const handleSaveSuccess = (simulatedCat?: ServiceCategoryDto) => {
+  const handleSaveSuccess = async (simulatedCat?: ServiceCategoryDto) => {
     if (simulatedCat) {
       const exists = categories.some(c => c.id === simulatedCat.id);
       if (exists) {
@@ -101,7 +101,7 @@ export default function ServiceCategoriesPage() {
         setCategories([simulatedCat, ...categories]);
       }
     } else {
-      fetchCategories();
+      await fetchCategories();
     }
   };
 
@@ -164,20 +164,13 @@ export default function ServiceCategoriesPage() {
       {/* Category List Card/Table */}
       <div className="bg-surface rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-foreground/60">Đang tải danh mục...</p>
-          </div>
+          <TableLoadingState message="Đang tải danh mục..." />
         ) : filteredCategories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Layers className="text-foreground/30 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-foreground mb-1">
-              Chưa có danh mục nào
-            </h3>
-            <p className="text-sm text-foreground/60 max-w-sm">
-              Hãy tạo danh mục dịch vụ đầu tiên để phân loại các tour du lịch và bảng giá xe.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Layers}
+            title="Chưa có danh mục nào"
+            description="Hãy tạo danh mục dịch vụ đầu tiên để phân loại các tour du lịch và bảng giá xe."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý danh mục" className="w-full text-left">

@@ -33,7 +33,7 @@ interface AirportModalProps {
   isOpen: boolean;
   onClose: () => void;
   airport: AirportDto | null;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
   defaultEditMode?: boolean;
 }
@@ -173,7 +173,7 @@ export default function AirportModal({
         await createAirport(payload);
         showToast("Tạo sân bay mới thành công!", "success");
       }
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch (err) {
       showToast("Lưu thông tin thất bại!", "error");

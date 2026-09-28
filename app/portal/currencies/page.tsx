@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Trash2, Eye, Edit3, RefreshCw, Coins, AlertCircle, CheckCircle, XCircle, Plus
+  RefreshCw, Coins, AlertCircle, CheckCircle, XCircle, Plus
 } from "lucide-react";
-import { Button, SearchField, Table, toast, Tooltip, Pagination } from "@heroui/react";
+import { Button, SearchField, Table, toast, Pagination } from "@heroui/react";
 import clsx from "clsx";
 
 import {
@@ -12,7 +12,7 @@ import {
   CurrencyDto
 } from "@/lib/api/currencies";
 import { CurrencyCreateModal, CurrencyDetailModal } from "@/components/admin/currencies";
-import { PageSizeSelect, AppStatusChip } from "@/components/common";
+import { PageSizeSelect, AppStatusChip, RowActionButtons } from "@/components/common";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 
@@ -198,61 +198,15 @@ export default function CurrenciesPage() {
                         <AppStatusChip status={c.active} />
                       </Table.Cell>
                       <Table.Cell className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Tooltip delay={300} closeDelay={100}>
-                            <Tooltip.Trigger>
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="tertiary"
-                                aria-label="Xem chi tiết"
-                                onPress={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(false); setDetailsModalOpen(true); }}
-                              >
-                                <Eye size={16} />
-                              </Button>
-                            </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              <Tooltip.Arrow />
-                              Xem chi tiết
-                            </Tooltip.Content>
-                          </Tooltip>
-
-                          <Tooltip delay={300} closeDelay={100}>
-                            <Tooltip.Trigger>
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="secondary"
-                                aria-label="Chỉnh sửa"
-                                onPress={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(true); setDetailsModalOpen(true); }}
-                              >
-                                <Edit3 size={16} />
-                              </Button>
-                            </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              <Tooltip.Arrow />
-                              Chỉnh sửa
-                            </Tooltip.Content>
-                          </Tooltip>
-
-                          <Tooltip delay={300} closeDelay={100}>
-                            <Tooltip.Trigger>
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="danger"
-                                aria-label="Xóa"
-                                onPress={() => handleDelete(c.id)}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </Tooltip.Trigger>
-                            <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                              <Tooltip.Arrow />
-                              Xóa
-                            </Tooltip.Content>
-                          </Tooltip>
-                        </div>
+                        <RowActionButtons
+                          className="justify-end"
+                          onView={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(false); setDetailsModalOpen(true); }}
+                          viewLabel="Xem chi tiết"
+                          onEdit={() => { setSelectedCurrency(c); setDetailsDefaultEditMode(true); setDetailsModalOpen(true); }}
+                          editLabel="Chỉnh sửa"
+                          onDelete={() => handleDelete(c.id)}
+                          deleteLabel="Xóa"
+                        />
                       </Table.Cell>
                     </Table.Row>
                   ))}

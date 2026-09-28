@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   RefreshCw,
-  Eye,
   Plane,
   Edit3
 } from "lucide-react";
@@ -27,7 +26,13 @@ import {
   Tooltip
 } from "@heroui/react";
 import clsx from "clsx";
-import { PageSizeSelect } from "@/components/common";
+import {
+  PageSizeSelect,
+  TableLoadingState,
+  TableEmptyState,
+  PaymentStatusChip,
+  RowActionButtons,
+} from "@/components/common";
 
 import { StatusChip } from "@/components/StatusChip";
 import { BookingEditModal } from "@/components/admin/bookings";
@@ -259,20 +264,13 @@ export default function AirportTransferBookingsPage() {
       {/* Table */}
       <div className="bg-white dark:bg-black rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">Đang tải danh sách đơn đưa đón sân bay...</p>
-          </div>
+          <TableLoadingState message="Đang tải danh sách đơn đưa đón sân bay..." />
         ) : paginatedItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Plane className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              Không tìm thấy đơn đặt nào
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              Không có đơn đặt đưa đón sân bay nào khớp với bộ lọc tìm kiếm hiện tại.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Plane}
+            title="Không tìm thấy đơn đặt nào"
+            description="Không có đơn đặt đưa đón sân bay nào khớp với bộ lọc tìm kiếm hiện tại."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý đơn đưa đón sân bay" className="w-full text-left">
@@ -333,17 +331,7 @@ export default function AirportTransferBookingsPage() {
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4">
                           <div className="flex flex-col gap-1 items-start">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              ri.booking.paymentStatus === "PAID"
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                                : ri.booking.paymentStatus === "DEPOSITED"
-                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                                : ri.booking.paymentStatus === "REFUNDED"
-                                ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-                                : "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-border/50"
-                            }`}>
-                              {ri.booking.paymentStatus === "PAID" ? "Đã thanh toán" : ri.booking.paymentStatus === "DEPOSITED" ? "Đã đặt cọc" : ri.booking.paymentStatus === "REFUNDED" ? "Đã hoàn tiền" : "Chưa thanh toán"}
-                            </span>
+                            <PaymentStatusChip status={ri.booking.paymentStatus} />
                             {(ri.booking.assignedDriver || ri.booking.assignedVehicle) && (
                               <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col mt-0.5">
                                 {ri.booking.assignedDriver && <span>TX: <strong className="text-slate-700 dark:text-slate-300">{ri.booking.assignedDriver}</strong></span>}
@@ -356,43 +344,13 @@ export default function AirportTransferBookingsPage() {
                           <StatusChip status={ri.booking.bookingStatus} type="booking" />
                         </Table.Cell>
                         <Table.Cell className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="tertiary"
-                                  aria-label="Xem chi tiết đơn đưa đón"
-                                  onPress={() => handleViewDetail(ri)}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Xem chi tiết
-                              </Tooltip.Content>
-                            </Tooltip>
-
-                            <Tooltip delay={300} closeDelay={100}>
-                              <Tooltip.Trigger>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="secondary"
-                                  aria-label="Cập nhật trạng thái"
-                                  onPress={() => handleOpenEdit(ri)}
-                                >
-                                  <Edit3 size={16} />
-                                </Button>
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Tooltip.Arrow />
-                                Cập nhật trạng thái
-                              </Tooltip.Content>
-                            </Tooltip>
-                          </div>
+                          <RowActionButtons
+                            className="justify-end"
+                            onView={() => handleViewDetail(ri)}
+                            viewLabel="Xem chi tiết"
+                            onEdit={() => handleOpenEdit(ri)}
+                            editLabel="Cập nhật trạng thái"
+                          />
                         </Table.Cell>
                       </Table.Row>
                     )})}
@@ -588,8 +546,8 @@ export default function AirportTransferBookingsPage() {
         }}
         booking={selectedBooking}
         language="vi"
-        onSaveSuccess={() => {
-          fetchBookings();
+        onSaveSuccess={async () => {
+          await fetchBookings();
         }}
         showToast={showToast}
       />

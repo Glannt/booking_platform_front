@@ -44,7 +44,7 @@ interface AirportRouteCreateUpdateModalProps {
   onClose: () => void;
   route?: AirportRouteDto | null;
   airports: AirportDto[];
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -207,7 +207,7 @@ export function AirportRouteCreateUpdateModal({
       }
 
       showToast("Lưu tuyến đường thành công!", "success");
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch {
       showToast("Lưu tuyến đường thất bại!", "error");

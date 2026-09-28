@@ -30,7 +30,7 @@ interface VehicleCategoryCreateModalProps {
   onClose: () => void;
   language: string;
   backendUrl: string;
-  onSaveSuccess: (newCat?: VehicleCategoryDto) => void;
+  onSaveSuccess: (newCat?: VehicleCategoryDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -119,12 +119,12 @@ export default function VehicleCategoryCreateModal({
     if (loading) return;
 
     if (!code.trim()) {
-      showToast(language === "vi" ? "Mã danh mục xe là bắt buộc!" : "Category Code is required!", "error");
+      showToast("Mã danh mục xe là bắt buộc!", "error");
       return;
     }
 
     if (!translations.vi.name.trim() && !translations.en.name.trim()) {
-      showToast(language === "vi" ? "Tên danh mục ít nhất phải có ở bản tiếng Việt hoặc tiếng Anh!" : "Category Name must be specified in Vietnamese or English!", "error");
+      showToast("Tên danh mục ít nhất phải có ở bản tiếng Việt hoặc tiếng Anh!", "error");
       return;
     }
 
@@ -154,8 +154,8 @@ export default function VehicleCategoryCreateModal({
     setLoading(true);
     try {
       const res = await createVehicleCategory(payload);
-      showToast(language === "vi" ? "Thêm danh mục xe mới thành công!" : "New vehicle category created successfully!", "success");
-      onSaveSuccess(res.data);
+      showToast("Thêm danh mục xe mới thành công!", "success");
+      await onSaveSuccess?.(res.data);
       onClose();
     } catch (err) {
       showToast("API connection failed. Action simulated locally.", "success");
@@ -164,7 +164,7 @@ export default function VehicleCategoryCreateModal({
         id: Date.now(),
         ...payload
       };
-      onSaveSuccess(simulated);
+      await onSaveSuccess?.(simulated);
       onClose();
     } finally {
       setLoading(false);
@@ -180,10 +180,10 @@ export default function VehicleCategoryCreateModal({
             <ModalHeader className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <h2 id="vehicle-category-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  {language === "vi" ? "Thêm Mới Danh Mục Xe" : "Add Vehicle Category"}
+                  {"Thêm Mới Danh Mục Xe"}
                 </h2>
                 <p className="text-xs text-slate-500">
-                  {language === "vi" ? "Cấu hình phân loại số ghế, khả năng chở hành lý và dịch thuật." : "Configure seating capacity, luggage capacity, and category naming."}
+                  {"Cấu hình phân loại số ghế, khả năng chở hành lý và dịch thuật."}
                 </p>
               </div>
             </ModalHeader>
@@ -192,7 +192,7 @@ export default function VehicleCategoryCreateModal({
                 {/* Category Thumbnail Image Upload */}
                 <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-2xl border border-divider">
                   <ImageUpload
-                    label={language === "vi" ? "Ảnh đại diện danh mục" : "Category Thumbnail Image"}
+                    label={"Ảnh đại diện danh mục"}
                     value={thumbnailId}
                     onChange={(id) => setThumbnailId(id || undefined)}
                   />
@@ -200,12 +200,12 @@ export default function VehicleCategoryCreateModal({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TextField isRequired className="w-full">
-                    <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Mã danh mục (Code) *" : "Category Code *"}</Label>
+                    <Label className="text-xs font-bold uppercase tracking-wider">{"Mã danh mục (Code) *"}</Label>
                     <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. SEDAN_4" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                   </TextField>
 
                   <TextField className="w-full">
-                    <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Đơn vị hành lý" : "Luggage Unit"}</Label>
+                    <Label className="text-xs font-bold uppercase tracking-wider">{"Đơn vị hành lý"}</Label>
                     <Input type="text" value={unitLuggage} onChange={(e) => setUnitLuggage(e.target.value)} placeholder="e.g. kiện, kg" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                   </TextField>
                 </div>
@@ -220,7 +220,7 @@ export default function VehicleCategoryCreateModal({
                       fullWidth
                     >
                       <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                        {language === "vi" ? "Ghế tối thiểu *" : "Min Seats *"}
+                        {"Ghế tối thiểu *"}
                       </Label>
                       <NumberField.Group className="border-1 border-separator">
                         <NumberField.DecrementButton />
@@ -239,7 +239,7 @@ export default function VehicleCategoryCreateModal({
                       fullWidth
                     >
                       <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                        {language === "vi" ? "Ghế tối đa *" : "Max Seats *"}
+                        {"Ghế tối đa *"}
                       </Label>
                       <NumberField.Group className="border-1 border-separator">
                         <NumberField.DecrementButton />
@@ -257,7 +257,7 @@ export default function VehicleCategoryCreateModal({
                       fullWidth
                     >
                       <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                        {language === "vi" ? "Hành lý tối thiểu" : "Min Luggage"}
+                        {"Hành lý tối thiểu"}
                       </Label>
                       <NumberField.Group className="border-1 border-separator">
                         <NumberField.DecrementButton />
@@ -275,7 +275,7 @@ export default function VehicleCategoryCreateModal({
                       fullWidth
                     >
                       <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                        {language === "vi" ? "Hành lý tối đa" : "Max Luggage"}
+                        {"Hành lý tối đa"}
                       </Label>
                       <NumberField.Group className="border-1 border-separator">
                         <NumberField.DecrementButton />
@@ -301,7 +301,7 @@ export default function VehicleCategoryCreateModal({
                       </Checkbox.Content>
                     </Checkbox>
                     <Label htmlFor="category-active" className="text-sm font-bold cursor-pointer select-none">
-                      {language === "vi" ? "Kích hoạt danh mục" : "Active / Available"}
+                      {"Kích hoạt danh mục"}
                     </Label>
                   </div>
 
@@ -319,7 +319,7 @@ export default function VehicleCategoryCreateModal({
                       </Checkbox.Content>
                     </Checkbox>
                     <Label htmlFor="category-default" className="text-sm font-bold cursor-pointer select-none">
-                      {language === "vi" ? "Danh mục mặc định" : "Default category"}
+                      {"Danh mục mặc định"}
                     </Label>
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export default function VehicleCategoryCreateModal({
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                      {language === "vi" ? "Nội dung dịch thuật Danh mục *" : "Category Translations *"}
+                      {"Nội dung dịch thuật Danh mục *"}
                     </Label>
                     <div className="flex items-center gap-1 bg-slate-100 dark:bg-[var(--bg-elevated)] p-1 rounded-xl w-fit">
                       {(["vi", "en", "ko", "ru"] as string[]).map((lang) => (
@@ -353,12 +353,12 @@ export default function VehicleCategoryCreateModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <TextField className="w-full">
-                      <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Tên Danh Mục *" : "Category Name *"} ({activeFormLocale.toUpperCase()})</Label>
+                      <Label className="text-xs font-bold uppercase tracking-wider">{"Tên Danh Mục *"} ({activeFormLocale.toUpperCase()})</Label>
                       <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.name || ""} onChange={(e) => handleTranslationChange("name", e.target.value)} placeholder="e.g. Xe 4 chỗ (Sedan)" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                     </TextField>
 
                     <TextField className="w-full">
-                      <Label className="text-xs font-bold uppercase tracking-wider">{language === "vi" ? "Đường dẫn (Slug) *" : "SEO Slug *"} ({activeFormLocale.toUpperCase()})</Label>
+                      <Label className="text-xs font-bold uppercase tracking-wider">{"Đường dẫn (Slug) *"} ({activeFormLocale.toUpperCase()})</Label>
                       <Input type="text" value={translations[activeFormLocale as keyof typeof translations]?.slug || ""} onChange={(e) => handleTranslationChange("slug", e.target.value)} placeholder="xe-4-cho-sedan" className="w-full p-2.5 rounded-xl text-xs font-semibold border-1 border-separator" />
                     </TextField>
                   </div>
@@ -367,14 +367,14 @@ export default function VehicleCategoryCreateModal({
                     <ExpandableTextArea
                       label={
                         <Label className="block text-xs font-bold mb-1.5">
-                          {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
+                          {"Mô tả ngắn"} ({activeFormLocale.toUpperCase()})
                         </Label>
                       }
                       rows={2}
                       placeholder="Short description summary..."
                       value={translations[activeFormLocale as keyof typeof translations]?.description || ""}
                       onChange={(val) => handleTranslationChange("description", val)}
-                      modalTitle={`${language === "vi" ? "Mô tả ngắn" : "Short Description"} (${activeFormLocale.toUpperCase()})`}
+                      modalTitle={`${"Mô tả ngắn"} (${activeFormLocale.toUpperCase()})`}
                       language={language}
                     />
                   </div>
@@ -388,7 +388,7 @@ export default function VehicleCategoryCreateModal({
                   onClick={onClose}
                   isDisabled={loading}
                 >
-                  {language === "vi" ? "Hủy" : "Cancel"}
+                  {"Hủy"}
                 </Button>
                 <Button
                   type="submit"
@@ -400,7 +400,7 @@ export default function VehicleCategoryCreateModal({
                   ) : (
                     <Save size={15} className="mr-1.5" />
                   )}
-                  {language === "vi" ? "Tạo danh mục" : "Create category"}
+                  {"Tạo danh mục"}
                 </Button>
               </ModalFooter>
             </form>

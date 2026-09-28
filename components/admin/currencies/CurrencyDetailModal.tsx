@@ -14,7 +14,7 @@ interface CurrencyDetailModalProps {
   onClose: () => void;
   currency: CurrencyDto;
   defaultEditMode?: boolean;
-  onSaveSuccess: (updated?: CurrencyDto) => void;
+  onSaveSuccess: (updated?: CurrencyDto) => void | Promise<void>;
   onDeleteSuccess: (id: number) => void;
   showToast: (msg: string, type: "success" | "error") => void;
 }
@@ -85,7 +85,7 @@ export default function CurrencyDetailModal({
         active,
         translations: cleanTranslations,
       });
-      onSaveSuccess(result);
+      await onSaveSuccess?.(result);
     } catch (err: any) {
       showToast(err?.message || "Lỗi khi cập nhật", "error");
     } finally {

@@ -21,8 +21,8 @@ export function TourOptionIconPicker({
       value={value}
       onChange={onChange}
       compact={compact}
-      label={language === "vi" ? "Icon biểu tượng (Raw SVG text)" : "Option Icon (Raw SVG text)"}
-      placeholder={language === "vi" ? "Dán mã SVG (<svg ...>...</svg>) vào đây..." : "Paste SVG code here..."}
+      label={"Icon biểu tượng (Raw SVG text)"}
+      placeholder={"Dán mã SVG (<svg ...>...</svg>) vào đây..."}
     />
   );
 }

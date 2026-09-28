@@ -45,7 +45,7 @@ interface ServiceCreateModalProps {
   categories: ServiceCategoryDto[];
   language: string;
   backendUrl: string;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -138,7 +138,7 @@ const TimelineEditor = ({
             <Input
               type="text"
               className="flex-grow px-2 py-1 text-xs rounded-xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary font-medium"
-              placeholder={language === "vi" ? "Nội dung hoạt động..." : "Activity content..."}
+              placeholder={"Nội dung hoạt động..."}
               value={item.content}
               onChange={(e) => handleItemChange(idx, "content", e.target.value)}
             />
@@ -159,7 +159,7 @@ const TimelineEditor = ({
         className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-primary hover:text-primary-600 bg-primary/10 dark:bg-primary/5 rounded-xl transition-colors mt-1"
       >
         <PlusCircle size={12} />
-        {language === "vi" ? "Thêm hoạt động" : "Add Activity"}
+        {"Thêm hoạt động"}
       </Button>
     </div>
   );
@@ -433,9 +433,7 @@ export default function ServiceCreateModal({
     const activeTrans = formData.translations?.find(t => t.locale === activeFormLocale);
     if (!activeTrans || !activeTrans.name.trim()) {
       showToast(
-        language === "vi"
-          ? "Tên Tour ở ngôn ngữ hiện tại là bắt buộc!"
-          : "Tour Name in current tab language is required!",
+        "Tên Tour ở ngôn ngữ hiện tại là bắt buộc!",
         "error"
       );
       return;
@@ -536,19 +534,17 @@ export default function ServiceCreateModal({
     try {
       await createService(payload);
       showToast(
-        language === "vi" ? "Thêm mới Tour thành công!" : "New Tour registered successfully!",
+        "Thêm mới Tour thành công!",
         "success"
       );
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch (err: any) {
       showToast(
-        language === "vi"
-          ? "Lỗi kết nối. Tạo tour giả lập thành công!"
-          : "API Connection failed. Mock Tour created!",
+        "Lỗi kết nối. Tạo tour giả lập thành công!",
         "success"
       );
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } finally {
       setLoading(false);
@@ -570,12 +566,10 @@ export default function ServiceCreateModal({
             <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
               <ModalHeader className="border-b border-divider bg-slate-50 dark:bg-[var(--bg-surface)] py-4 px-6 flex flex-col gap-0.5 shrink-0">
                 <span id="service-create-title" className="text-lg font-extrabold text-slate-900 dark:text-white">
-                  {language === "vi" ? "Thêm mới Tour Du Lịch" : "Register New Tour"}
+                  {"Thêm mới Tour Du Lịch"}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  {language === "vi"
-                    ? "Tạo gói tour mới, cấu hình giá, lịch trình và ngôn ngữ hiển thị."
-                    : "Create a new tour package with price, itineraries, and languages."}
+                  {"Tạo gói tour mới, cấu hình giá, lịch trình và ngôn ngữ hiển thị."}
                 </span>
               </ModalHeader>
 
@@ -587,7 +581,7 @@ export default function ServiceCreateModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          {language === "vi" ? "Danh mục dịch vụ" : "Service Category"}
+                          {"Danh mục dịch vụ"}
                         </Label>
                         <Select
                           fullWidth
@@ -621,7 +615,7 @@ export default function ServiceCreateModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          {language === "vi" ? "Trạng thái hiển thị" : "Status"}
+                          {"Trạng thái hiển thị"}
                         </Label>
                         <Select
                           fullWidth
@@ -634,12 +628,12 @@ export default function ServiceCreateModal({
                           </Select.Trigger>
                           <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                             <ListBox>
-                              <ListBox.Item id="published" textValue={language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                                {language === "vi" ? "Kích hoạt hiển thị (Published)" : "Published"}
+                              <ListBox.Item id="published" textValue={"Kích hoạt hiển thị (Published)"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                {"Kích hoạt hiển thị (Published)"}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
-                              <ListBox.Item id="draft" textValue={language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                                {language === "vi" ? "Bản nháp / Ẩn (Draft)" : "Draft"}
+                              <ListBox.Item id="draft" textValue={"Bản nháp / Ẩn (Draft)"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                {"Bản nháp / Ẩn (Draft)"}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
                             </ListBox>
@@ -653,10 +647,10 @@ export default function ServiceCreateModal({
                             <Checkbox.Control><Checkbox.Indicator /></Checkbox.Control>
                             <div className="text-left">
                               <span className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 leading-tight">
-                                {language === "vi" ? "Áp dụng giá theo xe" : "Vehicle Pricing Mode"}
+                                {"Áp dụng giá theo xe"}
                               </span>
                               <span className="block text-[9px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
-                                {language === "vi" ? "Tự động tính giá trọn gói theo loại xe" : "Enable pricing per vehicle type"}
+                                {"Tự động tính giá trọn gói theo loại xe"}
                               </span>
                             </div>
                           </Checkbox.Content>
@@ -668,7 +662,7 @@ export default function ServiceCreateModal({
                     <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-black/10 space-y-4 mt-4">
                       <div className="flex items-center justify-between">
                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-                          {language === "vi" ? "Phân loại / Loại tính giá vé" : "Ticket / Pricing Option Type"}
+                          {"Phân loại / Loại tính giá vé"}
                         </Label>
                         <button
                           type="button"
@@ -676,8 +670,7 @@ export default function ServiceCreateModal({
                           className="text-xs text-primary font-bold hover:underline"
                         >
                           {isCreatingOptionType
-                            ? (language === "vi" ? "Hủy" : "Cancel")
-                            : (language === "vi" ? "+ Thêm loại mới" : "+ Create New Type")}
+                            ? ("Hủy"): ("+ Thêm loại mới")}
                         </button>
                       </div>
 
@@ -705,7 +698,7 @@ export default function ServiceCreateModal({
                                 const tr = ot.translations.find((t) => t.locale === language) || ot.translations[0];
                                 return (
                                   <ListBox.Item key={ot.id} id={String(ot.id)} textValue={`${tr?.name} (${ot.code})`} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                                    {tr?.name} ({ot.code} - {ot.systemType === "VEHICLE" ? (language === "vi" ? "Theo xe" : "By Vehicle") : (language === "vi" ? "Theo người" : "By Person")})
+                                    {tr?.name} ({ot.code} - {ot.systemType === "VEHICLE" ? ("Theo xe"): ("Theo người")})
                                     <ListBox.ItemIndicator />
                                   </ListBox.Item>
                                 );
@@ -728,7 +721,7 @@ export default function ServiceCreateModal({
                             </TextField>
                             <div>
                               <Label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                                {language === "vi" ? "Kiểu cấu hình" : "System Type"}
+                                {"Kiểu cấu hình"}
                               </Label>
                               <Select
                                 fullWidth
@@ -741,12 +734,12 @@ export default function ServiceCreateModal({
                                 </Select.Trigger>
                                 <Select.Popover className="bg-white dark:bg-black border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1 w-[var(--trigger-width)] z-50">
                                   <ListBox>
-                                    <ListBox.Item id="PERSON" textValue={language === "vi" ? "Theo đầu người (Person)" : "By Person"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                                      {language === "vi" ? "Theo đầu người (Person)" : "By Person"}
+                                    <ListBox.Item id="PERSON" textValue={"Theo đầu người (Person)"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                      {"Theo đầu người (Person)"}
                                       <ListBox.ItemIndicator />
                                     </ListBox.Item>
-                                    <ListBox.Item id="VEHICLE" textValue={language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                                      {language === "vi" ? "Theo thông số xe (Vehicle)" : "By Vehicle"}
+                                    <ListBox.Item id="VEHICLE" textValue={"Theo thông số xe (Vehicle)"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                                      {"Theo thông số xe (Vehicle)"}
                                       <ListBox.ItemIndicator />
                                     </ListBox.Item>
                                   </ListBox>
@@ -782,7 +775,7 @@ export default function ServiceCreateModal({
                             onClick={async () => {
                               if (!newOptionTypeCode.trim() || !newOptionTypeNameVi.trim() || !newOptionTypeNameEn.trim()) {
                                 showToast(
-                                  language === "vi" ? "Vui lòng nhập đầy đủ thông tin!" : "Please fill in all fields!",
+                                  "Vui lòng nhập đầy đủ thông tin!",
                                   "error"
                                 );
                                 return;
@@ -809,19 +802,19 @@ export default function ServiceCreateModal({
                                   setNewOptionTypeNameVi("");
                                   setNewOptionTypeNameEn("");
                                   showToast(
-                                    language === "vi" ? "Tạo loại vé mới thành công!" : "New type created successfully!",
+                                    "Tạo loại vé mới thành công!",
                                     "success"
                                   );
                                 }
                               } catch (err) {
                                 showToast(
-                                  language === "vi" ? "Không thể tạo loại vé mới." : "Could not create new type.",
+                                  "Không thể tạo loại vé mới.",
                                   "error"
                                 );
                               }
                             }}
                           >
-                            {language === "vi" ? "Lưu loại vé" : "Save Type"}
+                            {"Lưu loại vé"}
                           </Button>
                         </div>
                       )}
@@ -831,7 +824,7 @@ export default function ServiceCreateModal({
                   {/* Thumbnail image uploader */}
                   <div className="bg-slate-50/50 dark:bg-black/10 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 flex flex-col justify-center">
                     <ImageUpload
-                      label={language === "vi" ? "Ảnh Đại Diện Tour" : "Tour Thumbnail Image"}
+                      label={"Ảnh Đại Diện Tour"}
                       value={formData.thumbnailId}
                       onChange={(id) => setFormData({ ...formData, thumbnailId: id || undefined })}
                     />
@@ -844,7 +837,7 @@ export default function ServiceCreateModal({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                      {language === "vi" ? "Thông tin chi tiết (Đa ngôn ngữ)" : "Detailed Content Translations"}
+                      {"Thông tin chi tiết (Đa ngôn ngữ)"}
                     </Label>
                     <div className="flex bg-slate-100 dark:bg-black p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                       {["vi", "en", "ko", "ru"].map((loc) => (
@@ -873,11 +866,11 @@ export default function ServiceCreateModal({
                     <div>
                       <TextField className="w-full">
                         <Label className="text-xs font-bold uppercase tracking-wider">
-                          {language === "vi" ? "Tên tour hiển thị" : "Tour Name"} ({activeFormLocale.toUpperCase()})
+                          {"Tên tour hiển thị"} ({activeFormLocale.toUpperCase()})
                         </Label>
                         <Input
                           type="text"
-                          placeholder={language === "vi" ? "e.g. Tour Bà Nà Hills..." : "e.g. Ba Na Hills Day Tour..."}
+                          placeholder={"e.g. Tour Bà Nà Hills..."}
                           value={activeTrans.name || ""}
                           onChange={(e) => handleTranslationChange("name", e.target.value)}
                           className="w-full p-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800"
@@ -887,12 +880,12 @@ export default function ServiceCreateModal({
 
                     <div>
                       <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                        {language === "vi" ? "Mô tả ngắn gọn" : "Short Description"} ({activeFormLocale.toUpperCase()})
+                        {"Mô tả ngắn gọn"} ({activeFormLocale.toUpperCase()})
                       </Label>
                       <textarea
                         rows={2}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
-                        placeholder={language === "vi" ? "Mô tả tổng quan về chuyến đi..." : "Overview description of the trip..."}
+                        placeholder={"Mô tả tổng quan về chuyến đi..."}
                         value={activeTrans.description || ""}
                         onChange={(e) => handleTranslationChange("description", e.target.value)}
                       />
@@ -900,12 +893,12 @@ export default function ServiceCreateModal({
 
                     <div>
                       <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                        {language === "vi" ? "Nội dung chi tiết dịch vụ" : "Full Content details"} ({activeFormLocale.toUpperCase()})
+                        {"Nội dung chi tiết dịch vụ"} ({activeFormLocale.toUpperCase()})
                       </Label>
                       <textarea
                         rows={4}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-black text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary text-sm focus:outline-none"
-                        placeholder={language === "vi" ? "Bao gồm xe đưa đón, ăn uống buffet, lịch trình..." : "Includes transport details, tickets, buffet meals..."}
+                        placeholder={"Bao gồm xe đưa đón, ăn uống buffet, lịch trình..."}
                         value={activeTrans.content || ""}
                         onChange={(e) => handleTranslationChange("content", e.target.value)}
                       />
@@ -920,12 +913,10 @@ export default function ServiceCreateModal({
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                        {language === "vi" ? "Tùy chọn vé & phân hạng giá bán" : "Pricing Options & Vehicle Classes"}
+                        {"Tùy chọn vé & phân hạng giá bán"}
                       </Label>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {language === "vi"
-                          ? "Thiết lập phân hạng (Ví dụ: vé người lớn, vé trẻ em, hoặc xe sedan, xe 16 chỗ)"
-                          : "Configure specific categories (e.g. Adult ticket, SUV rental transfer, luxury coach)"}
+                        {"Thiết lập phân hạng (Ví dụ: vé người lớn, vé trẻ em, hoặc xe sedan, xe 16 chỗ)"}
                       </p>
                     </div>
                     <Button
@@ -939,19 +930,17 @@ export default function ServiceCreateModal({
                         }`}
                     >
                       <PlusCircle size={14} />
-                      {language === "vi" ? "Thêm Tùy Chọn" : "Add Option"}
+                      {"Thêm Tùy Chọn"}
                     </Button>
                   </div>
 
                   {!formData.serviceOptionTypeId ? (
                     <div className="text-center py-8 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                      {language === "vi"
-                        ? "Vui lòng chọn Phân loại / Loại tính giá vé ở trên để bắt đầu thêm các tùy chọn vé."
-                        : "Please select a Pricing Option Type above to start configuring tickets."}
+                      {"Vui lòng chọn Phân loại / Loại tính giá vé ở trên để bắt đầu thêm các tùy chọn vé."}
                     </div>
                   ) : (!formData.options || formData.options.length === 0) ? (
                     <div className="text-center py-6 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                      {language === "vi" ? "Chưa cấu hình tùy chọn giá vé." : "No specific pricing options configured yet."}
+                      {"Chưa cấu hình tùy chọn giá vé."}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -967,8 +956,7 @@ export default function ServiceCreateModal({
                             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                               <span className="text-xs font-extrabold text-slate-700 dark:text-slate-350">
                                 {isVehicle
-                                  ? (language === "vi" ? `THÔNG TIN XE #${idx + 1}` : `VEHICLE SPEC #${idx + 1}`)
-                                  : (language === "vi" ? `LỰA CHỌN #${idx + 1}` : `OPTION #${idx + 1}`)}
+                                  ? (`THÔNG TIN XE #${idx + 1}`): (`LỰA CHỌN #${idx + 1}`)}
                               </span>
                               <button
                                 type="button"
@@ -992,7 +980,7 @@ export default function ServiceCreateModal({
                                         fullWidth
                                       >
                                         <Label className="block text-[11px] font-bold text-slate-400 mb-1">
-                                          {language === "vi" ? "Giá áp dụng (VND)" : "Price (VND)"}
+                                          {"Giá áp dụng (VND)"}
                                         </Label>
                                         <NumberField.Group>
                                           <NumberField.Input />
@@ -1003,7 +991,7 @@ export default function ServiceCreateModal({
                                     <div>
                                       <TextField className="w-full">
                                         <Label className="text-xs font-bold uppercase tracking-wider">
-                                          {language === "vi" ? "Hiệu xe / Hãng xe" : "Vehicle Brand / Model"}
+                                          {"Hiệu xe / Hãng xe"}
                                         </Label>
                                         <Input
                                           type="text"
@@ -1023,7 +1011,7 @@ export default function ServiceCreateModal({
                                         fullWidth
                                       >
                                         <Label className="block text-[11px] font-bold text-slate-400 mb-1">
-                                          {language === "vi" ? "Số chỗ ngồi" : "Seat Capacity"}
+                                          {"Số chỗ ngồi"}
                                         </Label>
                                         <NumberField.Group>
                                           <NumberField.DecrementButton />
@@ -1041,7 +1029,7 @@ export default function ServiceCreateModal({
                                         fullWidth
                                       >
                                         <Label className="block text-[11px] font-bold text-slate-400 mb-1">
-                                          {language === "vi" ? "Hành lý tối đa (kg)" : "Max Luggage (kg)"}
+                                          {"Hành lý tối đa (kg)"}
                                         </Label>
                                         <NumberField.Group>
                                           <NumberField.DecrementButton />
@@ -1070,7 +1058,7 @@ export default function ServiceCreateModal({
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <TextField className="w-full">
                                       <Label className="text-xs font-bold uppercase tracking-wider">
-                                        {language === "vi" ? `Tên xe / Hạng xe (${activeOptionsLocale.toUpperCase()})` : `Class Name (${activeOptionsLocale.toUpperCase()})`}
+                                        {`Tên xe / Hạng xe (${activeOptionsLocale.toUpperCase()})`}
                                       </Label>
                                       <Input
                                         type="text"
@@ -1083,7 +1071,7 @@ export default function ServiceCreateModal({
 
                                     <TextField className="w-full">
                                       <Label className="text-xs font-bold uppercase tracking-wider">
-                                        {language === "vi" ? `Mô tả ngắn/Mẫu xe (${activeOptionsLocale.toUpperCase()})` : `Description (${activeOptionsLocale.toUpperCase()})`}
+                                        {`Mô tả ngắn/Mẫu xe (${activeOptionsLocale.toUpperCase()})`}
                                       </Label>
                                       <Input
                                         type="text"
@@ -1098,7 +1086,7 @@ export default function ServiceCreateModal({
 
                                 <div className="flex flex-col justify-center">
                                   <ImageUpload
-                                    label={language === "vi" ? "Ảnh đại diện Xe" : "Vehicle Image"}
+                                    label={"Ảnh đại diện Xe"}
                                     value={opt.thumbnailId}
                                     onChange={(id) => handleOptionChange(idx, "thumbnailId", id || undefined)}
                                   />
@@ -1116,7 +1104,7 @@ export default function ServiceCreateModal({
                                        fullWidth
                                      >
                                        <Label className="block text-[11px] font-bold text-slate-400 mb-1">
-                                         {language === "vi" ? "Gia ve ap dung (VND)" : "Price (VND)"}
+                                         {"Gia ve ap dung (VND)"}
                                        </Label>
                                        <NumberField.Group>
                                          <NumberField.Input />
@@ -1144,7 +1132,7 @@ export default function ServiceCreateModal({
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   <TextField className="w-full">
                                     <Label className="text-xs font-bold uppercase tracking-wider">
-                                      {language === "vi" ? `Tên phân loại (${activeOptionsLocale.toUpperCase()})` : `Class Name (${activeOptionsLocale.toUpperCase()})`}
+                                      {`Tên phân loại (${activeOptionsLocale.toUpperCase()})`}
                                     </Label>
                                     <Input
                                       type="text"
@@ -1157,7 +1145,7 @@ export default function ServiceCreateModal({
 
                                   <TextField className="w-full">
                                     <Label className="text-xs font-bold uppercase tracking-wider">
-                                      {language === "vi" ? `Mô tả (${activeOptionsLocale.toUpperCase()})` : `Description (${activeOptionsLocale.toUpperCase()})`}
+                                      {`Mô tả (${activeOptionsLocale.toUpperCase()})`}
                                     </Label>
                                     <Input
                                       type="text"
@@ -1184,10 +1172,10 @@ export default function ServiceCreateModal({
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                        {language === "vi" ? "Lịch trình hoạt động chi tiết" : "Daily Itinerary Day Schedule"}
+                        {"Lịch trình hoạt động chi tiết"}
                       </Label>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {language === "vi" ? "Cấu hình lịch trình từng ngày tham quan." : "Configure detailed day by day events."}
+                        {"Cấu hình lịch trình từng ngày tham quan."}
                       </p>
                     </div>
                     <Button
@@ -1197,13 +1185,13 @@ export default function ServiceCreateModal({
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl transition-colors"
                     >
                       <PlusCircle size={14} />
-                      {language === "vi" ? "Thêm Ngày Lịch Trình" : "Add Day"}
+                      {"Thêm Ngày Lịch Trình"}
                     </Button>
                   </div>
 
                   {(!formData.itineraries || formData.itineraries.length === 0) ? (
                     <div className="text-center py-6 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                      {language === "vi" ? "Chưa có lịch trình theo ngày." : "No itineraries day planned yet."}
+                      {"Chưa có lịch trình theo ngày."}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1214,7 +1202,7 @@ export default function ServiceCreateModal({
                         >
                           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                             <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
-                              {language === "vi" ? `NGÀY ${itin.dayNumber}` : `DAY ${itin.dayNumber}`}
+                              {`NGÀY ${itin.dayNumber}`}
                             </span>
                             <button
                               type="button"
@@ -1227,7 +1215,7 @@ export default function ServiceCreateModal({
 
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              {language === "vi" ? "Ngôn ngữ" : "Language"}
+                              {"Ngôn ngữ"}
                             </span>
                             <div className="flex bg-slate-100 dark:bg-black p-0.5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                               {["vi", "en", "ko", "ru"].map(loc => (
@@ -1248,7 +1236,7 @@ export default function ServiceCreateModal({
                           <div>
                             <TextField className="w-full">
                               <Label className="text-xs font-bold uppercase tracking-wider">
-                                {language === "vi" ? `Tiêu đề ngày (${activeItinLocale.toUpperCase()})` : `Day Title (${activeItinLocale.toUpperCase()})`}
+                                {`Tiêu đề ngày (${activeItinLocale.toUpperCase()})`}
                               </Label>
                               <Input
                                 type="text"
@@ -1262,7 +1250,7 @@ export default function ServiceCreateModal({
 
                           <div>
                             <Label className="block text-[11px] font-bold text-slate-400 mb-1">
-                              {language === "vi" ? `Lịch trình chi tiết (${activeItinLocale.toUpperCase()})` : `Timeline Events (${activeItinLocale.toUpperCase()})`}
+                              {`Lịch trình chi tiết (${activeItinLocale.toUpperCase()})`}
                             </Label>
                             <TimelineEditor
                               timelineStr={itin.translations.find(t => t.locale === activeItinLocale)?.timeline || ""}
@@ -1283,10 +1271,10 @@ export default function ServiceCreateModal({
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                        {language === "vi" ? "Câu hỏi thường gặp (FAQs)" : "Frequently Asked Questions (FAQs)"}
+                        {"Câu hỏi thường gặp (FAQs)"}
                       </Label>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {language === "vi" ? "Cấu hình các câu hỏi và câu trả lời cho dịch vụ này." : "Configure Q&A for this service."}
+                        {"Cấu hình các câu hỏi và câu trả lời cho dịch vụ này."}
                       </p>
                     </div>
                     <Button
@@ -1296,13 +1284,13 @@ export default function ServiceCreateModal({
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl transition-colors"
                     >
                       <PlusCircle size={14} />
-                      {language === "vi" ? "Thêm Câu Hỏi" : "Add FAQ"}
+                      {"Thêm Câu Hỏi"}
                     </Button>
                   </div>
 
                   {(!formData.faqs || formData.faqs.length === 0) ? (
                     <div className="text-center py-6 border-2 border-dashed border-slate-150 dark:border-slate-800 rounded-2xl text-slate-400 text-xs font-medium">
-                      {language === "vi" ? "Chưa có câu hỏi thường gặp." : "No FAQs added yet."}
+                      {"Chưa có câu hỏi thường gặp."}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1313,7 +1301,7 @@ export default function ServiceCreateModal({
                         >
                           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                             <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400">
-                              {language === "vi" ? `CÂU HỎI #${idx + 1}` : `FAQ #${idx + 1}`}
+                              {`CÂU HỎI #${idx + 1}`}
                             </span>
                             <button
                               type="button"
@@ -1326,7 +1314,7 @@ export default function ServiceCreateModal({
 
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              {language === "vi" ? "Ngôn ngữ" : "Language"}
+                              {"Ngôn ngữ"}
                             </span>
                             <div className="flex bg-slate-100 dark:bg-black p-0.5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                               {["vi", "en", "ko", "ru"].map(loc => (
@@ -1347,7 +1335,7 @@ export default function ServiceCreateModal({
                             <div className="grid grid-cols-1 gap-3">
                             <TextField className="w-full">
                               <Label className="text-xs font-bold uppercase tracking-wider">
-                                {language === "vi" ? `Câu hỏi (${activeFaqLocale.toUpperCase()})` : `Question (${activeFaqLocale.toUpperCase()})`}
+                                {`Câu hỏi (${activeFaqLocale.toUpperCase()})`}
                               </Label>
                               <Input
                                 type="text"
@@ -1359,7 +1347,7 @@ export default function ServiceCreateModal({
                             </TextField>
                             <div>
                               <Label className="block text-[11px] font-bold text-slate-400 mb-1">
-                                {language === "vi" ? `Trả lời (${activeFaqLocale.toUpperCase()})` : `Answer (${activeFaqLocale.toUpperCase()})`}
+                                {`Trả lời (${activeFaqLocale.toUpperCase()})`}
                               </Label>
                               <textarea
                                 rows={2}
@@ -1385,7 +1373,7 @@ export default function ServiceCreateModal({
                   onClick={onClose}
                   isDisabled={loading}
                 >
-                  {language === "vi" ? "Hủy bỏ" : "Cancel"}
+                  {"Hủy bỏ"}
                 </Button>
                 <Button
                   type="submit"
@@ -1397,7 +1385,7 @@ export default function ServiceCreateModal({
                   ) : (
                     <Save size={15} className="mr-1.5" />
                   )}
-                  {language === "vi" ? "Tạo Tour Mới" : "Create Tour"}
+                  {"Tạo Tour Mới"}
                 </Button>
               </ModalFooter>
             </form>

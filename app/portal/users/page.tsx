@@ -13,15 +13,14 @@ import {
   Shield,
 } from "lucide-react";
 import { Button, Input, Table, toast, Tooltip } from "@heroui/react";
-import { getUsers, AdminUserDto } from "@/lib/api/users";
+import { getUsers, deleteUser, AdminUserDto } from "@/lib/api/users";
 import {
   UserCreateModal,
   UserDetailModal,
-  UserDeleteModal,
   RolePermissionsTab,
 } from "@/components/admin/users";
 import { useAuthStore } from "@/lib/store/authStore";
-import { PageSizeSelect, AppStatusChip } from "@/components/common";
+import { PageSizeSelect, AppStatusChip, AlertModal, TableLoadingState, TableEmptyState } from "@/components/common";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 
@@ -55,6 +54,7 @@ export default function UsersManagementPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUserDto | null>(null);
   const [editingUser, setEditingUser] = useState<AdminUserDto | null>(null);
 
@@ -101,8 +101,25 @@ export default function UsersManagementPage() {
     if (selectedUser?.id === id) setSelectedUser(null);
   };
 
-  const handleSaveSuccess = () => {
-    fetchUsers(currentPage, searchTerm);
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    setDeletingUser(true);
+    try {
+      await deleteUser(selectedUser.id);
+      showToast("Đã xóa user thành công!", "success");
+      handleDeleteSuccess(selectedUser.id);
+      setDeleteModalOpen(false);
+      setSelectedUser(null);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || "Lỗi xóa user!", "error");
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
+  const handleSaveSuccess = async () => {
+    await fetchUsers(currentPage, searchTerm);
     setEditingUser(null);
   };
 
@@ -230,20 +247,13 @@ export default function UsersManagementPage() {
       {/* Table */}
       <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-accent" size={32} />
-            <p className="text-sm font-bold text-neutral-500">Đang tải danh sách user...</p>
-          </div>
+          <TableLoadingState message="Đang tải danh sách user..." />
         ) : displayedUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Users className="text-neutral-300 dark:text-neutral-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-neutral-800 dark:text-white mb-1">
-              Không tìm thấy user nào
-            </h3>
-            <p className="text-sm text-neutral-500 max-w-sm">
-              Không có user nào khớp với bộ lọc tìm kiếm hiện tại.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Users}
+            title="Không tìm thấy user nào"
+            description="Không có user nào khớp với bộ lọc tìm kiếm hiện tại."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý user" className="w-full text-left">
@@ -414,12 +424,25 @@ export default function UsersManagementPage() {
         }}
       />
 
-      <UserDeleteModal
+      <AlertModal
         isOpen={deleteModalOpen}
         onClose={() => { setDeleteModalOpen(false); setSelectedUser(null); }}
-        user={selectedUser}
-        onDeleteSuccess={handleDeleteSuccess}
-        showToast={showToast}
+        onConfirm={handleDeleteUser}
+        variant="danger"
+        title="Xác nhận xóa User"
+        description={
+          <p className="space-y-2">
+            <span className="block">
+              Bạn có chắc chắn muốn xóa user{" "}
+              <strong className="text-primary font-bold">{selectedUser?.fullname || selectedUser?.email}</strong>?
+            </span>
+            <span className="block text-xs text-rose-500 font-bold">
+              * Hành động này sẽ ẩn user khỏi danh sách quản lý.
+            </span>
+          </p>
+        }
+        confirmText="Xóa User"
+        isLoading={deletingUser}
       />
         </>
       )}

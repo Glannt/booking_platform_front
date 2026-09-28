@@ -12,7 +12,7 @@ export interface VehicleCreateModalProps {
   categories: VehicleCategoryDto[];
   language?: string;
   backendUrl?: string;
-  onSaveSuccess: (newVehicle?: VehicleDto) => void;
+  onSaveSuccess: (newVehicle?: VehicleDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 

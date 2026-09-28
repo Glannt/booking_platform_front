@@ -74,7 +74,7 @@ export interface TourCreateUpdateModalProps {
     categories: TourCategoryDto[];
     language?: string;
     backendUrl?: string;
-    onSaveSuccess: (savedTour?: TourDto) => void;
+    onSaveSuccess: (savedTour?: TourDto) => void | Promise<void>;
     showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -309,13 +309,13 @@ export default function TourCreateUpdateModal({
         if (loading) return;
 
         if (!translations.vi.name.trim() && !translations.en.name.trim()) {
-            showToast(language === "vi" ? "Tên Tour ít nhất phải có ở bản tiếng Việt hoặc tiếng Anh!" : "Tour Name must be specified in Vietnamese or English!", "error");
+            showToast("Tên Tour ít nhất phải có ở bản tiếng Việt hoặc tiếng Anh!", "error");
             setActiveTab("INFO");
             return;
         }
 
         if (!tourCategoryId || tourCategoryId === 0) {
-            showToast(language === "vi" ? "Vui lòng chọn danh mục tour!" : "Please select a tour category!", "error");
+            showToast("Vui lòng chọn danh mục tour!", "error");
             setActiveTab("INFO");
             return;
         }
@@ -375,16 +375,16 @@ export default function TourCreateUpdateModal({
             let res;
             if (isEdit && editingTour) {
                 res = await updateTour(editingTour.id, payload);
-                showToast(language === "vi" ? "Cập nhật tour thành công!" : "Tour updated successfully!", "success");
+                showToast("Cập nhật tour thành công!", "success");
             } else {
                 res = await createTour(payload);
-                showToast(language === "vi" ? "Tạo mới tour thành công!" : "Tour created successfully!", "success");
+                showToast("Tạo mới tour thành công!", "success");
             }
-            onSaveSuccess(res?.data);
+            await onSaveSuccess?.(res?.data);
             onClose();
         } catch (err: any) {
             console.error("Save tour error:", err);
-            showToast(err?.message || (language === "vi" ? "Lưu thông tin tour thất bại!" : "Failed to save tour!"), "error");
+            showToast(err?.message || ("Lưu thông tin tour thất bại!"), "error");
         } finally {
             setLoading(false);
         }
@@ -403,8 +403,7 @@ export default function TourCreateUpdateModal({
                                         <Compass size={20} className="text-accent" />
                                         <span>
                                             {isEdit
-                                                ? (language === "vi" ? "Chỉnh sửa Tour Du Lịch" : "Edit Sightseeing Tour")
-                                                : (language === "vi" ? "Thêm mới Tour Du Lịch" : "Add New Sightseeing Tour")}
+                                                ? ("Chỉnh sửa Tour Du Lịch"): ("Thêm mới Tour Du Lịch")}
                                         </span>
                                         {isEdit && editingTour && (
                                             <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[var(--bg-card)] text-slate-500">
@@ -414,8 +413,7 @@ export default function TourCreateUpdateModal({
                                     </h2>
                                     <p className="text-xs text-slate-500">
                                         {isEdit
-                                            ? (language === "vi" ? "Cập nhật chương trình tour, gói dịch vụ và dịch thuật đa ngôn ngữ." : "Edit tour package details and multi-language content.")
-                                            : (language === "vi" ? "Tạo chương trình tour, gói dịch vụ và dịch thuật đa ngôn ngữ." : "Configure tour package details and multi-language content.")}
+                                            ? ("Cập nhật chương trình tour, gói dịch vụ và dịch thuật đa ngôn ngữ."): ("Tạo chương trình tour, gói dịch vụ và dịch thuật đa ngôn ngữ.")}
                                     </p>
                                 </div>
                             </ModalHeader>
@@ -475,14 +473,14 @@ export default function TourCreateUpdateModal({
                                                         onSelectionChange={(key) => setTourCategoryId(key ? Number(key) : 0)}
                                                     >
                                                         <Label className="block text-xs font-bold uppercase tracking-wider mb-2">
-                                                            {language === "vi" ? "Danh mục tour" : "Tour Category"}
+                                                            {"Danh mục tour"}
                                                         </Label>
                                                         <ComboBox.InputGroup>
-                                                            <Input placeholder={language === "vi" ? "Chọn danh mục..." : "Select category..."} />
+                                                            <Input placeholder={"Chọn danh mục..."} />
                                                             <ComboBox.Trigger />
                                                         </ComboBox.InputGroup>
                                                         <ComboBox.Popover>
-                                                            <ListBox renderEmptyState={() => <EmptyState>{language === "vi" ? "Không tìm thấy" : "No results"}</EmptyState>}>
+                                                            <ListBox renderEmptyState={() => <EmptyState>{"Không tìm thấy"}</EmptyState>}>
                                                                 <Collection items={categories}>
                                                                     {(c) => {
                                                                         const tr = c.translations?.find((t: any) => t.locale === language) || c.translations?.[0];
@@ -503,7 +501,7 @@ export default function TourCreateUpdateModal({
                                                 <div>
                                                     <NumberField minValue={0} value={durationDays} onChange={(val) => setDurationDays(val ?? 0)}>
                                                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                                            {language === "vi" ? "Thời lượng (Ngày)" : "Duration (Days)"}
+                                                            {"Thời lượng (Ngày)"}
                                                         </Label>
                                                         <NumberField.Group>
                                                             <NumberField.DecrementButton />
@@ -516,7 +514,7 @@ export default function TourCreateUpdateModal({
                                                 <div>
                                                     <NumberField minValue={0} value={durationNights} onChange={(val) => setDurationNights(val ?? 0)}>
                                                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                                            {language === "vi" ? "Thời lượng (Đêm)" : "Duration (Nights)"}
+                                                            {"Thời lượng (Đêm)"}
                                                         </Label>
                                                         <NumberField.Group>
                                                             <NumberField.DecrementButton />
@@ -529,7 +527,7 @@ export default function TourCreateUpdateModal({
                                                 <div>
                                                     <NumberField minValue={1} value={minGuest} onChange={(val) => setMinGuest(val ?? 1)}>
                                                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                                            {language === "vi" ? "Số khách tối thiểu" : "Min Guests"}
+                                                            {"Số khách tối thiểu"}
                                                         </Label>
                                                         <NumberField.Group>
                                                             <NumberField.DecrementButton />
@@ -542,7 +540,7 @@ export default function TourCreateUpdateModal({
                                                 <div>
                                                     <NumberField minValue={1} value={maxGuest} onChange={(val) => setMaxGuest(val ?? 1)}>
                                                         <Label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                                            {language === "vi" ? "Số khách tối đa" : "Max Guests"}
+                                                            {"Số khách tối đa"}
                                                         </Label>
                                                         <NumberField.Group>
                                                             <NumberField.DecrementButton />
@@ -569,8 +567,7 @@ export default function TourCreateUpdateModal({
                                                             </Switch.Control>
                                                             <span className="text-sm font-bold text-slate-700 dark:text-slate-300 select-none">
                                                                 {status === "ACTIVE"
-                                                                    ? (language === "vi" ? "Đang mở bán công khai" : "Active Publicly")
-                                                                    : (language === "vi" ? "Tạm ngưng mở bán" : "Inactive")}
+                                                                    ? ("Đang mở bán công khai"): ("Tạm ngưng mở bán")}
                                                             </span>
                                                         </Switch.Content>
                                                     </Switch>
@@ -589,7 +586,7 @@ export default function TourCreateUpdateModal({
                                                         </Checkbox.Content>
                                                     </Checkbox>
                                                     <Label htmlFor="tour-create-default" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap">
-                                                        {language === "vi" ? "Gắn nhãn Đề xuất" : "Best Seller / Recommended"}
+                                                        {"Gắn nhãn Đề xuất"}
                                                     </Label>
                                                 </div>
                                             </div>
@@ -605,7 +602,7 @@ export default function TourCreateUpdateModal({
                                                             <span>{t.discounts.depositConfig}</span>
                                                         </Label>
                                                         <p className="text-[11px] text-foreground/60 mt-0.5">
-                                                            {language === "vi" ? "Áp dụng chung cho đặt tour, tính theo tổng giá sau khuyến mãi." : "Applied to tour bookings, based on total price after promotion."}
+                                                            {"Áp dụng chung cho đặt tour, tính theo tổng giá sau khuyến mãi."}
                                                         </p>
                                                     </div>
                                                     {/* Type Toggle */}
@@ -692,7 +689,7 @@ export default function TourCreateUpdateModal({
                                             <div className="space-y-4">
                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                                     <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                                                        {language === "vi" ? "Nội dung dịch thuật Tour" : "Tour Translations"}
+                                                        {"Nội dung dịch thuật Tour"}
                                                     </Label>
                                                     <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 shadow-2xs">
                                                         {OPTION_LOCALES.map((loc) => (
@@ -717,7 +714,7 @@ export default function TourCreateUpdateModal({
                                                     <div>
                                                         <TextField className="w-full">
                                                             <Label className="text-xs font-bold uppercase tracking-wider">
-                                                                {language === "vi" ? "Tên Tour" : "Tour Name"} ({activeFormLocale.toUpperCase()})
+                                                                {"Tên Tour"} ({activeFormLocale.toUpperCase()})
                                                             </Label>
                                                             <Input
                                                                 type="text"
@@ -731,7 +728,7 @@ export default function TourCreateUpdateModal({
 
                                                     <div>
                                                         <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-                                                            {language === "vi" ? "Mô tả ngắn" : "Short Description"} ({activeFormLocale.toUpperCase()})
+                                                            {"Mô tả ngắn"} ({activeFormLocale.toUpperCase()})
                                                         </Label>
                                                         <TextArea
                                                             rows={2}
@@ -744,7 +741,7 @@ export default function TourCreateUpdateModal({
 
                                                     <div>
                                                         <Label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-                                                            {language === "vi" ? "Nội dung chi tiết" : "Detailed Content"} ({activeFormLocale.toUpperCase()})
+                                                            {"Nội dung chi tiết"} ({activeFormLocale.toUpperCase()})
                                                         </Label>
                                                         <TextArea
                                                             rows={4}
@@ -763,12 +760,10 @@ export default function TourCreateUpdateModal({
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <Label className="block text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
-                                                        {language === "vi" ? "Dịch vụ bao gồm (Inclusions)" : "Tour Inclusions"}
+                                                        {"Dịch vụ bao gồm (Inclusions)"}
                                                     </Label>
                                                     <p className="text-[11px] text-slate-400 mb-2">
-                                                        {language === "vi"
-                                                            ? "Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Cano ghép theo hành trình)"
-                                                            : "Enter each item on a new line starting with '-'"}
+                                                        {"Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Cano ghép theo hành trình)"}
                                                     </p>
                                                     <TextArea
                                                         rows={4}
@@ -781,12 +776,10 @@ export default function TourCreateUpdateModal({
 
                                                 <div>
                                                     <Label className="block text-xs font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
-                                                        {language === "vi" ? "Chi phí tự túc nếu có (Exclusions)" : "Tour Exclusions"}
+                                                        {"Chi phí tự túc nếu có (Exclusions)"}
                                                     </Label>
                                                     <p className="text-[11px] text-slate-400 mb-2">
-                                                        {language === "vi"
-                                                            ? "Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Vé lặn biển bằng bình dưỡng khí)"
-                                                            : "Enter each item on a new line starting with '-'"}
+                                                        {"Nhập mỗi nội dung 1 dòng bắt đầu bằng dấu '-' (ví dụ: - Vé lặn biển bằng bình dưỡng khí)"}
                                                     </p>
                                                     <TextArea
                                                         rows={4}
@@ -803,7 +796,7 @@ export default function TourCreateUpdateModal({
                                             {/* Image Gallery */}
                                             <div className="space-y-2">
                                                 <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                                                    {language === "vi" ? "Hình ảnh Tour" : "Tour Gallery"}
+                                                    {"Hình ảnh Tour"}
                                                 </Label>
                                                 <MultiImageUpload
                                                     imageIds={imageIds}
@@ -821,12 +814,10 @@ export default function TourCreateUpdateModal({
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <Label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                                                        {language === "vi" ? "Tiện ích & Tùy chọn đi kèm" : "Tour Amenities & Options"}
+                                                        {"Tiện ích & Tùy chọn đi kèm"}
                                                     </Label>
                                                     <p className="text-[11px] text-slate-400">
-                                                        {language === "vi"
-                                                            ? "Cấu hình các tiện ích nổi bật hiển thị trên thẻ và trang chi tiết tour."
-                                                            : "Configure tour highlights and amenities."}
+                                                        {"Cấu hình các tiện ích nổi bật hiển thị trên thẻ và trang chi tiết tour."}
                                                     </p>
                                                 </div>
                                                 <Button
@@ -836,16 +827,14 @@ export default function TourCreateUpdateModal({
                                                     onClick={handleAddOption}
                                                 >
                                                     <Plus size={14} />
-                                                    {language === "vi" ? "Thêm tùy chọn" : "Add Option"}
+                                                    {"Thêm tùy chọn"}
                                                 </Button>
                                             </div>
 
                                             {options.length === 0 ? (
                                                 <div className="text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                                                     <p className="text-xs text-slate-400 italic mb-3">
-                                                        {language === "vi"
-                                                            ? "Chưa có tùy chọn nào. Bấm 'Thêm tùy chọn' để tạo mới."
-                                                            : "No options configured. Click 'Add Option' to create."}
+                                                        {"Chưa có tùy chọn nào. Bấm 'Thêm tùy chọn' để tạo mới."}
                                                     </p>
                                                     <Button
                                                         type="button"
@@ -854,7 +843,7 @@ export default function TourCreateUpdateModal({
                                                         onClick={handleAddOption}
                                                     >
                                                         <Plus size={14} />
-                                                        {language === "vi" ? "Thêm tùy chọn" : "Add Option"}
+                                                        {"Thêm tùy chọn"}
                                                     </Button>
                                                 </div>
                                             ) : (
@@ -872,7 +861,7 @@ export default function TourCreateUpdateModal({
                                                                 <div className="space-y-2">
                                                                     <div className="flex items-center justify-between gap-2 flex-wrap">
                                                                         <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                                                            {language === "vi" ? "Nội dung tiện ích / Tùy chọn" : "Option Content"} ({currentOptLocale.toUpperCase()})
+                                                                            {"Nội dung tiện ích / Tùy chọn"} ({currentOptLocale.toUpperCase()})
                                                                         </Label>
                                                                         {/* Tab 4 ngôn ngữ */}
                                                                         <div className="inline-flex items-center p-0.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-200 dark:border-slate-800 shadow-2xs">
@@ -925,7 +914,7 @@ export default function TourCreateUpdateModal({
                                                                         {/* Màu Chữ */}
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                                                                                {language === "vi" ? "Màu Chữ:" : "Text Color:"}
+                                                                                {"Màu Chữ:"}
                                                                             </span>
                                                                             <ColorPicker
                                                                                 value={safeParseColor(opt.colorText, "#1e293b")}
@@ -1004,12 +993,10 @@ export default function TourCreateUpdateModal({
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <Label className="block text-xs font-extrabold uppercase tracking-wider">
-                                                        {language === "vi" ? "Gói Tour & Bảng Giá" : "Tour Packages & Pricing"}
+                                                        {"Gói Tour & Bảng Giá"}
                                                     </Label>
                                                     <p className="text-[11px] text-slate-400">
-                                                        {language === "vi"
-                                                            ? "Cấu hình giá theo người lớn / trẻ em hoặc trọn gói / cano riêng."
-                                                            : "Set prices per adult/child or fixed charter price."}
+                                                        {"Cấu hình giá theo người lớn / trẻ em hoặc trọn gói / cano riêng."}
                                                     </p>
                                                 </div>
                                                 <Button
@@ -1019,16 +1006,14 @@ export default function TourCreateUpdateModal({
                                                     onClick={handleAddPackage}
                                                 >
                                                     <Plus size={14} />
-                                                    {language === "vi" ? "Thêm gói tour" : "Add Package"}
+                                                    {"Thêm gói tour"}
                                                 </Button>
                                             </div>
 
                                             {packages.length === 0 ? (
                                                 <div className="text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                                                     <p className="text-xs text-slate-400 italic mb-3">
-                                                        {language === "vi"
-                                                            ? "Chưa có gói tour nào. Bấm 'Thêm gói tour' để tạo bảng giá cho tour."
-                                                            : "No tour packages configured. Click 'Add Package' to create."}
+                                                        {"Chưa có gói tour nào. Bấm 'Thêm gói tour' để tạo bảng giá cho tour."}
                                                     </p>
                                                     <Button
                                                         type="button"
@@ -1037,14 +1022,14 @@ export default function TourCreateUpdateModal({
                                                         onClick={handleAddPackage}
                                                     >
                                                         <Plus size={14} />
-                                                        {language === "vi" ? "Thêm gói tour" : "Add Package"}
+                                                        {"Thêm gói tour"}
                                                     </Button>
                                                 </div>
                                             ) : (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     {packages.map((pkg, idx) => {
                                                         const pkgTrans = pkg.translations?.find(t => t.locale === activeFormLocale) || pkg.translations?.[0];
-                                                        const pkgName = pkgTrans?.name || pkg.code || (language === "vi" ? `Gói #${idx + 1}` : `Package #${idx + 1}`);
+                                                        const pkgName = pkgTrans?.name || pkg.code || (`Gói #${idx + 1}`);
                                                         const isPerPerson = pkg.pricingType === "PER_PERSON" || (!pkg.pricingType && !pkg.fixedPrice) || (pkg.prices && pkg.prices.length > 0);
 
                                                         return (
@@ -1055,8 +1040,7 @@ export default function TourCreateUpdateModal({
                                                                             <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">{pkgName}</span>
                                                                             <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-md bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-600 dark:text-slate-300">
                                                                                 {isPerPerson
-                                                                                    ? (language === "vi" ? "Theo người" : "Per Person")
-                                                                                    : (language === "vi" ? "Trọn gói" : "Charter")}
+                                                                                    ? ("Theo người"): ("Trọn gói")}
                                                                             </span>
                                                                         </div>
                                                                         <div className="w-full ">
@@ -1076,7 +1060,7 @@ export default function TourCreateUpdateModal({
                                                                             variant="ghost"
                                                                             className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 cursor-pointer border-none"
                                                                             onClick={() => handleEditPackage(idx)}
-                                                                            aria-label={language === "vi" ? "Chỉnh sửa" : "Edit"}
+                                                                            aria-label={"Chỉnh sửa"}
                                                                         >
                                                                             <Edit size={13} />
                                                                         </Button>
@@ -1087,7 +1071,7 @@ export default function TourCreateUpdateModal({
                                                                             variant="ghost"
                                                                             className="h-7 w-7 rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 cursor-pointer border-none"
                                                                             onClick={() => handleRemovePackage(idx)}
-                                                                            aria-label={language === "vi" ? "Xóa" : "Delete"}
+                                                                            aria-label={"Xóa"}
                                                                         >
                                                                             <Trash2 size={13} />
                                                                         </Button>
@@ -1096,14 +1080,14 @@ export default function TourCreateUpdateModal({
 
                                                                 {pkg.isContactOnly ? (
                                                                     <div className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-1 rounded-lg inline-block">
-                                                                        {language === "vi" ? "Liên hệ báo giá" : "Contact for Price"}
+                                                                        {"Liên hệ báo giá"}
                                                                     </div>
                                                                 ) : isPerPerson ? (
                                                                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px]">
                                                                         <div>
-                                                                            <span className="text-[10px] text-slate-400 block font-semibold">{language === "vi" ? "Người lớn" : "Adult"}</span>
+                                                                            <span className="text-[10px] text-slate-400 block font-semibold">{"Người lớn"}</span>
                                                                             <span className="font-bold text-slate-800 dark:text-slate-100">
-                                                                                {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.adultPrice ?? getPackagePrice(pkg, "ADULT"))}
+                                                                                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.adultPrice ?? getPackagePrice(pkg, "ADULT"))}
                                                                             </span>
                                                                             {formatPassengerCondition(getPackagePriceItem(pkg, "ADULT"), language) && (
                                                                                 <span className="text-[9px] text-slate-400 block truncate font-medium mt-0.5">
@@ -1112,9 +1096,9 @@ export default function TourCreateUpdateModal({
                                                                             )}
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-[10px] text-slate-400 block font-semibold">{language === "vi" ? "Trẻ em" : "Child"}</span>
+                                                                            <span className="text-[10px] text-slate-400 block font-semibold">{"Trẻ em"}</span>
                                                                             <span className="font-bold text-slate-800 dark:text-slate-100">
-                                                                                {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.childPrice ?? getPackagePrice(pkg, "CHILD"))}
+                                                                                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.childPrice ?? getPackagePrice(pkg, "CHILD"))}
                                                                             </span>
                                                                             {formatPassengerCondition(getPackagePriceItem(pkg, "CHILD"), language) && (
                                                                                 <span className="text-[9px] text-slate-400 block truncate font-medium mt-0.5">
@@ -1123,14 +1107,14 @@ export default function TourCreateUpdateModal({
                                                                             )}
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-[10px] text-slate-400 block font-semibold">{language === "vi" ? "Em bé" : "Infant"}</span>
+                                                                            <span className="text-[10px] text-slate-400 block font-semibold">{"Em bé"}</span>
                                                                             {(() => {
                                                                                 const infPrice = pkg.infantPrice ?? getPackagePrice(pkg, "INFANT");
                                                                                 return (
                                                                                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
                                                                                         {infPrice > 0
-                                                                                            ? new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(infPrice)
-                                                                                            : (language === "vi" ? "Miễn phí" : "Free")}
+                                                                                            ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(infPrice)
+                                                                                            : ("Miễn phí")}
                                                                                     </span>
                                                                                 );
                                                                             })()}
@@ -1143,9 +1127,9 @@ export default function TourCreateUpdateModal({
                                                                     </div>
                                                                 ) : (
                                                                     <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-                                                                        <span className="text-[10px] text-slate-400 block">{language === "vi" ? "Giá trọn gói" : "Fixed Price"}</span>
+                                                                        <span className="text-[10px] text-slate-400 block">{"Giá trọn gói"}</span>
                                                                         <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
-                                                                            {new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.fixedPrice || 0)}
+                                                                            {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.fixedPrice || 0)}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -1166,7 +1150,7 @@ export default function TourCreateUpdateModal({
                                         isDisabled={loading}
                                         className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                                     >
-                                        {language === "vi" ? "Hủy" : "Cancel"}
+                                        {"Hủy"}
                                     </Button>
                                     <Button
                                         type="submit"
@@ -1181,8 +1165,7 @@ export default function TourCreateUpdateModal({
                                             <Plus size={15} className="mr-1.5" />
                                         )}
                                         {isEdit
-                                            ? (language === "vi" ? "Lưu thay đổi" : "Save Changes")
-                                            : (language === "vi" ? "Tạo mới Tour" : "Create Tour")}
+                                            ? ("Lưu thay đổi"): ("Tạo mới Tour")}
                                     </Button>
                                 </ModalFooter>
                             </form>

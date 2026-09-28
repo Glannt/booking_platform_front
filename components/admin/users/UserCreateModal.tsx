@@ -23,7 +23,7 @@ import { useAuthStore } from "@/lib/store/authStore";
 interface UserCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSuccess: () => void;
+  onSaveSuccess: () => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
   editingUser?: AdminUserDto | null;
 }
@@ -101,7 +101,7 @@ export default function UserCreateModal({
         await updateUser(editingUser.id, payload);
         showToast("Cập nhật trạng thái user thành công!", "success");
         resetForm();
-        onSaveSuccess();
+        await onSaveSuccess?.();
         onClose();
       } catch (err: any) {
         console.error(err);
@@ -163,7 +163,7 @@ export default function UserCreateModal({
         showToast("Tạo user thành công!", "success");
       }
       resetForm();
-      onSaveSuccess();
+      await onSaveSuccess?.();
       onClose();
     } catch (err: any) {
       console.error(err);

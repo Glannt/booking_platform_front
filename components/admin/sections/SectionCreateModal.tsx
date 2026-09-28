@@ -62,7 +62,7 @@ import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 interface SectionCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
   pagePath: string;
   initialData?: SectionDto | null;
 }
@@ -80,6 +80,7 @@ const SECTION_TYPES = [
   { value: "PARTNER_COOPERATION", label: "Nhận hợp tác đối tác" },
   { value: "CTA", label: "Call to Action" },
   { value: "BANNER", label: "Banner" },
+  { value: "FAQ", label: "FAQ (Câu hỏi thường gặp)" },
 ];
 
 const SYSTEM_SOURCES = [
@@ -367,7 +368,7 @@ export default function SectionCreateModal({
         await createSection(payload);
         toast.success("Tạo section thành công!");
       }
-      onSuccess();
+      await onSuccess?.();
     } catch (err: any) {
       toast.danger(err?.message || "Thao tác thất bại.");
     } finally {

@@ -47,7 +47,7 @@ const parseDateSafe = (dStr?: string) => {
 interface DiscountModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveSuccess: (saved: PromotionDto) => void;
+  onSaveSuccess: (saved: PromotionDto) => void | Promise<void>;
   initialData?: PromotionDto | null;
   defaultScopeType?: string;
   defaultScopeRefId?: string;
@@ -99,8 +99,8 @@ export function DiscountCreateUpdateModal({
     },
   });
 
-  const saveMutation = useSaveDiscount((saved) => {
-    onSaveSuccess(saved);
+  const saveMutation = useSaveDiscount(async (saved) => {
+    await onSaveSuccess?.(saved);
     onClose();
   });
 

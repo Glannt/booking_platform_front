@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, SidebarGroup, UserProfile } from "@/components/sidebar";
-import { useI18n } from "@/context/LanguageContext";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Language } from "@/config/translations";
 import {
   LayoutDashboard,
   Settings,
@@ -41,7 +39,6 @@ import AuthGuard from "@/components/auth-guard";
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { language, setLanguage, t, supportedLanguages } = useI18n();
   const mobileDrawerState = useOverlayState();
   const authUser = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
@@ -128,7 +125,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         },
         {
           key: "discounts-mgmt",
-          label: t.discounts.title,
+          label: "Quản lý Khuyến mãi",
           path: "/portal/discounts",
           icon: <Tag size={20} />,
         },
@@ -139,7 +136,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       items: [
         {
           key: "sections-mgmt",
-          label: "Sections / Banner",
+          label: "Khu vực & Banner",
           path: "/portal/sections",
           icon: <Layers size={20} />,
         },
@@ -178,20 +175,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const userProfile: UserProfile = authUser
     ? { name: authUser.fullname || authUser.email, email: authUser.email, role: authUser.role }
     : { name: "Khách", email: "", role: "" };
-
-  const getLanguageLabel = (lang: Language) => {
-    const found = supportedLanguages.find(l => l.code === lang);
-    if (found) {
-      return `${found.flagIcon} ${found.code.toUpperCase()}`;
-    }
-    switch (lang) {
-      case "vi": return "🇻🇳 VI";
-      case "en": return "🇬🇧 EN";
-      case "ko": return "🇰🇷 KO";
-      case "ru": return "🇷🇺 RU";
-      default: return String(lang).toUpperCase();
-    }
-  };
 
   const isDashboard = pathname === "/portal" || pathname === "/admin";
 
@@ -233,7 +216,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     variant="ghost"
                     className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-separator text-foreground/70 shadow-sm bg-transparent"
                     onClick={() => mobileDrawerState.open()}
-                    aria-label="Open menu"
+                    aria-label="Mở menu"
                   >
                     <Menu size={20} />
                   </Button>

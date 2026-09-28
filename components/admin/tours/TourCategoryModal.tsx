@@ -35,7 +35,7 @@ interface TourCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   categoryToEdit?: TourCategoryDto | null;
-  onSaveSuccess: (savedCat?: TourCategoryDto) => void;
+  onSaveSuccess: (savedCat?: TourCategoryDto) => void | Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }
 
@@ -198,7 +198,7 @@ export default function TourCategoryModal({
         showToast("Tạo mới danh mục tour thành công!", "success");
       }
 
-      onSaveSuccess(savedCat);
+      await onSaveSuccess?.(savedCat);
       onClose();
     } catch (error: any) {
       console.error("Save tour category error:", error);

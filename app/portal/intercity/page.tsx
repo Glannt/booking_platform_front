@@ -3,14 +3,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
-  Trash2,
   RefreshCw,
   Route,
   DollarSign,
   Calendar,
-  Edit3,
   Clock,
-  Eye,
   Bus,
   Building2,
   Filter,
@@ -27,10 +24,10 @@ import {
   SharedRouteModal,
 } from "@/components/admin/intercity";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Tooltip, Typography, Popover } from "@heroui/react";
+import { Button, Checkbox, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalHeader, ModalBody, NumberField, Pagination, SearchField, Select, Spinner, Switch, Table, Tabs, TextField, toast, Typography, Popover } from "@heroui/react";
 import clsx from "clsx";
 import { useI18n } from "@/context/LanguageContext";
-import { AppStatusChip } from "@/components/common";
+import { AppStatusChip, RowActionButtons } from "@/components/common";
 
 import {
   getIntercityRoutes,
@@ -970,61 +967,15 @@ export default function IntercityManagementPage() {
                             <AppStatusChip status={r.active} />
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="tertiary"
-                                    aria-label="Xem chi tiết"
-                                    onPress={() => handleOpenRouteDetail(r)}
-                                  >
-                                    <Eye size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Xem chi tiết
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="secondary"
-                                    aria-label="Chỉnh sửa"
-                                    onPress={() => handleEditRoute(r)}
-                                  >
-                                    <Edit3 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Chỉnh sửa
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="danger"
-                                    aria-label="Xóa"
-                                    onPress={() => handleDeleteRoute(r.id!)}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                  <Tooltip.Arrow />
-                                  Xóa
-                                </Tooltip.Content>
-                              </Tooltip>
-                            </div>
+                            <RowActionButtons
+                              className="justify-end"
+                              onView={() => handleOpenRouteDetail(r)}
+                              viewLabel="Xem chi tiết"
+                              onEdit={() => handleEditRoute(r)}
+                              editLabel="Chỉnh sửa"
+                              onDelete={() => handleDeleteRoute(r.id!)}
+                              deleteLabel="Xóa"
+                            />
                           </Table.Cell>
                         </Table.Row>
                       ))}
@@ -1122,61 +1073,15 @@ export default function IntercityManagementPage() {
                               <AppStatusChip status={p.active} />
                             </Table.Cell>
                             <Table.Cell className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="tertiary"
-                                      aria-label="Xem chi tiết"
-                                      onPress={() => handleOpenPriceDetail(p)}
-                                    >
-                                      <Eye size={16} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    Xem chi tiết
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="secondary"
-                                      aria-label="Chỉnh sửa"
-                                      onPress={() => handleEditPrice(p)}
-                                    >
-                                      <Edit3 size={16} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    Chỉnh sửa
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="danger"
-                                      aria-label="Xóa"
-                                      onPress={() => handleDeletePrice(p.id!)}
-                                    >
-                                      <Trash2 size={16} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                    <Tooltip.Arrow />
-                                    Xóa
-                                  </Tooltip.Content>
-                                </Tooltip>
-                              </div>
+                              <RowActionButtons
+                                className="justify-end"
+                                onView={() => handleOpenPriceDetail(p)}
+                                viewLabel="Xem chi tiết"
+                                onEdit={() => handleEditPrice(p)}
+                                editLabel="Chỉnh sửa"
+                                onDelete={() => handleDeletePrice(p.id!)}
+                                deleteLabel="Xóa"
+                              />
                             </Table.Cell>
                           </Table.Row>
                         );
@@ -1252,67 +1157,21 @@ export default function IntercityManagementPage() {
                               <AppStatusChip status={r.active} />
                             </Table.Cell>
                             <Table.Cell className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="tertiary"
-                                      aria-label={t.common?.details || "Xem chi tiết"}
-                                      onPress={() => {
-                                        setSelectedSharedRouteForDetail(r);
-                                        setSharedRouteDetailOpen(true);
-                                      }}
-                                    >
-                                      <Eye size={16} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    {t.common?.details || "Xem chi tiết"}
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="secondary"
-                                      aria-label="Chỉnh sửa"
-                                      onPress={() => {
-                                        setEditingSharedRoute(r);
-                                        setSharedRouteModalOpen(true);
-                                      }}
-                                    >
-                                      <Edit3 size={16} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content>
-                                    <Tooltip.Arrow />
-                                    Chỉnh sửa
-                                  </Tooltip.Content>
-                                </Tooltip>
-
-                                <Tooltip delay={300} closeDelay={100}>
-                                  <Tooltip.Trigger>
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="danger"
-                                      aria-label="Xóa"
-                                      onPress={() => handleDeleteSharedRoute(r.id!)}
-                                    >
-                                      <Trash2 size={16} />
-                                    </Button>
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                    <Tooltip.Arrow />
-                                    Xóa
-                                  </Tooltip.Content>
-                                </Tooltip>
-                              </div>
+                              <RowActionButtons
+                                className="justify-end"
+                                onView={() => {
+                                  setSelectedSharedRouteForDetail(r);
+                                  setSharedRouteDetailOpen(true);
+                                }}
+                                viewLabel={t.common?.details || "Xem chi tiết"}
+                                onEdit={() => {
+                                  setEditingSharedRoute(r);
+                                  setSharedRouteModalOpen(true);
+                                }}
+                                editLabel="Chỉnh sửa"
+                                onDelete={() => handleDeleteSharedRoute(r.id!)}
+                                deleteLabel="Xóa"
+                              />
                             </Table.Cell>
                           </Table.Row>
                         );
@@ -1356,46 +1215,16 @@ export default function IntercityManagementPage() {
                             <AppStatusChip status={o.active} />
                           </Table.Cell>
                           <Table.Cell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="secondary"
-                                    aria-label="Chỉnh sửa"
-                                    onPress={() => {
-                                      setEditingSharedOffice(o);
-                                      setSharedOfficeModalOpen(true);
-                                    }}
-                                  >
-                                    <Edit3 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content>
-                                  <Tooltip.Arrow />
-                                  Chỉnh sửa
-                                </Tooltip.Content>
-                              </Tooltip>
-
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="danger"
-                                    aria-label="Xóa"
-                                    onPress={() => handleDeleteSharedOffice(o.id!)}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                  <Tooltip.Arrow />
-                                  Xóa
-                                </Tooltip.Content>
-                              </Tooltip>
-                            </div>
+                            <RowActionButtons
+                              className="justify-end"
+                              onEdit={() => {
+                                setEditingSharedOffice(o);
+                                setSharedOfficeModalOpen(true);
+                              }}
+                              editLabel="Chỉnh sửa"
+                              onDelete={() => handleDeleteSharedOffice(o.id!)}
+                              deleteLabel="Xóa"
+                            />
                           </Table.Cell>
                         </Table.Row>
                       ))}
@@ -1438,9 +1267,9 @@ export default function IntercityManagementPage() {
           }}
           editingRoute={editingSharedRoute}
           offices={sharedOffices}
-          onSaveSuccess={() => {
-            fetchSharedRoutes();
-            fetchSharedOffices();
+          onSaveSuccess={async () => {
+            await fetchSharedRoutes();
+            await fetchSharedOffices();
           }}
         />
       )}
@@ -1454,9 +1283,9 @@ export default function IntercityManagementPage() {
             setEditingSharedOffice(null);
           }}
           editingOffice={editingSharedOffice}
-          onSaveSuccess={() => {
-            fetchSharedOffices();
-            fetchSharedRoutes();
+          onSaveSuccess={async () => {
+            await fetchSharedOffices();
+            await fetchSharedRoutes();
           }}
         />
       )}

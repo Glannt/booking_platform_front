@@ -314,8 +314,6 @@ export default function TourPackageModal({
   ) => {
     const previewDto = toPriceDto(cond, type);
     const conditionText = formatPassengerCondition(previewDto, language);
-    const isVi = language === "vi";
-
     return (
       <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 space-y-3.5">
         {/* Card Header: Type Title & Price Input */}
@@ -335,7 +333,7 @@ export default function TourPackageModal({
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-slate-200/70 dark:bg-[var(--bg-elevated)] text-slate-500">
-                    {isVi ? "Không quy định điều kiện" : "No condition restriction"}
+                    {"Không quy định điều kiện"}
                   </span>
                 )}
               </div>
@@ -345,7 +343,7 @@ export default function TourPackageModal({
 
           <div className="w-full sm:w-48">
             <Label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-              {isVi ? "Giá vé (VND)" : "Ticket Price (VND)"}
+              {"Giá vé (VND)"}
             </Label>
             <NumberField
               minValue={0}
@@ -384,10 +382,10 @@ export default function TourPackageModal({
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                    {isVi ? "Xác định theo độ tuổi" : "By Age Condition"}
+                    {"Xác định theo độ tuổi"}
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    {cond.applyAge ? (isVi ? "Đang áp dụng giới hạn tuổi" : "Age limit active") : (isVi ? "Không giới hạn tuổi" : "No age limit")}
+                    {cond.applyAge ? ("Đang áp dụng giới hạn tuổi"): ("Không giới hạn tuổi")}
                   </span>
                 </div>
               </div>
@@ -395,7 +393,7 @@ export default function TourPackageModal({
                 <Switch
                   isSelected={cond.applyAge}
                   onChange={(checked) => setCond((prev) => ({ ...prev, applyAge: checked }))}
-                  aria-label={isVi ? "Xác định theo độ tuổi" : "By Age Condition"}
+                  aria-label={"Xác định theo độ tuổi"}
                 >
                   <Switch.Content className="cursor-pointer">
                     <Switch.Control className="border border-slate-300 dark:border-slate-700">
@@ -410,7 +408,7 @@ export default function TourPackageModal({
               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80">
                 <div>
                   <Label className="block text-[10px] font-bold text-slate-500 mb-1">
-                    {isVi ? "Từ tuổi (Tối thiểu)" : "Min Age (From)"}
+                    {"Từ tuổi (Tối thiểu)"}
                   </Label>
                   <Input
                     type="number"
@@ -423,12 +421,12 @@ export default function TourPackageModal({
                 </div>
                 <div>
                   <Label className="block text-[10px] font-bold text-slate-500 mb-1">
-                    {isVi ? "Đến tuổi (Tối đa)" : "Max Age (To)"}
+                    {"Đến tuổi (Tối đa)"}
                   </Label>
                   <Input
                     type="number"
                     min={0}
-                    placeholder={type === "ADULT" ? (isVi ? "Trở lên" : "No max") : type === "CHILD" ? "11" : "4"}
+                    placeholder={type === "ADULT" ? ("Trở lên"): type === "CHILD" ? "11" : "4"}
                     value={cond.maxAge}
                     onChange={(e) => setCond((prev) => ({ ...prev, maxAge: e.target.value }))}
                     className="w-full h-8 px-2.5 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-1 focus:ring-blue-500"
@@ -437,7 +435,7 @@ export default function TourPackageModal({
               </div>
             ) : (
               <p className="text-[10px] text-slate-400 italic pt-0.5 select-none">
-                {isVi ? "Bấm vào để kích hoạt điều kiện giới hạn độ tuổi cho vé này" : "Click to enable age limit for this ticket"}
+                {"Bấm vào để kích hoạt điều kiện giới hạn độ tuổi cho vé này"}
               </p>
             )}
           </div>
@@ -460,10 +458,10 @@ export default function TourPackageModal({
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                    {isVi ? "Xác định theo chiều cao" : "By Height (cm)"}
+                    {"Xác định theo chiều cao"}
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    {cond.applyHeight ? (isVi ? "Đang áp dụng giới hạn chiều cao" : "Height limit active") : (isVi ? "Không giới hạn chiều cao" : "No height limit")}
+                    {cond.applyHeight ? ("Đang áp dụng giới hạn chiều cao"): ("Không giới hạn chiều cao")}
                   </span>
                 </div>
               </div>
@@ -471,7 +469,7 @@ export default function TourPackageModal({
                 <Switch
                   isSelected={cond.applyHeight}
                   onChange={(checked) => setCond((prev) => ({ ...prev, applyHeight: checked }))}
-                  aria-label={isVi ? "Xác định theo chiều cao" : "By Height (cm)"}
+                  aria-label={"Xác định theo chiều cao"}
                 >
                   <Switch.Content className="cursor-pointer">
                     <Switch.Control className="border border-slate-300 dark:border-slate-700">
@@ -486,7 +484,7 @@ export default function TourPackageModal({
               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80">
                 <div>
                   <Label className="block text-[10px] font-bold text-slate-500 mb-1">
-                    {isVi ? "Từ chiều cao (cm)" : "Min Height (cm)"}
+                    {"Từ chiều cao (cm)"}
                   </Label>
                   <Input
                     type="number"
@@ -499,12 +497,12 @@ export default function TourPackageModal({
                 </div>
                 <div>
                   <Label className="block text-[10px] font-bold text-slate-500 mb-1">
-                    {isVi ? "Đến chiều cao (cm)" : "Max Height (cm)"}
+                    {"Đến chiều cao (cm)"}
                   </Label>
                   <Input
                     type="number"
                     min={0}
-                    placeholder={type === "ADULT" ? (isVi ? "Trở lên" : "No max") : type === "CHILD" ? "129" : "99"}
+                    placeholder={type === "ADULT" ? ("Trở lên"): type === "CHILD" ? "129" : "99"}
                     value={cond.maxHeight}
                     onChange={(e) => setCond((prev) => ({ ...prev, maxHeight: e.target.value }))}
                     className="w-full h-8 px-2.5 rounded-lg border-1 border-separator bg-white dark:bg-[var(--bg-card)] text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-1 focus:ring-emerald-500"
@@ -513,7 +511,7 @@ export default function TourPackageModal({
               </div>
             ) : (
               <p className="text-[10px] text-slate-400 italic pt-0.5 select-none">
-                {isVi ? "Bấm vào để kích hoạt điều kiện giới hạn chiều cao cho vé này" : "Click to enable height limit for this ticket"}
+                {"Bấm vào để kích hoạt điều kiện giới hạn chiều cao cho vé này"}
               </p>
             )}
           </div>
@@ -525,14 +523,10 @@ export default function TourPackageModal({
             <Sparkles size={16} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
             <div className="leading-relaxed">
               <span className="font-extrabold text-amber-900 dark:text-amber-200 block">
-                {isVi
-                  ? "Quy tắc áp dụng: Logic OR (Thỏa mãn 1 trong 2 điều kiện)"
-                  : "Rule Applied: Logic OR (Either condition qualifies)"}
+                {"Quy tắc áp dụng: Logic OR (Thỏa mãn 1 trong 2 điều kiện)"}
               </span>
               <span className="text-[11px] text-amber-800/90 dark:text-amber-300/90 block mt-0.5">
-                {isVi
-                  ? "Hành khách chỉ cần thỏa mãn điều kiện theo Độ tuổi HOẶC theo Chiều cao là được áp dụng mức giá này."
-                  : "Passengers only need to meet either the Age OR Height condition to qualify for this rate."}
+                {"Hành khách chỉ cần thỏa mãn điều kiện theo Độ tuổi HOẶC theo Chiều cao là được áp dụng mức giá này."}
               </span>
             </div>
           </div>
@@ -562,10 +556,10 @@ export default function TourPackageModal({
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                    {initialData ? (language === "vi" ? "Chỉnh sửa gói tour" : "Edit Package") : (language === "vi" ? "Thêm gói tour mới" : "Add Package")}
+                    {initialData ? ("Chỉnh sửa gói tour"): ("Thêm gói tour mới")}
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {language === "vi" ? "Định giá vé & tùy chỉnh điều kiện theo tuổi / chiều cao cho từng loại vé" : "Configure per-person pricing & custom age / height criteria"}
+                    {"Định giá vé & tùy chỉnh điều kiện theo tuổi / chiều cao cho từng loại vé"}
                   </p>
                 </div>
               </div>
@@ -585,25 +579,25 @@ export default function TourPackageModal({
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        {language === "vi" ? "Trạng thái hoạt động" : "Active Status"}
+                        {"Trạng thái hoạt động"}
                       </span>
                       <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
                         active
                           ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
                           : "bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-500 border-transparent"
                       }`}>
-                        {active ? (language === "vi" ? "Đang bật" : "Active") : (language === "vi" ? "Tạm ngưng" : "Inactive")}
+                        {active ? ("Đang bật"): ("Tạm ngưng")}
                       </span>
                     </div>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                      {language === "vi" ? "Cho phép khách hàng xem và đặt gói tour này" : "Enable for booking"}
+                      {"Cho phép khách hàng xem và đặt gói tour này"}
                     </span>
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
                     <Switch
                       isSelected={active}
                       onChange={setActive}
-                      aria-label={language === "vi" ? "Trạng thái hoạt động" : "Active Status"}
+                      aria-label={"Trạng thái hoạt động"}
                     >
                       <Switch.Content className="cursor-pointer">
                         <Switch.Control className="border border-slate-300 dark:border-slate-700">
@@ -618,7 +612,7 @@ export default function TourPackageModal({
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-black uppercase text-slate-800 dark:text-slate-200">
-                      {language === "vi" ? "Tên gói tour" : "Package Name"}
+                      {"Tên gói tour"}
                     </Label>
                     <div className="flex items-center gap-1">
                       {LOCALES.map((loc) => (
@@ -641,7 +635,7 @@ export default function TourPackageModal({
                   <Input
                     type="text"
                     required
-                    placeholder={language === "vi" ? "VD: Cano ghép – Tiêu chuẩn, Tour VIP riêng..." : "e.g. Standard Charter, VIP Tour..."}
+                    placeholder={"VD: Cano ghép – Tiêu chuẩn, Tour VIP riêng..."}
                     value={translations[activeTabLocale]?.name || ""}
                     onChange={(e) => handleTranslationNameChange(activeTabLocale, e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-slate-800 dark:text-slate-100 text-xs font-semibold outline-none focus:ring-2 focus:ring-accent/30"
@@ -660,27 +654,25 @@ export default function TourPackageModal({
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        {language === "vi" ? "Gói liên hệ báo giá" : "Contact for Quote"}
+                        {"Gói liên hệ báo giá"}
                       </span>
                       <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
                         isContactOnly
                           ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
                           : "bg-slate-200 dark:bg-[var(--bg-elevated)] text-slate-500 border-transparent"
                       }`}>
-                        {isContactOnly ? (language === "vi" ? "Báo giá riêng" : "Quote only") : (language === "vi" ? "Giá cố định" : "Fixed price")}
+                        {isContactOnly ? ("Báo giá riêng"): ("Giá cố định")}
                       </span>
                     </div>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                      {language === "vi"
-                        ? "Khách hàng liên hệ để được tư vấn giá chính xác, không bắt buộc cài đặt bảng giá bên dưới"
-                        : "No fixed price displayed, customers contact support"}
+                      {"Khách hàng liên hệ để được tư vấn giá chính xác, không bắt buộc cài đặt bảng giá bên dưới"}
                     </span>
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
                     <Switch
                       isSelected={isContactOnly}
                       onChange={setIsContactOnly}
-                      aria-label={language === "vi" ? "Gói liên hệ báo giá" : "Contact for Quote"}
+                      aria-label={"Gói liên hệ báo giá"}
                     >
                       <Switch.Content className="cursor-pointer">
                         <Switch.Control className="border border-slate-300 dark:border-slate-700">
@@ -697,14 +689,10 @@ export default function TourPackageModal({
                     <Sparkles size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <span className="text-xs font-black block">
-                        {language === "vi"
-                          ? "Gói tour này đang ở chế độ Liên hệ báo giá"
-                          : "This package is set to Contact for Quote"}
+                        {"Gói tour này đang ở chế độ Liên hệ báo giá"}
                       </span>
                       <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
-                        {language === "vi"
-                          ? "Khách hàng sẽ liên hệ với bạn để nhận tư vấn và báo giá chính xác. Bạn không cần thiết lập giá vé hoặc các điều kiện theo đầu người."
-                          : "Customers will contact your support team for an exact price quote. You do not need to configure ticket prices or passenger conditions."}
+                        {"Khách hàng sẽ liên hệ với bạn để nhận tư vấn và báo giá chính xác. Bạn không cần thiết lập giá vé hoặc các điều kiện theo đầu người."}
                       </p>
                     </div>
                   </div>
@@ -712,18 +700,18 @@ export default function TourPackageModal({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 block">
-                        {language === "vi" ? "Bảng giá & điều kiện theo đầu người" : "Per-Person Pricing & Conditions"}
+                        {"Bảng giá & điều kiện theo đầu người"}
                       </Label>
                       <span className="text-[11px] text-slate-400">
-                        {language === "vi" ? "Tùy chỉnh linh hoạt theo tuổi và chiều cao" : "Customizable by age and height"}
+                        {"Tùy chỉnh linh hoạt theo tuổi và chiều cao"}
                       </span>
                     </div>
 
                     {/* 1. Adult Card */}
                     {renderPassengerCard(
                       "ADULT",
-                      language === "vi" ? "Người lớn" : "Adult",
-                      language === "vi" ? "Vé tiêu chuẩn người lớn" : "Standard adult passenger",
+                      "Người lớn",
+                      "Vé tiêu chuẩn người lớn",
                       <User size={16} />,
                       adultCond,
                       setAdultCond,
@@ -733,8 +721,8 @@ export default function TourPackageModal({
                     {/* 2. Child Card */}
                     {renderPassengerCard(
                       "CHILD",
-                      language === "vi" ? "Trẻ em" : "Child",
-                      language === "vi" ? "Vé dành cho trẻ em" : "Child passenger",
+                      "Trẻ em",
+                      "Vé dành cho trẻ em",
                       <Users size={16} />,
                       childCond,
                       setChildCond,
@@ -744,8 +732,8 @@ export default function TourPackageModal({
                     {/* 3. Infant Card */}
                     {renderPassengerCard(
                       "INFANT",
-                      language === "vi" ? "Em bé" : "Infant",
-                      language === "vi" ? "Vé dành cho em bé (thường miễn phí)" : "Infant passenger (usually free)",
+                      "Em bé",
+                      "Vé dành cho em bé (thường miễn phí)",
                       <Baby size={16} />,
                       infantCond,
                       setInfantCond,
@@ -755,16 +743,16 @@ export default function TourPackageModal({
                     {/* Policy Notes */}
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 space-y-3">
                       <Label className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 block">
-                        {language === "vi" ? "Ghi chú chính sách vé phụ thu (nếu có)" : "Policy Notes (Optional)"}
+                        {"Ghi chú chính sách vé phụ thu (nếu có)"}
                       </Label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                            {language === "vi" ? "Ghi chú chính sách trẻ em" : "Child Policy Note"}
+                            {"Ghi chú chính sách trẻ em"}
                           </Label>
                           <Input
                             type="text"
-                            placeholder={language === "vi" ? "VD: Miễn phí 1 vé trẻ em cho mỗi 2 người lớn" : "Child policy note..."}
+                            placeholder={"VD: Miễn phí 1 vé trẻ em cho mỗi 2 người lớn"}
                             value={childPolicyNote}
                             onChange={(e) => setChildPolicyNote(e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-xs"
@@ -772,11 +760,11 @@ export default function TourPackageModal({
                         </div>
                         <div>
                           <Label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                            {language === "vi" ? "Ghi chú chính sách em bé" : "Infant Policy Note"}
+                            {"Ghi chú chính sách em bé"}
                           </Label>
                           <Input
                             type="text"
-                            placeholder={language === "vi" ? "VD: Miễn phí toàn bộ, ngồi chung với bố mẹ" : "Infant policy note..."}
+                            placeholder={"VD: Miễn phí toàn bộ, ngồi chung với bố mẹ"}
                             value={infantPolicyNote}
                             onChange={(e) => setInfantPolicyNote(e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border-1 border-separator bg-white dark:bg-[var(--bg-surface)] text-xs"
@@ -796,14 +784,14 @@ export default function TourPackageModal({
                   onClick={onClose}
                   className="rounded-xl font-bold text-xs h-10 px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 >
-                  {language === "vi" ? "Hủy" : "Cancel"}
+                  {"Hủy"}
                 </Button>
                 <Button
                   type="submit"
                   className="rounded-xl font-bold text-xs h-10 px-5 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none transition-colors"
                 >
                   <Save size={15} className="mr-1.5" />
-                  {language === "vi" ? "Lưu gói tour" : "Save Package"}
+                  {"Lưu gói tour"}
                 </Button>
               </ModalFooter>
             </form>

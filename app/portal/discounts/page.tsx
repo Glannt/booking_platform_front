@@ -11,7 +11,7 @@ import {
   Checkbox,
   SearchField,
 } from "@heroui/react";
-import { PageSizeSelect, AppStatusChip } from "@/components/common";
+import { PageSizeSelect, AppStatusChip, TableLoadingState, TableEmptyState } from "@/components/common";
 import {
   Tag,
   Plus,
@@ -666,24 +666,17 @@ export default function DiscountsPortalPage() {
       {/* Data Table */}
       <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-accent" size={32} />
-            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-              {t.common?.loading || "Đang tải dữ liệu..."}
-            </p>
-          </div>
+          <TableLoadingState message={t.common?.loading || "Đang tải dữ liệu..."} />
         ) : filteredDiscounts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Tag className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              {t.discounts?.noDiscounts || "Không tìm thấy mã khuyến mãi nào"}
-            </h3>
-            <p className="text-sm text-slate-400 max-w-sm">
-              {searchQuery
+          <TableEmptyState
+            icon={Tag}
+            title={t.discounts?.noDiscounts || "Không tìm thấy mã khuyến mãi nào"}
+            description={
+              searchQuery
                 ? "Hãy thử tìm kiếm với từ khóa khác hoặc thay đổi bộ lọc phạm vi áp dụng."
-                : "Hiện chưa có mã khuyến mãi nào được tạo. Hãy nhấn Thêm khuyến mãi để bắt đầu."}
-            </p>
-          </div>
+                : "Hiện chưa có mã khuyến mãi nào được tạo. Hãy nhấn Thêm khuyến mãi để bắt đầu."
+            }
+          />
         ) : (
           <Table aria-label="Discounts Table" className="w-full">
             <Table.ScrollContainer>
@@ -944,8 +937,8 @@ export default function DiscountsPortalPage() {
       <DiscountModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSaveSuccess={() => {
-          refetch();
+        onSaveSuccess={async () => {
+          await refetch();
         }}
         initialData={editingDiscount}
       />

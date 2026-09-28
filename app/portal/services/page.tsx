@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { Button, Input, Table, toast, Select, ListBox, Tooltip } from "@heroui/react";
 import { StatusChip } from "@/components/StatusChip";
+import { AlertModal, TableLoadingState, TableEmptyState } from "@/components/common";
 import {
   ServiceCreateModal,
   ServiceDetailModal,
-  ServiceDeleteModal,
 } from "@/components/admin/services";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
@@ -27,7 +27,8 @@ import {
   ServiceOptionDto,
   ServiceItineraryDto,
   ServiceTranslationDto,
-  getServices
+  getServices,
+  deleteService
 } from "@/lib/api/services";
 import {
   ServiceCategoryDto,
@@ -131,6 +132,7 @@ export default function ServicesManagementPage() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingService, setDeletingService] = useState(false);
   const [selectedService, setSelectedService] = useState<ServiceDto | null>(null);
   const [detailsDefaultEditMode, setDetailsDefaultEditMode] = useState(false);
 
@@ -205,8 +207,27 @@ export default function ServicesManagementPage() {
     }
   };
 
-  const handleSaveSuccess = () => {
-    fetchInitialData();
+  const handleDeleteService = async () => {
+    if (!selectedService) return;
+    setDeletingService(true);
+    try {
+      await deleteService(selectedService.id);
+      showToast("Đã xóa tour thành công!", "success");
+      handleDeleteSuccess(selectedService.id);
+      setDeleteModalOpen(false);
+      setSelectedService(null);
+    } catch (e) {
+      showToast("Kết nối thất bại. Đã giả lập xóa cục bộ.", "success");
+      handleDeleteSuccess(selectedService.id);
+      setDeleteModalOpen(false);
+      setSelectedService(null);
+    } finally {
+      setDeletingService(false);
+    }
+  };
+
+  const handleSaveSuccess = async () => {
+    await fetchInitialData();
   };
 
   const filteredServices = services.filter(s => {
@@ -305,20 +326,13 @@ export default function ServicesManagementPage() {
       {/* Main List */}
       <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">{"Đang tải danh sách dịch vụ..."}</p>
-          </div>
+          <TableLoadingState message="Đang tải danh sách dịch vụ..." />
         ) : filteredServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Compass className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              {"Không tìm thấy kết quả"}
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              {"Không có tour du lịch hay dịch vụ nào khớp với bộ lọc tìm kiếm hiện tại."}
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Compass}
+            title="Không tìm thấy kết quả"
+            description="Không có tour du lịch hay dịch vụ nào khớp với bộ lọc tìm kiếm hiện tại."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý dịch vụ" className="w-full text-left">
@@ -495,17 +509,38 @@ export default function ServicesManagementPage() {
         showToast={showToast}
       />
 
-      <ServiceDeleteModal
+      <AlertModal
         isOpen={deleteModalOpen}
         onClose={() => {
           setDeleteModalOpen(false);
           setSelectedService(null);
         }}
-        service={selectedService}
-        language={"vi"}
-        backendUrl={backendUrl}
-        onDeleteSuccess={handleDeleteSuccess}
-        showToast={showToast}
+        onConfirm={handleDeleteService}
+        variant="danger"
+        title="Xác nhận xóa"
+        description={
+          <div className="space-y-3">
+            <p className="font-medium">
+              Bạn có chắc chắn muốn xóa tour du lịch này? Thao tác này không thể hoàn tác.
+            </p>
+            {selectedService && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-xl">
+                <span className="text-[10px] font-bold text-rose-400 dark:text-rose-500 uppercase tracking-wider block mb-0.5">
+                  Tên Tour
+                </span>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {selectedService.translations.find(t => t.locale === "vi")?.name ||
+                    selectedService.translations.find(t => t.locale === "en")?.name}
+                </p>
+                <span className="text-[10px] font-mono text-slate-400 mt-1 block">
+                  ID: #{selectedService.id}
+                </span>
+              </div>
+            )}
+          </div>
+        }
+        confirmText="Xóa vĩnh viễn"
+        isLoading={deletingService}
       />
     </div>
   );
