@@ -19,7 +19,7 @@ import IntercityRouteCard from "@/components/intercity/IntercityRouteCard";
 import { HeroBanner } from "@/components/sections/HeroBanner";
 import { RentalHorizontalSearch } from "@/components/search-bar/RentalHorizontalSearch";
 import { BookingProcessSection } from "@/components/sections/BookingProcessSection";
-import { FaqSection } from "@/components/FaqSection";
+import { FaqSection } from "@/components/sections/FaqSection";
 import type { SectionDto } from "@/lib/api/sections";
 
 interface RentCarClientProps {
@@ -39,6 +39,7 @@ export default function RentCarClient({
   const heroSection = sections.find(s => s.sectionType === "HERO_BANNER") || null;
   const processSection = sections.find(s => s.sectionType === "BOOKING_PROCESS") || null;
   const featuresSection = sections.find(s => s.sectionType === "FEATURES") || null;
+  const faqSection = sections.find(s => s.sectionType === "FAQ") || null;
 
   const prefixUrl = (url: string) => {
     if (!url) return "";
@@ -52,7 +53,7 @@ export default function RentCarClient({
   const [sharedRoutes, setSharedRoutes] = useState<SharedRouteDto[]>(initialSharedRoutes);
 
   useEffect(() => {
-    if (initialRoutes.length > 0 && initialSharedRoutes.length > 0) return;
+    if (initialRoutes.length > 0 || initialSharedRoutes.length > 0) return;
     let active = true;
     (async () => {
       try {
@@ -251,30 +252,10 @@ export default function RentCarClient({
         </section>
       )}
 
-      {/* FAQ Section */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-10 sm:pb-16">
-        <FaqSection
-          title={t.rentCar.faqTitle}
-          description={t.rentCar.faqDesc}
-          categories={[
-            {
-              title: t.rentCar.faqBooking,
-              items: [
-                { title: t.rentCar.faqBookingHow, content: t.rentCar.faqBookingHowAnswer },
-                { title: t.rentCar.faqBookingCancel, content: t.rentCar.faqBookingCancelAnswer }
-              ]
-            },
-            {
-              title: t.rentCar.faqPayment,
-              items: [{ title: t.rentCar.faqPaymentHow, content: t.rentCar.faqPaymentHowAnswer }]
-            },
-            {
-              title: t.rentCar.faqDeparture,
-              items: [{ title: t.rentCar.faqDepartureWhen, content: t.rentCar.faqDepartureWhenAnswer }]
-            }
-          ]}
-        />
-      </section>
+      {/* FAQ Section (CMS-driven; hidden when no FAQ section configured) */}
+      {faqSection && (
+        <FaqSection section={faqSection} locale={language} />
+      )}
 
     </div>
   );

@@ -1,4 +1,4 @@
-export const homePage = {
+﻿export const homePage = {
   heroTitle: "Прибытие. Открытия. Впечатления.",
   heroSubtitle: "Индивидуальный трансфер, созданный для путешествий.",
   pickupPlaceholder: "Откуда (аэропорт, порт, адрес)",
@@ -67,8 +67,6 @@ export const homePage = {
   northwestTips: "Советы для поездки на север",
   nhaTrangGuide: "Путеводитель по Нячангу",
   premiumFleets: "Премиум автопарк",
-  faqTitle: "Часто задаваемые вопросы",
-  faqDescription: "Найдите ответы на часто задаваемые вопросы о наших услугах.",
   whereToGo: "Куда вы хотите поехать?",
   tourPlaceholder: "Поиск туров по названию или месту...",
   selectVehicleClass: "Выберите класс авто",

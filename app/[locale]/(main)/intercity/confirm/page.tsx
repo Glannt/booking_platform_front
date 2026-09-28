@@ -38,7 +38,7 @@ import type { DateValue } from "@internationalized/date";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 
 import { useI18n } from "@/context/LanguageContext";
-import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/intercity";
+import { getActiveIntercityRoutes, getPublicIntercityRoutePrices, IntercityPricingType, type IntercityRouteDto } from "@/lib/api/intercity";
 import {
   getVehicleCategories,
   getRentableVehiclesByCategory,
@@ -65,6 +65,7 @@ import { RentalDateRangePicker } from "@/components/date-picker/RentalDateRangeP
 import { calculateRentalDays, formatToIsoDate, formatToDisplayDate } from "@/lib/utils/rentalDate";
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
 import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
+import { DurationMode, IntercityPriceTypeCategory, IntercityPriceTypeCode, IntercityServiceType, IntercityTripType, PickupType } from "@/types/intercity";
 
 interface CategoryWithVehicles {
   category: VehicleCategoryDto;
@@ -91,25 +92,25 @@ export default function RentCarConfirmPage() {
   };
 
   const routeId = Number(searchParams.get("routeId") || "0");
-  const serviceTypeParam = searchParams.get("serviceType") || "PRIVATE";
-  const [serviceType, setServiceType] = useState<"PRIVATE" | "SHARED">(
-    serviceTypeParam === "SHARED" ? "SHARED" : "PRIVATE"
+  const serviceTypeParam = searchParams.get("serviceType") || IntercityServiceType.PRIVATE;
+  const [serviceType, setServiceType] = useState<IntercityServiceType>(
+    serviceTypeParam === IntercityServiceType.SHARED ? IntercityServiceType.SHARED : IntercityServiceType.PRIVATE
   );
   const initialPax = Math.max(1, Number(searchParams.get("passengerCount") || searchParams.get("passengers") || "1"));
   const [passengerCount, setPassengerCount] = useState<number>(initialPax);
 
-  const initialTripType = searchParams.get("tripType") || "one-way";
+  const initialTripType = searchParams.get("tripType") || IntercityTripType.ONE_WAY;
   const departureDate = searchParams.get("departureDate") || searchParams.get("date") || "";
   const departureTime = searchParams.get("departureTime") || searchParams.get("time") || "";
   const returnDate = searchParams.get("returnDate") || "";
   const returnTime = searchParams.get("returnTime") || "";
   const rentalDaysParam = searchParams.get("rentalDays");
 
-  const [durationMode, setDurationMode] = useState<"IN_DAY" | "DAILY_RATE">(() => {
-    return initialTripType === "DAILY_RATE" || Boolean(rentalDaysParam) ? "DAILY_RATE" : "IN_DAY";
+  const [durationMode, setDurationMode] = useState<DurationMode>(() => {
+    return initialTripType === IntercityTripType.DAILY_RATE || Boolean(rentalDaysParam) ? DurationMode.DAILY_RATE : DurationMode.IN_DAY;
   });
   const [tripType, setTripType] = useState<string>(
-    initialTripType === "DAILY_RATE" ? "one-way" : initialTripType
+    initialTripType === IntercityTripType.DAILY_RATE ? IntercityTripType.ONE_WAY : initialTripType
   );
 
   const currentDate = today(getLocalTimeZone());
@@ -196,26 +197,26 @@ export default function RentCarConfirmPage() {
 
   // Shared route params & state
   const sharedRouteId = Number(searchParams.get("sharedRouteId") || searchParams.get("routeId") || "0");
-  const sharedTripType = searchParams.get("sharedTripType") || searchParams.get("tripType") || "one-way";
-  const isSharedRoundTrip = sharedTripType === "return" || sharedTripType === "round-trip";
+  const sharedTripType = searchParams.get("sharedTripType") || searchParams.get("tripType") || IntercityTripType.ONE_WAY;
+  const isSharedRoundTrip = sharedTripType === IntercityTripType.RETURN || sharedTripType === IntercityTripType.ROUND_TRIP;
   const pax = Math.max(1, Number(searchParams.get("pax") || searchParams.get("passengerCount") || "1"));
 
   // Outbound params
   const outboundDirectionId = Number(searchParams.get("directionId") || "0");
   const outboundScheduleId = Number(searchParams.get("scheduleId") || "0");
   const outboundTripDate = searchParams.get("tripDate") || searchParams.get("departureDate") || searchParams.get("date") || "";
-  const [outboundPickupType, setOutboundPickupType] = useState<"OFFICE" | "DOOR">(() => {
+  const [outboundPickupType, setOutboundPickupType] = useState<PickupType>(() => {
     const p = searchParams.get("pickupType");
-    return p === "DOOR" ? "DOOR" : "OFFICE";
+    return p === PickupType.DOOR ? PickupType.DOOR : PickupType.OFFICE;
   });
   const [outboundPickupOfficeId, setOutboundPickupOfficeId] = useState<number | null>(() => {
     const id = Number(searchParams.get("pickupOfficeId"));
     return id || null;
   });
   const [editOutboundPickupAddress, setEditOutboundPickupAddress] = useState(searchParams.get("pickupAddress") || "");
-  const [outboundDropoffType, setOutboundDropoffType] = useState<"OFFICE" | "DOOR">(() => {
+  const [outboundDropoffType, setOutboundDropoffType] = useState<PickupType>(() => {
     const p = searchParams.get("dropoffType");
-    return p === "DOOR" ? "DOOR" : "OFFICE";
+    return p === PickupType.DOOR ? PickupType.DOOR : PickupType.OFFICE;
   });
   const [outboundDropoffOfficeId, setOutboundDropoffOfficeId] = useState<number | null>(() => {
     const id = Number(searchParams.get("dropoffOfficeId"));
@@ -227,18 +228,18 @@ export default function RentCarConfirmPage() {
   const returnDirectionId = Number(searchParams.get("returnDirectionId") || "0");
   const returnScheduleId = Number(searchParams.get("returnScheduleId") || "0");
   const returnTripDate = searchParams.get("returnTripDate") || searchParams.get("returnDate") || "";
-  const [returnPickupType, setReturnPickupType] = useState<"OFFICE" | "DOOR">(() => {
+  const [returnPickupType, setReturnPickupType] = useState<PickupType>(() => {
     const p = searchParams.get("returnPickupType");
-    return p === "DOOR" ? "DOOR" : "OFFICE";
+    return p === PickupType.DOOR ? PickupType.DOOR : PickupType.OFFICE;
   });
   const [returnPickupOfficeId, setReturnPickupOfficeId] = useState<number | null>(() => {
     const id = Number(searchParams.get("returnPickupOfficeId"));
     return id || null;
   });
   const [editReturnPickupAddress, setEditReturnPickupAddress] = useState(searchParams.get("returnPickupAddress") || "");
-  const [returnDropoffType, setReturnDropoffType] = useState<"OFFICE" | "DOOR">(() => {
+  const [returnDropoffType, setReturnDropoffType] = useState<PickupType>(() => {
     const p = searchParams.get("returnDropoffType");
-    return p === "DOOR" ? "DOOR" : "OFFICE";
+    return p === PickupType.DOOR ? PickupType.DOOR : PickupType.OFFICE;
   });
   const [returnDropoffOfficeId, setReturnDropoffOfficeId] = useState<number | null>(() => {
     const id = Number(searchParams.get("returnDropoffOfficeId"));
@@ -338,8 +339,8 @@ export default function RentCarConfirmPage() {
       if (!outboundPickupOfficeId || !availableOriginOffices.some((o) => o.id === outboundPickupOfficeId)) {
         setOutboundPickupOfficeId(availableOriginOffices[0].id ?? null);
       }
-    } else if (outboundPickupType === "OFFICE") {
-      setOutboundPickupType("DOOR");
+    } else if (outboundPickupType === PickupType.OFFICE) {
+      setOutboundPickupType(PickupType.DOOR);
     }
   }, [availableOriginOffices, outboundPickupOfficeId, outboundPickupType]);
 
@@ -348,8 +349,8 @@ export default function RentCarConfirmPage() {
       if (!outboundDropoffOfficeId || !availableDestinationOffices.some((o) => o.id === outboundDropoffOfficeId)) {
         setOutboundDropoffOfficeId(availableDestinationOffices[0].id ?? null);
       }
-    } else if (outboundDropoffType === "OFFICE") {
-      setOutboundDropoffType("DOOR");
+    } else if (outboundDropoffType === PickupType.OFFICE) {
+      setOutboundDropoffType(PickupType.DOOR);
     }
   }, [availableDestinationOffices, outboundDropoffOfficeId, outboundDropoffType]);
 
@@ -358,8 +359,8 @@ export default function RentCarConfirmPage() {
       if (!returnPickupOfficeId || !availableReturnOriginOffices.some((o) => o.id === returnPickupOfficeId)) {
         setReturnPickupOfficeId(availableReturnOriginOffices[0].id ?? null);
       }
-    } else if (returnPickupType === "OFFICE") {
-      setReturnPickupType("DOOR");
+    } else if (returnPickupType === PickupType.OFFICE) {
+      setReturnPickupType(PickupType.DOOR);
     }
   }, [availableReturnOriginOffices, returnPickupOfficeId, returnPickupType]);
 
@@ -368,8 +369,8 @@ export default function RentCarConfirmPage() {
       if (!returnDropoffOfficeId || !availableReturnDestinationOffices.some((o) => o.id === returnDropoffOfficeId)) {
         setReturnDropoffOfficeId(availableReturnDestinationOffices[0].id ?? null);
       }
-    } else if (returnDropoffType === "OFFICE") {
-      setReturnDropoffType("DOOR");
+    } else if (returnDropoffType === PickupType.OFFICE) {
+      setReturnDropoffType(PickupType.DOOR);
     }
   }, [availableReturnDestinationOffices, returnDropoffOfficeId, returnDropoffType]);
 
@@ -394,10 +395,10 @@ export default function RentCarConfirmPage() {
 
   const formatPrice = useCallback((value: number) => _formatPrice(value, language), [language]);
 
-  const isRoundTrip = tripType === "round-trip" || tripType === "return";
+  const isRoundTrip = tripType === IntercityTripType.ROUND_TRIP || tripType === IntercityTripType.RETURN;
 
   useEffect(() => {
-    if (serviceType === "SHARED") {
+    if (serviceType === IntercityServiceType.SHARED) {
       if (!sharedRouteId) {
         router.push(prefixUrl("/intercity"));
         return;
@@ -441,14 +442,39 @@ export default function RentCarConfirmPage() {
         }
 
         const allCats = (catsRes?.data?.content ?? []) as VehicleCategoryDto[];
-        const routePrices = foundRoute?.prices ?? [];
+
+        // Prefer the public price engine — the same source the route detail page uses.
+        // /active only embeds prices from the legacy intercity_route_prices table, which
+        // the backend's initDefaultPrices() wipes — relying on it made this page always
+        // show 0 VND even though the detail page priced the same trip correctly.
+        let routePrices = foundRoute?.prices ?? [];
+        try {
+          const priceRes = await getPublicIntercityRoutePrices(foundRoute?.id);
+          if (priceRes?.data && priceRes.data.length > 0) {
+            routePrices = priceRes.data;
+          }
+        } catch {
+          /* keep the foundRoute.prices fallback */
+        }
 
         const catsWithVehicles: CategoryWithVehicles[] = [];
         for (const cat of allCats) {
-          const priceEntry = routePrices.find(
-            (p) => p.vehicleCategoryId === cat.id && p.active
+          const inDayEntry = routePrices.find(
+            (p) =>
+              Number(p.vehicleCategoryId) === Number(cat.id) &&
+              (p.priceTypeCategory === IntercityPriceTypeCategory.IN_DAY ||
+                p.priceTypeCode === IntercityPriceTypeCode.ONE_WAY ||
+                p.priceTypeCode === IntercityPriceTypeCode.ROUND_TRIP_SAME_DAY) &&
+              (p.active ?? (p.status !== "INACTIVE"))
           );
-          if (!priceEntry) continue;
+          const dailyRateEntry = routePrices.find(
+            (p) =>
+              Number(p.vehicleCategoryId) === Number(cat.id) &&
+              (p.priceTypeCategory === IntercityPriceTypeCategory.DAILY_RATE ||
+                p.priceTypeCode === IntercityPriceTypeCode.DAILY_RATE) &&
+              (p.active ?? (p.status !== "INACTIVE"))
+          );
+          if (!inDayEntry && !dailyRateEntry) continue;
 
           let vehicles: VehicleDto[] = [];
           try {
@@ -458,34 +484,39 @@ export default function RentCarConfirmPage() {
             vehicles = [];
           }
 
-          const oneWayBase = priceEntry.fixedPriceOneWay || priceEntry.oneWayPrice || priceEntry.basePrice || 0;
-          const baseOneWayPrice = calcIntercityPrivatePrice(
-            {
-              distanceKm: foundRoute?.distanceKm,
-              pricingType: priceEntry.pricingType || (oneWayBase > 0 && !priceEntry.perKmAmount ? "FIXED" : undefined),
-              perKmAmount: priceEntry.perKmAmount,
-              fixedPriceOneWay: oneWayBase,
-              basePrice: oneWayBase,
-              fixedPriceRoundTrip: priceEntry.fixedPriceRoundTrip || priceEntry.roundTripPrice,
-              roundTripPrice: priceEntry.roundTripPrice || priceEntry.fixedPriceRoundTrip,
-              roundTripPerKmAmount: priceEntry.roundTripPerKmAmount,
-            },
-            false
-          );
+          let baseOneWayPrice = 0;
+          if (inDayEntry) {
+            const oneWayBase = inDayEntry.oneWayPrice || inDayEntry.fixedPriceOneWay || inDayEntry.basePrice || 0;
+            baseOneWayPrice = calcIntercityPrivatePrice(
+              {
+                distanceKm: foundRoute?.distanceKm,
+                pricingType: inDayEntry.pricingType || (oneWayBase > 0 && !inDayEntry.perKmAmount ? IntercityPricingType.FIXED : undefined),
+                perKmAmount: inDayEntry.perKmAmount,
+                fixedPriceOneWay: oneWayBase,
+                basePrice: oneWayBase,
+                fixedPriceRoundTrip: inDayEntry.fixedPriceRoundTrip || inDayEntry.roundTripPrice,
+                roundTripPrice: inDayEntry.roundTripPrice || inDayEntry.fixedPriceRoundTrip,
+                roundTripPerKmAmount: inDayEntry.roundTripPerKmAmount,
+              },
+              false
+            );
+          }
 
-          const dailyRate = priceEntry.dailyRate && Number(priceEntry.dailyRate) > 0
-            ? Number(priceEntry.dailyRate)
-            : (Number(priceEntry.fixedPriceOneWay ?? 0) > 0 ? Number(priceEntry.fixedPriceOneWay) : 800000);
+          const dailyRate = dailyRateEntry
+            ? Number(dailyRateEntry.dailyRatePrice ?? dailyRateEntry.dailyRate ?? dailyRateEntry.basePrice ?? 0)
+            : 0;
 
+          const depositEntry = inDayEntry ?? dailyRateEntry;
           catsWithVehicles.push({
             category: cat,
             vehicles,
             price: baseOneWayPrice,
             dailyRate,
-            minimumDays: priceEntry.minimumDays || 1,
-            depositType: priceEntry.depositType || "PERCENT",
-            depositRate: priceEntry.depositRate ?? 20,
-            depositAmount: priceEntry.depositAmount,
+            minimumDays: dailyRateEntry?.minDays ?? dailyRateEntry?.minimumDays ?? 1,
+            // Deposit only when the price entry actually carries a policy — no silent 20% default.
+            depositType: depositEntry?.depositType,
+            depositRate: depositEntry?.depositRate,
+            depositAmount: depositEntry?.depositAmount,
           });
         }
 
@@ -517,7 +548,7 @@ export default function RentCarConfirmPage() {
 
   // Dynamic price calculation for categories
   const calculateCategoryPrice = useCallback((cat: CategoryWithVehicles) => {
-    if (durationMode === "DAILY_RATE") {
+    if (durationMode === DurationMode.DAILY_RATE) {
       return calcIntercityDailyRatePrice(cat.dailyRate, rentalDays, cat.minimumDays || 1);
     }
     return isRoundTrip ? cat.price * 2 : cat.price;
@@ -526,7 +557,7 @@ export default function RentCarConfirmPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountInfo | null>(null);
 
   const rawTotalPrice = useMemo(() => {
-    if (serviceType === "SHARED") return sharedTotalPrice;
+    if (serviceType === IntercityServiceType.SHARED) return sharedTotalPrice;
     if (!selectedCategory) return 0;
     return calculateCategoryPrice(selectedCategory);
   }, [serviceType, sharedTotalPrice, selectedCategory, calculateCategoryPrice]);
@@ -538,28 +569,30 @@ export default function RentCarConfirmPage() {
   const currentTotalPrice = finalTotalPrice;
 
   const depositCalc = useMemo(() => {
-    if (serviceType === "SHARED") {
-      return calculateDeposit({
-        totalAmount: finalTotalPrice,
-        depositType: DepositType.PERCENT,
-        defaultRate: 20,
-      });
-    }
+    // Deposit is only collected when the selected price actually carries a policy.
+    // No silent default (e.g. 20%) — no config on the package means no deposit.
+    if (serviceType === IntercityServiceType.SHARED) return null; // shared routes carry no deposit config
 
-    const isFixed = selectedCategory?.depositType === "FIXED" && (selectedCategory?.depositAmount ?? 0) > 0;
-    if (isFixed) {
+    const config = selectedCategory;
+    if (!config?.depositType) return null;
+
+    if (config.depositType === DepositType.FIXED) {
+      const amount = Number(config.depositAmount ?? 0);
+      if (amount <= 0) return null;
       return calculateDeposit({
         totalAmount: finalTotalPrice,
         depositType: DepositType.FIXED,
-        depositAmount: selectedCategory?.depositAmount,
+        depositAmount: amount,
       });
     }
 
+    const rate = Number(config.depositRate ?? 0);
+    if (rate <= 0) return null;
     return calculateDeposit({
       totalAmount: finalTotalPrice,
       depositType: DepositType.PERCENT,
-      depositRate: selectedCategory?.depositRate ?? 20,
-      defaultRate: 20,
+      depositRate: rate,
+      defaultRate: 0,
     });
   }, [serviceType, finalTotalPrice, selectedCategory]);
 
@@ -570,27 +603,27 @@ export default function RentCarConfirmPage() {
     if (!editPhone?.trim()) newErrors.phone = t.errors.phoneRequired;
     if (!editEmail?.trim()) newErrors.email = t.errors.emailRequired;
 
-    if (serviceType === "SHARED") {
-      if (outboundPickupType === "OFFICE") {
+    if (serviceType === IntercityServiceType.SHARED) {
+      if (outboundPickupType === PickupType.OFFICE) {
         if (!outboundPickupOfficeId) newErrors.pickupAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng đón";
       } else {
         if (!editOutboundPickupAddress?.trim()) newErrors.pickupAddress = t.errors.pickupAddressRequired;
       }
 
-      if (outboundDropoffType === "OFFICE") {
+      if (outboundDropoffType === PickupType.OFFICE) {
         if (!outboundDropoffOfficeId) newErrors.dropoffAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng trả";
       } else {
         if (!editOutboundDropoffAddress?.trim()) newErrors.dropoffAddress = t.errors.dropoffAddressRequired;
       }
 
       if (isSharedRoundTrip) {
-        if (returnPickupType === "OFFICE") {
+        if (returnPickupType === PickupType.OFFICE) {
           if (!returnPickupOfficeId) newErrors.returnPickupAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng đón chiều về";
         } else {
           if (!editReturnPickupAddress?.trim()) newErrors.returnPickupAddress = t.errors.pickupAddressRequired;
         }
 
-        if (returnDropoffType === "OFFICE") {
+        if (returnDropoffType === PickupType.OFFICE) {
           if (!returnDropoffOfficeId) newErrors.returnDropoffAddress = t.rentCar.selectRouteError || "Vui lòng chọn văn phòng trả chiều về";
         } else {
           if (!editReturnDropoffAddress?.trim()) newErrors.returnDropoffAddress = t.errors.dropoffAddressRequired;
@@ -599,7 +632,7 @@ export default function RentCarConfirmPage() {
     } else {
       if (!editPickupAddress?.trim()) newErrors.pickupAddress = t.errors.pickupAddressRequired;
 
-      if (durationMode === "DAILY_RATE") {
+      if (durationMode === DurationMode.DAILY_RATE) {
         if (isDateRangeInvalid || !dateRange) newErrors.date = t.errors.dateRequired;
       } else {
         if (!dateValue || isDateInvalid) newErrors.date = t.errors.dateRequired;
@@ -643,10 +676,47 @@ export default function RentCarConfirmPage() {
     t.rentCar.selectRouteError,
   ]);
 
+  // Pure mirror of validate() without setErrors — used to gate the submit button so
+  // users cannot book before the required fields are filled.
+  const canBook = useMemo(() => {
+    if (!editName?.trim() || !editPhone?.trim() || !editEmail?.trim()) return false;
+
+    if (serviceType === IntercityServiceType.SHARED) {
+      const addressOk = (type: PickupType, officeId: number | null, address: string) =>
+        type === PickupType.OFFICE ? Boolean(officeId) : Boolean(address?.trim());
+      if (!addressOk(outboundPickupType, outboundPickupOfficeId, editOutboundPickupAddress)) return false;
+      if (!addressOk(outboundDropoffType, outboundDropoffOfficeId, editOutboundDropoffAddress)) return false;
+      if (isSharedRoundTrip) {
+        if (!addressOk(returnPickupType, returnPickupOfficeId, editReturnPickupAddress)) return false;
+        if (!addressOk(returnDropoffType, returnDropoffOfficeId, editReturnDropoffAddress)) return false;
+      }
+      return Boolean(sharedRoute && outboundDirection && outboundSchedule && finalTotalPrice > 0);
+    }
+
+    if (!editPickupAddress?.trim()) return false;
+    if (durationMode === DurationMode.DAILY_RATE) {
+      if (isDateRangeInvalid || !dateRange) return false;
+    } else {
+      if (!dateValue || isDateInvalid) return false;
+      if (isRoundTrip && !editReturnTime) return false;
+    }
+    if (!editTime) return false;
+    return Boolean(route && selectedCategory && finalTotalPrice > 0);
+  }, [
+    editName, editPhone, editEmail, serviceType,
+    outboundPickupType, outboundPickupOfficeId, editOutboundPickupAddress,
+    outboundDropoffType, outboundDropoffOfficeId, editOutboundDropoffAddress,
+    isSharedRoundTrip, returnPickupType, returnPickupOfficeId, editReturnPickupAddress,
+    returnDropoffType, returnDropoffOfficeId, editReturnDropoffAddress,
+    editPickupAddress, durationMode, isDateRangeInvalid, dateRange,
+    dateValue, isDateInvalid, isRoundTrip, editTime, editReturnTime,
+    sharedRoute, outboundDirection, outboundSchedule, route, selectedCategory, finalTotalPrice,
+  ]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
-    if (serviceType === "SHARED") {
+    if (serviceType === IntercityServiceType.SHARED) {
       if (!sharedRoute || !outboundDirection || !outboundSchedule) return;
     } else {
       if (!route || !selectedCategory) return;
@@ -657,7 +727,7 @@ export default function RentCarConfirmPage() {
 
   const handleConfirmBooking = async () => {
     if (submitting) return;
-    if (serviceType === "SHARED") {
+    if (serviceType === IntercityServiceType.SHARED) {
       if (!sharedRoute || !outboundDirection || !outboundSchedule) return;
       if (!validate()) {
         setShowConfirmModal(false);
@@ -674,11 +744,11 @@ export default function RentCarConfirmPage() {
           scheduleId: outboundSchedule.id!,
           tripDate: outboundTripDate,
           pickupType: outboundPickupType,
-          pickupOfficeId: outboundPickupType === "OFFICE" ? (outboundPickupOfficeId || undefined) : undefined,
-          pickupAddress: outboundPickupType === "DOOR" ? (editOutboundPickupAddress.trim() || undefined) : undefined,
+          pickupOfficeId: outboundPickupType === PickupType.OFFICE ? (outboundPickupOfficeId || undefined) : undefined,
+          pickupAddress: outboundPickupType === PickupType.DOOR ? (editOutboundPickupAddress.trim() || undefined) : undefined,
           dropoffType: outboundDropoffType,
-          dropoffOfficeId: outboundDropoffType === "OFFICE" ? (outboundDropoffOfficeId || undefined) : undefined,
-          dropoffAddress: outboundDropoffType === "DOOR" ? (editOutboundDropoffAddress.trim() || undefined) : undefined,
+          dropoffOfficeId: outboundDropoffType === PickupType.OFFICE ? (outboundDropoffOfficeId || undefined) : undefined,
+          dropoffAddress: outboundDropoffType === PickupType.DOOR ? (editOutboundDropoffAddress.trim() || undefined) : undefined,
           passengerCount: pax,
 
           isRoundTrip: isSharedRoundTrip,
@@ -686,11 +756,11 @@ export default function RentCarConfirmPage() {
           returnScheduleId: isSharedRoundTrip && returnSchedule ? returnSchedule.id : undefined,
           returnTripDate: isSharedRoundTrip ? returnTripDate : undefined,
           returnPickupType: isSharedRoundTrip ? returnPickupType : undefined,
-          returnPickupOfficeId: isSharedRoundTrip && returnPickupType === "OFFICE" ? (returnPickupOfficeId || undefined) : undefined,
-          returnPickupAddress: isSharedRoundTrip && returnPickupType === "DOOR" ? (editReturnPickupAddress.trim() || undefined) : undefined,
+          returnPickupOfficeId: isSharedRoundTrip && returnPickupType === PickupType.OFFICE ? (returnPickupOfficeId || undefined) : undefined,
+          returnPickupAddress: isSharedRoundTrip && returnPickupType === PickupType.DOOR ? (editReturnPickupAddress.trim() || undefined) : undefined,
           returnDropoffType: isSharedRoundTrip ? returnDropoffType : undefined,
-          returnDropoffOfficeId: isSharedRoundTrip && returnDropoffType === "OFFICE" ? (returnDropoffOfficeId || undefined) : undefined,
-          returnDropoffAddress: isSharedRoundTrip && returnDropoffType === "DOOR" ? (editReturnDropoffAddress.trim() || undefined) : undefined,
+          returnDropoffOfficeId: isSharedRoundTrip && returnDropoffType === PickupType.OFFICE ? (returnDropoffOfficeId || undefined) : undefined,
+          returnDropoffAddress: isSharedRoundTrip && returnDropoffType === PickupType.DOOR ? (editReturnDropoffAddress.trim() || undefined) : undefined,
         });
 
         const code = res?.bookingGroupId
@@ -716,15 +786,15 @@ export default function RentCarConfirmPage() {
 
     setSubmitting(true);
 
-    const departureDateStr = durationMode === "DAILY_RATE" && dateRange?.start
+    const departureDateStr = durationMode === DurationMode.DAILY_RATE && dateRange?.start
       ? formatToIsoDate(dateRange.start)
       : (dateValue ? `${dateValue.year}-${String(dateValue.month).padStart(2, "0")}-${String(dateValue.day).padStart(2, "0")}` : "");
 
-    const returnDateStr = durationMode === "DAILY_RATE" && dateRange?.end
+    const returnDateStr = durationMode === DurationMode.DAILY_RATE && dateRange?.end
       ? formatToIsoDate(dateRange.end)
       : (isRoundTrip && returnDateValue ? `${returnDateValue.year}-${String(returnDateValue.month).padStart(2, "0")}-${String(returnDateValue.day).padStart(2, "0")}` : undefined);
 
-    const finalTripType = durationMode === "DAILY_RATE" ? "DAILY_RATE" : tripType;
+    const finalTripType = durationMode === DurationMode.DAILY_RATE ? DurationMode.DAILY_RATE : tripType;
 
     try {
       const res = await createRentCarBooking({
@@ -735,7 +805,7 @@ export default function RentCarConfirmPage() {
         zaloId: editZaloId.trim() || undefined,
         kakaoTalkId: editKakaoTalkId.trim() || undefined,
         routeId: route.id,
-        serviceType: "PRIVATE",
+        serviceType: IntercityServiceType.PRIVATE,
         vehicleCategoryId: selectedCategory?.category.id,
         tripType: finalTripType,
         departureDate: departureDateStr,
@@ -746,9 +816,9 @@ export default function RentCarConfirmPage() {
         dropoffAddress: route?.destinationCity || "",
         basePrice: rawTotalPrice,
         totalPrice: finalTotalPrice,
-        depositType: depositCalc.depositType as any,
-        depositRate: depositCalc.depositRate,
-        depositAmount: depositCalc.depositAmount,
+        depositType: depositCalc?.depositType as any,
+        depositRate: depositCalc?.depositRate,
+        depositAmount: depositCalc?.depositAmount,
         discountCode: appliedDiscount?.code,
         discountAmount: appliedDiscount?.amount,
       });
@@ -819,13 +889,13 @@ export default function RentCarConfirmPage() {
               <span>{t.common.goBack}</span>
             </button>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-              {serviceType === "SHARED"
+              {serviceType === IntercityServiceType.SHARED
                 ? (sharedRoute?.name || "Tuyến xe ghép")
                 : (route ? `${route.originCity} ⇌ ${route.destinationCity}` : "--- ⇌ ---")}
             </h1>
             <p className="text-sm text-white/80 font-semibold mt-1 flex items-center gap-2">
-              <span>{serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}</span>
-              {serviceType === "SHARED" ? (
+              <span>{serviceType === IntercityServiceType.SHARED ? t.rentCar.sharedService : t.rentCar.privateService}</span>
+              {serviceType === IntercityServiceType.SHARED ? (
                 <>
                   <span>•</span>
                   <span>{sharedRoute?.vehicleName || "Limousine VIP"}</span>
@@ -840,7 +910,7 @@ export default function RentCarConfirmPage() {
                       <span>{route.distanceKm} km</span>
                     </>
                   )}
-                  {durationMode === "DAILY_RATE" && (
+                  {durationMode === DurationMode.DAILY_RATE && (
                     <>
                       <span>•</span>
                       <span className="text-accent font-extrabold">{t.rentCar.dailyRate} ({rentalDays} {t.rentCar.dayUnit})</span>
@@ -961,7 +1031,7 @@ export default function RentCarConfirmPage() {
             </div>
 
             {/* If SHARED: Card 2 - Shared Route Trip Details */}
-            {serviceType === "SHARED" ? (
+            {serviceType === IntercityServiceType.SHARED ? (
               <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
@@ -996,16 +1066,16 @@ export default function RentCarConfirmPage() {
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
-                          {outboundPickupType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                          {outboundPickupType === PickupType.OFFICE ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
                           <span>{t.rentCar.pickupPoint}</span>
                         </div>
                         {availableOriginOffices.length > 0 && (
                           <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                             <button
                               type="button"
-                              onClick={() => setOutboundPickupType("OFFICE")}
+                              onClick={() => setOutboundPickupType(PickupType.OFFICE)}
                               className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                outboundPickupType === "OFFICE"
+                                outboundPickupType === PickupType.OFFICE
                                   ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                   : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                               }`}
@@ -1014,9 +1084,9 @@ export default function RentCarConfirmPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setOutboundPickupType("DOOR")}
+                              onClick={() => setOutboundPickupType(PickupType.DOOR)}
                               className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                outboundPickupType === "DOOR"
+                                outboundPickupType === PickupType.DOOR
                                   ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                   : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                               }`}
@@ -1027,7 +1097,7 @@ export default function RentCarConfirmPage() {
                         )}
                       </div>
 
-                      {outboundPickupType === "OFFICE" && availableOriginOffices.length > 0 ? (
+                      {outboundPickupType === PickupType.OFFICE && availableOriginOffices.length > 0 ? (
                         <div className="space-y-1">
                           <Select
                             selectedKey={outboundPickupOfficeId ? String(outboundPickupOfficeId) : undefined}
@@ -1088,16 +1158,16 @@ export default function RentCarConfirmPage() {
                     <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
-                          {outboundDropoffType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                          {outboundDropoffType === PickupType.OFFICE ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
                           <span>{t.rentCar.dropoffPoint}</span>
                         </div>
                         {availableDestinationOffices.length > 0 && (
                           <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                             <button
                               type="button"
-                              onClick={() => setOutboundDropoffType("OFFICE")}
+                              onClick={() => setOutboundDropoffType(PickupType.OFFICE)}
                               className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                outboundDropoffType === "OFFICE"
+                                outboundDropoffType === PickupType.OFFICE
                                   ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                   : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                               }`}
@@ -1106,9 +1176,9 @@ export default function RentCarConfirmPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setOutboundDropoffType("DOOR")}
+                              onClick={() => setOutboundDropoffType(PickupType.DOOR)}
                               className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                outboundDropoffType === "DOOR"
+                                outboundDropoffType === PickupType.DOOR
                                   ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                   : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                               }`}
@@ -1119,7 +1189,7 @@ export default function RentCarConfirmPage() {
                         )}
                       </div>
 
-                      {outboundDropoffType === "OFFICE" && availableDestinationOffices.length > 0 ? (
+                      {outboundDropoffType === PickupType.OFFICE && availableDestinationOffices.length > 0 ? (
                         <div className="space-y-1">
                           <Select
                             selectedKey={outboundDropoffOfficeId ? String(outboundDropoffOfficeId) : undefined}
@@ -1209,16 +1279,16 @@ export default function RentCarConfirmPage() {
                       <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
-                            {returnPickupType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                            {returnPickupType === PickupType.OFFICE ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
                             <span>{t.rentCar.pickupPoint}</span>
                           </div>
                           {availableReturnOriginOffices.length > 0 && (
                             <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                               <button
                                 type="button"
-                                onClick={() => setReturnPickupType("OFFICE")}
+                                onClick={() => setReturnPickupType(PickupType.OFFICE)}
                                 className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                  returnPickupType === "OFFICE"
+                                  returnPickupType === PickupType.OFFICE
                                     ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                     : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                                 }`}
@@ -1227,9 +1297,9 @@ export default function RentCarConfirmPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setReturnPickupType("DOOR")}
+                                onClick={() => setReturnPickupType(PickupType.DOOR)}
                                 className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                  returnPickupType === "DOOR"
+                                  returnPickupType === PickupType.DOOR
                                     ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                     : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                                 }`}
@@ -1240,7 +1310,7 @@ export default function RentCarConfirmPage() {
                           )}
                         </div>
 
-                        {returnPickupType === "OFFICE" && availableReturnOriginOffices.length > 0 ? (
+                        {returnPickupType === PickupType.OFFICE && availableReturnOriginOffices.length > 0 ? (
                           <div className="space-y-1">
                             <Select
                               selectedKey={returnPickupOfficeId ? String(returnPickupOfficeId) : undefined}
@@ -1301,16 +1371,16 @@ export default function RentCarConfirmPage() {
                       <div className="p-3.5 rounded-xl bg-white dark:bg-[var(--bg-surface)] border border-slate-100 dark:border-slate-800 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 text-slate-400 font-bold uppercase text-sm">
-                            {returnDropoffType === "OFFICE" ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
+                            {returnDropoffType === PickupType.OFFICE ? <Building2 size={14} className="text-accent" /> : <MapPin size={14} className="text-accent" />}
                             <span>{t.rentCar.dropoffPoint}</span>
                           </div>
                           {availableReturnDestinationOffices.length > 0 && (
                             <div className="flex bg-slate-100 dark:bg-[var(--bg-card)] p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                               <button
                                 type="button"
-                                onClick={() => setReturnDropoffType("OFFICE")}
+                                onClick={() => setReturnDropoffType(PickupType.OFFICE)}
                                 className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                  returnDropoffType === "OFFICE"
+                                  returnDropoffType === PickupType.OFFICE
                                     ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                     : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                                 }`}
@@ -1319,9 +1389,9 @@ export default function RentCarConfirmPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setReturnDropoffType("DOOR")}
+                                onClick={() => setReturnDropoffType(PickupType.DOOR)}
                                 className={`px-2.5 py-1 text-sm font-bold rounded-lg transition-all cursor-pointer border-none ${
-                                  returnDropoffType === "DOOR"
+                                  returnDropoffType === PickupType.DOOR
                                     ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                                     : "text-slate-500 hover:text-slate-800 dark:hover:text-white"
                                 }`}
@@ -1332,7 +1402,7 @@ export default function RentCarConfirmPage() {
                           )}
                         </div>
 
-                        {returnDropoffType === "OFFICE" && availableReturnDestinationOffices.length > 0 ? (
+                        {returnDropoffType === PickupType.OFFICE && availableReturnDestinationOffices.length > 0 ? (
                           <div className="space-y-1">
                             <Select
                               selectedKey={returnDropoffOfficeId ? String(returnDropoffOfficeId) : undefined}
@@ -1412,7 +1482,7 @@ export default function RentCarConfirmPage() {
                         {t.rentCar.rentalPeriod}
                       </h2>
                     </div>
-                    {durationMode === "DAILY_RATE" && (
+                    {durationMode === DurationMode.DAILY_RATE && (
                       <Chip size="sm" color="accent" variant="soft" className="text-sm font-bold px-3 py-1">
                         {rentalDays} {t.rentCar.dayUnit}
                       </Chip>
@@ -1424,11 +1494,11 @@ export default function RentCarConfirmPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setDurationMode("IN_DAY");
-                        setTripType("one-way");
+                        setDurationMode(DurationMode.IN_DAY);
+                        setTripType(IntercityTripType.ONE_WAY);
                       }}
                       className={`flex-1 py-2 text-sm font-black rounded-xl transition-all cursor-pointer border-none text-center ${
-                        durationMode === "IN_DAY" && tripType === "one-way"
+                        durationMode === DurationMode.IN_DAY && tripType === IntercityTripType.ONE_WAY
                           ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                           : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
                       }`}
@@ -1438,11 +1508,11 @@ export default function RentCarConfirmPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setDurationMode("IN_DAY");
-                        setTripType("round-trip");
+                        setDurationMode(DurationMode.IN_DAY);
+                        setTripType(IntercityTripType.ROUND_TRIP);
                       }}
                       className={`flex-1 py-2 text-sm font-black rounded-xl transition-all cursor-pointer border-none text-center ${
-                        durationMode === "IN_DAY" && tripType === "round-trip"
+                        durationMode === DurationMode.IN_DAY && tripType === IntercityTripType.ROUND_TRIP
                           ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                           : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
                       }`}
@@ -1452,10 +1522,10 @@ export default function RentCarConfirmPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setDurationMode("DAILY_RATE");
+                        setDurationMode(DurationMode.DAILY_RATE);
                       }}
                       className={`flex-1 py-2 text-sm font-black rounded-xl transition-all cursor-pointer border-none text-center ${
-                        durationMode === "DAILY_RATE"
+                        durationMode === DurationMode.DAILY_RATE
                           ? "bg-white dark:bg-[var(--bg-surface)] text-accent shadow-xs"
                           : "text-slate-500 hover:text-slate-800 dark:hover:text-white bg-transparent"
                       }`}
@@ -1465,7 +1535,7 @@ export default function RentCarConfirmPage() {
                   </div>
 
                   {/* Date & Time selection */}
-                  {durationMode === "DAILY_RATE" ? (
+                  {durationMode === DurationMode.DAILY_RATE ? (
                     <div className="space-y-4">
                       <RentalDateRangePicker
                         value={dateRange}
@@ -1798,13 +1868,13 @@ export default function RentCarConfirmPage() {
 
                             <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex items-baseline justify-between">
                               <span className="text-sm text-slate-400 font-bold uppercase">
-                                {durationMode === "DAILY_RATE" ? `${rentalDays} ${t.rentCar.dayUnit}` : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay)}
+                                {durationMode === DurationMode.DAILY_RATE ? `${rentalDays} ${t.rentCar.dayUnit}` : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay)}
                               </span>
                               <div className="text-right">
                                 <span className="text-sm sm:text-base font-black text-accent block leading-none">
                                   {formatPrice(catPrice)}
                                 </span>
-                                {durationMode === "DAILY_RATE" && c.dailyRate && (
+                                {durationMode === DurationMode.DAILY_RATE && c.dailyRate && (
                                   <span className="text-sm text-slate-400 font-medium mt-0.5 block">
                                     {formatPrice(c.dailyRate)} / {t.rentCar.dayUnit}
                                   </span>
@@ -1842,8 +1912,8 @@ export default function RentCarConfirmPage() {
           <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
             {/* Customer Discount Section */}
             <CustomerDiscountSection
-              scopeType={serviceType === "SHARED" ? "SHARED_ROUTE" : "INTERCITY_ROUTE"}
-              scopeRefId={serviceType === "SHARED" ? sharedRoute?.id : route?.id}
+              scopeType={serviceType === IntercityServiceType.SHARED ? "SHARED_ROUTE" : "INTERCITY_ROUTE"}
+              scopeRefId={serviceType === IntercityServiceType.SHARED ? sharedRoute?.id : route?.id}
               orderTotal={rawTotalPrice}
               onDiscountChange={setAppliedDiscount}
             />
@@ -1854,7 +1924,7 @@ export default function RentCarConfirmPage() {
                   {t.selfDrive.bookingSummary}
                 </h3>
                 <Chip size="sm" color="accent" variant="soft" className="text-sm font-bold px-3 py-1">
-                  {serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}
+                  {serviceType === IntercityServiceType.SHARED ? t.rentCar.sharedService : t.rentCar.privateService}
                 </Chip>
               </div>
 
@@ -1863,14 +1933,14 @@ export default function RentCarConfirmPage() {
                 <div className="flex justify-between items-start">
                   <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.route}</span>
                   <span className="font-black text-slate-900 dark:text-white text-right max-w-[65%] truncate">
-                    {serviceType === "SHARED"
+                    {serviceType === IntercityServiceType.SHARED
                       ? (sharedRoute?.name || "---")
                       : (route ? `${route.originCity} ⇌ ${route.destinationCity}` : "---")}
                   </span>
                 </div>
 
                 {/* Service / Vehicle Category */}
-                {serviceType === "SHARED" ? (
+                {serviceType === IntercityServiceType.SHARED ? (
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.vehicleType}</span>
                     <span className="font-extrabold text-slate-800 dark:text-slate-200 text-right">
@@ -1888,17 +1958,17 @@ export default function RentCarConfirmPage() {
 
                 {/* Trip Type / Duration */}
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.durationMinutes}</span>
+                  <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.tripType}</span>
                   <span className="font-extrabold text-accent">
-                    {serviceType === "SHARED"
+                    {serviceType === IntercityServiceType.SHARED
                       ? (isSharedRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay)
-                      : (durationMode === "DAILY_RATE"
+                      : (durationMode === DurationMode.DAILY_RATE
                           ? `${t.rentCar.dailyRate} (${rentalDays} ${t.rentCar.dayUnit})`
                           : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay))}
                   </span>
                 </div>
 
-                {serviceType === "SHARED" ? (
+                {serviceType === IntercityServiceType.SHARED ? (
                   <>
                     {/* Outbound */}
                     <div className="flex justify-between items-center">
@@ -1922,7 +1992,7 @@ export default function RentCarConfirmPage() {
                     <div className="flex justify-between items-start text-sm">
                       <span className="text-slate-400 font-bold uppercase text-sm shrink-0">{t.rentCar.pickupPoint}</span>
                       <span className="text-slate-700 dark:text-slate-300 font-medium text-right max-w-[60%] truncate">
-                        {outboundPickupType === "OFFICE" ? getOfficeText(outboundPickupOfficeId) : (editOutboundPickupAddress || "---")}
+                        {outboundPickupType === PickupType.OFFICE ? getOfficeText(outboundPickupOfficeId) : (editOutboundPickupAddress || "---")}
                       </span>
                     </div>
 
@@ -1930,7 +2000,7 @@ export default function RentCarConfirmPage() {
                     <div className="flex justify-between items-start text-sm">
                       <span className="text-slate-400 font-bold uppercase text-sm shrink-0">{t.rentCar.dropoffPoint}</span>
                       <span className="text-slate-700 dark:text-slate-300 font-medium text-right max-w-[60%] truncate">
-                        {outboundDropoffType === "OFFICE" ? getOfficeText(outboundDropoffOfficeId) : (editOutboundDropoffAddress || "---")}
+                        {outboundDropoffType === PickupType.OFFICE ? getOfficeText(outboundDropoffOfficeId) : (editOutboundDropoffAddress || "---")}
                       </span>
                     </div>
                   </>
@@ -1940,7 +2010,7 @@ export default function RentCarConfirmPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.departure}</span>
                       <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                        {durationMode === "DAILY_RATE" && dateRange?.start
+                        {durationMode === DurationMode.DAILY_RATE && dateRange?.start
                           ? formatToDisplayDate(dateRange.start)
                           : (dateValue ? `${dateValue.day}/${dateValue.month}/${dateValue.year}` : "---")}{" "}
                         ({editTime})
@@ -1948,7 +2018,7 @@ export default function RentCarConfirmPage() {
                     </div>
 
                     {/* Return Date (if DAILY_RATE) */}
-                    {durationMode === "DAILY_RATE" && dateRange?.end && (
+                    {durationMode === DurationMode.DAILY_RATE && dateRange?.end && (
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.endDate}</span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">
@@ -1958,7 +2028,7 @@ export default function RentCarConfirmPage() {
                     )}
 
                     {/* Return Date (if in-day round trip) */}
-                    {durationMode === "IN_DAY" && isRoundTrip && returnDateValue && (
+                    {durationMode === DurationMode.IN_DAY && isRoundTrip && returnDateValue && (
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400 font-bold uppercase text-sm">{t.rentCar.returnSchedule}</span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">
@@ -1991,7 +2061,7 @@ export default function RentCarConfirmPage() {
 
               {/* Price Breakdown */}
               <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2 text-sm">
-                {durationMode === "DAILY_RATE" && selectedCategory?.dailyRate ? (
+                {durationMode === DurationMode.DAILY_RATE && selectedCategory?.dailyRate ? (
                   <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase">
                     <span>{t.rentCar.pricePerDay}</span>
                     <span className="text-slate-800 dark:text-slate-200 font-extrabold">
@@ -2027,33 +2097,35 @@ export default function RentCarConfirmPage() {
                   </span>
                 </div>
 
-                {/* Deposit Info Box */}
-                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                      <ShieldCheck size={16} className="text-amber-600 shrink-0" />
-                      {depositCalc.depositType === "FIXED"
-                        ? `${t.discounts.depositRequired} (${t.discounts.depositFixed})`
-                        : `${t.discounts.depositRequired} (${depositCalc.depositRate}%)`}
-                    </span>
-                    <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
-                      {formatPrice(depositCalc.depositAmount)}
-                    </span>
-                  </div>
+                {/* Deposit Info Box — only when the selected price carries a deposit policy */}
+                {depositCalc && (
+                  <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <ShieldCheck size={16} className="text-amber-600 shrink-0" />
+                        {depositCalc.depositType === DepositType.FIXED
+                          ? `${t.discounts.depositRequired} (${t.discounts.depositFixed})`
+                          : `${t.discounts.depositRequired} (${depositCalc.depositRate}%)`}
+                      </span>
+                      <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
+                        {formatPrice(depositCalc.depositAmount)}
+                      </span>
+                    </div>
 
-                  <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                    <span>{t.discounts.remainingPayment}:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {formatPrice(depositCalc.remainingAmount)}
-                    </span>
+                    <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                      <span>{t.discounts.remainingPayment}:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {formatPrice(depositCalc.remainingAmount)}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Submit CTA Button */}
               <Button
                 type="submit"
-                isDisabled={submitting}
+                isDisabled={submitting || !canBook}
                 className="w-full h-12 rounded-2xl font-black text-sm bg-accent text-accent-foreground hover:bg-accent-hover shadow-md gap-2 border-none cursor-pointer flex items-center justify-center"
               >
                 <CheckCircle size={18} />
@@ -2075,14 +2147,14 @@ export default function RentCarConfirmPage() {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
         totalAmount={finalTotalPrice}
-        depositAmount={depositCalc.depositAmount}
-        depositRate={depositCalc.depositRate}
-        depositType={depositCalc.depositType as any}
-        remainingAmount={depositCalc.remainingAmount}
+        depositAmount={depositCalc?.depositAmount}
+        depositRate={depositCalc?.depositRate}
+        depositType={depositCalc?.depositType as any}
+        remainingAmount={depositCalc?.remainingAmount ?? 0}
         submitting={submitting}
-        serviceType={serviceType === "SHARED" ? t.rentCar.sharedService : t.rentCar.privateService}
+        serviceType={serviceType === IntercityServiceType.SHARED ? t.rentCar.sharedService : t.rentCar.privateService}
         summaryItems={
-          serviceType === "SHARED"
+          serviceType === IntercityServiceType.SHARED
             ? [
                 { label: t.rentCar.route, value: sharedRoute?.name || "" },
                 { label: t.rentCar.serviceType, value: t.rentCar.sharedService },
@@ -2103,11 +2175,11 @@ export default function RentCarConfirmPage() {
                   : []),
                 {
                   label: t.rentCar.pickupPoint,
-                  value: outboundPickupType === "OFFICE" ? getOfficeText(outboundPickupOfficeId) : editOutboundPickupAddress,
+                  value: outboundPickupType === PickupType.OFFICE ? getOfficeText(outboundPickupOfficeId) : editOutboundPickupAddress,
                 },
                 {
                   label: t.rentCar.dropoffPoint,
-                  value: outboundDropoffType === "OFFICE" ? getOfficeText(outboundDropoffOfficeId) : editOutboundDropoffAddress,
+                  value: outboundDropoffType === PickupType.OFFICE ? getOfficeText(outboundDropoffOfficeId) : editOutboundDropoffAddress,
                 },
                 { label: t.rentCar.fullName, value: editName },
                 { label: t.rentCar.phone, value: editPhone },
@@ -2116,23 +2188,27 @@ export default function RentCarConfirmPage() {
                   ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
                   : []),
                 { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
-                { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
-                { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
+                ...(depositCalc
+                  ? [
+                      { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
+                      { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
+                    ]
+                  : []),
               ]
             : [
                 { label: t.rentCar.route, value: route ? `${route.originCity} ⇌ ${route.destinationCity}` : "" },
                 {
                   label: t.rentCar.rentalPeriod,
-                  value: durationMode === "DAILY_RATE"
+                  value: durationMode === DurationMode.DAILY_RATE
                     ? `${t.rentCar.dailyRate} (${rentalDays} ${t.rentCar.dayUnit})`
                     : (isRoundTrip ? t.rentCar.roundTrip : t.rentCar.oneWay),
                 },
-                ...(serviceType === "PRIVATE" && selectedCategory
+                ...(serviceType === IntercityServiceType.PRIVATE && selectedCategory
                   ? [{ label: t.rentCar.vehicleType, value: selectedCategory.category.code }]
                   : []),
                 {
                   label: t.rentCar.date,
-                  value: durationMode === "DAILY_RATE" && dateRange?.start
+                  value: durationMode === DurationMode.DAILY_RATE && dateRange?.start
                     ? `${formatToDisplayDate(dateRange.start)} → ${formatToDisplayDate(dateRange.end)}`
                     : (dateValue ? `${dateValue.day}/${dateValue.month}/${dateValue.year}` : ""),
                 },
@@ -2144,8 +2220,12 @@ export default function RentCarConfirmPage() {
                   ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
                   : []),
                 { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
-                { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
-                { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
+                ...(depositCalc
+                  ? [
+                      { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
+                      { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
+                    ]
+                  : []),
               ]
         }
       />

@@ -1,4 +1,4 @@
-export const selfDrive = {
+﻿export const selfDrive = {
   title: "Thuê Xe Tự Lái Nha Trang",
   subtitle: "Trải nghiệm tự do khám phá Nha Trang với đội xe đời mới, giá cạnh tranh.",
   features: "Tính năng",
@@ -16,13 +16,6 @@ export const selfDrive = {
   minibus: "Minibus",
   quickBooking: "Đặt nhanh qua Zalo",
   zaloConsult: "Tư vấn qua Zalo",
-  faqTitle: "Câu hỏi thường gặp",
-  faq1: "Thủ tục thuê xe tự lái cần những gì?",
-  faq1Answer: "Bạn cần CCCD/Passport, bằng lái xe (A1 trở lên), và đặt cọc từ 2.000.000đ. Quy trình nhanh chóng chỉ 15 phút.",
-  faq2: "Xe có được giao tận nơi không?",
-  faq2Answer: "Có, chúng tôi giao xe miễn phí trong nội thành Nha Trang. Giao xe tại sân bay hoặc hotel theo yêu cầu.",
-  faq3: "Bảo hiểm xe có bao gồm không?",
-  faq3Answer: "Mỗi xe đều có bảo hiểm bắt buộc. Bạn có thể mua thêm bảo hiểm toàn diện với mức phí ưu đãi.",
   procedureTitle: "Quy trình thuê xe",
   docRequirements: "Giấy tờ cần chuẩn bị",
   docDesc: "CCCD/Passport + Bằng lái xe A1+",
@@ -131,7 +124,6 @@ export const selfDrive = {
   step5Title: "5) Hỗ trợ trong thời gian thuê",
   step5Desc: "Hỗ trợ kỹ thuật/cứu hộ 24/7 trong phạm vi Nha Trang. Trả xe đúng hẹn để tránh phụ phí.",
   ctaDescription: "Nếu bạn đang tìm thuê xe tự lái ở Nha Trang với giá hợp lý, hãy liên hệ ngay Minh Khoa Travel để được tư vấn chi tiết. Chúng tôi có sẵn các dòng xe 4–7 chỗ tiết kiệm nhiên liệu.",
-  faqSectionTitle: "Câu hỏi thường gặp (FAQ) – Thuê xe tự lái",
   stickyQuickLabel: "Đặt nhanh – Giá tốt nhất",
   stickyTitle: "Đặt xe tự lái Nha Trang",
   stickyDepositLabel: "Đặt cọc:",

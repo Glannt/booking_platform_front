@@ -1,4 +1,4 @@
-export const tours = {
+﻿export const tours = {
   title: "Nha Trang Tours",
   subtitle: "Discover Nha Trang with quality tours at great prices.",
   search: "Search Tours",
@@ -151,7 +151,6 @@ export const tours = {
   hotelPickup: "Hotel pickup",
   freeCancellation: "Free cancellation",
   bookedCount: "Booked",
-  faqTourTitle: "Frequently Asked Questions about Cruises & Tours",
   sortBy: "Sort by",
   recommendedSort: "Recommended",
 };

@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, ArrowRight, Car, Users, Star } from "lucide-react";
+import { MapPin, Clock, ArrowRight, Car, Users } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 import type { IntercityRouteDto } from "@/lib/api/intercity";
 import type { SharedRouteDto } from "@/lib/api/sharedRoute";
@@ -95,9 +95,6 @@ export default function IntercityRouteCard({
     if (!value || value <= 0) return t.common?.contact || "Liên hệ";
     return new Intl.NumberFormat("vi-VN").format(value);
   };
-
-  const reviewNum = 120 + ((route.id * 19) % 280);
-  const bookedNum = 200 + ((route.id * 37) % 750);
 
   const handleClick = () => {
     if (onClick) {
@@ -199,15 +196,8 @@ export default function IntercityRouteCard({
           </div>
         </div>
 
-        {/* Bottom Section: Rating & Price */}
+        {/* Bottom Section: Price */}
         <div className="pt-2 border-t border-border space-y-1.5">
-          {/* Rating & Booked Count */}
-          <div className="flex items-center gap-1 text-xs">
-            <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
-            <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">4.8</span>
-            <span className="text-foreground/60 text-[11px]">({reviewNum})</span>
-            <span className="text-foreground/60 text-[11px]">• {bookedNum}+ {t.tours?.bookedCount || "Đã đặt"}</span>
-          </div>
 
           {/* Price & View arrow */}
           <div className="flex items-baseline justify-between pt-0.5">

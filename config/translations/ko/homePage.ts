@@ -1,4 +1,4 @@
-export const homePage = {
+﻿export const homePage = {
   heroTitle: "도착. 탐험. 체험.",
   heroSubtitle: "여행을 위해 디자인된 맞춤형 교통 서비스.",
   pickupPlaceholder: "출발지 (공항, 항구, 주소)",
@@ -67,8 +67,6 @@ export const homePage = {
   northwestTips: "북부 여행 팁",
   nhaTrangGuide: "나트랑 여행 가이드",
   premiumFleets: "프리미엄 차량",
-  faqTitle: "자주 묻는 질문",
-  faqDescription: "서비스에 대한 자주 묻는 질문의 답을 찾아보세요.",
   whereToGo: "어디로 가시나요?",
   tourPlaceholder: "이름이나 장소로 투어 검색...",
   selectVehicleClass: "차종 선택",

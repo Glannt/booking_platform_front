@@ -1,4 +1,4 @@
-export const selfDrive = {
+﻿export const selfDrive = {
   title: "Nha Trang Self-Drive Rental",
   subtitle: "Experience the freedom to explore Nha Trang with our modern fleet at competitive prices.",
   features: "Features",
@@ -16,13 +16,6 @@ export const selfDrive = {
   minibus: "Minibus",
   quickBooking: "Quick booking via Zalo",
   zaloConsult: "Consult via Zalo",
-  faqTitle: "Frequently Asked Questions",
-  faq1: "What documents are needed for self-drive rental?",
-  faq1Answer: "You need ID/Passport, driver's license (A1 or above), and a deposit from 2,000,000 VND. The process takes only 15 minutes.",
-  faq2: "Is home delivery available?",
-  faq2Answer: "Yes, we deliver cars free of charge within Nha Trang city. Airport or hotel delivery available on request.",
-  faq3: "Is car insurance included?",
-  faq3Answer: "Every vehicle comes with mandatory insurance. You can also purchase comprehensive insurance at a discounted rate.",
   procedureTitle: "Rental procedure",
   docRequirements: "Required documents",
   docDesc: "ID/Passport + Driver's license A1+",
@@ -131,7 +124,6 @@ export const selfDrive = {
   step5Title: "5) Rental Period Roadside Support",
   step5Desc: "Technical assistance / roadside rescue support 24/7 in Nha Trang. Return on-time to avoid penalties.",
   ctaDescription: "Contact us now for details. Fuel-efficient 4-7 seater models available for tourism, work, or long-range trips.",
-  faqSectionTitle: "Frequently Asked Questions – Self-Drive Rental",
   stickyQuickLabel: "Quick Request",
   stickyTitle: "Book Self-Drive Car",
   stickyDepositLabel: "Deposit:",

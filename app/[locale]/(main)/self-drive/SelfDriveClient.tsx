@@ -25,6 +25,7 @@ import { getActiveRentals, getRentalPricesByRental, type RentalPriceDto, type Re
 import { getVehicleCategories, getRentableVehiclesByCategory, type VehicleCategoryDto } from "@/lib/api/fleet";
 import { getCanonicalSlug } from "@/lib/slug-helpers";
 import { HeroBanner } from "@/components/sections/HeroBanner";
+import { FaqSection } from "@/components/sections/FaqSection";
 import { RentalHorizontalSearch } from "@/components/search-bar/RentalHorizontalSearch";
 import { SelfDriveVehicleCard, type SelfDriveVehicleItem } from "@/components/self-drive/SelfDriveVehicleCard";
 
@@ -52,7 +53,6 @@ export default function SelfDriveClient({
   const [vehiclesLoading, setVehiclesLoading] = useState(initialVehicles.length === 0);
   const displayedVehicles = vehicles.slice(0, 4);
 
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [sections, setSections] = useState<SectionDto[]>(initialSections);
   const [introSection, setIntroSection] = useState<SectionDto | null>(() => {
     return (
@@ -61,6 +61,7 @@ export default function SelfDriveClient({
       ) || null
     );
   });
+  const faqSection = sections.find((s) => s.sectionType === "FAQ") || null;
 
   const isFirstRender = useRef(true);
 
@@ -450,54 +451,8 @@ export default function SelfDriveClient({
           </div>
         </div>
 
-        {/* FAQ Accordions */}
-        <div className="space-y-4 bg-white dark:bg-[var(--bg-card)] p-5 rounded-3xl border border-border shadow-sm">
-          <Typography type="h3" className="text-xs font-black uppercase tracking-wider text-foreground/50 mb-4">
-            {t.selfDrive.faqSectionTitle}
-          </Typography>
-
-          {[
-            {
-              q: t.selfDrive.faq1,
-              a: t.selfDrive.faq1Answer,
-            },
-            {
-              q: t.selfDrive.faq2,
-              a: t.selfDrive.faq2Answer,
-            },
-            {
-              q: t.selfDrive.faq3,
-              a: t.selfDrive.faq3Answer,
-            },
-          ].map((faq, index) => {
-            const isOpen = activeFaq === index;
-
-            return (
-              <div
-                key={index}
-                className="border-b border-border pb-2.5 last:border-0 last:pb-0"
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveFaq(isOpen ? null : index)}
-                  className="w-full flex items-center justify-between text-left py-2 hover:text-accent transition-colors cursor-pointer border-none bg-transparent"
-                >
-                  <span className="text-xs font-black text-foreground">
-                    {faq.q}
-                  </span>
-                  <span className="text-foreground/50 font-bold ml-2">
-                    {isOpen ? "−" : "+"}
-                  </span>
-                </button>
-                {isOpen && (
-                  <p className="text-xs text-foreground/70 leading-relaxed pt-1.5 pb-1 font-semibold pl-1">
-                    {faq.a}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {/* FAQ (CMS-driven; hidden when no FAQ section configured) */}
+        {faqSection && <FaqSection section={faqSection} locale={language} />}
       </main>
     </div>
   );

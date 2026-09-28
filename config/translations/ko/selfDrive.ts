@@ -1,4 +1,4 @@
-export const selfDrive = {
+﻿export const selfDrive = {
   title: "나트랑 자차 렌트",
   subtitle: "최신 차량과 경쟁력 있는 가격으로 나트랑을 자유롭게 탐험하세요.",
   features: "기능",
@@ -16,13 +16,6 @@ export const selfDrive = {
   minibus: "미니버스",
   quickBooking: "Zalo로 빠른 예약",
   zaloConsult: "Zalo 상담",
-  faqTitle: "자주 묻는 질문",
-  faq1: "자차 렌트에 필요한 서류는?",
-  faq1Answer: "신분증/여권, 운전면허증(A1 이상), 보증금 2,000,000VND 이상 필요합니다. 절차는 15분 정도 소요됩니다.",
-  faq2: "차량 배달 서비스가 있나요?",
-  faq2Answer: "네, 나트랑 시내 무료 배달 서비스를 제공합니다. 공항이나 호텔 배달도 요청 시 가능합니다.",
-  faq3: "보험은 포함되나요?",
-  faq3Answer: "모든 차량에 의무 보험이 포함되어 있습니다. 종합 보험도 할인가로 추가 구매 가능합니다.",
   procedureTitle: "대여 절차",
   docRequirements: "준비 서류",
   docDesc: "신분증/여권 + 운전면허증 A1+",
@@ -131,7 +124,6 @@ export const selfDrive = {
   step5Title: "5) 대여 기간 중 지원",
   step5Desc: "나트랑 내 24/7 기술 지원 / 긴급 출동. 정시 반납으로 추가 비용을 피하세요.",
   ctaDescription: "자세한 내용은 지금 연락하세요. 관광, 업무, 장거리 여행에 적합한 연료 효율적인 4~7인승 차량을 보유하고 있습니다.",
-  faqSectionTitle: "자주 묻는 질문 – 자차 렌트",
   stickyQuickLabel: "빠른 요청",
   stickyTitle: "나트랑 자차 렌트 예약",
   stickyDepositLabel: "보증금:",

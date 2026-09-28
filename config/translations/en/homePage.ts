@@ -1,4 +1,4 @@
-export const homePage = {
+﻿export const homePage = {
   heroTitle: "Arrive. Discover. Experience.",
   heroSubtitle: "Personalised transportation designed for travel.",
   pickupPlaceholder: "From (airport, port, address)",
@@ -67,8 +67,6 @@ export const homePage = {
   northwestTips: "Northwest travel tips",
   nhaTrangGuide: "Nha Trang travel guide",
   premiumFleets: "Premium fleets",
-  faqTitle: "Frequently Asked Questions",
-  faqDescription: "Find answers to common questions about our services.",
   whereToGo: "Where do you want to go?",
   tourPlaceholder: "Search tours by name or location...",
   selectVehicleClass: "Select Vehicle Class",

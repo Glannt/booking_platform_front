@@ -1,4 +1,4 @@
-export const tours = {
+﻿export const tours = {
   title: "나트랑 투어",
   subtitle: "합리적인 가격의 고품질 투어로 나트랑을 발견하세요.",
   search: "투어 검색",
@@ -151,7 +151,6 @@ export const tours = {
   hotelPickup: "호텔 픽업",
   freeCancellation: "무료 취소",
   bookedCount: "예약 완료",
-  faqTourTitle: "크루즈 & 투어 자주 묻는 질문",
   sortBy: "정렬 기준",
   recommendedSort: "추천순",
 };

@@ -1,4 +1,4 @@
-export const homePage = {
+﻿export const homePage = {
   heroTitle: "Đến nơi. Khám phá. Trải nghiệm.",
   heroSubtitle: "Dịch vụ vận chuyển thiết kế riêng cho mỗi hành trình.",
   pickupPlaceholder: "Điểm đón (Sân bay, cảng, địa chỉ)",
@@ -67,8 +67,6 @@ export const homePage = {
   northwestTips: "Mẹo du lịch Tây Bắc",
   nhaTrangGuide: "Cẩm nang Nha Trang",
   premiumFleets: "Đội xe cao cấp",
-  faqTitle: "Câu hỏi thường gặp",
-  faqDescription: "Tìm câu trả lời cho các câu hỏi thường gặp về dịch vụ của chúng tôi.",
   whereToGo: "Bạn muốn đi đâu?",
   tourPlaceholder: "Tìm tour theo tên hoặc địa điểm...",
   selectVehicleClass: "Chọn hạng xe",

@@ -1,4 +1,4 @@
-export const tours = {
+﻿export const tours = {
   title: "Tour Du Lịch Nha Trang",
   subtitle: "Khám phá Nha Trang với các tour du lịch chất lượng, giá tốt.",
   search: "Tìm kiếm tour",
@@ -151,7 +151,6 @@ export const tours = {
   hotelPickup: "Đón tại khách sạn",
   freeCancellation: "Miễn phí huỷ",
   bookedCount: "Đã đặt",
-  faqTourTitle: "Câu hỏi thường gặp về Du thuyền & Tour du lịch",
   sortBy: "Sắp xếp theo",
   recommendedSort: "Klook giới thiệu",
 };

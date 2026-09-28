@@ -35,6 +35,7 @@ import { resolveImageUrls } from "@/lib/api/media";
 import { resolveLocalizedName, resolveLocalizedDescription, resolveTranslation } from "@/lib/i18n-helpers";
 import { getCanonicalSlug } from "@/lib/slug-helpers";
 import type { SectionDto } from "@/lib/api/sections";
+import { FaqSection } from "@/components/sections/FaqSection";
 
 interface ToursListingClientProps {
   sections: SectionDto[];
@@ -100,7 +101,6 @@ export default function ToursListingClient({
   const [tourImages, setTourImages] = useState<Record<number, { id: number; url: string }[]>>({});
 
   // FAQ expanded state
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -330,127 +330,6 @@ export default function ToursListingClient({
       return sortOrder === "price_asc" ? priceA - priceB : priceB - priceA;
     });
   }, [tours, selectedCatIds, onlyRecommended, selectedDurations, selectedPriceRanges, sortOrder]);
-
-  // Dynamic FAQs based on backend FAQ section or localized defaults (Image 2 style)
-  const faqItems = useMemo(() => {
-    if (faqSection?.contentData) {
-      try {
-        const parsed = JSON.parse(faqSection.contentData);
-        if (parsed?.categories && Array.isArray(parsed.categories)) {
-          const items: { question: string; answer: string }[] = [];
-          for (const cat of parsed.categories) {
-            if (cat.items && Array.isArray(cat.items)) {
-              for (const it of cat.items) {
-                const q = it.title?.[language] || it.title?.vi || it.title?.en || "";
-                const a = it.content?.[language] || it.content?.vi || it.content?.en || "";
-                if (q && a) {
-                  items.push({ question: q, answer: a });
-                }
-              }
-            }
-          }
-          if (items.length > 0) return items;
-        }
-      } catch (err) {
-        console.warn("Failed to parse tour FAQ section contentData:", err);
-      }
-    }
-
-    const totalCountStr = totalElements > 0 ? String(totalElements) : "24";
-    if (language === "vi") {
-      return [
-        {
-          question: `Minh Khoa Travel có bao nhiêu Du thuyền & Tour ngắm cảnh?`,
-          answer: `Hiện tại chúng tôi cung cấp ${totalCountStr} tour du lịch biển đảo, du thuyền ngắm cảnh vịnh Nha Trang và các chuyến tham quan trọn gói với lịch trình đa dạng, xuất phát hàng ngày.`,
-        },
-        {
-          question: "Những Du thuyền & Tour ngắm cảnh phổ biến nhất là gì?",
-          answer: "Các tour được yêu thích nhất gồm có Tour 3 đảo Cano cao tốc (Hòn Mun - Hòn Tằm - Bãi Tranh), Du thuyền hoàng hôn vịnh Nha Trang với tiệc BBQ, và Tour lặn biển ngắm san hô tại khu bảo tồn biển.",
-        },
-        {
-          question: "Những Du thuyền & Tour ngắm cảnh nào được đánh giá cao nhất?",
-          answer: "Du thuyền ngắm cảnh hoàng hôn Sea Coral và Tour tham quan Điệp Sơn - Dốc Lết được khách hàng đánh giá cao nhất với điểm số 4.9/5 sao nhờ dịch vụ chu đáo và hướng dẫn viên nhiệt tình.",
-        },
-        {
-          question: "Những Tour nào có mức giá hợp lý và tiết kiệm nhất?",
-          answer: "Các tour cano khám phá đảo khởi hành hàng ngày có mức giá trọn gói chỉ từ 450.000đ/người đã bao gồm cano cao tốc, bữa trưa hải sản, vé vào cổng các khu du lịch và bảo hiểm.",
-        },
-        {
-          question: "Có Du thuyền hoặc Tour ngắm cảnh nào mới nhất?",
-          answer: "Trải nghiệm Du thuyền Catamaran hiện đại khám phá các vùng vịnh hoang sơ và lặn biển ngắm san hô bằng bình khí là dịch vụ mới nhất được đưa vào phục vụ mùa du lịch năm nay.",
-        },
-      ];
-    } else if (language === "ko") {
-      return [
-        {
-          question: "나트랑 크루즈 및 투어 상품은 몇 개가 있나요?",
-          answer: `현재 ${totalCountStr}개의 나트랑 섬 투어, 일몰 크루즈 및 일일 관광 패키지를 매일 운영하고 있습니다.`,
-        },
-        {
-          question: "가장 인기 있는 크루즈 및 투어는 무엇인가요?",
-          answer: "스피드보트 3개 섬 호핑 투어(혼문, 혼탐), 나트랑 만 일몰 디너 크루즈, 디엡손 섬 투어가 가장 인기가 많습니다.",
-        },
-        {
-          question: "가장 높은 평점을 받은 투어는 무엇인가요?",
-          answer: "씨코랄 일몰 크루즈와 프라이빗 섬 투어가 평점 4.9점 이상으로 여행객들에게 최고 평가를 받고 있습니다.",
-        },
-        {
-          question: "가장 가성비 좋은 투어 상품은 무엇인가요?",
-          answer: "스피드보트 1일 섬 투어는 보트 이동, 점심 식사, 입장료가 모두 포함되어 1인당 450,000동부터 이용 가능합니다.",
-        },
-        {
-          question: "최신 신규 투어 상품은 무엇인가요?",
-          answer: "최신식 카타마란 요트 프라이빗 투어와 스쿠버 다이빙 패키지가 새롭게 추가되었습니다.",
-        },
-      ];
-    } else if (language === "ru") {
-      return [
-        {
-          question: "Сколько круизов и туров доступно в Нячанге?",
-          answer: `В настоящее время мы предлагаем ${totalCountStr} туров по островам, закатных круизов и экскурсий с ежедневным отправлением.`,
-        },
-        {
-          question: "Какие туры и круизы самые популярные?",
-          answer: "Самые популярные: тур на скоростном катере по 3 островам (Хон Мун, Хон Там), круиз на закате с ужином и тур на остров Диеп Шон.",
-        },
-        {
-          question: "Какие туры имеют наивысший рейтинг?",
-          answer: "Закатный круиз Sea Coral и индивидуальные морские прогулки имеют среднюю оценку 4.9/5 звезд по отзывам туристов.",
-        },
-        {
-          question: "Какие туры наиболее доступны по цене?",
-          answer: "Однодневные островные туры на катере доступны от 450 000 VND с включенным обедом, трансфером и страховкой.",
-        },
-        {
-          question: "Какие новые туры появились недавно?",
-          answer: "Новейшие программы включают прогулки на роскошном катамаране и дайвинг с аквалангом в заповедных бухтах.",
-        },
-      ];
-    }
-    // Default English
-    return [
-      {
-        question: `How many scenic cruises & tours are available?`,
-        answer: `We currently offer ${totalCountStr} island tours, scenic sunset cruises, and sightseeing packages departing daily in Nha Trang.`,
-      },
-      {
-        question: "What are the most popular cruises and tours?",
-        answer: "The top choices include the 3-Island Speedboat Tour (Hon Mun, Hon Tam), the Nha Trang Sunset Dinner Cruise with live music, and the Diep Son underwater sandbar tour.",
-      },
-      {
-        question: "Which cruises and tours have the highest ratings?",
-        answer: "The Sea Coral Sunset Cruise and private island tours are rated 4.9/5 stars by over 1,000 satisfied travelers.",
-      },
-      {
-        question: "Which tours offer the best value for money?",
-        answer: "Our daily island speedboat tours start from only 450,000 VND per person, fully including boat transport, seafood lunch, entrance tickets, and insurance.",
-      },
-      {
-        question: "What are the newest cruise and tour experiences?",
-        answer: "The luxury Catamaran cruise exploring untouched bays and professional scuba diving experiences are our latest premium additions.",
-      },
-    ];
-  }, [language, totalElements]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
@@ -1063,40 +942,8 @@ export default function ToursListingClient({
           </div>
         )}
 
-        {/* FAQ Accordion Section (Klook Image 2 style) */}
-        <section className="w-full max-w-5xl mx-auto pt-10 pb-12 space-y-5">
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-            {resolveTranslation(faqSection?.translations, language)?.title || t.tours.faqTourTitle}
-          </h2>
-
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-[var(--bg-surface)] divide-y divide-slate-100 dark:divide-slate-800 shadow-xs">
-            {faqItems.map((item, idx) => {
-              const isOpen = expandedFaq === idx;
-              return (
-                <div key={idx} className="transition-colors">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 hover:text-accent transition-colors cursor-pointer border-none bg-transparent"
-                  >
-                    <span className="pr-4">{item.question}</span>
-                    <ChevronDown
-                      size={16}
-                      className={`text-slate-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? "rotate-180 text-accent" : ""
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <div className="px-4 sm:px-5 pb-5 pt-0 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed animate-in fade-in duration-200">
-                      {item.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        {/* FAQ Section (CMS-driven; hidden when no FAQ section configured) */}
+        {faqSection && <FaqSection section={faqSection} locale={language} />}
       </main>
     </div>
   );

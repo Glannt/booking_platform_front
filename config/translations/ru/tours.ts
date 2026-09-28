@@ -1,4 +1,4 @@
-export const tours = {
+﻿export const tours = {
   title: "Туры по Нячангу",
   subtitle: "Откройте Нячанг с качественными турами по лучшим ценам.",
   search: "Поиск туров",
@@ -151,7 +151,6 @@ export const tours = {
   hotelPickup: "Трансфер из отеля",
   freeCancellation: "Бесплатная отмена",
   bookedCount: "Забронировано",
-  faqTourTitle: "Часто задаваемые вопросы о круизах и турах",
   sortBy: "Сортировка",
   recommendedSort: "Рекомендуемые",
 };
