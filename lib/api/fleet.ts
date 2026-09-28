@@ -230,9 +230,13 @@ export async function deleteVehicleCategory(id: number): Promise<void> {
 
 export async function getVehicles(params?: {
   keyword?: string;
+  page?: number;
+  size?: number;
 }): Promise<ApiResponse<PaginatedResponse<VehicleDto>>> {
   const query = new URLSearchParams();
   if (params?.keyword !== undefined) query.append("keyword", params.keyword);
+  if (params?.page !== undefined) query.append("page", params.page.toString());
+  if (params?.size !== undefined) query.append("size", params.size.toString());
   const queryString = query.toString();
   return apiFetch<ApiResponse<PaginatedResponse<VehicleDto>>>(`/api/v1/vehicles${queryString ? `?${queryString}` : ""}`);
 }

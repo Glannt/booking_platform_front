@@ -4,15 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Search,
   Plus,
-  Trash2,
   RefreshCw,
   Car,
   Layers,
-  Eye,
-  Edit3
+  Wrench
 } from "lucide-react";
 import type { SortDescriptor } from "@heroui/react";
-import { Button, Pagination, SearchField, Spinner, Table, Tabs, toast, Tooltip } from "@heroui/react";
+import { Button, Pagination, SearchField, Spinner, Table, Tabs, toast } from "@heroui/react";
 
 import { StatusChip } from "@/components/StatusChip";
 import { ImageGrid } from "@/components/ImageGallery";
@@ -21,6 +19,7 @@ import {
   VehicleDetailModal,
   VehicleCategoryCreateModal,
   VehicleCategoryDetailModal,
+  VehicleAttributesTab,
 } from "@/components/admin/vehicles";
 
 import {
@@ -38,6 +37,7 @@ import { ColumnInterface } from "@/lib/interface/column.interface";
 import { useI18n } from "@/context/LanguageContext";
 import { headerColumns } from "@/config/headerColumns";
 import PageSizeSelect from "@/components/common/PageSizeSelect";
+import { TableEmptyState, RowActionButtons } from "@/components/common";
 
 
 export default function VehiclesManagementPage() {
@@ -48,7 +48,7 @@ export default function VehiclesManagementPage() {
    * Tabs
    */
   const [activeTab, setActiveTab] =
-    useState<"vehicles" | "categories">("vehicles");
+    useState<"vehicles" | "categories" | "attributes">("vehicles");
   const [pageSize, setPageSize] = useState<number>(10);
 
 
@@ -287,17 +287,17 @@ export default function VehiclesManagementPage() {
 
 
 
-  const handleSaveSuccess = () => {
+  const handleSaveSuccess = async () => {
 
-    fetchInitialData();
+    await fetchInitialData();
 
   };
 
 
 
-  const handleCategorySaveSuccess = () => {
+  const handleCategorySaveSuccess = async () => {
 
-    fetchInitialData();
+    await fetchInitialData();
 
   };
 
@@ -599,7 +599,7 @@ export default function VehiclesManagementPage() {
           onSelectionChange={(key) => {
 
             setActiveTab(
-              key as "vehicles" | "categories"
+              key as "vehicles" | "categories" | "attributes"
             );
 
             setSearchTerm("");
@@ -621,6 +621,13 @@ export default function VehiclesManagementPage() {
               </span>
               <Tabs.Indicator className="bg-[#ffcc00a4]" />
             </Tabs.Tab>
+            <Tabs.Tab id="attributes">
+              <span className="flex items-center gap-2">
+                <Wrench size={16} />
+                Phụ kiện & Tiện nghi
+              </span>
+              <Tabs.Indicator className="bg-[#ffcc00a4]" />
+            </Tabs.Tab>
           </Tabs.List>
         </Tabs>
       </div>
@@ -633,6 +640,8 @@ export default function VehiclesManagementPage() {
         p-6 rounded-2xl
         border
       ">
+        {activeTab !== "attributes" && (
+          <>
         <SearchField name="search" value={searchTerm} onChange={(e: string) => setSearchTerm(e)} fullWidth className={`min-w-[200px]`}>
           <SearchField.Group className={` rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-black/10 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[yellow-500] dark:focus:ring-yellow-500/30 text-sm font-bold`}>
             <SearchField.SearchIcon />
@@ -657,6 +666,8 @@ export default function VehiclesManagementPage() {
             }
           }}
         />
+          </>
+        )}
         <div className="flex gap-3">
           <Button
             variant="outline"
@@ -716,15 +727,11 @@ export default function VehiclesManagementPage() {
               ?
               (
                 filteredVehicles.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center px-6 bg-white dark:bg-black/10">
-                    <Car className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-                      Không tìm thấy kết quả
-                    </h3>
-                    <p className="text-sm text-slate-500 max-w-sm">
-                      Không có xe nào được tìm thấy.
-                    </p>
-                  </div>
+                  <TableEmptyState
+                    icon={Car}
+                    title="Không tìm thấy kết quả"
+                    description="Không có xe nào được tìm thấy."
+                  />
                 ) : (
                   <Table aria-label="Bảng danh sách phương tiện">
                     <Table.ScrollContainer>
@@ -782,71 +789,24 @@ export default function VehiclesManagementPage() {
                                 <StatusChip status={String(vehicle.active)} type="active" />
                               </Table.Cell>
                               <Table.Cell>
-                                <div className="flex items-center gap-1.5">
-                                  <Tooltip delay={300} closeDelay={100}>
-                                    <Tooltip.Trigger>
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        variant="tertiary"
-                                        aria-label="Xem chi tiết xe"
-                                        onPress={() => {
-                                          setSelectedVehicle(vehicle);
-                                          setDefaultEditMode(false);
-                                          setDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <Eye size={16} />
-                                      </Button>
-                                    </Tooltip.Trigger>
-                                    <Tooltip.Content>
-                                      <Tooltip.Arrow />
-                                      Xem chi tiết
-                                    </Tooltip.Content>
-                                  </Tooltip>
-
-                                  <Tooltip delay={300} closeDelay={100}>
-                                    <Tooltip.Trigger>
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        variant="secondary"
-                                        aria-label="Sửa xe"
-                                        onPress={() => {
-                                          setSelectedVehicle(vehicle);
-                                          setDefaultEditMode(true);
-                                          setDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <Edit3 size={16} />
-                                      </Button>
-                                    </Tooltip.Trigger>
-                                    <Tooltip.Content>
-                                      <Tooltip.Arrow />
-                                      Chỉnh sửa
-                                    </Tooltip.Content>
-                                  </Tooltip>
-
-                                  <Tooltip delay={300} closeDelay={100}>
-                                    <Tooltip.Trigger>
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        variant="danger"
-                                        aria-label="Xóa xe"
-                                        onPress={() => {
-                                          handleDeleteVehicle(vehicle.id);
-                                        }}
-                                      >
-                                        <Trash2 size={16} />
-                                      </Button>
-                                    </Tooltip.Trigger>
-                                    <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                      <Tooltip.Arrow />
-                                      Xóa xe
-                                    </Tooltip.Content>
-                                  </Tooltip>
-                                </div>
+                                <RowActionButtons
+                                  onView={() => {
+                                    setSelectedVehicle(vehicle);
+                                    setDefaultEditMode(false);
+                                    setDetailsModalOpen(true);
+                                  }}
+                                  viewLabel="Xem chi tiết"
+                                  onEdit={() => {
+                                    setSelectedVehicle(vehicle);
+                                    setDefaultEditMode(true);
+                                    setDetailsModalOpen(true);
+                                  }}
+                                  editLabel="Chỉnh sửa"
+                                  onDelete={() => {
+                                    handleDeleteVehicle(vehicle.id);
+                                  }}
+                                  deleteLabel="Xóa xe"
+                                />
                               </Table.Cell>
                             </Table.Row>
                           ))}
@@ -894,17 +854,15 @@ export default function VehiclesManagementPage() {
                 )
               )
               :
+              activeTab === "categories"
+              ?
               (
                 filteredCategories.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center px-6 bg-white dark:bg-black/10">
-                    <Car className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-                      Không tìm thấy kết quả
-                    </h3>
-                    <p className="text-sm text-slate-500 max-w-sm">
-                      Không có loại xe nào được tìm thấy
-                    </p>
-                  </div>
+                  <TableEmptyState
+                    icon={Car}
+                    title="Không tìm thấy kết quả"
+                    description="Không có loại xe nào được tìm thấy"
+                  />
                 )
                   : (
                     <Table aria-label="Bảng danh sách phân loại xe">
@@ -953,71 +911,24 @@ export default function VehiclesManagementPage() {
                                   <StatusChip status={String(category.active)} type="active" />
                                 </Table.Cell>
                                 <Table.Cell>
-                                  <div className="flex items-center gap-1.5">
-                                    <Tooltip delay={300} closeDelay={100}>
-                                      <Tooltip.Trigger>
-                                        <Button
-                                          isIconOnly
-                                          size="sm"
-                                          variant="tertiary"
-                                          aria-label="Xem chi tiết danh mục"
-                                          onPress={() => {
-                                            setSelectedCategory(category);
-                                            setCatDefaultEditMode(false);
-                                            setCatDetailsModalOpen(true);
-                                          }}
-                                        >
-                                          <Eye size={16} />
-                                        </Button>
-                                      </Tooltip.Trigger>
-                                      <Tooltip.Content>
-                                        <Tooltip.Arrow />
-                                        Xem chi tiết
-                                      </Tooltip.Content>
-                                    </Tooltip>
-
-                                    <Tooltip delay={300} closeDelay={100}>
-                                      <Tooltip.Trigger>
-                                        <Button
-                                          isIconOnly
-                                          size="sm"
-                                          variant="secondary"
-                                          aria-label="Sửa danh mục"
-                                          onPress={() => {
-                                            setSelectedCategory(category);
-                                            setCatDefaultEditMode(true);
-                                            setCatDetailsModalOpen(true);
-                                          }}
-                                        >
-                                          <Edit3 size={16} />
-                                        </Button>
-                                      </Tooltip.Trigger>
-                                      <Tooltip.Content>
-                                        <Tooltip.Arrow />
-                                        Chỉnh sửa
-                                      </Tooltip.Content>
-                                    </Tooltip>
-
-                                    <Tooltip delay={300} closeDelay={100}>
-                                      <Tooltip.Trigger>
-                                        <Button
-                                          isIconOnly
-                                          size="sm"
-                                          variant="danger"
-                                          aria-label="Xóa danh mục"
-                                          onPress={() => {
-                                            handleDeleteCategory(category.id);
-                                          }}
-                                        >
-                                          <Trash2 size={16} />
-                                        </Button>
-                                      </Tooltip.Trigger>
-                                      <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                        <Tooltip.Arrow />
-                                        Xóa danh mục
-                                      </Tooltip.Content>
-                                    </Tooltip>
-                                  </div>
+                                  <RowActionButtons
+                                    onView={() => {
+                                      setSelectedCategory(category);
+                                      setCatDefaultEditMode(false);
+                                      setCatDetailsModalOpen(true);
+                                    }}
+                                    viewLabel="Xem chi tiết"
+                                    onEdit={() => {
+                                      setSelectedCategory(category);
+                                      setCatDefaultEditMode(true);
+                                      setCatDetailsModalOpen(true);
+                                    }}
+                                    editLabel="Chỉnh sửa"
+                                    onDelete={() => {
+                                      handleDeleteCategory(category.id);
+                                    }}
+                                    deleteLabel="Xóa danh mục"
+                                  />
                                 </Table.Cell>
                               </Table.Row>
                             ))}
@@ -1064,6 +975,10 @@ export default function VehiclesManagementPage() {
                     </Table>
                   )
 
+              )
+              :
+              (
+                <VehicleAttributesTab showToast={showToast} />
               )
         }
       </div>
