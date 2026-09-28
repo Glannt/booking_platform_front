@@ -6,4 +6,3 @@ export { default as TourDetailModal } from "./TourDetailModal";
 export * from "./TourOptionIconPicker";
 export { default as TourPackageModal } from "./TourPackageModal";
 export { default as TourPolicyCreateUpdateModal, TourPolicyCreateUpdateModal as TourPolicyCreateUpdateModalNamed } from "./TourPolicyCreateUpdateModal";
-export { default as TourPolicyDeleteModal, TourPolicyDeleteModal as TourPolicyDeleteModalNamed } from "./TourPolicyDeleteModal";
