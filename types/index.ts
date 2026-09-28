@@ -6,4 +6,5 @@ export type IconSvgProps = SVGProps<SVGSVGElement> & {
 
 export * from "./deposit";
 export * from "./direction";
+export * from "./intercity";
 export * from "./routeComponents";
