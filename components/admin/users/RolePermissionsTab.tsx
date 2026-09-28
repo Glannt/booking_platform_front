@@ -10,8 +10,10 @@ import {
   Save,
   CheckSquare,
   Square,
+  Plus,
+  Pencil,
 } from "lucide-react";
-import { Button, Spinner, toast } from "@heroui/react";
+import { Button, Spinner, Tooltip, toast } from "@heroui/react";
 import {
   getRoles,
   getAllPermissions,
@@ -19,12 +21,15 @@ import {
   RoleDto,
   PermissionDto,
 } from "@/lib/api/roles";
+import PermissionCreateUpdateModal from "./PermissionCreateUpdateModal";
 
 const groupLabels: Record<string, { label: string; desc: string }> = {
   AIRPORT: { label: "Đưa đón sân bay", desc: "Quản lý sân bay, tuyến xe và giá đưa đón sân bay" },
   SURCHARGE: { label: "Phụ thu", desc: "Quy tắc và liên kết phụ thu tự động" },
   TOUR: { label: "Tour Du lịch", desc: "Quản lý danh mục và lịch trình tour" },
   VEHICLE: { label: "Đội xe & Phân khúc", desc: "Quản lý phương tiện và phân khúc xe" },
+  ADDON: { label: "Phụ kiện (Add-on)", desc: "Quản lý phụ kiện và danh mục phụ kiện của xe" },
+  AMENITY: { label: "Tiện nghi (Amenity)", desc: "Quản lý tiện nghi và danh mục tiện nghi của xe" },
   INTERCITY: { label: "Tuyến Liên tỉnh", desc: "Quản lý các tuyến đường và bảng giá liên tỉnh" },
   BOOKING: { label: "Đơn đặt xe & Tour", desc: "Xem, duyệt và xử lý đơn đặt của khách hàng" },
   MEDIA: { label: "Media & Hình ảnh", desc: "Tải lên và quản lý thư viện hình ảnh" },
@@ -42,6 +47,8 @@ export default function RolePermissionsTab() {
   const [selectedRole, setSelectedRole] = useState<string>("STAFF");
   const [editingPermissions, setEditingPermissions] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
+  const [editingPermission, setEditingPermission] = useState<PermissionDto | null>(null);
 
   const loadData = async () => {
     try {
@@ -145,15 +152,26 @@ export default function RolePermissionsTab() {
             </div>
           </div>
 
-          <Button
-            size="sm"
-            aria-label="Làm mới ma trận phân quyền"
-            onClick={loadData}
-            className="rounded-xl font-bold bg-neutral-100 hover:bg-neutral-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-neutral-700 dark:text-neutral-200 cursor-pointer flex items-center gap-1.5"
-          >
-            <RefreshCw size={14} />
-            Làm mới
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              aria-label="Thêm quyền hạn mới"
+              onClick={() => { setEditingPermission(null); setPermissionModalOpen(true); }}
+              className="rounded-xl font-bold bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              Thêm quyền hạn
+            </Button>
+            <Button
+              size="sm"
+              aria-label="Làm mới ma trận phân quyền"
+              onClick={loadData}
+              className="rounded-xl font-bold bg-neutral-100 hover:bg-neutral-200 dark:bg-[var(--bg-card)] dark:hover:bg-[var(--bg-elevated)] text-neutral-700 dark:text-neutral-200 cursor-pointer flex items-center gap-1.5"
+            >
+              <RefreshCw size={14} />
+              Làm mới
+            </Button>
+          </div>
         </div>
 
         {/* Role Pills */}
@@ -261,31 +279,56 @@ export default function RolePermissionsTab() {
                     {perms.map(perm => {
                       const active = editingPermissions.has(perm.code);
                       return (
-                        <button
+                        <div
                           key={perm.code}
-                          type="button"
-                          aria-label={`Quyền ${perm.name} (${perm.code})`}
-                          onClick={() => togglePerm(perm.code)}
-                          className={`flex items-center justify-between p-3 rounded-xl text-xs font-bold border transition-all text-left cursor-pointer ${active
-                              ? "bg-white dark:bg-[var(--bg-surface)] text-accent border-accent/40 shadow-xs ring-1 ring-accent/20"
-                              : "bg-white dark:bg-[var(--bg-surface)] text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+                          className={`flex items-stretch rounded-xl border transition-all overflow-hidden ${active
+                              ? "border-accent/40 shadow-xs ring-1 ring-accent/20"
+                              : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
                             }`}
                         >
-                          <div className="flex flex-col pr-2">
-                            <span className={active ? "text-neutral-900 dark:text-white" : ""}>
-                              {perm.name}
-                            </span>
-                            <span className="text-[10px] font-mono text-neutral-400 font-normal">
-                              {perm.code}
-                            </span>
-                          </div>
-                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${active
-                              ? "bg-accent text-accent-foreground"
-                              : "bg-neutral-100 dark:bg-[var(--bg-elevated)] text-neutral-400"
-                            }`}>
-                            {active ? <Check size={12} strokeWidth={3} /> : <X size={12} />}
-                          </div>
-                        </button>
+                          <button
+                            type="button"
+                            aria-label={`Quyền ${perm.name} (${perm.code})`}
+                            onClick={() => togglePerm(perm.code)}
+                            className={`flex-1 flex items-center justify-between p-3 text-xs font-bold transition-all text-left cursor-pointer ${active
+                                ? "bg-white dark:bg-[var(--bg-surface)] text-accent"
+                                : "bg-white dark:bg-[var(--bg-surface)] text-neutral-600 dark:text-neutral-400"
+                              }`}
+                          >
+                            <div className="flex flex-col pr-2">
+                              <span className={active ? "text-neutral-900 dark:text-white" : ""}>
+                                {perm.name}
+                              </span>
+                              <span className="text-[10px] font-mono text-neutral-400 font-normal">
+                                {perm.code}
+                              </span>
+                            </div>
+                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${active
+                                ? "bg-accent text-accent-foreground"
+                                : "bg-neutral-100 dark:bg-[var(--bg-elevated)] text-neutral-400"
+                              }`}>
+                              {active ? <Check size={12} strokeWidth={3} /> : <X size={12} />}
+                            </div>
+                          </button>
+                          <Tooltip delay={300} closeDelay={100}>
+                            <Tooltip.Trigger>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Chỉnh sửa quyền ${perm.code}`}
+                                onPress={() => { setEditingPermission(perm); setPermissionModalOpen(true); }}
+                                className="bg-white dark:bg-[var(--bg-surface)] rounded-none border-l border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-accent cursor-pointer"
+                              >
+                                <Pencil size={13} />
+                              </Button>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Tooltip.Arrow />
+                              Sửa quyền
+                            </Tooltip.Content>
+                          </Tooltip>
+                        </div>
                       );
                     })}
                   </div>
@@ -308,6 +351,13 @@ export default function RolePermissionsTab() {
           </div>
         </div>
       )}
+
+      <PermissionCreateUpdateModal
+        isOpen={permissionModalOpen}
+        onClose={() => setPermissionModalOpen(false)}
+        onSaved={loadData}
+        editingPermission={editingPermission}
+      />
     </div>
   );
 }

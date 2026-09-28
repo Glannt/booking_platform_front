@@ -28,13 +28,14 @@ import {
 import { StatusChip } from "@/components/StatusChip";
 import { SectionCreateModal, SectionDetailModal } from "@/components/admin/sections";
 import { useI18n } from "@/context/LanguageContext";
+import { useAuthStore } from "@/lib/store/authStore";
 import { headerColumns } from "@/config/headerColumns";
 import {
   getSectionsByPagePath,
   deleteSection,
   SectionDto,
 } from "@/lib/api/sections";
-import { PageSizeSelect } from "@/components/common";
+import { PageSizeSelect, TableLoadingState, TableEmptyState } from "@/components/common";
 
 const PAGE_PATHS = [
   { value: "/", label: "Trang chủ" },
@@ -51,10 +52,13 @@ const SECTION_TYPES = [
   { value: "TESTIMONIALS", label: "Đánh giá" },
   { value: "CTA", label: "Call to Action" },
   { value: "BANNER", label: "Banner" },
+  { value: "FAQ", label: "FAQ (Câu hỏi thường gặp)" },
 ];
 
 export default function SectionsManagementPage() {
   const { t } = useI18n();
+  const { user: authUser } = useAuthStore();
+  const isModerator = authUser?.role === "MODERATOR";
   const [sections, setSections] = useState<SectionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -241,38 +245,31 @@ export default function SectionsManagementPage() {
             Làm mới
           </Button>
 
-          <Button
-            className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
-            onClick={() => {
-              setSelectedSection(null);
-              setCreateModalOpen(true);
-            }}
-          >
-            <Plus size={16} />
-            <span>Thêm Section</span>
-          </Button>
+          {!isModerator && (
+            <Button
+              className="rounded-xl font-bold text-xs h-10 px-4 bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm cursor-pointer border-none flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                setSelectedSection(null);
+                setCreateModalOpen(true);
+              }}
+            >
+              <Plus size={16} />
+              <span>Thêm Section</span>
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-separator shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <RefreshCw className="animate-spin text-primary" size={32} />
-            <p className="text-sm font-bold text-slate-500">
-              Đang tải danh sách sections...
-            </p>
-          </div>
+          <TableLoadingState message="Đang tải danh sách sections..." />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <Layers className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1">
-              Không tìm thấy section
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm">
-              Chưa có section nào cho trang này.
-            </p>
-          </div>
+          <TableEmptyState
+            icon={Layers}
+            title="Không tìm thấy section"
+            description="Chưa có section nào cho trang này."
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table aria-label="Bảng quản lý sections" className="w-full text-left">
@@ -374,25 +371,27 @@ export default function SectionsManagementPage() {
                                 </Tooltip.Content>
                               </Tooltip>
 
-                              <Tooltip delay={300} closeDelay={100}>
-                                <Tooltip.Trigger>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="danger"
-                                    aria-label="Xóa section"
-                                    onPress={() => {
-                                      if (s.id) handleDelete(s.id);
-                                    }}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Content className="text-rose-600 dark:text-rose-400">
-                                  <Tooltip.Arrow />
-                                  Xóa section
-                                </Tooltip.Content>
-                              </Tooltip>
+                              {!isModerator && (
+                                <Tooltip delay={300} closeDelay={100}>
+                                  <Tooltip.Trigger>
+                                    <Button
+                                      isIconOnly
+                                      size="sm"
+                                      variant="danger"
+                                      aria-label="Xóa section"
+                                      onPress={() => {
+                                        if (s.id) handleDelete(s.id);
+                                      }}
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content className="text-rose-600 dark:text-rose-400">
+                                    <Tooltip.Arrow />
+                                    Xóa section
+                                  </Tooltip.Content>
+                                </Tooltip>
+                              )}
                             </div>
                           </Table.Cell>
                         </Table.Row>
@@ -443,8 +442,8 @@ export default function SectionsManagementPage() {
           }
         }}
         onSuccess={async () => {
-          setCreateModalOpen(false);
           await fetchSections();
+          setCreateModalOpen(false);
           if (selectedSection) {
             setDetailsModalOpen(true);
           }

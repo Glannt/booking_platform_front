@@ -36,3 +36,33 @@ export async function updateRolePermissions(
   if (res && typeof res === "object" && "data" in res) return (res as any).data;
   return res as RoleDto;
 }
+
+export interface PermissionPayload {
+  code: string;
+  name: string;
+  description: string;
+}
+
+export async function createPermission(payload: PermissionPayload): Promise<PermissionDto> {
+  const res = await apiFetch<PermissionDto | ApiResponse<PermissionDto>>("/api/v1/admin/roles/permissions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (res && typeof res === "object" && "data" in res) return (res as any).data;
+  return res as PermissionDto;
+}
+
+export async function updatePermission(
+  code: string,
+  payload: Pick<PermissionPayload, "name" | "description">
+): Promise<PermissionDto> {
+  const res = await apiFetch<PermissionDto | ApiResponse<PermissionDto>>(
+    `/api/v1/admin/roles/permissions/${encodeURIComponent(code)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }
+  );
+  if (res && typeof res === "object" && "data" in res) return (res as any).data;
+  return res as PermissionDto;
+}
