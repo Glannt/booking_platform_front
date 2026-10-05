@@ -18,7 +18,7 @@ import {
 } from "@heroui/react";
 import type { IntercityRouteDto, IntercityRoutePriceDto } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
-import { calcIntercityPrivatePrice } from "@/lib/pricing";
+
 import { parseRouteComponents, extractComponentContent, DEFAULT_COMPARISON_DATA, type ComparisonItemData } from "@/types/routeComponents";
 import { ScopedDiscountTab } from "../discount/ScopedDiscountTab";
 
@@ -324,18 +324,16 @@ export function RouteDetailModal({
                             <Table.Header>
                               <Table.Column isRowHeader>DÒNG XE</Table.Column>
                               <Table.Column>PHÂN LOẠI</Table.Column>
-                              <Table.Column>GIÁ 1 CHIỀU / THEO NGÀY</Table.Column>
-                              <Table.Column>GIÁ KHỨ HỒI</Table.Column>
-                              <Table.Column>ĐẶT CỌC</Table.Column>
+                              <Table.Column>GIÁ</Table.Column>
                               <Table.Column>TRẠNG THÁI</Table.Column>
                             </Table.Header>
                             <Table.Body>
                               {prices.map((p) => {
+                                // One row = one price type. `basePrice` is that type's price,
+                                // full stop: never derived from another row and never doubled.
                                 const isDaily = p.priceTypeCode === "DAILY_RATE" || p.priceTypeCategory === "DAILY_RATE";
                                 const isRoundTripType = p.priceTypeCode === "ROUND_TRIP_SAME_DAY";
-                                const oneWay = p.oneWayPrice || p.fixedPriceOneWay || (!isDaily && !isRoundTripType ? p.basePrice : 0) || 0;
-                                const roundTrip = p.roundTripPrice || p.fixedPriceRoundTrip || (isRoundTripType ? p.basePrice : (oneWay > 0 ? oneWay * 2 : 0)) || 0;
-                                const dailyRate = p.dailyRatePrice || p.dailyRate || (isDaily ? p.basePrice : 0) || 0;
+                                const amount = Number(p.basePrice ?? 0);
 
                                 return (
                                   <Table.Row key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-[var(--bg-elevated)]">
@@ -358,36 +356,20 @@ export function RouteDetailModal({
                                       )}
                                     </Table.Cell>
                                     <Table.Cell className="font-extrabold text-amber-500">
-                                      {isDaily ? (
+                                      {amount > 0 ? (
                                         <div className="flex flex-col">
-                                          <span>{dailyRate > 0 ? `${dailyRate.toLocaleString()} ${p.currency || "VND"}/ngày` : "—"}</span>
-                                          <span className="text-[10px] text-slate-400 font-normal">Tối thiểu {p.minDays || p.minimumDays || 1} ngày</span>
-                                        </div>
-                                      ) : (
-                                        <span>{oneWay > 0 ? `${oneWay.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
-                                      )}
-                                    </Table.Cell>
-                                    <Table.Cell className="font-extrabold text-amber-500">
-                                      {isDaily ? (
-                                        <span className="text-slate-400 font-normal italic">Theo ngày</span>
-                                      ) : (
-                                        <div className="flex flex-col">
-                                          <span>{roundTrip > 0 ? `${roundTrip.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
-                                          {!p.roundTripPrice && !p.fixedPriceRoundTrip && !isRoundTripType && oneWay > 0 && (
-                                            <span className="text-[10px] text-slate-400 font-normal">(2× một chiều)</span>
+                                          <span>
+                                            {amount.toLocaleString()} {p.currency || "VND"}
+                                            {isDaily ? "/ngày" : ""}
+                                          </span>
+                                          {isDaily && (
+                                            <span className="text-[10px] text-slate-400 font-normal">
+                                              Tối thiểu {p.minDays ?? 1} ngày
+                                            </span>
                                           )}
                                         </div>
-                                      )}
-                                    </Table.Cell>
-                                    <Table.Cell className="font-semibold text-slate-700 dark:text-slate-300">
-                                      {p.depositType === "FIXED" ? (
-                                        <span className="font-bold text-amber-600 dark:text-amber-400">
-                                          {p.depositAmount ? `${p.depositAmount.toLocaleString()} VND (Cố định)` : "Cố định"}
-                                        </span>
                                       ) : (
-                                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                                          {p.depositRate ?? 20}% tổng giá
-                                        </span>
+                                        <span>—</span>
                                       )}
                                     </Table.Cell>
                                     <Table.Cell>

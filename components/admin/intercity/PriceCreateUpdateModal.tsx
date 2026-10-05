@@ -20,7 +20,6 @@ import {
   Typography,
 } from "@heroui/react";
 import {
-  IntercityPricingType,
   type IntercityRouteDto,
   type IntercityRoutePriceDto,
   type PriceListTranslationDto,
@@ -64,9 +63,6 @@ export function PriceCreateUpdateModal({
     overagePricePerKm: string;
     currency: string;
     active: boolean;
-    depositType: "PERCENT" | "FIXED";
-    depositRate: number;
-    depositAmount: string;
   }>({
     routeId: "",
     vehicleCategoryId: "",
@@ -83,9 +79,6 @@ export function PriceCreateUpdateModal({
     overagePricePerKm: "",
     currency: "VND",
     active: true,
-    depositType: "PERCENT",
-    depositRate: 20,
-    depositAmount: "",
   });
 
   const [translations, setTranslations] = useState<Record<string, Record<string, string>>>({
@@ -149,15 +142,12 @@ export function PriceCreateUpdateModal({
             : "",
         waitingFee: editingPrice.waitingFee ? String(editingPrice.waitingFee) : "",
         maxWaitingMin: editingPrice.maxWaitingMin ? String(editingPrice.maxWaitingMin) : "",
-        minDays: editingPrice.minDays || editingPrice.minimumDays || 1,
+        minDays: editingPrice.minDays ?? 1,
         maxDays: editingPrice.maxDays ? String(editingPrice.maxDays) : "",
         kmIncludedPerDay: editingPrice.kmIncludedPerDay ? String(editingPrice.kmIncludedPerDay) : "",
         overagePricePerKm: editingPrice.overagePricePerKm ? String(editingPrice.overagePricePerKm) : "",
         currency: editingPrice.currency || "VND",
         active: editingActive,
-        depositType: editingPrice.depositType || "PERCENT",
-        depositRate: editingPrice.depositRate ?? 20,
-        depositAmount: editingPrice.depositAmount ? String(editingPrice.depositAmount) : "",
       });
     } else {
       setTranslations({
@@ -182,9 +172,6 @@ export function PriceCreateUpdateModal({
         overagePricePerKm: "",
         currency: "VND",
         active: true,
-        depositType: "PERCENT",
-        depositRate: 20,
-        depositAmount: "",
       });
     }
   }, [editingPrice, routeId, routes, categories, isOpen]);
@@ -290,14 +277,12 @@ export function PriceCreateUpdateModal({
         vehicleCategoryId: Number(form.vehicleCategoryId),
         priceTypeCategory: form.category,
         priceTypeCode: form.priceTypeCode,
-        pricingType: IntercityPricingType.FIXED,
         currency: form.currency || "VND",
         active: form.active,
         status: form.active ? "ACTIVE" : "INACTIVE",
         translations: translationList.length > 0 ? translationList : undefined,
-        depositType: form.depositType,
-        depositRate: form.depositType === "PERCENT" ? (form.depositRate ?? 20) : undefined,
-        depositAmount: form.depositType === "FIXED" && form.depositAmount ? Number(form.depositAmount) : undefined,
+        // No deposit fields: price_lists has no deposit policy. It used to be sent here and
+        // silently dropped by the backend, so admins believed they had configured one.
       };
 
       if (form.priceTypeCode === "ONE_WAY") {
@@ -834,95 +819,6 @@ export function PriceCreateUpdateModal({
                 </div>
               )}
 
-              {/* Deposit Configuration */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200/70 dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 block">
-                      Quy định đặt cọc
-                    </Label>
-                    <span className="text-[11px] text-slate-500">
-                      Tỷ lệ hoặc số tiền đặt cọc tính từ tổng giá trị đơn hàng
-                    </span>
-                  </div>
-
-                  <div className="flex items-center bg-white dark:bg-[var(--bg-surface)] p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, depositType: "PERCENT" }))}
-                      className={`text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer ${form.depositType === "PERCENT"
-                          ? "bg-accent text-accent-foreground shadow-xs"
-                          : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                        }`}
-                    >
-                      % Tổng tiền
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, depositType: "FIXED" }))}
-                      className={`text-[11px] font-bold px-3 py-1 rounded-lg transition-colors cursor-pointer ${form.depositType === "FIXED"
-                          ? "bg-accent text-accent-foreground shadow-xs"
-                          : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                        }`}
-                    >
-                      Cố định (VND)
-                    </button>
-                  </div>
-                </div>
-
-                {form.depositType === "PERCENT" ? (
-                  <div>
-                    <Label className="text-xs font-bold block mb-1.5">
-                      % Đặt cọc yêu cầu
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={form.depositRate}
-                        onChange={(e) => setForm((f) => ({ ...f, depositRate: Number(e.target.value) || 0 }))}
-                        className="w-20 h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-xs font-bold text-center text-slate-800 dark:text-slate-100 outline-none"
-                      />
-                      <div className="flex items-center gap-1">
-                        {[10, 20, 30, 50, 100].map((pct) => (
-                          <button
-                            key={pct}
-                            type="button"
-                            onClick={() => setForm((f) => ({ ...f, depositRate: pct }))}
-                            className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${form.depositRate === pct
-                                ? "bg-accent text-accent-foreground border-accent shadow-xs"
-                                : "bg-white dark:bg-[var(--bg-surface)] border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-accent"
-                              }`}
-                          >
-                            {pct}%
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-[11px] text-slate-400 mt-1 block">
-                      Khách hàng sẽ thanh toán trước {form.depositRate}% tổng tiền chuyến đi khi đặt cọc (Mặc định: 20%).
-                    </span>
-                  </div>
-                ) : (
-                  <div>
-                    <Label className="text-xs font-bold block mb-1">
-                      Số tiền đặt cọc cố định (VND)
-                    </Label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={form.depositAmount}
-                      onChange={(e) => setForm((f) => ({ ...f, depositAmount: e.target.value }))}
-                      placeholder="Ví dụ: 200000"
-                      className="w-full max-w-xs h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] text-xs font-bold text-accent outline-none"
-                    />
-                    <span className="text-[11px] text-slate-400 mt-1 block">
-                      Mỗi đơn hàng trên tuyến này sẽ cọc cố định số tiền trên.
-                    </span>
-                  </div>
-                )}
-              </div>
 
               {/* MultiLanguage Translation Input */}
               <div className="pt-2">

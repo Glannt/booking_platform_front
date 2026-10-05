@@ -6,8 +6,8 @@ import { HomeSectionHeader } from "./HomeSectionHeader";
 import { HomeActivityCard } from "./HomeActivityCard";
 import type { IntercityRouteDto } from "@/lib/api/intercity";
 import type { SharedRouteDto } from "@/lib/api/sharedRoute";
-import { calcIntercityPrice } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
+import { useIntercityRoutePrices, lowestPriceForRoute } from "@/lib/queries/useIntercityPrices";
 import { useActiveDiscounts } from "@/lib/queries/useDiscounts";
 import { isPromotionApplicable, buildDiscountTags } from "@/lib/discount-tags";
 
@@ -41,6 +41,8 @@ export function HomeIntercitySection({
   const { data: intercityPromotions = [] } = useActiveDiscounts("INTERCITY_ROUTE");
   const { data: sharedPromotions = [] } = useActiveDiscounts("SHARED_ROUTE");
   const { data: globalPromotions = [] } = useActiveDiscounts("GLOBAL");
+
+  const { data: prices = [] } = useIntercityRoutePrices();
   const allPromotions = useMemo(
     () => [...intercityPromotions, ...sharedPromotions, ...globalPromotions],
     [intercityPromotions, sharedPromotions, globalPromotions]
@@ -100,29 +102,16 @@ export function HomeIntercitySection({
                 : `${backendUrl}${rawImg}`
               : "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80";
 
-            // Calculate lowest price
-            let price = 250000;
-            const activePrices = route.prices?.filter((p) => p.active) ?? [];
-            if (activePrices.length > 0) {
-              const amounts = activePrices
-                .map((p) =>
-                  p.fixedPriceOneWay ||
-                  p.oneWayPrice ||
-                  p.basePrice ||
-                  calcIntercityPrice(route.distanceKm, p.perKmAmount || 0, false)
-                )
-                .filter((a) => a > 0);
-              if (amounts.length > 0) price = Math.min(...amounts);
-            }
+            // Lowest price comes from price_lists — the same source the detail page prices from.
+            const listedPrice = lowestPriceForRoute(prices, route.id!);
+            let price = 0;
 
             // Check if there is a shared route matched
             const matchedShared = sharedRoutes.find(
               (s) => s.linkedIntercityRouteId === route.id || s.id === route.linkedSharedRouteId
             );
             const sharedPrice = matchedShared?.directions?.[0]?.price;
-            if (sharedPrice && sharedPrice > 0) {
-              price = sharedPrice;
-            }
+            price = sharedPrice && sharedPrice > 0 ? sharedPrice : listedPrice ?? 0;
 
             const discounts = buildDiscountTags(
               allPromotions.filter(

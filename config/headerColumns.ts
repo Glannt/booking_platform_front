@@ -251,8 +251,7 @@ export const getIntercityPriceHeaderColumns = (t: any): HeaderColumn[] => [
   createCol("route", "Tuyến đường", { sortable: false }),
   createCol("category", "Loại xe", { sortable: false }),
   createCol("priceType", "Phân loại", { sortable: false }),
-  createCol("oneWay", "Giá 1 chiều / Giá ngày", { sortable: false }),
-  createCol("roundTrip", "Giá khứ hồi", { sortable: false }),
+  createCol("price", "Giá", { sortable: false }),
   createCol("active", t?.common?.status || "Trạng thái", { sortable: true }),
   createCol("actions", t?.common?.actions || "Thao tác", { sortable: false }),
 ];

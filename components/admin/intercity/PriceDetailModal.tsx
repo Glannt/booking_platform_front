@@ -56,23 +56,9 @@ export function PriceDetailModal({
   const isDailyRate =
     price.priceTypeCode === "DAILY_RATE" || price.priceTypeCategory === "DAILY_RATE";
 
-  const oneWayVal =
-    price.oneWayPrice ||
-    price.fixedPriceOneWay ||
-    (!isDailyRate && price.basePrice ? price.basePrice : 0);
-
-  const roundTripVal =
-    price.roundTripPrice ||
-    price.fixedPriceRoundTrip ||
-    (price.priceTypeCode === "ROUND_TRIP_SAME_DAY" && price.basePrice ? price.basePrice : oneWayVal * 2);
-
-  const isFallbackRoundTrip =
-    !price.roundTripPrice && !price.fixedPriceRoundTrip && price.priceTypeCode !== "ROUND_TRIP_SAME_DAY";
-
-  const dailyRateVal =
-    price.dailyRatePrice ||
-    price.dailyRate ||
-    (isDailyRate && price.basePrice ? price.basePrice : 0);
+  // One row = one price type: basePrice IS this type's price. No derivation, no doubling.
+  const basePrice = Number(price.basePrice ?? 0);
+  const dailyRateVal = isDailyRate ? basePrice : 0;
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -156,7 +142,7 @@ export function PriceDetailModal({
                       Số ngày tối thiểu
                     </p>
                     <span className="text-sm font-bold text-foreground">
-                      {price.minDays || price.minimumDays || 1} ngày
+                      {price.minDays ?? 1} ngày
                     </span>
                   </div>
 
@@ -189,42 +175,25 @@ export function PriceDetailModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
                     <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
-                      Giá một chiều
+                      {price.priceTypeCode === "ROUND_TRIP_SAME_DAY"
+                        ? "Giá khứ hồi trong ngày"
+                        : "Giá một chiều"}
                     </p>
                     <div className="flex items-center gap-2">
                       <DollarSign size={16} className="text-emerald-500" />
                       <span className="text-base font-extrabold text-amber-500">
-                        {oneWayVal > 0 ? `${oneWayVal.toLocaleString()} ${price.currency || "VND"}` : "—"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider">
-                        Giá khứ hồi
-                      </p>
-                      {isFallbackRoundTrip && (
-                        <span className="text-[10px] bg-slate-200 dark:bg-[var(--bg-elevated)] text-foreground/70 px-1.5 py-0.5 rounded font-bold">
-                          2× Một chiều
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={16} className="text-emerald-500" />
-                      <span className="text-base font-extrabold text-amber-500">
-                        {roundTripVal > 0 ? `${roundTripVal.toLocaleString()} ${price.currency || "VND"}` : "—"}
+                        {basePrice > 0 ? `${basePrice.toLocaleString()} ${price.currency || "VND"}` : "—"}
                       </span>
                     </div>
                   </div>
 
                   {price.waitingFee != null && price.waitingFee > 0 && (
-                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator col-span-2">
+                    <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
                       <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
                         Phí chờ quá giờ
                       </p>
                       <span className="text-sm font-bold text-foreground">
-                        {price.waitingFee.toLocaleString()} ${price.currency || "VND"} / giờ
+                        {price.waitingFee.toLocaleString()} {price.currency || "VND"} / giờ
                       </span>
                     </div>
                   )}

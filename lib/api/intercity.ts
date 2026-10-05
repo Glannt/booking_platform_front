@@ -10,11 +10,6 @@ export interface IntercityRouteTranslationDto {
   description?: string;
 }
 
-export enum IntercityPricingType {
-  PER_KM = "PER_KM",
-  FIXED = "FIXED",
-}
-
 export interface PriceListTranslationDto {
   id?: number;
   priceListId?: number;
@@ -23,6 +18,10 @@ export interface PriceListTranslationDto {
   description?: string;
 }
 
+/**
+ * One row of price_lists. `basePrice` IS the final price for that priceTypeCode —
+ * never derived, never summed with another row.
+ */
 export interface IntercityRoutePriceDto {
   id?: number;
   priceTypeId?: number;
@@ -33,12 +32,6 @@ export interface IntercityRoutePriceDto {
   scopeRefId?: string;
   routeId?: number;
   vehicleCategoryId: number;
-  perKmAmount?: number;
-  pricingType?: IntercityPricingType;
-  fixedPriceOneWay?: number;
-  fixedPriceRoundTrip?: number;
-  roundTripPrice?: number;
-  roundTripPerKmAmount?: number;
   currency: string;
   basePrice?: number;
   status?: string;
@@ -46,19 +39,18 @@ export interface IntercityRoutePriceDto {
   inDayActive?: boolean;
   dailyRateActive?: boolean;
   translations?: PriceListTranslationDto[];
+  // Route details (ONE_WAY, ROUND_TRIP_SAME_DAY)
   waitingFee?: number;
   maxWaitingMin?: number;
-  dailyRate?: number;
-  dailyRatePrice?: number;
-  minimumDays?: number;
+  // Daily rate details (DAILY_RATE)
   minDays?: number;
   maxDays?: number;
   kmIncludedPerDay?: number;
   overagePricePerKm?: number;
+  /** Batch helpers: the admin modal writes all three codes in one request. */
   oneWayPrice?: number;
-  depositType?: "PERCENT" | "FIXED";
-  depositRate?: number;
-  depositAmount?: number;
+  roundTripPrice?: number;
+  dailyRatePrice?: number;
 }
 
 export interface IntercityPriceCalculateRequest {
@@ -105,7 +97,6 @@ export interface IntercityRouteDto {
   thumbnailUrl?: string;
   imageIds?: number[];
   translations: IntercityRouteTranslationDto[];
-  prices: IntercityRoutePriceDto[];
   departureTimes: IntercityDepartureTimeDto[];
   linkedSharedRouteId?: number | null;
   hasSharedRoute?: boolean;
@@ -225,14 +216,6 @@ export async function updateIntercityRoutePriceStatus(id: number, active: boolea
 export async function deleteIntercityRoutePrice(id: number): Promise<ApiResponse<void>> {
   return apiFetch(`/api/v1/intercity-route-prices/${id}`, {
     method: "DELETE",
-    skipTranslationFilter: true,
-  });
-}
-
-export async function calculateIntercityPrice(req: IntercityPriceCalculateRequest): Promise<ApiResponse<IntercityPriceCalculateResponse>> {
-  return apiFetch("/api/v1/intercity-route-prices/calculate", {
-    method: "POST",
-    body: JSON.stringify(req),
     skipTranslationFilter: true,
   });
 }

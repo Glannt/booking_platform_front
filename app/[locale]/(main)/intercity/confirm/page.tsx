@@ -38,7 +38,7 @@ import type { DateValue } from "@internationalized/date";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 
 import { useI18n } from "@/context/LanguageContext";
-import { getActiveIntercityRoutes, getPublicIntercityRoutePrices, type IntercityRouteDto } from "@/lib/api/intercity";
+import { getActiveIntercityRoutes, getPublicIntercityRoutePrices, type IntercityRouteDto, type IntercityRoutePriceDto } from "@/lib/api/intercity";
 import {
   getVehicleCategories,
   getRentableVehiclesByCategory,
@@ -54,7 +54,7 @@ import {
   type SharedOfficeDto,
 } from "@/lib/api/sharedRoute";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { calcIntercityDailyRatePrice, calcSharedPrice, pickPriceListRow } from "@/lib/pricing";
+import { calcIntercityDailyRatePrice, pickPriceListRow } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
@@ -64,7 +64,9 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { RentalDateRangePicker } from "@/components/date-picker/RentalDateRangePicker";
 import { calculateRentalDays, formatToIsoDate, formatToDisplayDate } from "@/lib/utils/rentalDate";
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
-import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
+// ponytail: price_lists has no deposit policy column, so intercity bookings carry no deposit.
+// Previously the code read an always-undefined field and fell through to showing a fabricated
+// "20% tổng giá" to customers. Upgrade path: add the column, then restore the deposit box here.
 import { DurationMode, IntercityPriceTypeCode, IntercityServiceType, IntercityTripType, PickupType } from "@/types/intercity";
 
 interface CategoryWithVehicles {
@@ -74,9 +76,6 @@ interface CategoryWithVehicles {
   roundTripPrice?: number;
   dailyRate?: number;
   minimumDays?: number;
-  depositType?: "PERCENT" | "FIXED";
-  depositRate?: number;
-  depositAmount?: number;
 }
 
 export default function RentCarConfirmPage() {
@@ -444,18 +443,13 @@ export default function RentCarConfirmPage() {
 
         const allCats = (catsRes?.data?.content ?? []) as VehicleCategoryDto[];
 
-        // Prefer the public price engine — the same source the route detail page uses.
-        // /active only embeds prices from the legacy intercity_route_prices table, which
-        // the backend's initDefaultPrices() wipes — relying on it made this page always
-        // show 0 VND even though the detail page priced the same trip correctly.
-        let routePrices = foundRoute?.prices ?? [];
+        // price_lists is the only price source; the route DTO no longer embeds prices.
+        let routePrices: IntercityRoutePriceDto[] = [];
         try {
           const priceRes = await getPublicIntercityRoutePrices(foundRoute?.id);
-          if (priceRes?.data && priceRes.data.length > 0) {
-            routePrices = priceRes.data;
-          }
+          routePrices = priceRes?.data ?? [];
         } catch {
-          /* keep the foundRoute.prices fallback */
+          /* an unpriced route yields 0 categories rather than a fabricated price */
         }
 
         const catsWithVehicles: CategoryWithVehicles[] = [];
@@ -475,18 +469,13 @@ export default function RentCarConfirmPage() {
 
           const dailyRate = dailyRateEntry ? Number(dailyRateEntry.basePrice ?? 0) : 0;
 
-          const depositEntry = oneWayEntry ?? roundTripEntry ?? dailyRateEntry;
           catsWithVehicles.push({
             category: cat,
             vehicles,
             price: Number(oneWayEntry?.basePrice ?? 0),
             roundTripPrice: Number(roundTripEntry?.basePrice ?? 0),
             dailyRate,
-            minimumDays: dailyRateEntry?.minDays ?? dailyRateEntry?.minimumDays ?? 1,
-            // Deposit only when the price entry actually carries a policy — no silent 20% default.
-            depositType: depositEntry?.depositType,
-            depositRate: depositEntry?.depositRate,
-            depositAmount: depositEntry?.depositAmount,
+            minimumDays: dailyRateEntry?.minDays ?? 1,
           });
         }
 
@@ -537,34 +526,6 @@ export default function RentCarConfirmPage() {
   }, [rawTotalPrice, appliedDiscount]);
 
   const currentTotalPrice = finalTotalPrice;
-
-  const depositCalc = useMemo(() => {
-    // Deposit is only collected when the selected price actually carries a policy.
-    // No silent default (e.g. 20%) — no config on the package means no deposit.
-    if (serviceType === IntercityServiceType.SHARED) return null; // shared routes carry no deposit config
-
-    const config = selectedCategory;
-    if (!config?.depositType) return null;
-
-    if (config.depositType === DepositType.FIXED) {
-      const amount = Number(config.depositAmount ?? 0);
-      if (amount <= 0) return null;
-      return calculateDeposit({
-        totalAmount: finalTotalPrice,
-        depositType: DepositType.FIXED,
-        depositAmount: amount,
-      });
-    }
-
-    const rate = Number(config.depositRate ?? 0);
-    if (rate <= 0) return null;
-    return calculateDeposit({
-      totalAmount: finalTotalPrice,
-      depositType: DepositType.PERCENT,
-      depositRate: rate,
-      defaultRate: 0,
-    });
-  }, [serviceType, finalTotalPrice, selectedCategory]);
 
   const validate = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
@@ -786,9 +747,6 @@ export default function RentCarConfirmPage() {
         dropoffAddress: route?.destinationCity || "",
         basePrice: rawTotalPrice,
         totalPrice: finalTotalPrice,
-        depositType: depositCalc?.depositType as any,
-        depositRate: depositCalc?.depositRate,
-        depositAmount: depositCalc?.depositAmount,
         discountCode: appliedDiscount?.code,
         discountAmount: appliedDiscount?.amount,
       });
@@ -2067,29 +2025,6 @@ export default function RentCarConfirmPage() {
                   </span>
                 </div>
 
-                {/* Deposit Info Box — only when the selected price carries a deposit policy */}
-                {depositCalc && (
-                  <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                        <ShieldCheck size={16} className="text-amber-600 shrink-0" />
-                        {depositCalc.depositType === DepositType.FIXED
-                          ? `${t.discounts.depositRequired} (${t.discounts.depositFixed})`
-                          : `${t.discounts.depositRequired} (${depositCalc.depositRate}%)`}
-                      </span>
-                      <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
-                        {formatPrice(depositCalc.depositAmount)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                      <span>{t.discounts.remainingPayment}:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">
-                        {formatPrice(depositCalc.remainingAmount)}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Submit CTA Button */}
@@ -2117,10 +2052,6 @@ export default function RentCarConfirmPage() {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmBooking}
         totalAmount={finalTotalPrice}
-        depositAmount={depositCalc?.depositAmount}
-        depositRate={depositCalc?.depositRate}
-        depositType={depositCalc?.depositType as any}
-        remainingAmount={depositCalc?.remainingAmount ?? 0}
         submitting={submitting}
         serviceType={serviceType === IntercityServiceType.SHARED ? t.rentCar.sharedService : t.rentCar.privateService}
         summaryItems={
@@ -2158,12 +2089,6 @@ export default function RentCarConfirmPage() {
                   ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
                   : []),
                 { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
-                ...(depositCalc
-                  ? [
-                      { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
-                      { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
-                    ]
-                  : []),
               ]
             : [
                 { label: t.rentCar.route, value: route ? `${route.originCity} ⇌ ${route.destinationCity}` : "" },
@@ -2190,12 +2115,6 @@ export default function RentCarConfirmPage() {
                   ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
                   : []),
                 { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
-                ...(depositCalc
-                  ? [
-                      { label: t.discounts.depositRequired, value: `${formatPrice(depositCalc.depositAmount)}` },
-                      { label: t.discounts.remainingPayment, value: `${formatPrice(depositCalc.remainingAmount)}` },
-                    ]
-                  : []),
               ]
         }
       />

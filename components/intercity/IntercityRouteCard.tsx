@@ -7,7 +7,7 @@ import { useI18n } from "@/context/LanguageContext";
 import type { IntercityRouteDto } from "@/lib/api/intercity";
 import type { SharedRouteDto } from "@/lib/api/sharedRoute";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { calcIntercityPrice } from "@/lib/pricing";
+import { useIntercityRoutePrices, lowestPriceForRoute } from "@/lib/queries/useIntercityPrices";
 import { resolveLocalizedSlug } from "@/lib/i18n-helpers";
 import { backendUrl } from "@/lib/api/client";
 
@@ -50,20 +50,13 @@ export default function IntercityRouteCard({
       : `${backendUrl}${route.thumbnailUrl}`;
   }, [route.thumbnailUrl]);
 
-  const lowestPrivatePrice = useMemo(() => {
-    const activePrices = route.prices?.filter((p) => p.active) ?? [];
-    if (activePrices.length === 0) return null;
-    const amounts = activePrices
-      .map((p) =>
-        p.fixedPriceOneWay ||
-        p.oneWayPrice ||
-        p.basePrice ||
-        calcIntercityPrice(route.distanceKm, p.perKmAmount || 0, false)
-      )
-      .filter((a) => a > 0);
-    if (amounts.length === 0) return null;
-    return Math.min(...amounts);
-  }, [route]);
+  // Shared React Query cache entry across every card on the page: one request, not N.
+  const { data: prices = [] } = useIntercityRoutePrices();
+
+  const lowestPrivatePrice = useMemo(
+    () => lowestPriceForRoute(prices, route.id!),
+    [prices, route.id]
+  );
 
   const matchedSharedRoute = useMemo(() => {
     if (!sharedRoutes || sharedRoutes.length === 0) return null;

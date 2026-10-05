@@ -33,12 +33,11 @@ import AlertModal from "@/components/common/AlertModal";
 import {
   type IntercityRouteDto,
   type IntercityRoutePriceDto,
-  IntercityPricingType,
   updateIntercityRoutePriceStatus,
 } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
-import { calcIntercityPrivatePrice } from "@/lib/pricing";
+
 import {
   buildRouteComponents,
   parseRouteComponents,
@@ -728,7 +727,7 @@ export function RouteCreateUpdateModal({
                                           <span>{priceVal > 0 ? `${priceVal.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
                                           {isDaily && (
                                             <span className="text-[10px] text-slate-400 font-normal">
-                                              Tối thiểu {p.minDays || p.minimumDays || 1} ngày
+                                              Tối thiểu {p.minDays ?? 1} ngày
                                             </span>
                                           )}
                                         </div>

@@ -36,7 +36,7 @@ import { getSharedRoutes, type SharedRouteDto } from "@/lib/api/sharedRoute";
 import { getVehicleCategories, type VehicleCategoryDto } from "@/lib/api/fleet";
 import IntercityRouteCard from "@/components/intercity/IntercityRouteCard";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { calcIntercityPrice } from "@/lib/pricing";
+import { useIntercityRoutePrices, lowestPriceForRoute } from "@/lib/queries/useIntercityPrices";
 import { resolveTranslation } from "@/lib/i18n-helpers";
 import type { SectionDto } from "@/lib/api/sections";
 
@@ -70,6 +70,9 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
   const [sharedRoutes, setSharedRoutes] = useState<SharedRouteDto[]>([]);
   const [catMap, setCatMap] = useState<Map<number, VehicleCategoryDto>>(new Map());
   const [loading, setLoading] = useState(true);
+
+  // Prices live in price_lists and are fetched once, not derived from distanceKm.
+  const { data: prices = [] } = useIntercityRoutePrices();
 
   // Search & Filter states (matching Tours pattern)
   const [searchQuery, setSearchQuery] = useState(initialKeyword);
@@ -136,11 +139,9 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
     };
   }, []);
 
-  const getLowestOneWay = (r: IntercityRouteDto) => {
-    const active = r.prices?.filter((p) => p.active) ?? [];
-    if (active.length === 0) return Infinity;
-    return Math.min(...active.map((p) => calcIntercityPrice(r.distanceKm, p.perKmAmount, false)));
-  };
+  /** Lowest configured one-way fare from price_lists; Infinity when the route is unpriced. */
+  const getLowestOneWay = (r: IntercityRouteDto) =>
+    lowestPriceForRoute(prices, r.id!) ?? Infinity;
 
   // Distinct origin cities for Pill 1
   const originCities = useMemo(() => {
@@ -232,7 +233,7 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
             r.linkedSharedRouteId ||
             sharedRoutes.some((s) => s.linkedIntercityRouteId === r.id || s.id === r.linkedSharedRouteId)
         );
-        const hasPrivate = (r.prices?.filter((p) => p.active) ?? []).length > 0;
+        const hasPrivate = getLowestOneWay(r) !== Infinity;
 
         const matchShared = selectedServices.includes("shared") && hasShared;
         const matchPrivate = selectedServices.includes("private") && hasPrivate;

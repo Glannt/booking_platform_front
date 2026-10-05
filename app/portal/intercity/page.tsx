@@ -39,7 +39,6 @@ import {
   createIntercityRoutePrice,
   updateIntercityRoutePrice,
   deleteIntercityRoutePrice,
-  IntercityPricingType,
   IntercityRouteDto,
   IntercityRoutePriceDto,
 } from "@/lib/api/intercity";
@@ -54,7 +53,7 @@ import {
 } from "@/lib/api/sharedRoute";
 
 import { getVehicleCategories, VehicleCategoryDto } from "@/lib/api/fleet";
-import { calcIntercityPrice, calcIntercityPrivatePrice } from "@/lib/pricing";
+
 import MultiImageUpload from "@/components/MultiImageUpload";
 import { backendUrl } from "@/lib/api/client";
 import { IntercityDepartureTimeModal } from "@/components/admin/vehicles";
@@ -1021,9 +1020,8 @@ export default function IntercityManagementPage() {
                         const r = routes.find((route) => route.id === (p.routeId || Number(p.scopeRefId)));
                         const isDaily = p.priceTypeCode === "DAILY_RATE" || p.priceTypeCategory === "DAILY_RATE";
                         const isRoundTripType = p.priceTypeCode === "ROUND_TRIP_SAME_DAY";
-                        const oneWay = p.oneWayPrice || p.fixedPriceOneWay || (!isDaily && !isRoundTripType ? p.basePrice : 0) || 0;
-                        const roundTrip = p.roundTripPrice || p.fixedPriceRoundTrip || (isRoundTripType ? p.basePrice : (oneWay > 0 ? oneWay * 2 : 0)) || 0;
-                        const dailyRate = p.dailyRatePrice || p.dailyRate || (isDaily ? p.basePrice : 0) || 0;
+                        // One row = one price type: basePrice is that type's price.
+                        const amount = Number(p.basePrice ?? 0);
 
                         return (
                           <Table.Row key={p.id} id={String(p.id)}>
@@ -1048,25 +1046,20 @@ export default function IntercityManagementPage() {
                               )}
                             </Table.Cell>
                             <Table.Cell className="font-black text-amber-500">
-                              {isDaily ? (
+                              {amount > 0 ? (
                                 <div className="flex flex-col">
-                                  <span>{dailyRate > 0 ? `${dailyRate.toLocaleString()} ${p.currency || "VND"}/ngày` : "—"}</span>
-                                  <span className="text-[10px] text-slate-400 font-normal">Tối thiểu {p.minDays || p.minimumDays || 1} ngày</span>
-                                </div>
-                              ) : (
-                                <span>{oneWay > 0 ? `${oneWay.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
-                              )}
-                            </Table.Cell>
-                            <Table.Cell className="font-black text-amber-500">
-                              {isDaily ? (
-                                <span className="text-xs text-slate-400 font-normal italic">Áp dụng theo ngày</span>
-                              ) : (
-                                <div className="flex flex-col">
-                                  <span>{roundTrip > 0 ? `${roundTrip.toLocaleString()} ${p.currency || "VND"}` : "—"}</span>
-                                  {!p.roundTripPrice && !p.fixedPriceRoundTrip && !isRoundTripType && oneWay > 0 && (
-                                    <span className="text-[10px] text-slate-400 font-normal">(2× một chiều)</span>
+                                  <span>
+                                    {amount.toLocaleString()} {p.currency || "VND"}
+                                    {isDaily ? "/ngày" : ""}
+                                  </span>
+                                  {isDaily && (
+                                    <span className="text-[10px] text-slate-400 font-normal">
+                                      Tối thiểu {p.minDays ?? 1} ngày
+                                    </span>
                                   )}
                                 </div>
+                              ) : (
+                                <span>—</span>
                               )}
                             </Table.Cell>
                             <Table.Cell>

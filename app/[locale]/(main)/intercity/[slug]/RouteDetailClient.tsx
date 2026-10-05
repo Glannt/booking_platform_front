@@ -76,7 +76,6 @@ import {
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import {
   calcIntercityDailyRatePrice,
-  calcSharedPrice,
   pickPriceListRow,
   resolveInDayPrice,
 } from "@/lib/pricing";
@@ -127,6 +126,8 @@ export default function RouteDetailClient({
   };
 
   const [route, setRoute] = useState<IntercityRouteDto | null>(initialRoute || null);
+  /** price_lists rows for this route — the only price source, fetched separately. */
+  const [routePrices, setRoutePrices] = useState<IntercityRoutePriceDto[]>([]);
   const [linkedSharedRoute, setLinkedSharedRoute] = useState<SharedRouteDto | null>(null);
   const [categories, setCategories] = useState<CategoryWithVehicles[]>([]);
   const [loading, setLoading] = useState(!initialRoute);
@@ -317,25 +318,24 @@ export default function RouteDetailClient({
           }
 
           const allCats = (catsRes?.data?.content ?? []) as VehicleCategoryDto[];
-          let routePrices: IntercityRoutePriceDto[] = [];
+          let fetchedPrices: IntercityRoutePriceDto[] = [];
           try {
             const priceRes = await getPublicIntercityRoutePrices(foundRoute.id);
-            routePrices = (priceRes?.data ?? []) as IntercityRoutePriceDto[];
+            fetchedPrices = (priceRes?.data ?? []) as IntercityRoutePriceDto[];
           } catch {
             try {
               const priceRes = await getIntercityRoutePrices(foundRoute.id);
-              routePrices = (priceRes?.data ?? []) as IntercityRoutePriceDto[];
+              fetchedPrices = (priceRes?.data ?? []) as IntercityRoutePriceDto[];
             } catch {
-              routePrices = foundRoute.prices ?? [];
+              /* unpriced route: 0 categories, never a fabricated price */
             }
           }
-          foundRoute.prices = routePrices;
-          setRoute({ ...foundRoute });
+          setRoutePrices(fetchedPrices);
 
           const catsWithVehicles: CategoryWithVehicles[] = [];
           for (const cat of allCats) {
-            const inDayEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.ONE_WAY);
-            const dailyRateEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.DAILY_RATE);
+            const inDayEntry = pickPriceListRow(fetchedPrices, cat.id, IntercityPriceTypeCode.ONE_WAY);
+            const dailyRateEntry = pickPriceListRow(fetchedPrices, cat.id, IntercityPriceTypeCode.DAILY_RATE);
 
             if (!inDayEntry && !dailyRateEntry) {
               continue;
@@ -465,31 +465,36 @@ export default function RouteDetailClient({
   const sharedOutboundPrice = outboundDirection?.price ?? 0;
   const sharedReturnPrice = returnDirection?.price ?? 0;
 
-  const sharedPerPaxPrice =
-    (sharedDirection === "OUTBOUND" ? sharedOutboundPrice : sharedReturnPrice) || 250000;
+  // No configured shared-ride price means no price to show — never a stand-in figure.
+  const sharedPerPaxPrice = sharedDirection === "OUTBOUND" ? sharedOutboundPrice : sharedReturnPrice;
+  const formatSharedPrice = (price: number) => (price > 0 ? formatPrice(price) : t.common.contact);
+
+  // A price table that has not loaded yet must not decide the UI: keep both options until
+  // price_lists arrives, then narrow to exactly the configured trip types.
+  const pricesLoaded = routePrices.length > 0;
 
   const hasInDay = useMemo(() => {
-    if (!route?.prices || route.prices.length === 0) return true;
-    return route.prices.some(
+    if (!pricesLoaded) return true;
+    return routePrices.some(
       (p) =>
         (p.priceTypeCategory === "IN_DAY" || p.priceTypeCode === "ONE_WAY" || p.priceTypeCode === "ROUND_TRIP_SAME_DAY") &&
         (p.active ?? (p.status !== "INACTIVE"))
     );
-  }, [route?.prices]);
+  }, [routePrices, pricesLoaded]);
 
   const hasDailyRate = useMemo(() => {
-    if (!route?.prices || route.prices.length === 0) return true;
-    return route.prices.some(
+    if (!pricesLoaded) return true;
+    return routePrices.some(
       (p) =>
         (p.priceTypeCategory === "DAILY_RATE" || p.priceTypeCode === "DAILY_RATE") &&
         (p.active ?? (p.status !== "INACTIVE"))
     );
-  }, [route?.prices]);
+  }, [routePrices, pricesLoaded]);
 
   // Dynamically compute supported price types based on active price lists for this route / selected vehicle
   const availablePriceTypes = useMemo(() => {
-    const prices = route?.prices ?? [];
-    if (prices.length === 0) {
+    const prices = routePrices;
+    if (!pricesLoaded) {
       return [
         { code: "ONE_WAY", value: "one-way", label: t.rentCar.oneWay },
         { code: "ROUND_TRIP_SAME_DAY", value: "round-trip", label: t.rentCar.roundTrip },
@@ -570,7 +575,7 @@ export default function RouteDetailClient({
     }
 
     return supported;
-  }, [route?.prices, selectedCategoryId, language, t.rentCar]);
+  }, [routePrices, pricesLoaded, selectedCategoryId, language, t.rentCar]);
 
   useEffect(() => {
     if (availablePriceTypes.length > 0) {
@@ -601,17 +606,17 @@ export default function RouteDetailClient({
     if (!route) return 0;
 
     if (isDailyRate) {
-      const dailyEntry = pickPriceListRow(route.prices, catId, IntercityPriceTypeCode.DAILY_RATE);
+      const dailyEntry = pickPriceListRow(routePrices, catId, IntercityPriceTypeCode.DAILY_RATE);
       if (!dailyEntry) return 0;
 
       return calcIntercityDailyRatePrice(
         Number(dailyEntry.basePrice ?? 0),
         rentalDays,
-        dailyEntry.minDays ?? dailyEntry.minimumDays ?? 1
+        dailyEntry.minDays ?? 1
       );
     }
 
-    return resolveInDayPrice(route.prices, catId, isRoundTrip);
+    return resolveInDayPrice(routePrices, catId, isRoundTrip);
   };
 
   const calculateSharedTotalPrice = () => {
@@ -830,7 +835,7 @@ export default function RouteDetailClient({
                 {tick.value.includes("{price}")
                   ? tick.value.replace(
                     "{price}",
-                    formatPrice(Number(sharedOutboundPrice || 250000))
+                    formatSharedPrice(sharedOutboundPrice)
                   )
                   : tick.value}
               </span>
@@ -1468,7 +1473,7 @@ export default function RouteDetailClient({
                   </div>
                   <div className="text-right">
                     <span className="text-sm sm:text-base font-black text-amber-600 dark:text-amber-400">
-                      {formatPrice(sharedPerPaxPrice)}
+                      {formatSharedPrice(sharedPerPaxPrice)}
                     </span>
                     <span className="text-sm text-slate-400 block font-semibold">
                       / {t.rentCar.pax}
@@ -1575,7 +1580,7 @@ export default function RouteDetailClient({
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {activeSharedSchedules.map((dt) => {
                         const isSelected = departureTime === dt.departureTime;
-                        const slotPrice = activeDirection?.price || sharedPerPaxPrice || 250000;
+                        const slotPrice = activeDirection?.price || sharedPerPaxPrice;
                         return (
                           <button
                             key={dt.id || dt.departureTime}
@@ -1596,7 +1601,7 @@ export default function RouteDetailClient({
                           >
                             <span className="text-sm font-black">{dt.departureTime.substring(0, 5)}</span>
                             <span className={`text-sm font-bold ${isSelected ? "text-amber-600 dark:text-amber-400" : "text-amber-500/90 dark:text-amber-400/90"}`}>
-                              {formatPrice(slotPrice)}
+                              {formatSharedPrice(slotPrice)}
                             </span>
                           </button>
                         );
@@ -1610,7 +1615,7 @@ export default function RouteDetailClient({
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {activeTimes.map((dt) => {
                         const isSelected = departureTime === dt.departureTime;
-                        const slotPrice = activeDirection?.price || sharedPerPaxPrice || 250000;
+                        const slotPrice = activeDirection?.price || sharedPerPaxPrice;
                         return (
                           <button
                             key={dt.id}
@@ -1626,7 +1631,7 @@ export default function RouteDetailClient({
                           >
                             <span className="text-sm font-black">{dt.departureTime.substring(0, 5)}</span>
                             <span className={`text-sm font-bold ${isSelected ? "text-amber-600 dark:text-amber-400" : "text-amber-500/90 dark:text-amber-400/90"}`}>
-                              {formatPrice(slotPrice)}
+                              {formatSharedPrice(slotPrice)}
                             </span>
                           </button>
                         );

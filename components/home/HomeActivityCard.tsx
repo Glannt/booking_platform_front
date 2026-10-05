@@ -106,20 +106,26 @@ export function HomeActivityCard({
             </div>
           )}
 
-          {/* Pricing */}
+          {/* Pricing — no configured price means no figure, not a stand-in one. */}
           <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="text-xs font-bold text-foreground/70">{t.homePage.priceFrom}</span>
-            <span className="text-base sm:text-lg font-black text-accent tracking-tight">
-              {price.toLocaleString("vi-VN")} {currency}
-            </span>
-            {priceUnit && (
-              <span className="text-xs font-semibold text-foreground/50">{priceUnit}</span>
-            )}
+            {price > 0 ? (
+              <>
+                <span className="text-xs font-bold text-foreground/70">{t.homePage.priceFrom}</span>
+                <span className="text-base sm:text-lg font-black text-accent tracking-tight">
+                  {price.toLocaleString("vi-VN")} {currency}
+                </span>
+                {priceUnit && (
+                  <span className="text-xs font-semibold text-foreground/50">{priceUnit}</span>
+                )}
 
-            {originalPrice && originalPrice > price && (
-              <span className="text-xs font-medium text-foreground/40 line-through ml-1">
-                {originalPrice.toLocaleString("vi-VN")} {currency}
-              </span>
+                {originalPrice && originalPrice > price && (
+                  <span className="text-xs font-medium text-foreground/40 line-through ml-1">
+                    {originalPrice.toLocaleString("vi-VN")} {currency}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-xs font-bold text-foreground/60">{t.common.contact}</span>
             )}
           </div>
 
