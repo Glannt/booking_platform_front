@@ -35,6 +35,7 @@ export const discounts = {
   tabDiscounts: "Скидки",
   depositConfig: "Настройка предоплаты / депозита",
   depositPricingType: "Способ предоплаты",
+  depositNone: "Без депозита",
   depositPerPerson: "За билет / на человека (Взрослый / Ребенок)",
   depositPercent: "В процентах (%) от общей суммы",
   depositFixed: "Фиксированная сумма (VND)",

@@ -1,5 +1,6 @@
 import { apiFetch, ApiResponse, ApiOptions } from "./client";
 import type { ComponentItem } from "@/types/routeComponents";
+import type { DepositType } from "@/lib/pricing/deposit";
 
 export interface IntercityRouteTranslationDto {
   id?: number;
@@ -34,6 +35,13 @@ export interface IntercityRoutePriceDto {
   vehicleCategoryId: number;
   currency: string;
   basePrice?: number;
+  /**
+   * Deposit for this price row. All three are null/undefined when the row has no deposit
+   * configured — that means "no deposit", so hide the UI rather than substituting a rate.
+   */
+  depositType?: DepositType;
+  depositRate?: number;
+  depositAmount?: number;
   status?: string;
   active: boolean;
   inDayActive?: boolean;

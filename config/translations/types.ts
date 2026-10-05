@@ -1370,6 +1370,8 @@ priceSchemaInfoKm: string;
     tabDiscounts: string;
     depositConfig: string;
     depositPricingType: string;
+    /** "No deposit" option in a price/deposit config form — leaves the stored policy null. */
+    depositNone: string;
     depositPerPerson: string;
     depositPercent: string;
     depositFixed: string;

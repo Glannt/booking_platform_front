@@ -252,6 +252,7 @@ export const getIntercityPriceHeaderColumns = (t: any): HeaderColumn[] => [
   createCol("category", "Loại xe", { sortable: false }),
   createCol("priceType", "Phân loại", { sortable: false }),
   createCol("price", "Giá", { sortable: false }),
+  createCol("deposit", t?.selfDrive?.depositHeader || "Deposit", { sortable: false }),
   createCol("active", t?.common?.status || "Trạng thái", { sortable: true }),
   createCol("actions", t?.common?.actions || "Thao tác", { sortable: false }),
 ];

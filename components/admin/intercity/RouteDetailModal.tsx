@@ -17,6 +17,7 @@ import {
   Chip
 } from "@heroui/react";
 import type { IntercityRouteDto, IntercityRoutePriceDto } from "@/lib/api/intercity";
+import { formatDepositPolicy } from "@/lib/pricing/deposit";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 
 import { parseRouteComponents, extractComponentContent, DEFAULT_COMPARISON_DATA, type ComparisonItemData } from "@/types/routeComponents";
@@ -325,6 +326,7 @@ export function RouteDetailModal({
                               <Table.Column isRowHeader>DÒNG XE</Table.Column>
                               <Table.Column>PHÂN LOẠI</Table.Column>
                               <Table.Column>GIÁ</Table.Column>
+                              <Table.Column>ĐẶT CỌC</Table.Column>
                               <Table.Column>TRẠNG THÁI</Table.Column>
                             </Table.Header>
                             <Table.Body>
@@ -371,6 +373,9 @@ export function RouteDetailModal({
                                       ) : (
                                         <span>—</span>
                                       )}
+                                    </Table.Cell>
+                                    <Table.Cell className="text-xs font-semibold text-foreground">
+                                      {formatDepositPolicy(p, p.currency || "VND") ?? "—"}
                                     </Table.Cell>
                                     <Table.Cell>
                                       <Chip size="sm" color={p.active ? "success" : "warning"} className="text-[10px] font-bold">

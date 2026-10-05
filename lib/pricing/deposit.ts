@@ -23,6 +23,33 @@ export const DEFAULT_MODULE_DEPOSIT_RATES = {
 } as const;
 
 /**
+ * Human-readable deposit for admin tables and detail modals.
+ *
+ * Returns **null** when the row has no usable policy — callers must then hide the cell. That null
+ * is the whole point: a price row with no deposit is not the same as one with a 20% default, and
+ * showing a number nobody configured is exactly the fabrication this codebase forbids.
+ */
+export function formatDepositPolicy(
+  deposit?: {
+    depositType?: DepositType | string | null;
+    depositRate?: number | null;
+    depositAmount?: number | null;
+  } | null,
+  currency = "VND",
+): string | null {
+  const type = (deposit?.depositType || "").toUpperCase();
+  if (!type) return null;
+
+  if (type === "PERCENT" || type === "RATE") {
+    const rate = Number(deposit?.depositRate);
+    return Number.isFinite(rate) && rate > 0 ? `${rate}%` : null;
+  }
+
+  const amount = Number(deposit?.depositAmount);
+  return Number.isFinite(amount) && amount > 0 ? `${amount.toLocaleString()} ${currency}` : null;
+}
+
+/**
  * Calculates deposit, paid, and remaining amounts based on depositType (PERCENT, FIXED, PER_PERSON).
  * - Cọc percent hoặc fixed đều tính từ tổng giá.
  * - PER_PERSON: adultCount * depositPerAdult + childCount * depositPerChild (capped by totalAmount).

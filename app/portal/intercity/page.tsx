@@ -42,6 +42,7 @@ import {
   IntercityRouteDto,
   IntercityRoutePriceDto,
 } from "@/lib/api/intercity";
+import { formatDepositPolicy } from "@/lib/pricing/deposit";
 
 import {
   getSharedRoutes,
@@ -1061,6 +1062,9 @@ export default function IntercityManagementPage() {
                               ) : (
                                 <span>—</span>
                               )}
+                            </Table.Cell>
+                            <Table.Cell className="text-xs font-semibold">
+                              {formatDepositPolicy(p, p.currency || "VND") ?? <span>—</span>}
                             </Table.Cell>
                             <Table.Cell>
                               <AppStatusChip status={p.active} />

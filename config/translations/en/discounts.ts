@@ -35,6 +35,7 @@ export const discounts = {
   tabDiscounts: "Discounts",
   depositConfig: "Deposit Configuration",
   depositPricingType: "Deposit Method",
+  depositNone: "No deposit",
   depositPerPerson: "Per ticket / per person (Adult / Child)",
   depositPercent: "Percentage (%) of total price",
   depositFixed: "Fixed Amount (VND)",

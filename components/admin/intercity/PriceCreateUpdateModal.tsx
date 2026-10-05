@@ -25,8 +25,10 @@ import {
   type PriceListTranslationDto,
 } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
-import { Calendar, Clock, DollarSign, Car, Route as RouteIcon, Info, RefreshCw, Save } from "lucide-react";
+import { Calendar, Clock, DollarSign, Car, Route as RouteIcon, Info, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import { MultiLanguageTranslationInput } from "@/components/admin/common";
+import { useI18n } from "@/context/LanguageContext";
+import type { DepositType } from "@/lib/pricing/deposit";
 
 interface PriceCreateUpdateModalProps {
   isOpen: boolean;
@@ -47,6 +49,8 @@ export function PriceCreateUpdateModal({
   editingPrice,
   routeId,
 }: PriceCreateUpdateModalProps) {
+  const { t } = useI18n();
+
   const [form, setForm] = useState<{
     routeId: string;
     vehicleCategoryId: string;
@@ -61,6 +65,9 @@ export function PriceCreateUpdateModal({
     maxDays: string;
     kmIncludedPerDay: string;
     overagePricePerKm: string;
+    depositType: string;
+    depositRate: string;
+    depositAmount: string;
     currency: string;
     active: boolean;
   }>({
@@ -77,6 +84,9 @@ export function PriceCreateUpdateModal({
     maxDays: "",
     kmIncludedPerDay: "",
     overagePricePerKm: "",
+    depositType: "",
+    depositRate: "",
+    depositAmount: "",
     currency: "VND",
     active: true,
   });
@@ -146,6 +156,10 @@ export function PriceCreateUpdateModal({
         maxDays: editingPrice.maxDays ? String(editingPrice.maxDays) : "",
         kmIncludedPerDay: editingPrice.kmIncludedPerDay ? String(editingPrice.kmIncludedPerDay) : "",
         overagePricePerKm: editingPrice.overagePricePerKm ? String(editingPrice.overagePricePerKm) : "",
+        // Empty string means "no deposit configured" — the backend stores null, not a default.
+        depositType: editingPrice.depositType ?? "",
+        depositRate: editingPrice.depositRate != null ? String(editingPrice.depositRate) : "",
+        depositAmount: editingPrice.depositAmount != null ? String(editingPrice.depositAmount) : "",
         currency: editingPrice.currency || "VND",
         active: editingActive,
       });
@@ -170,6 +184,9 @@ export function PriceCreateUpdateModal({
         maxDays: "",
         kmIncludedPerDay: "",
         overagePricePerKm: "",
+        depositType: "",
+        depositRate: "",
+        depositAmount: "",
         currency: "VND",
         active: true,
       });
@@ -281,9 +298,19 @@ export function PriceCreateUpdateModal({
         active: form.active,
         status: form.active ? "ACTIVE" : "INACTIVE",
         translations: translationList.length > 0 ? translationList : undefined,
-        // No deposit fields: price_lists has no deposit policy. It used to be sent here and
-        // silently dropped by the backend, so admins believed they had configured one.
       };
+
+      // Deposit is per price row, so each of ONE_WAY / ROUND_TRIP_SAME_DAY / DAILY_RATE carries
+      // its own. All three blank means "no deposit" — the backend stores null and the customer
+      // pages hide the deposit box rather than showing a made-up rate.
+      if (form.depositType) {
+        payload.depositType = form.depositType as DepositType;
+        if (form.depositType === "PERCENT") {
+          if (form.depositRate) payload.depositRate = Number(form.depositRate);
+        } else if (form.depositAmount) {
+          payload.depositAmount = Number(form.depositAmount);
+        }
+      }
 
       if (form.priceTypeCode === "ONE_WAY") {
         const p = Number(form.oneWayPrice);
@@ -819,6 +846,97 @@ export function PriceCreateUpdateModal({
                 </div>
               )}
 
+              {/* Deposit Policy — stored per price row, so each price type carries its own.
+                  Unlike tour, this is opt-in: leaving it off stores null and the customer-facing
+                  pages hide the deposit box instead of showing an invented rate. */}
+              <div className="space-y-4 p-4 bg-slate-50 dark:bg-[var(--bg-card)] rounded-2xl border border-slate-200/70 dark:border-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <ShieldCheck size={15} className="text-amber-500 shrink-0" />
+                    <span>{t.discounts.depositConfig}</span>
+                  </Label>
+                  <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[var(--bg-surface)] p-0.5 shrink-0">
+                    {(
+                      [
+                        { value: "", label: t.discounts.depositNone },
+                        { value: "PERCENT", label: t.discounts.depositPercent },
+                        { value: "FIXED", label: t.discounts.depositFixed },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.value || "NONE"}
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            depositType: opt.value,
+                            depositRate: opt.value === "PERCENT" ? f.depositRate : "",
+                            depositAmount: opt.value === "FIXED" ? f.depositAmount : "",
+                          }))
+                        }
+                        className={`text-[11px] font-bold px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                          form.depositType === opt.value
+                            ? "bg-accent text-accent-foreground shadow-xs"
+                            : "text-foreground/60 hover:text-foreground"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {form.depositType === "PERCENT" && (
+                  <NumberField
+                    value={form.depositRate !== "" ? Number(form.depositRate) : undefined}
+                    onChange={(val) =>
+                      setForm((f) => ({
+                        ...f,
+                        depositRate: val == null ? "" : String(val),
+                      }))
+                    }
+                    minValue={0}
+                    maxValue={100}
+                    className="w-full sm:max-w-xs"
+                  >
+                    <Label className="text-xs font-bold uppercase tracking-wider mb-1 block">
+                      {t.discounts.depositRate}
+                    </Label>
+                    <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] overflow-hidden h-[40px]">
+                      <NumberField.Input
+                        placeholder="30"
+                        className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full"
+                      />
+                      <span className="px-3 text-sm font-bold text-foreground/60">%</span>
+                    </NumberField.Group>
+                  </NumberField>
+                )}
+
+                {form.depositType === "FIXED" && (
+                  <NumberField
+                    value={form.depositAmount !== "" ? Number(form.depositAmount) : undefined}
+                    onChange={(val) =>
+                      setForm((f) => ({
+                        ...f,
+                        depositAmount: val == null ? "" : String(val),
+                      }))
+                    }
+                    minValue={0}
+                    className="w-full sm:max-w-xs"
+                  >
+                    <Label className="text-xs font-bold uppercase tracking-wider mb-1 block">
+                      {t.discounts.fixedDepositAmount}
+                    </Label>
+                    <NumberField.Group className="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[var(--bg-surface)] overflow-hidden h-[40px]">
+                      <NumberField.Input
+                        placeholder="500000"
+                        className="flex-1 bg-transparent px-3 py-2 text-sm outline-none border-none h-full"
+                      />
+                      <span className="px-3 text-sm font-bold text-foreground/60">VND</span>
+                    </NumberField.Group>
+                  </NumberField>
+                )}
+              </div>
 
               {/* MultiLanguage Translation Input */}
               <div className="pt-2">

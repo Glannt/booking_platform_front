@@ -64,10 +64,21 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { RentalDateRangePicker } from "@/components/date-picker/RentalDateRangePicker";
 import { calculateRentalDays, formatToIsoDate, formatToDisplayDate } from "@/lib/utils/rentalDate";
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
-// ponytail: price_lists has no deposit policy column, so intercity bookings carry no deposit.
-// Previously the code read an always-undefined field and fell through to showing a fabricated
-// "20% tổng giá" to customers. Upgrade path: add the column, then restore the deposit box here.
 import { DurationMode, IntercityPriceTypeCode, IntercityServiceType, IntercityTripType, PickupType } from "@/types/intercity";
+import { calculateDeposit, formatDepositPolicy } from "@/lib/pricing/deposit";
+
+/** The deposit triple as stored on one price_lists row. */
+type PriceRowDeposit = Pick<IntercityRoutePriceDto, "depositType" | "depositRate" | "depositAmount">;
+
+/**
+ * Deposit follows the price row, so it is carried per price type exactly like the price itself.
+ * A row with no deposit yields undefined, which keeps the deposit box hidden — the old code read an
+ * always-undefined field and fell through to showing a fabricated "20% total" to customers.
+ */
+const pickDeposit = (row?: IntercityRoutePriceDto): PriceRowDeposit | undefined =>
+  row?.depositType
+    ? { depositType: row.depositType, depositRate: row.depositRate, depositAmount: row.depositAmount }
+    : undefined;
 
 interface CategoryWithVehicles {
   category: VehicleCategoryDto;
@@ -76,6 +87,10 @@ interface CategoryWithVehicles {
   roundTripPrice?: number;
   dailyRate?: number;
   minimumDays?: number;
+  /** Deposit per price type, mirroring `price` / `roundTripPrice` / `dailyRate` above. */
+  oneWayDeposit?: PriceRowDeposit;
+  roundTripDeposit?: PriceRowDeposit;
+  dailyRateDeposit?: PriceRowDeposit;
 }
 
 export default function RentCarConfirmPage() {
@@ -476,6 +491,9 @@ export default function RentCarConfirmPage() {
             roundTripPrice: Number(roundTripEntry?.basePrice ?? 0),
             dailyRate,
             minimumDays: dailyRateEntry?.minDays ?? 1,
+            oneWayDeposit: pickDeposit(oneWayEntry),
+            roundTripDeposit: pickDeposit(roundTripEntry),
+            dailyRateDeposit: pickDeposit(dailyRateEntry),
           });
         }
 
@@ -524,6 +542,29 @@ export default function RentCarConfirmPage() {
   const finalTotalPrice = useMemo(() => {
     return Math.max(0, rawTotalPrice - (appliedDiscount?.amount || 0));
   }, [rawTotalPrice, appliedDiscount]);
+
+  // Deposit follows whichever price type is being booked, so the quoted cọc and the charged cọc
+  // can never disagree. Null policy (or a 0đ total) yields 0 and every deposit row stays hidden.
+  const selectedDeposit = useMemo(() => {
+    if (!selectedCategory) return undefined;
+    if (durationMode === DurationMode.DAILY_RATE) return selectedCategory.dailyRateDeposit;
+    return isRoundTrip ? selectedCategory.roundTripDeposit : selectedCategory.oneWayDeposit;
+  }, [selectedCategory, durationMode, isRoundTrip]);
+
+  const selectedDepositLabel = useMemo(
+    () => (selectedDeposit ? formatDepositPolicy(selectedDeposit) : null),
+    [selectedDeposit],
+  );
+
+  const selectedDepositAmount = useMemo(() => {
+    if (!selectedDeposit || finalTotalPrice <= 0) return 0;
+    return calculateDeposit({
+      totalAmount: finalTotalPrice,
+      depositType: selectedDeposit.depositType,
+      depositRate: selectedDeposit.depositRate,
+      depositAmount: selectedDeposit.depositAmount,
+    }).depositAmount;
+  }, [selectedDeposit, finalTotalPrice]);
 
   const currentTotalPrice = finalTotalPrice;
 
@@ -2016,6 +2057,19 @@ export default function RentCarConfirmPage() {
                   </>
                 )}
 
+                {selectedDepositAmount > 0 && (
+                  <div className="flex justify-between items-center text-sm font-bold text-slate-400 uppercase">
+                    <span>
+                      {selectedDepositLabel
+                        ? `${t.discounts.depositRequired} (${selectedDepositLabel})`
+                        : t.discounts.depositRequired}
+                    </span>
+                    <span className="text-slate-800 dark:text-slate-200 font-extrabold">
+                      {formatPrice(selectedDepositAmount)}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-baseline pt-1">
                   <span className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase">
                     {t.common.totalPrice}
@@ -2088,6 +2142,14 @@ export default function RentCarConfirmPage() {
                 ...(appliedDiscount
                   ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
                   : []),
+                ...(selectedDepositAmount > 0
+                  ? [{
+                      label: selectedDepositLabel
+                        ? `${t.discounts.depositRequired} (${selectedDepositLabel})`
+                        : t.discounts.depositRequired,
+                      value: formatPrice(selectedDepositAmount),
+                    }]
+                  : []),
                 { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
               ]
             : [
@@ -2113,6 +2175,14 @@ export default function RentCarConfirmPage() {
                 { label: t.rentCar.phone, value: editPhone },
                 ...(appliedDiscount
                   ? [{ label: `${t.discounts.tabDiscounts} (${appliedDiscount.code})`, value: `-${formatPrice(appliedDiscount.amount)}` }]
+                  : []),
+                ...(selectedDepositAmount > 0
+                  ? [{
+                      label: selectedDepositLabel
+                        ? `${t.discounts.depositRequired} (${selectedDepositLabel})`
+                        : t.discounts.depositRequired,
+                      value: formatPrice(selectedDepositAmount),
+                    }]
                   : []),
                 { label: t.common.totalPrice, value: `${formatPrice(finalTotalPrice)}` },
               ]

@@ -17,6 +17,8 @@ import {
 import { type IntercityRoutePriceDto, type IntercityRouteDto } from "@/lib/api/intercity";
 import type { VehicleCategoryDto } from "@/lib/api/fleet";
 import { ActivePromotionSection } from "@/components/admin/discount";
+import { formatDepositPolicy } from "@/lib/pricing/deposit";
+import { useI18n } from "@/context/LanguageContext";
 
 interface PriceDetailModalProps {
   isOpen: boolean;
@@ -35,6 +37,8 @@ export function PriceDetailModal({
   categories,
   onEdit,
 }: PriceDetailModalProps) {
+  const { t } = useI18n();
+
   if (!price) return null;
 
   const routeRefId = price.routeId || Number(price.scopeRefId);
@@ -43,8 +47,8 @@ export function PriceDetailModal({
 
   const getRouteName = (r: IntercityRouteDto | undefined) => {
     if (!r) return "Áp dụng tất cả tuyến";
-    const t = r.translations?.find((tr) => tr.locale === "vi") || r.translations?.[0];
-    return t?.name || `${r.originCity} ⇌ ${r.destinationCity}`;
+    const tr = r.translations?.find((entry) => entry.locale === "vi") || r.translations?.[0];
+    return tr?.name || `${r.originCity} ⇌ ${r.destinationCity}`;
   };
 
   const getCategoryName = (c: VehicleCategoryDto | undefined) => {
@@ -197,6 +201,18 @@ export function PriceDetailModal({
                       </span>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Deposit — per price row, and hidden entirely when none is configured. */}
+              {formatDepositPolicy(price, price.currency || "VND") && (
+                <div className="bg-slate-50 dark:bg-[var(--bg-card)] p-4 rounded-xl border border-separator">
+                  <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider mb-1">
+                    {t.selfDrive.depositHeader}
+                  </p>
+                  <span className="text-sm font-bold text-foreground">
+                    {formatDepositPolicy(price, price.currency || "VND")}
+                  </span>
                 </div>
               )}
 

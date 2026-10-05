@@ -35,6 +35,7 @@ export const discounts = {
   tabDiscounts: "할인",
   depositConfig: "보증금 / 예약금 설정",
   depositPricingType: "예약금 방식",
+  depositNone: "예약금 없음",
   depositPerPerson: "인당 티켓 기준 (성인 / 소아)",
   depositPercent: "총액 기준 비율 (%)",
   depositFixed: "고정 금액 (VND)",

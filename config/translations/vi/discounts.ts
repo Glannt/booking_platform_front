@@ -35,6 +35,7 @@ export const discounts = {
   tabDiscounts: "Khuyến mãi",
   depositConfig: "Cấu hình Đặt cọc",
   depositPricingType: "Hình thức đặt cọc",
+  depositNone: "Không đặt cọc",
   depositPerPerson: "Theo từng vé đầu người (Người lớn / Trẻ em)",
   depositPercent: "Theo tỷ lệ phần trăm (%) tổng giá",
   depositFixed: "Số tiền cố định (VND)",
