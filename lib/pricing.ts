@@ -4,7 +4,8 @@
  * IntercityPriceCalculator): results are rounded to the nearest 1000 VND.
  */
 
-import { IntercityPricingType } from "@/lib/api/intercity";
+import { IntercityPricingType, type IntercityRoutePriceDto } from "@/lib/api/intercity";
+import { IntercityPriceTypeCode } from "@/types/intercity";
 
 export interface AirportPriceInput {
   baseKm: number;
@@ -67,8 +68,13 @@ export function calcIntercityPrice(distanceKm: number | undefined, perKmAmount: 
 }
 
 /**
- * Calculates private car trip price with FIXED or PER_KM pricing,
- * respecting roundTripPrice or fixedPriceRoundTrip overrides.
+ * A price_list row is keyed by (route, vehicleCategoryId, priceTypeCode) and carries ONE
+ * basePrice, which IS the final price for that trip type. `oneWayPrice`/`roundTripPrice` are
+ * admin write-only helpers — toDto never populates them, so reading them back always yielded
+ * undefined and every round trip fell through to the `oneWay * 2` fallback below.
+ *
+ * @deprecated Prefer pickPriceListRow / resolveInDayPrice — they read the price straight from
+ * the row the admin configured. Kept only for the legacy intercity_route_prices shape.
  */
 export function calcIntercityPrivatePrice(
   input: IntercityPrivatePriceInput,
@@ -107,6 +113,40 @@ export function calcIntercityPrivatePrice(
     return oneWay * 2;
   }
   return oneWay;
+}
+
+/**
+ * Picks the ACTIVE price_list row for exactly one price type. Never falls back to a sibling
+ * type: ROUND_TRIP_SAME_DAY and ONE_WAY are distinct products with distinct prices.
+ */
+export function pickPriceListRow(
+  prices: IntercityRoutePriceDto[] | undefined,
+  vehicleCategoryId: number,
+  priceTypeCode: IntercityPriceTypeCode | string
+): IntercityRoutePriceDto | undefined {
+  return prices?.find(
+    (p) =>
+      Number(p.vehicleCategoryId) === Number(vehicleCategoryId) &&
+      p.priceTypeCode === priceTypeCode &&
+      (p.active ?? (p.status !== "INACTIVE"))
+  );
+}
+
+/**
+ * Final in-day price straight from price_list. Returns 0 when the trip type has no configured
+ * row — a missing price must surface as missing, never as a derived 2x one-way fare.
+ */
+export function resolveInDayPrice(
+  prices: IntercityRoutePriceDto[] | undefined,
+  vehicleCategoryId: number,
+  roundTrip: boolean
+): number {
+  const row = pickPriceListRow(
+    prices,
+    vehicleCategoryId,
+    roundTrip ? IntercityPriceTypeCode.ROUND_TRIP_SAME_DAY : IntercityPriceTypeCode.ONE_WAY
+  );
+  return Number(row?.basePrice ?? 0);
 }
 
 /**

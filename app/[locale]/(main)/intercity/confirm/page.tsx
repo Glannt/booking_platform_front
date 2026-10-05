@@ -38,7 +38,7 @@ import type { DateValue } from "@internationalized/date";
 import { parseDate, today, getLocalTimeZone } from "@internationalized/date";
 
 import { useI18n } from "@/context/LanguageContext";
-import { getActiveIntercityRoutes, getPublicIntercityRoutePrices, IntercityPricingType, type IntercityRouteDto } from "@/lib/api/intercity";
+import { getActiveIntercityRoutes, getPublicIntercityRoutePrices, type IntercityRouteDto } from "@/lib/api/intercity";
 import {
   getVehicleCategories,
   getRentableVehiclesByCategory,
@@ -54,7 +54,7 @@ import {
   type SharedOfficeDto,
 } from "@/lib/api/sharedRoute";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { calcIntercityPrivatePrice, calcIntercityDailyRatePrice, calcSharedPrice } from "@/lib/pricing";
+import { calcIntercityDailyRatePrice, calcSharedPrice, pickPriceListRow } from "@/lib/pricing";
 import { backendUrl } from "@/lib/api/client";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
@@ -65,12 +65,13 @@ import { RentalDateRangePicker } from "@/components/date-picker/RentalDateRangeP
 import { calculateRentalDays, formatToIsoDate, formatToDisplayDate } from "@/lib/utils/rentalDate";
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
 import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
-import { DurationMode, IntercityPriceTypeCategory, IntercityPriceTypeCode, IntercityServiceType, IntercityTripType, PickupType } from "@/types/intercity";
+import { DurationMode, IntercityPriceTypeCode, IntercityServiceType, IntercityTripType, PickupType } from "@/types/intercity";
 
 interface CategoryWithVehicles {
   category: VehicleCategoryDto;
   vehicles: VehicleDto[];
   price: number;
+  roundTripPrice?: number;
   dailyRate?: number;
   minimumDays?: number;
   depositType?: "PERCENT" | "FIXED";
@@ -459,22 +460,10 @@ export default function RentCarConfirmPage() {
 
         const catsWithVehicles: CategoryWithVehicles[] = [];
         for (const cat of allCats) {
-          const inDayEntry = routePrices.find(
-            (p) =>
-              Number(p.vehicleCategoryId) === Number(cat.id) &&
-              (p.priceTypeCategory === IntercityPriceTypeCategory.IN_DAY ||
-                p.priceTypeCode === IntercityPriceTypeCode.ONE_WAY ||
-                p.priceTypeCode === IntercityPriceTypeCode.ROUND_TRIP_SAME_DAY) &&
-              (p.active ?? (p.status !== "INACTIVE"))
-          );
-          const dailyRateEntry = routePrices.find(
-            (p) =>
-              Number(p.vehicleCategoryId) === Number(cat.id) &&
-              (p.priceTypeCategory === IntercityPriceTypeCategory.DAILY_RATE ||
-                p.priceTypeCode === IntercityPriceTypeCode.DAILY_RATE) &&
-              (p.active ?? (p.status !== "INACTIVE"))
-          );
-          if (!inDayEntry && !dailyRateEntry) continue;
+          const oneWayEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.ONE_WAY);
+          const roundTripEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.ROUND_TRIP_SAME_DAY);
+          const dailyRateEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.DAILY_RATE);
+          if (!oneWayEntry && !roundTripEntry && !dailyRateEntry) continue;
 
           let vehicles: VehicleDto[] = [];
           try {
@@ -484,33 +473,14 @@ export default function RentCarConfirmPage() {
             vehicles = [];
           }
 
-          let baseOneWayPrice = 0;
-          if (inDayEntry) {
-            const oneWayBase = inDayEntry.oneWayPrice || inDayEntry.fixedPriceOneWay || inDayEntry.basePrice || 0;
-            baseOneWayPrice = calcIntercityPrivatePrice(
-              {
-                distanceKm: foundRoute?.distanceKm,
-                pricingType: inDayEntry.pricingType || (oneWayBase > 0 && !inDayEntry.perKmAmount ? IntercityPricingType.FIXED : undefined),
-                perKmAmount: inDayEntry.perKmAmount,
-                fixedPriceOneWay: oneWayBase,
-                basePrice: oneWayBase,
-                fixedPriceRoundTrip: inDayEntry.fixedPriceRoundTrip || inDayEntry.roundTripPrice,
-                roundTripPrice: inDayEntry.roundTripPrice || inDayEntry.fixedPriceRoundTrip,
-                roundTripPerKmAmount: inDayEntry.roundTripPerKmAmount,
-              },
-              false
-            );
-          }
+          const dailyRate = dailyRateEntry ? Number(dailyRateEntry.basePrice ?? 0) : 0;
 
-          const dailyRate = dailyRateEntry
-            ? Number(dailyRateEntry.dailyRatePrice ?? dailyRateEntry.dailyRate ?? dailyRateEntry.basePrice ?? 0)
-            : 0;
-
-          const depositEntry = inDayEntry ?? dailyRateEntry;
+          const depositEntry = oneWayEntry ?? roundTripEntry ?? dailyRateEntry;
           catsWithVehicles.push({
             category: cat,
             vehicles,
-            price: baseOneWayPrice,
+            price: Number(oneWayEntry?.basePrice ?? 0),
+            roundTripPrice: Number(roundTripEntry?.basePrice ?? 0),
             dailyRate,
             minimumDays: dailyRateEntry?.minDays ?? dailyRateEntry?.minimumDays ?? 1,
             // Deposit only when the price entry actually carries a policy — no silent 20% default.
@@ -551,7 +521,7 @@ export default function RentCarConfirmPage() {
     if (durationMode === DurationMode.DAILY_RATE) {
       return calcIntercityDailyRatePrice(cat.dailyRate, rentalDays, cat.minimumDays || 1);
     }
-    return isRoundTrip ? cat.price * 2 : cat.price;
+    return isRoundTrip ? cat.roundTripPrice ?? 0 : cat.price;
   }, [durationMode, rentalDays, isRoundTrip]);
 
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountInfo | null>(null);

@@ -75,10 +75,12 @@ import {
 } from "@/lib/api/fleet";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import {
-  calcIntercityPrivatePrice,
   calcIntercityDailyRatePrice,
   calcSharedPrice,
+  pickPriceListRow,
+  resolveInDayPrice,
 } from "@/lib/pricing";
+import { IntercityPriceTypeCode } from "@/types/intercity";
 import { backendUrl } from "@/lib/api/client";
 import {
   parseRouteComponents,
@@ -332,18 +334,8 @@ export default function RouteDetailClient({
 
           const catsWithVehicles: CategoryWithVehicles[] = [];
           for (const cat of allCats) {
-            const inDayEntry = routePrices.find(
-              (p) =>
-                Number(p.vehicleCategoryId) === Number(cat.id) &&
-                (p.priceTypeCategory === "IN_DAY" || p.priceTypeCode === "ONE_WAY" || p.priceTypeCode === "ROUND_TRIP_SAME_DAY") &&
-                (p.active ?? (p.status !== "INACTIVE"))
-            );
-            const dailyRateEntry = routePrices.find(
-              (p) =>
-                Number(p.vehicleCategoryId) === Number(cat.id) &&
-                (p.priceTypeCategory === "DAILY_RATE" || p.priceTypeCode === "DAILY_RATE") &&
-                (p.active ?? (p.status !== "INACTIVE"))
-            );
+            const inDayEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.ONE_WAY);
+            const dailyRateEntry = pickPriceListRow(routePrices, cat.id, IntercityPriceTypeCode.DAILY_RATE);
 
             if (!inDayEntry && !dailyRateEntry) {
               continue;
@@ -359,22 +351,9 @@ export default function RouteDetailClient({
 
             let cardPrice = 0;
             if (inDayEntry) {
-              const oneWayBase = inDayEntry.oneWayPrice || inDayEntry.fixedPriceOneWay || inDayEntry.basePrice || 0;
-              cardPrice = calcIntercityPrivatePrice(
-                {
-                  distanceKm: foundRoute.distanceKm,
-                  pricingType: inDayEntry.pricingType || (oneWayBase > 0 && !inDayEntry.perKmAmount ? "FIXED" : undefined),
-                  perKmAmount: inDayEntry.perKmAmount,
-                  fixedPriceOneWay: oneWayBase,
-                  basePrice: oneWayBase,
-                  fixedPriceRoundTrip: inDayEntry.roundTripPrice || inDayEntry.fixedPriceRoundTrip,
-                  roundTripPrice: inDayEntry.roundTripPrice || inDayEntry.fixedPriceRoundTrip,
-                  roundTripPerKmAmount: inDayEntry.roundTripPerKmAmount,
-                },
-                false
-              );
+              cardPrice = Number(inDayEntry.basePrice ?? 0);
             } else if (dailyRateEntry) {
-              cardPrice = dailyRateEntry.dailyRatePrice || dailyRateEntry.dailyRate || dailyRateEntry.basePrice || 0;
+              cardPrice = Number(dailyRateEntry.basePrice ?? 0);
             }
 
             catsWithVehicles.push({ category: cat, vehicles, price: cardPrice });
@@ -543,9 +522,7 @@ export default function RouteDetailClient({
       return p.priceTypeName || defaultLabel;
     };
 
-    const oneWayPriceItem = targetList.find(
-      (p) => p.priceTypeCode === "ONE_WAY" || (p.priceTypeCategory === "IN_DAY" && (p.oneWayPrice || p.basePrice))
-    );
+    const oneWayPriceItem = targetList.find((p) => p.priceTypeCode === "ONE_WAY");
     if (oneWayPriceItem) {
       supported.push({
         code: "ONE_WAY",
@@ -554,9 +531,7 @@ export default function RouteDetailClient({
       });
     }
 
-    const roundTripPriceItem = targetList.find(
-      (p) => p.priceTypeCode === "ROUND_TRIP_SAME_DAY" || p.roundTripPrice
-    );
+    const roundTripPriceItem = targetList.find((p) => p.priceTypeCode === "ROUND_TRIP_SAME_DAY");
     if (roundTripPriceItem) {
       supported.push({
         code: "ROUND_TRIP_SAME_DAY",
@@ -626,48 +601,17 @@ export default function RouteDetailClient({
     if (!route) return 0;
 
     if (isDailyRate) {
-      const dailyEntry = route.prices?.find(
-        (p) =>
-          Number(p.vehicleCategoryId) === Number(catId) &&
-          (p.priceTypeCategory === "DAILY_RATE" || p.priceTypeCode === "DAILY_RATE") &&
-          (p.active ?? (p.status !== "INACTIVE"))
-      ) || route.prices?.find(
-        (p) => Number(p.vehicleCategoryId) === Number(catId) && (p.active ?? (p.status !== "INACTIVE"))
-      );
+      const dailyEntry = pickPriceListRow(route.prices, catId, IntercityPriceTypeCode.DAILY_RATE);
       if (!dailyEntry) return 0;
 
-      const dailyRate = dailyEntry.dailyRate && Number(dailyEntry.dailyRate) > 0
-        ? Number(dailyEntry.dailyRate)
-        : (dailyEntry.dailyRatePrice && Number(dailyEntry.dailyRatePrice) > 0
-          ? Number(dailyEntry.dailyRatePrice)
-          : (Number(dailyEntry.fixedPriceOneWay ?? 0) > 0 ? Number(dailyEntry.fixedPriceOneWay) : 800000));
-      return calcIntercityDailyRatePrice(dailyRate, rentalDays, dailyEntry.minimumDays || 1);
+      return calcIntercityDailyRatePrice(
+        Number(dailyEntry.basePrice ?? 0),
+        rentalDays,
+        dailyEntry.minDays ?? dailyEntry.minimumDays ?? 1
+      );
     }
 
-    const inDayEntry = route.prices?.find(
-      (p) =>
-        Number(p.vehicleCategoryId) === Number(catId) &&
-        (p.priceTypeCategory === "IN_DAY" || p.priceTypeCode === "ONE_WAY" || p.priceTypeCode === "ROUND_TRIP_SAME_DAY") &&
-        (p.active ?? (p.status !== "INACTIVE"))
-    ) || route.prices?.find(
-      (p) => Number(p.vehicleCategoryId) === Number(catId) && (p.active ?? (p.status !== "INACTIVE"))
-    );
-    if (!inDayEntry) return 0;
-
-    const oneWayBase = inDayEntry.fixedPriceOneWay || inDayEntry.oneWayPrice || inDayEntry.basePrice || 0;
-    return calcIntercityPrivatePrice(
-      {
-        distanceKm: route.distanceKm,
-        pricingType: inDayEntry.pricingType || (oneWayBase > 0 && !inDayEntry.perKmAmount ? "FIXED" : undefined),
-        perKmAmount: inDayEntry.perKmAmount,
-        fixedPriceOneWay: oneWayBase,
-        basePrice: oneWayBase,
-        fixedPriceRoundTrip: inDayEntry.fixedPriceRoundTrip || inDayEntry.roundTripPrice,
-        roundTripPrice: inDayEntry.roundTripPrice || inDayEntry.fixedPriceRoundTrip,
-        roundTripPerKmAmount: inDayEntry.roundTripPerKmAmount,
-      },
-      isRoundTrip
-    );
+    return resolveInDayPrice(route.prices, catId, isRoundTrip);
   };
 
   const calculateSharedTotalPrice = () => {
