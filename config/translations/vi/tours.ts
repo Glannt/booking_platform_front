@@ -79,6 +79,7 @@
   successNote: "Chúng tôi đã gửi tin nhắn xác nhận đến email của bạn và sẽ liên hệ qua các kênh liên hệ phụ của bạn. Vui lòng phản hồi để hoàn tất.",
   namePlaceholder: "Nguyễn Văn A",
   maxGuestsError: "Số khách tối đa là {max} chỗ",
+  packagePriceRequired: "Gói \"{name}\" đang bật nhưng chưa có giá người lớn. Hãy nhập giá hoặc bật Báo giá riêng trước khi lưu.",
   redirecting: "Đang chuyển trang...",
   tourDetailTitle: "Chi tiết tour",
   tourDetailDescription: "Xem chi tiết tour, lịch trình, giá tour và chọn xe đồng hành.",

@@ -79,6 +79,7 @@
   successNote: "이메일로 확인 메시지를 보냈으며, 추가 연락처 채널(있을 경우)로 연락드리겠습니다. 예약을 완료하기 위해 확인해 주세요.",
   namePlaceholder: "홍길동",
   maxGuestsError: "최대 {max}명까지 가능합니다",
+  packagePriceRequired: "패키지 \"{name}\"이 활성화되어 있지만 성인 가격이 없습니다. 저장하기 전에 가격을 입력하거나 문의 전용으로 전환하세요.",
   redirecting: "페이지 이동 중...",
   tourDetailTitle: "투어 상세",
   tourDetailDescription: "투어 상세, 일정, 가격 및 차량을 확인하세요.",

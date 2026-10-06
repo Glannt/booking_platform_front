@@ -121,6 +121,25 @@ export function getPackagePriceItem(pkg?: TourPackageDto, type: "ADULT" | "CHILD
   return pkg.prices.find((p) => p.passengerType === type);
 }
 
+/**
+ * Front-end mirror of `TourPackage.isPublishable()` on the server: a package may only be sold
+ * active when it has an active ADULT price above zero, or is flagged as contact-only (a quote
+ * request). The API rejects the save either way — this runs first so the modal can name the
+ * offending package instead of surfacing a bare 400.
+ *
+ * A missing `active` counts as active, because that is the server's own default.
+ */
+export function isPackagePublishable(pkg: TourPackageDto): boolean {
+  if (pkg.active === false || pkg.isContactOnly || pkg.contactOnly) return true;
+  return (pkg.prices ?? []).some(
+    (p) =>
+      p.passengerType === "ADULT" &&
+      p.active !== false &&
+      typeof p.pricePerPerson === "number" &&
+      p.pricePerPerson > 0
+  );
+}
+
 export function formatPassengerCondition(
   item?: PriceListPerPersonDto | null,
   language: string = "vi"

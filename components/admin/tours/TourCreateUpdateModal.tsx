@@ -13,6 +13,7 @@ import {
     Button,
     Separator,
     Label,
+    FieldError,
     Checkbox,
     ColorPicker,
     ColorSwatch,
@@ -43,6 +44,7 @@ import {
     TourPackageDto,
     CreateTourRequest,
     formatPassengerCondition,
+    isPackagePublishable,
     getPackagePrice,
     getPackagePriceItem
 } from "@/lib/api/tours";
@@ -125,6 +127,9 @@ export default function TourCreateUpdateModal({
     const [packages, setPackages] = useState<TourPackageDto[]>([]);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState<boolean>(false);
     const [editingPackageIndex, setEditingPackageIndex] = useState<number | null>(null);
+    // Set when a package would be saved active with nothing to sell — named so the admin knows
+    // which one to fix rather than being told the whole save failed.
+    const [packageError, setPackageError] = useState<string | null>(null);
 
     // Media
     const [imageIds, setImageIds] = useState<number[]>([]);
@@ -293,6 +298,7 @@ export default function TourCreateUpdateModal({
     };
 
     const handleSavePackage = (savedPkg: TourPackageDto) => {
+        setPackageError(null);
         if (editingPackageIndex !== null && editingPackageIndex >= 0) {
             setPackages(prev => prev.map((p, i) => i === editingPackageIndex ? savedPkg : p));
         } else {
@@ -301,6 +307,7 @@ export default function TourCreateUpdateModal({
     };
 
     const handleRemovePackage = (idx: number) => {
+        setPackageError(null);
         setPackages(prev => prev.filter((_, i) => i !== idx));
     };
 
@@ -319,6 +326,26 @@ export default function TourCreateUpdateModal({
             setActiveTab("INFO");
             return;
         }
+
+        // Mirrors `TourPackage.isPublishable()` on the server: a package may only be active when
+        // it has an active adult price above zero, or is flagged as contact-only (a quote request).
+        // Checked here because the API rejects the save, and a bare 400 would not say which of the
+        // packages is at fault.
+        const offendingIndex = packages.findIndex((pkg) => !isPackagePublishable(pkg));
+        if (offendingIndex >= 0) {
+            const offending = packages[offendingIndex];
+            const offendingName =
+                offending.translations?.find((tr) => tr.locale === "vi" && tr.name)?.name ||
+                offending.translations?.find((tr) => tr.name)?.name ||
+                offending.name ||
+                `#${offendingIndex + 1}`;
+            const message = t.tours.packagePriceRequired.replace("{name}", offendingName);
+            setPackageError(message);
+            showToast(message, "error");
+            setActiveTab("PACKAGES");
+            return;
+        }
+        setPackageError(null);
 
         const transPayload = Object.entries(translations)
             .filter(([_, data]) => data.name.trim() !== "")
@@ -1009,6 +1036,12 @@ export default function TourCreateUpdateModal({
                                                     {"Thêm gói tour"}
                                                 </Button>
                                             </div>
+
+                                            {packageError && (
+                                                <FieldError className="text-[11px] text-rose-500 font-semibold">
+                                                    {packageError}
+                                                </FieldError>
+                                            )}
 
                                             {packages.length === 0 ? (
                                                 <div className="text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">

@@ -79,6 +79,7 @@
   successNote: "We have sent a confirmation message to your email and will contact you via your secondary contact channels. Please respond to finalize.",
   namePlaceholder: "John Doe",
   maxGuestsError: "Max {max} guests allowed",
+  packagePriceRequired: "Package \"{name}\" is active but has no adult price. Add a price or turn on Quote only before saving.",
   redirecting: "Redirecting...",
   tourDetailTitle: "Tour Detail",
   tourDetailDescription: "View tour details, itinerary, pricing and choose your vehicle.",

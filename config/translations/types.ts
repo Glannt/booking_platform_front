@@ -1097,6 +1097,7 @@ priceSchemaInfoKm: string;
     viewHistory: string;
     namePlaceholder: string;
     maxGuestsError: string;
+    packagePriceRequired: string;
     tourDetailTitle: string;
     tourDetailDescription: string;
     allTours: string;
