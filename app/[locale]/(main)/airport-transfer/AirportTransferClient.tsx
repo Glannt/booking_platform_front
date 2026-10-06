@@ -55,7 +55,7 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcAirportPrice } from "@/lib/pricing";
-import { calculateDeposit, DepositType, DEFAULT_MODULE_DEPOSIT_RATES } from "@/lib/pricing/deposit";
+import { calculateDeposit, DepositType, DEFAULT_MODULE_DEPOSIT_RATES, resolveAirportDepositPolicy } from "@/lib/pricing/deposit";
 import { saveBookingDraft, loadBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import type { SectionDto } from "@/lib/api/sections";
 import { FormattedDescription } from "@/components/FormattedDescription";
@@ -887,20 +887,16 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
   const depositCalc = useMemo(() => {
     if (!isFormComplete || !selectedVehicle || finalPrice <= 0) return null;
 
-    // Prioritize vehicle custom deposit, then route default deposit, then default 20%
-    const depType = selectedTransferPrice?.depositType || selectedRoute?.depositType || DepositType.PERCENT;
-    const depRate = selectedTransferPrice?.depositType
-      ? selectedTransferPrice.depositRate
-      : (selectedRoute?.depositRate ?? DEFAULT_MODULE_DEPOSIT_RATES.AIRPORT);
-    const depAmount = selectedTransferPrice?.depositType
-      ? selectedTransferPrice.depositAmount
-      : selectedRoute?.depositAmount;
+    // Row first, then its route, then the module default — the same three levels the server
+    // applies. Display only: the booking sends no deposit, so this has to quote what the server
+    // will charge rather than a figure the browser made up.
+    const policy = resolveAirportDepositPolicy(selectedTransferPrice, selectedRoute);
 
     return calculateDeposit({
       totalAmount: finalPrice,
-      depositType: depType,
-      depositRate: depRate ?? undefined,
-      depositAmount: depAmount ?? undefined,
+      depositType: policy.depositType,
+      depositRate: policy.depositRate,
+      depositAmount: policy.depositAmount,
       defaultRate: DEFAULT_MODULE_DEPOSIT_RATES.AIRPORT,
     });
   }, [finalPrice, isFormComplete, selectedVehicle, selectedTransferPrice, selectedRoute]);

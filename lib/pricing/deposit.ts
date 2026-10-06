@@ -49,6 +49,36 @@ export function formatDepositPolicy(
   return Number.isFinite(amount) && amount > 0 ? `${amount.toLocaleString()} ${currency}` : null;
 }
 
+interface DepositFields {
+  depositType?: DepositType | string | null;
+  depositRate?: number | null;
+  depositAmount?: number | null;
+}
+
+/**
+ * Which deposit the airport flow quotes: the transfer price row that priced the trip, then the
+ * route it travels, then nothing — the caller hands its module default to {@link calculateDeposit}.
+ *
+ * Exactly the three levels the server applies in `AirportFacade.resolveDepositPolicy`, and it has
+ * to stay that way: the booking no longer sends a deposit, so this figure is only ever a quote,
+ * and a quote that disagrees with what the server charges is a dispute. `depositType` alone is the
+ * discriminator, as on the server — a rate with no type is an unconfigured row, not a rate.
+ *
+ * @returns an empty object when neither level is configured, never a defaulted figure
+ */
+export function resolveAirportDepositPolicy(
+  row?: DepositFields | null,
+  route?: DepositFields | null,
+): { depositType?: DepositType | string; depositRate?: number; depositAmount?: number } {
+  const source = row?.depositType ? row : route;
+  if (!source?.depositType) return {};
+  return {
+    depositType: source.depositType,
+    depositRate: source.depositRate ?? undefined,
+    depositAmount: source.depositAmount ?? undefined,
+  };
+}
+
 /**
  * Calculates deposit, paid, and remaining amounts based on depositType (PERCENT, FIXED, PER_PERSON).
  * - Cọc percent hoặc fixed đều tính từ tổng giá.
