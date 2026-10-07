@@ -55,10 +55,9 @@ export default function AirportTransferCheckoutPage() {
   const depositCalc = useMemo(() => {
     return calculateDeposit({
       totalAmount: finalTotalPrice,
-      depositType: draft?.payload?.depositType || DepositType.PERCENT,
+      depositType: draft?.payload?.depositType,
       depositRate: draft?.payload?.depositRate ?? undefined,
       depositAmount: draft?.payload?.depositAmount ?? undefined,
-      defaultRate: 20,
     });
   }, [finalTotalPrice, draft]);
 
@@ -243,24 +242,26 @@ export default function AirportTransferCheckoutPage() {
             <span className="text-lg font-black text-accent">{formatPrice(finalTotalPrice)}</span>
           </div>
 
-          {/* Deposit Info Box */}
-          <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                <ShieldCheck size={15} className="text-amber-600 shrink-0" />
-                {t.discounts?.depositRequired || "Tiền đặt cọc"} {depositCalc.depositType === DepositType.FIXED ? "(Cố định)" : `(${depositCalc.depositRate}%)`}
-              </span>
-              <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
-                {formatPrice(depositCalc.depositAmount)}
-              </span>
+          {/* Deposit Info Box — hidden when the trip has no deposit configured */}
+          {depositCalc.depositAmount > 0 && (
+            <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <ShieldCheck size={15} className="text-amber-600 shrink-0" />
+                  {t.discounts?.depositRequired || "Tiền đặt cọc"} {depositCalc.depositType === DepositType.FIXED ? "(Cố định)" : `(${depositCalc.depositRate}%)`}
+                </span>
+                <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
+                  {formatPrice(depositCalc.depositAmount)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <span>{t.discounts?.remainingPayment || "Thanh toán còn lại"}:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {formatPrice(depositCalc.remainingAmount)}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between items-center pt-1.5 border-t border-amber-200/50 dark:border-amber-900/30 text-xs font-semibold text-slate-600 dark:text-slate-300">
-              <span>{t.discounts?.remainingPayment || "Thanh toán còn lại"}:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                {formatPrice(depositCalc.remainingAmount)}
-              </span>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* Customer Info */}

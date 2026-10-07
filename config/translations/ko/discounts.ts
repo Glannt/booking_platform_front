@@ -44,6 +44,7 @@ export const discounts = {
   fixedDepositAmount: "고정 예약금 금액",
   depositRate: "예약금 비율 (%)",
   depositRequired: "결제 필요 예약금",
+  depositPolicyNote: "예약금 정책: 투어 총액의 {rate}%",
   remainingPayment: "현장 결제 잔액",
   validPeriod: "적용 기간",
   scopeGlobal: "전체 서비스 (GLOBAL)",

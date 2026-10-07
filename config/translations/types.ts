@@ -1381,6 +1381,8 @@ priceSchemaInfoKm: string;
     fixedDepositAmount: string;
     depositRate: string;
     depositRequired: string;
+    /** Confirm-page note for a percent deposit; `{rate}` is replaced with the configured rate. */
+    depositPolicyNote: string;
     remainingPayment: string;
     validPeriod: string;
     scopeGlobal: string;

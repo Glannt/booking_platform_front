@@ -98,8 +98,8 @@ export function AirportRouteDetailModal({
   if (!route) return null;
 
   const selectedAirport = airports.find((a) => a.id === route.airportId);
-  const depositType = route.depositType || "PERCENT";
-  const depositRate = route.depositRate != null ? Number(route.depositRate) : 20;
+  const depositType = route.depositType || undefined;
+  const depositRate = route.depositRate != null ? Number(route.depositRate) : undefined;
   const depositAmount = route.depositAmount != null ? String(route.depositAmount) : "";
 
   const handleDeletePrice = async (priceId: number) => {
@@ -187,12 +187,14 @@ export function AirportRouteDetailModal({
                           <strong className="text-amber-600 dark:text-amber-400 font-semibold">
                             {p.depositType === "PERCENT" ? `${p.depositRate}%` : `${p.depositAmount?.toLocaleString("vi-VN")} ₫`} (riêng)
                           </strong>
-                        ) : (
+                        ) : depositType ? (
                           <span className="text-blue-600 dark:text-blue-400 font-semibold">
                             {depositType === "PERCENT"
                               ? `${depositRate}%`
                               : `${depositAmount ? Number(depositAmount).toLocaleString("vi-VN") : 0} ₫`} (tuyến)
                           </span>
+                        ) : (
+                          <span className="text-foreground/40">—</span>
                         )}
                       </span>
                     </div>
@@ -313,27 +315,29 @@ export function AirportRouteDetailModal({
                   </div>
                 </div>
 
-                {/* Default Route Deposit Policy Card */}
-                <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                      <ShieldCheck size={15} className="text-amber-600 shrink-0" />
-                      Chính Sách Đặt Cọc Mặc Định Tuyến
-                    </span>
-                    <span className="text-xs font-black text-amber-700 dark:text-amber-400">
+                {/* Default Route Deposit Policy Card — hidden while the route has no deposit configured */}
+                {depositType && (
+                  <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <ShieldCheck size={15} className="text-amber-600 shrink-0" />
+                        Chính Sách Đặt Cọc Mặc Định Tuyến
+                      </span>
+                      <span className="text-xs font-black text-amber-700 dark:text-amber-400">
+                        {depositType === "FIXED"
+                          ? depositAmount
+                            ? `${Number(depositAmount).toLocaleString("vi-VN")} VND (Cố định)`
+                            : "Cố định"
+                          : `${depositRate}% (Theo phần trăm)`}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-foreground/60">
                       {depositType === "FIXED"
-                        ? depositAmount
-                          ? `${Number(depositAmount).toLocaleString("vi-VN")} VND (Cố định)`
-                          : "Cố định"
-                        : `${depositRate}% (Theo phần trăm)`}
-                    </span>
+                        ? "Áp dụng thu trước số tiền cọc cố định này cho tất cả bảng giá xe chưa cấu hình riêng trên tuyến."
+                        : `Mọi bảng giá xe trên tuyến này sẽ mặc định yêu cầu đặt cọc ${depositRate}% tổng tiền chuyến đi nếu không cấu hình riêng.`}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-foreground/60">
-                    {depositType === "FIXED"
-                      ? "Áp dụng thu trước số tiền cọc cố định này cho tất cả bảng giá xe chưa cấu hình riêng trên tuyến."
-                      : `Mọi bảng giá xe trên tuyến này sẽ mặc định yêu cầu đặt cọc ${depositRate}% tổng tiền chuyến đi nếu không cấu hình riêng.`}
-                  </p>
-                </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-separator pt-4">
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator">

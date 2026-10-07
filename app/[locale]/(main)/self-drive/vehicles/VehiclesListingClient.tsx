@@ -206,7 +206,7 @@ export default function VehiclesListingClient({ sections }: VehiclesListingClien
                 descVi,
                 descEn,
                 pricePerDay: dailyRate,
-                deposit: r.deposit || 2000000,
+                deposit: r.deposit || 0,
                 minimumDays: r.minimumDays || 1,
                 featuresVi: featuresVi.length > 0 ? featuresVi : ["Bảo hiểm thân vỏ", "Giao xe tận nơi"],
                 featuresEn: featuresEn.length > 0 ? featuresEn : ["Comprehensive insurance", "Door-to-door delivery"],

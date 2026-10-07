@@ -146,7 +146,7 @@ export default function BookingEditModal({
 
   const currentTotal = formData.totalAmount ?? 0;
   const currentDepositType: DepositType = formData.depositType || DepositType.RATE;
-  const currentDepositRate = formData.depositRate ?? 30;
+  const currentDepositRate = formData.depositRate ?? 0;
   const currentDeposit = formData.depositAmount ?? 0;
   const currentReceived = formData.receivedAmount ?? 0;
   const currentRemaining = Math.max(0, currentTotal - (currentDeposit + currentReceived));
@@ -632,7 +632,7 @@ export default function BookingEditModal({
                           <NumberField
                             minValue={0}
                             maxValue={100}
-                            value={formData.depositRate ?? 30}
+                            value={formData.depositRate ?? 0}
                             onChange={handleRateChange}
                             fullWidth
                           >

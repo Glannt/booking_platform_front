@@ -50,13 +50,14 @@ export function AirportTransferDetailModal({
   if (!transfer) return null;
 
   const currentRoute = routes.find((r) => r.id === transfer.airportRouteId);
-  const routeDepositType: DepositType = (defaultRouteDeposit?.depositType || currentRoute?.depositType || "PERCENT") as DepositType;
-  const routeDepositRate: number = defaultRouteDeposit?.depositRate ?? currentRoute?.depositRate ?? 20;
+  const routeDepositType: DepositType | undefined = (defaultRouteDeposit?.depositType || currentRoute?.depositType) as DepositType | undefined;
+  const routeDepositRate: number | undefined = defaultRouteDeposit?.depositRate ?? currentRoute?.depositRate;
   const routeDepositAmount: number | undefined = defaultRouteDeposit?.depositAmount ?? currentRoute?.depositAmount;
 
   const isCustomDeposit = Boolean(transfer.depositType);
-  const effectiveDepositType = isCustomDeposit ? (transfer.depositType as DepositType) : routeDepositType;
-  const effectiveDepositRate = isCustomDeposit ? (transfer.depositRate ?? 20) : routeDepositRate;
+  const isConfiguredDeposit = isCustomDeposit || Boolean(routeDepositType);
+  const effectiveDepositType = isCustomDeposit ? (transfer.depositType as DepositType | undefined) : routeDepositType;
+  const effectiveDepositRate = isCustomDeposit ? transfer.depositRate : routeDepositRate;
   const effectiveDepositAmount = isCustomDeposit ? transfer.depositAmount : routeDepositAmount;
 
   const baseKm = transfer.baseKm ?? 35;
@@ -167,45 +168,47 @@ export function AirportTransferDetailModal({
                 </div>
               </div>
 
-              {/* Deposit Policy View */}
-              <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-900/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
-                    <ShieldCheck size={16} />
-                    <span>Chính Sách Đặt Cọc</span>
+              {/* Deposit Policy View — hidden when neither the transfer nor its route configures a deposit */}
+              {isConfiguredDeposit && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-900/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                      <ShieldCheck size={16} />
+                      <span>Chính Sách Đặt Cọc</span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isCustomDeposit
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300 dark:border-amber-800"
+                          : "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                      }`}
+                    >
+                      {isCustomDeposit ? "Cấu hình riêng loại xe" : "Kế thừa từ tuyến đường"}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      isCustomDeposit
-                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300 dark:border-amber-800"
-                        : "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                    }`}
-                  >
-                    {isCustomDeposit ? "Cấu hình riêng loại xe" : "Kế thừa từ tuyến đường"}
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
-                  <div>
-                    <span className="text-foreground/60 block text-[11px]">Hình thức đặt cọc:</span>
-                    <span className="font-bold text-foreground">
-                      {effectiveDepositType === "PERCENT" ? `Theo phần trăm (${effectiveDepositRate}%)` : "Số tiền cố định"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-foreground/60 block text-[11px]">Tiền cọc ước tính (giá gốc):</span>
-                    <span className="font-bold text-amber-600 dark:text-amber-400">
-                      {(() => {
-                        const estDeposit =
-                          effectiveDepositType === "PERCENT"
-                            ? Math.round(baseAmount * ((effectiveDepositRate || 0) / 100))
-                            : (effectiveDepositAmount || 0);
-                        return `${estDeposit.toLocaleString("vi-VN")} ${currency}`;
-                      })()}
-                    </span>
+                  <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
+                    <div>
+                      <span className="text-foreground/60 block text-[11px]">Hình thức đặt cọc:</span>
+                      <span className="font-bold text-foreground">
+                        {effectiveDepositType === "PERCENT" ? `Theo phần trăm (${effectiveDepositRate}%)` : "Số tiền cố định"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-foreground/60 block text-[11px]">Tiền cọc ước tính (giá gốc):</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">
+                        {(() => {
+                          const estDeposit =
+                            effectiveDepositType === "PERCENT"
+                              ? Math.round(baseAmount * ((effectiveDepositRate || 0) / 100))
+                              : (effectiveDepositAmount || 0);
+                          return `${estDeposit.toLocaleString("vi-VN")} ${currency}`;
+                        })()}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Live Zone Preview */}
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-[var(--bg-card)] border border-border space-y-2">

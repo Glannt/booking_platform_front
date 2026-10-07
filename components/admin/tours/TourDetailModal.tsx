@@ -31,6 +31,7 @@ import {
 import clsx from "clsx";
 
 import { TourDto, TourCategoryDto, getPackagePrice, getPackagePriceItem, formatPassengerCondition } from "@/lib/api/tours";
+import { formatDepositPolicy } from "@/lib/pricing/deposit";
 import { getIconComponent } from "@/lib/utils/icons";
 import { parseBulletList } from "@/lib/utils/bullet-helper";
 import { ScopedDiscountTab } from "@/components/admin/discount";
@@ -224,24 +225,6 @@ export default function TourDetailModal({
                                     </div>
 
                                     <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
-
-                                    {/* Deposit Policy */}
-                                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)]">
-                                        <div className="flex items-center gap-1.5 mb-2">
-                                            <ShieldCheck size={15} className="text-amber-500 shrink-0" />
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                                {"Chính sách đặt cọc"}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm font-black text-slate-900 dark:text-white">
-                                            {tour.depositType === "FIXED" && tour.depositAmount != null
-                                                ? `${Number(tour.depositAmount).toLocaleString("vi-VN")} ${"đ (cố định)"}`
-                                                : `${tour.depositRate ?? 30}% (${"theo phần trăm"})`}
-                                        </p>
-                                        <p className="text-[11px] text-foreground/50 mt-0.5">
-                                            {"Áp dụng khi khách đặt tour, tính theo tổng giá sau khuyến mãi."}
-                                        </p>
-                                    </div>
 
                                     {/* Tour Translations Section */}
                                     <div className="space-y-4">
@@ -482,6 +465,7 @@ export default function TourDetailModal({
                                             {tour.packages.map((pkg, idx) => {
                                                 const pTr = pkg.translations?.find(t => t.locale === activeLocale) || pkg.translations?.[0];
                                                 const name = pTr?.name || pkg.code || (`Gói #${idx + 1}`);
+                                                const depositLabel = formatDepositPolicy(pkg);
 
                                                 return (
                                                     <div key={pkg.id || idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[var(--bg-card)] space-y-3">
@@ -553,6 +537,16 @@ export default function TourDetailModal({
                                                                 <span className="text-[10px] text-slate-400 block">{"Giá trọn gói"}</span>
                                                                 <span className="font-black text-accent text-sm">
                                                                     {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(pkg.fixedPrice || 0)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {depositLabel && (
+                                                            <div className="flex items-center gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px]">
+                                                                <ShieldCheck size={13} className="text-amber-500 shrink-0" />
+                                                                <span className="text-[10px] text-slate-400 font-medium">{"Đặt cọc"}:</span>
+                                                                <span className="font-black text-amber-600 dark:text-amber-400">
+                                                                    {depositLabel}
                                                                 </span>
                                                             </div>
                                                         )}

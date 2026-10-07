@@ -55,7 +55,7 @@ import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { calcAirportPrice } from "@/lib/pricing";
-import { calculateDeposit, DepositType, DEFAULT_MODULE_DEPOSIT_RATES, resolveAirportDepositPolicy } from "@/lib/pricing/deposit";
+import { calculateDeposit, DepositType, resolveAirportDepositPolicy } from "@/lib/pricing/deposit";
 import { saveBookingDraft, loadBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import type { SectionDto } from "@/lib/api/sections";
 import { FormattedDescription } from "@/components/FormattedDescription";
@@ -887,9 +887,9 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
   const depositCalc = useMemo(() => {
     if (!isFormComplete || !selectedVehicle || finalPrice <= 0) return null;
 
-    // Row first, then its route, then the module default — the same three levels the server
-    // applies. Display only: the booking sends no deposit, so this has to quote what the server
-    // will charge rather than a figure the browser made up.
+    // Row first, then its route — the same two levels the server applies. Display only: the
+    // booking sends no deposit, so this has to quote what the server will charge rather than a
+    // figure the browser made up. No module default: neither level configured means 0đ.
     const policy = resolveAirportDepositPolicy(selectedTransferPrice, selectedRoute);
 
     return calculateDeposit({
@@ -897,7 +897,6 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
       depositType: policy.depositType,
       depositRate: policy.depositRate,
       depositAmount: policy.depositAmount,
-      defaultRate: DEFAULT_MODULE_DEPOSIT_RATES.AIRPORT,
     });
   }, [finalPrice, isFormComplete, selectedVehicle, selectedTransferPrice, selectedRoute]);
 
@@ -997,7 +996,7 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
       ...(dateValue ? [{ label: t.airportTransfer.dateTime, value: `${dateValue.toString()} ${timeValue.hour}:${String(timeValue.minute).padStart(2, "0")} ${timeValue.period}` }] : []),
       ...(tripType === "return" && returnDateValue ? [{ label: t.airportTransfer.returnDate, value: `${returnDateValue.toString()} ${returnTimeValue.hour}:${String(returnTimeValue.minute).padStart(2, "0")} ${returnTimeValue.period}` }] : []),
       ...(nhaTrangAddress ? [{ label: t.airportTransfer.address, value: nhaTrangAddress }] : []),
-      ...(depositCalc ? [
+      ...(depositCalc && depositCalc.depositAmount > 0 ? [
         { 
           label: t.discounts?.depositRequired || "Tiền đặt cọc", 
           value: depositCalc.depositType === DepositType.FIXED 
@@ -1948,7 +1947,7 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
                 <span className="text-xl font-black text-accent">{finalPriceDisplay}</span>
               </div>
 
-              {depositCalc && isFormComplete && selectedVehicle && (
+              {depositCalc && depositCalc.depositAmount > 0 && isFormComplete && selectedVehicle && (
                 <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">

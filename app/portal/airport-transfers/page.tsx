@@ -167,7 +167,10 @@ export default function AirportTransferManagementPage() {
     if (r.depositType === "FIXED") {
       return r.depositAmount ? `${r.depositAmount.toLocaleString()} VND (Cố định)` : "Cố định";
     }
-    return `${r.depositRate ?? 20}%`;
+    if (r.depositType === "PERCENT") {
+      return `${r.depositRate}%`;
+    }
+    return "—";
   };
 
   const getTransferDepositDisplay = (tr: AirportTransferPrice) => {
@@ -175,21 +178,21 @@ export default function AirportTransferManagementPage() {
       return tr.depositAmount ? `${tr.depositAmount.toLocaleString()} VND (Cố định)` : "Cố định";
     }
     if (tr.depositType === "PERCENT") {
-      return `${tr.depositRate ?? 20}%`;
+      return `${tr.depositRate}%`;
     }
-    // Inherit from route default
+    // Inherit from route (only when the route actually configured a policy)
     const route = routes.find(r => r.id === tr.airportRouteId);
-    if (route) {
+    if (route?.depositType) {
       const rateStr = route.depositType === "FIXED"
         ? (route.depositAmount ? `${route.depositAmount.toLocaleString()} VND` : "Cố định")
-        : `${route.depositRate ?? 20}%`;
+        : `${route.depositRate}%`;
       return (
         <span className="text-foreground/70">
           {rateStr} <span className="text-[10px] text-primary font-bold">(kế thừa tuyến)</span>
         </span>
       );
     }
-    return "20% (mặc định)";
+    return "—";
   };
 
   // ── Airports ──

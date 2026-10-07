@@ -44,6 +44,7 @@ export const discounts = {
   fixedDepositAmount: "Fixed Deposit Amount",
   depositRate: "Deposit Rate (%)",
   depositRequired: "Required Deposit",
+  depositPolicyNote: "Deposit policy: {rate}% of the total tour value",
   remainingPayment: "Remaining Balance",
   validPeriod: "Valid Period",
   scopeGlobal: "Global (All Services)",

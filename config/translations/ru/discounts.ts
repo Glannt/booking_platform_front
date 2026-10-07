@@ -44,6 +44,7 @@ export const discounts = {
   fixedDepositAmount: "Фиксированная сумма депозита",
   depositRate: "Ставка депозита (%)",
   depositRequired: "Требуемая предоплата",
+  depositPolicyNote: "Политика депозита: {rate}% от общей стоимости тура",
   remainingPayment: "Остаток к оплате",
   validPeriod: "Период действия",
   scopeGlobal: "Вся система (GLOBAL)",

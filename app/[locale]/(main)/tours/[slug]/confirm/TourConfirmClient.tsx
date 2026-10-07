@@ -14,7 +14,7 @@ import { createTourBooking } from "@/lib/api/tours/bookings";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
-import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
+import { calculateDeposit } from "@/lib/pricing/deposit";
 import { resolveLocalizedName, resolveLocalizedSlug, resolveTranslation } from "@/lib/i18n-helpers";
 import { AutofillButton } from "@/components/AutofillButton";
 import BookingConfirmModal from "@/components/tours/BookingConfirmModal";
@@ -196,13 +196,16 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
     const rawTotalPrice = calculatePrice();
     const finalTotalPrice = Math.max(0, rawTotalPrice - (appliedDiscount?.amount || 0));
 
+    // Deposit belongs to the selected package now, and there is no default: a package nobody
+    // configured a deposit for quotes 0đ and the row stays hidden, exactly what the server charges.
     const depositCalc = useMemo(() => {
         return calculateDeposit({
             totalAmount: finalTotalPrice,
-            depositType: DepositType.RATE,
-            defaultRate: 30,
+            depositType: selectedPackage?.depositType,
+            depositRate: selectedPackage?.depositRate ?? undefined,
+            depositAmount: selectedPackage?.depositAmount ?? undefined,
         });
-    }, [finalTotalPrice]);
+    }, [finalTotalPrice, selectedPackage]);
 
     const formatPrice = (value: number) => {
         if (value <= 0) return t.tours.contactOnly;
@@ -553,33 +556,33 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                         </div>
                     </div>
 
-                    {/* Dynamic Deposit Info Card */}
-                    <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-2">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                                <Shield size={16} className="text-amber-600" />
-                                {t.discounts.depositRequired}
-                            </span>
-                            <span className="text-base font-black text-amber-700 dark:text-amber-400">
-                                {formatPrice(depositCalc.depositAmount)}
-                            </span>
-                        </div>
+                    {/* Dynamic Deposit Info Card — hidden when the package has no deposit */}
+                    {depositCalc.depositAmount > 0 && (
+                        <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                                    <Shield size={16} className="text-amber-600" />
+                                    {t.discounts.depositRequired}
+                                </span>
+                                <span className="text-base font-black text-amber-700 dark:text-amber-400">
+                                    {formatPrice(depositCalc.depositAmount)}
+                                </span>
+                            </div>
 
-                        <div className="text-sm text-amber-700 dark:text-amber-400/90 leading-tight">
-                            <span>
-                                {language === "vi"
-                                    ? `Quy định đặt cọc ${depositCalc.depositRate}% tổng giá trị tour`
-                                    : `Deposit policy: ${depositCalc.depositRate}% of total tour value`}
-                            </span>
-                        </div>
+                            <div className="text-sm text-amber-700 dark:text-amber-400/90 leading-tight">
+                                <span>
+                                    {t.discounts.depositPolicyNote.replace("{rate}", String(depositCalc.depositRate ?? 0))}
+                                </span>
+                            </div>
 
-                        <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                            <span>{t.discounts.remainingPayment}:</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">
-                                {formatPrice(depositCalc.remainingAmount)}
-                            </span>
+                            <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                <span>{t.discounts.remainingPayment}:</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-200">
+                                    {formatPrice(depositCalc.remainingAmount)}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <Button
                         onClick={() => setShowConfirmModal(true)}
@@ -607,7 +610,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                 childCount={childCount}
                 infantCount={infantCount}
                 totalAmount={finalTotalPrice}
-                depositAmount={depositCalc.depositAmount}
+                depositAmount={depositCalc.depositAmount > 0 ? depositCalc.depositAmount : undefined}
                 depositRate={depositCalc.depositRate}
                 depositType={depositCalc.depositType}
                 remainingAmount={depositCalc.remainingAmount}

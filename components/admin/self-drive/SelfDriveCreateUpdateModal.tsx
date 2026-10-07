@@ -47,8 +47,8 @@ export function SelfDriveCreateUpdateModal({
   const [vehicleCategoryId, setVehicleCategoryId] = useState("");
   const [dailyPrice, setDailyPrice] = useState<number>(1000000);
   const [depositType, setDepositType] = useState<"FIXED" | "PERCENT">("FIXED");
-  const [depositPercent, setDepositPercent] = useState<number>(30);
-  const [deposit, setDeposit] = useState<number>(300000);
+  const [depositPercent, setDepositPercent] = useState<number>(0);
+  const [deposit, setDeposit] = useState<number>(0);
   const [minimumDays, setMinimumDays] = useState<number>(1);
   const [active, setActive] = useState<boolean>(true);
   const [driverRequired, setDriverRequired] = useState<boolean>(false);
@@ -83,8 +83,8 @@ export function SelfDriveCreateUpdateModal({
       setVehicleCategoryId(categories[0] ? String(categories[0].id) : "");
       setDailyPrice(1000000);
       setDepositType("FIXED");
-      setDepositPercent(30);
-      setDeposit(300000);
+      setDepositPercent(0);
+      setDeposit(0);
       setMinimumDays(1);
       setActive(true);
       setDriverRequired(false);

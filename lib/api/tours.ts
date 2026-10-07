@@ -94,6 +94,10 @@ export interface TourPackageDto {
   fixedPrice?: number;
   isContactOnly?: boolean;
   contactOnly?: boolean;
+  /** Fixed / percent deposit configured on the package; `""` / null means no deposit. */
+  depositType?: DepositType | "" | null;
+  depositRate?: number | null;
+  depositAmount?: number | null;
   minGuests?: number;
   maxGuests?: number;
   highlights?: string;
@@ -212,9 +216,6 @@ export interface TourDto {
   isRecommended?: boolean;
   successfulBookingsCount?: number;
   totalRevenue?: number;
-  depositType?: DepositType;
-  depositRate?: number;
-  depositAmount?: number;
   translations: TourTranslationDto[];
   options: TourOptionDto[];
   days: TourDayDto[];
@@ -238,9 +239,6 @@ export interface CreateTourRequest {
   isRecommended?: boolean;
   thumbnailId?: number;
   imageIds?: number[];
-  depositType?: DepositType;
-  depositRate?: number;
-  depositAmount?: number;
   translations: TourTranslationDto[];
   options: TourOptionDto[];
   days: TourDayDto[];

@@ -16,7 +16,7 @@ import {
   NumberField,
   Switch,
 } from "@heroui/react";
-import { Users, User, Baby, Save, Sparkles, Ruler, Calendar } from "lucide-react";
+import { Users, User, Baby, Save, Sparkles, Ruler, Calendar, ShieldCheck } from "lucide-react";
 import {
   TourPackageDto,
   TourPackageTranslationDto,
@@ -58,6 +58,12 @@ export default function TourPackageModal({
   const [childPolicyNote, setChildPolicyNote] = useState<string>("");
   const [infantPolicyNote, setInfantPolicyNote] = useState<string>("");
   const [active, setActive] = useState<boolean>(true);
+
+  // Deposit for this package. No default: "" (no deposit) until the admin enters a rate/amount,
+  // which keeps an unconfigured package at 0đ, the same figure the server charges.
+  const [depositType, setDepositType] = useState<"" | "PERCENT" | "FIXED">("");
+  const [depositRate, setDepositRate] = useState<number>(0);
+  const [depositAmount, setDepositAmount] = useState<string>("");
 
   // Per-passenger condition states
   const [adultCond, setAdultCond] = useState<PassengerConditionState>({
@@ -171,6 +177,14 @@ export default function TourPackageModal({
         setInfantPolicyNote(initialData.infantPolicyNote || "");
         setActive(initialData.active !== undefined ? initialData.active : true);
 
+        setDepositType(
+          initialData.depositType === "PERCENT" || initialData.depositType === "FIXED"
+            ? initialData.depositType
+            : "",
+        );
+        setDepositRate(initialData.depositRate != null ? Number(initialData.depositRate) : 0);
+        setDepositAmount(initialData.depositAmount != null ? String(initialData.depositAmount) : "");
+
         const newTrans: Record<string, { name: string }> = {
           vi: { name: "" },
           en: { name: "" },
@@ -222,6 +236,9 @@ export default function TourPackageModal({
         setChildPolicyNote("");
         setInfantPolicyNote("");
         setActive(true);
+        setDepositType("");
+        setDepositRate(0);
+        setDepositAmount("");
         setTranslations({
           vi: { name: "" },
           en: { name: "" },
@@ -283,6 +300,9 @@ export default function TourPackageModal({
           toPriceDto(infantCond, "INFANT"),
         ];
 
+    const hasPercent = depositType === "PERCENT" && depositRate > 0;
+    const hasFixed = depositType === "FIXED" && depositAmount.trim() !== "" && Number(depositAmount) > 0;
+
     const updatedPackage: TourPackageDto = {
       ...(initialData || {}),
       code: mainName,
@@ -297,6 +317,11 @@ export default function TourPackageModal({
       infantPolicyNote: infantPolicyNote.trim() || undefined,
       active,
       translations: transList,
+      // "" (empty) clears the stored deposit on the server; undefined rate/amount keep the
+      // existing columns but a null type makes the policy read as unconfigured.
+      depositType: hasPercent ? "PERCENT" : hasFixed ? "FIXED" : "",
+      depositRate: hasPercent ? depositRate : undefined,
+      depositAmount: hasFixed ? Number(depositAmount) : undefined,
     };
 
     onSave(updatedPackage);
@@ -771,6 +796,76 @@ export default function TourPackageModal({
                           />
                         </div>
                       </div>
+                    </div>
+
+                    {/* Deposit policy for this package — no default, empty = no deposit */}
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Label className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <ShieldCheck size={15} className="text-amber-500 shrink-0" />
+                          {t.discounts.depositConfig}
+                        </Label>
+                        <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[var(--bg-surface)] p-0.5 shrink-0">
+                          {([
+                            { value: "", label: t.discounts.depositNone },
+                            { value: "PERCENT", label: t.discounts.depositPercent },
+                            { value: "FIXED", label: t.discounts.depositFixed },
+                          ] as const).map((opt) => (
+                            <button
+                              key={opt.value || "NONE"}
+                              type="button"
+                              onClick={() => setDepositType(opt.value)}
+                              className={`text-[11px] font-bold px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                                depositType === opt.value
+                                  ? "bg-accent text-accent-foreground shadow-xs"
+                                  : "text-foreground/60 hover:text-foreground"
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {depositType === "PERCENT" && (
+                        <div className="w-full sm:max-w-xs">
+                          <Label className="block text-[11px] font-bold text-foreground/60 mb-1">
+                            {t.discounts.depositRate}
+                          </Label>
+                          <NumberField
+                            value={depositRate}
+                            onChange={(v) => setDepositRate(v || 0)}
+                            minValue={0}
+                            maxValue={100}
+                            className="w-full"
+                          >
+                            <NumberField.Group className="w-full">
+                              <NumberField.Input className="w-full px-3 py-2 rounded-xl border border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground text-sm font-bold h-[36px]" />
+                            </NumberField.Group>
+                          </NumberField>
+                        </div>
+                      )}
+
+                      {depositType === "FIXED" && (
+                        <div className="w-full sm:max-w-xs">
+                          <Label className="block text-[11px] font-bold text-foreground/60 mb-1">
+                            {t.discounts.fixedDepositAmount}
+                          </Label>
+                          <NumberField
+                            value={Number(depositAmount)}
+                            onChange={(v) => setDepositAmount(v !== undefined ? String(v) : "")}
+                            minValue={0}
+                            className="w-full"
+                          >
+                            <NumberField.Group className="w-full">
+                              <NumberField.Input
+                                placeholder={t.discounts.fixedDepositAmount}
+                                className="w-full px-3 py-2 rounded-xl border border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground text-sm font-semibold h-[36px] outline-none"
+                              />
+                            </NumberField.Group>
+                          </NumberField>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

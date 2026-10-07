@@ -44,6 +44,7 @@ export const discounts = {
   fixedDepositAmount: "Số tiền cọc cố định",
   depositRate: "Tỷ lệ cọc (%)",
   depositRequired: "Tiền cọc cần thanh toán",
+  depositPolicyNote: "Quy định đặt cọc {rate}% tổng giá trị tour",
   remainingPayment: "Số tiền còn lại thanh toán sau",
   validPeriod: "Thời gian áp dụng",
   scopeGlobal: "Toàn bộ hệ thống (GLOBAL)",

@@ -32,7 +32,7 @@ import {
     TextArea,
     Chip,
 } from "@heroui/react";
-import { Save, Plus, Trash2, RefreshCw, Shuffle, Edit, Edit3, Package, Compass, ShieldCheck } from "lucide-react";
+import { Save, Plus, Trash2, RefreshCw, Shuffle, Edit, Edit3, Package, Compass } from "lucide-react";
 import clsx from "clsx";
 
 import {
@@ -135,11 +135,6 @@ export default function TourCreateUpdateModal({
     const [imageIds, setImageIds] = useState<number[]>([]);
     const [thumbnailId, setThumbnailId] = useState<number | null>(null);
 
-    // Deposit policy
-    const [depositType, setDepositType] = useState<"PERCENT" | "FIXED">("PERCENT");
-    const [depositRate, setDepositRate] = useState<number>(30);
-    const [depositAmount, setDepositAmount] = useState<string>("");
-
     useEffect(() => {
         if (isOpen) {
             if (editingTour) {
@@ -195,9 +190,6 @@ export default function TourCreateUpdateModal({
                 setPackages(normalizedPkgs);
                 setImageIds(editingTour.imageIds || []);
                 setThumbnailId(editingTour.thumbnailId || null);
-                setDepositType((editingTour.depositType as "PERCENT" | "FIXED") || "PERCENT");
-                setDepositRate(editingTour.depositRate != null ? Number(editingTour.depositRate) : 30);
-                setDepositAmount(editingTour.depositAmount != null ? String(editingTour.depositAmount) : "");
             } else {
                 setTourCategoryId(categories[0]?.id || 0);
                 setDurationDays(1);
@@ -220,9 +212,6 @@ export default function TourCreateUpdateModal({
                 setPackages([]);
                 setImageIds([]);
                 setThumbnailId(null);
-                setDepositType("PERCENT");
-                setDepositRate(30);
-                setDepositAmount("");
             }
             setActiveTab("INFO");
             setActiveFormLocale("vi");
@@ -391,10 +380,7 @@ export default function TourCreateUpdateModal({
                 return Boolean(name);
             }),
             thumbnailId: thumbnailId || undefined,
-            imageIds: imageIds.length > 0 ? imageIds : undefined,
-            depositType,
-            depositRate: depositType === "PERCENT" ? Number(depositRate) : undefined,
-            depositAmount: depositType === "FIXED" && depositAmount ? Number(depositAmount) : undefined
+            imageIds: imageIds.length > 0 ? imageIds : undefined
         };
 
         setLoading(true);
@@ -616,100 +602,6 @@ export default function TourCreateUpdateModal({
                                                         {"Gắn nhãn Đề xuất"}
                                                     </Label>
                                                 </div>
-                                            </div>
-
-                                            <Separator className="bg-slate-100 dark:bg-[var(--bg-card)]" />
-
-                                            {/* Deposit Policy Configuration */}
-                                            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[var(--bg-card)] space-y-3">
-                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                    <div>
-                                                        <Label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                                                            <ShieldCheck size={15} className="text-amber-500 shrink-0" />
-                                                            <span>{t.discounts.depositConfig}</span>
-                                                        </Label>
-                                                        <p className="text-[11px] text-foreground/60 mt-0.5">
-                                                            {"Áp dụng chung cho đặt tour, tính theo tổng giá sau khuyến mãi."}
-                                                        </p>
-                                                    </div>
-                                                    {/* Type Toggle */}
-                                                    <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[var(--bg-surface)] p-0.5 shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDepositType("PERCENT")}
-                                                            className={`text-[11px] font-bold px-3 py-1 rounded-md transition-colors cursor-pointer ${
-                                                                depositType === "PERCENT"
-                                                                    ? "bg-accent text-accent-foreground shadow-xs"
-                                                                    : "text-foreground/60 hover:text-foreground"
-                                                            }`}
-                                                        >
-                                                            {t.discounts.depositPercent}
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDepositType("FIXED")}
-                                                            className={`text-[11px] font-bold px-3 py-1 rounded-md transition-colors cursor-pointer ${
-                                                                depositType === "FIXED"
-                                                                    ? "bg-accent text-accent-foreground shadow-xs"
-                                                                    : "text-foreground/60 hover:text-foreground"
-                                                            }`}
-                                                        >
-                                                            {t.discounts.depositFixed}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                {depositType === "PERCENT" ? (
-                                                    <div className="space-y-2">
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <div className="w-32">
-                                                                <NumberField
-                                                                    value={depositRate}
-                                                                    onChange={(v) => setDepositRate(v || 0)}
-                                                                    minValue={0}
-                                                                    maxValue={100}
-                                                                    className="w-full"
-                                                                >
-                                                                    <NumberField.Group className="w-full">
-                                                                        <NumberField.Input className="w-full px-3 py-1.5 rounded-xl border border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground text-sm font-bold h-[36px]" />
-                                                                    </NumberField.Group>
-                                                                </NumberField>
-                                                            </div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                {[10, 20, 30, 50, 100].map((rate) => (
-                                                                    <button
-                                                                        key={rate}
-                                                                        type="button"
-                                                                        onClick={() => setDepositRate(rate)}
-                                                                        className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
-                                                                            depositRate === rate
-                                                                                ? "bg-accent/15 text-accent border-accent/40"
-                                                                                : "border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] text-foreground/70"
-                                                                        }`}
-                                                                    >
-                                                                        {rate}%
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <NumberField
-                                                            value={Number(depositAmount)}
-                                                            onChange={(v) => setDepositAmount(v !== undefined ? String(v) : "")}
-                                                            minValue={0}
-                                                            className="w-full sm:max-w-xs"
-                                                        >
-                                                            <NumberField.Group className="w-full">
-                                                                <NumberField.Input
-                                                                    placeholder={t.discounts.fixedDepositAmount}
-                                                                    className="w-full px-3 py-2 rounded-xl border border-separator bg-white dark:bg-[var(--bg-surface)] text-foreground text-sm font-semibold h-[36px] outline-none"
-                                                                />
-                                                            </NumberField.Group>
-                                                        </NumberField>
-                                                    </div>
-                                                )}
                                             </div>
 
                                             {/* Translation Tabs Section */}

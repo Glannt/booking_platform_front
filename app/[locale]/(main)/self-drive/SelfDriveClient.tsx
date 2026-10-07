@@ -201,7 +201,7 @@ export default function SelfDriveClient({
                 descVi,
                 descEn,
                 pricePerDay: dailyRate,
-                deposit: r.deposit || 2000000,
+                deposit: r.deposit || 0,
                 minimumDays: r.minimumDays || 1,
                 featuresVi: featuresVi.length > 0 ? featuresVi : ["Bảo hiểm thân vỏ", "Giao xe tận nơi"],
                 featuresEn: featuresEn.length > 0 ? featuresEn : ["Comprehensive insurance", "Door-to-door delivery"],
@@ -341,7 +341,7 @@ export default function SelfDriveClient({
                         {v.pricePerDay.toLocaleString("vi-VN")}đ
                       </td>
                       <td className="p-4 text-right">
-                        {v.deposit.toLocaleString("vi-VN")}đ
+                        {v.deposit > 0 ? `${v.deposit.toLocaleString("vi-VN")}đ` : "—"}
                       </td>
                       <td className="p-4 text-right">
                         {v.minimumDays} {t.selfDrive.daysUnit}

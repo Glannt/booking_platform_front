@@ -135,7 +135,7 @@ export function SelfDriveDetailModal({
                         {rental.isContactOnly ? (
                           <span className="text-foreground/50 text-xs italic font-normal">Theo thỏa thuận khi báo giá</span>
                         ) : isPercent ? (
-                          <span>{rental.depositRate || 30}% (tính từ tổng giá đơn hàng)</span>
+                          <span>{rental.depositRate ?? 0}% (tính từ tổng giá đơn hàng)</span>
                         ) : (
                           <span>{formatPriceSync(Number(rental.deposit) || 0, "vi")} (Cố định/xe)</span>
                         )}

@@ -71,12 +71,12 @@ export function AirportTransferCreateUpdateModal({
   // Deposit override configuration
   const [isCustomDeposit, setIsCustomDeposit] = useState<boolean>(false);
   const [customDepositType, setCustomDepositType] = useState<DepositType>("PERCENT");
-  const [customDepositRate, setCustomDepositRate] = useState<number>(20);
+  const [customDepositRate, setCustomDepositRate] = useState<number>(0);
   const [customDepositAmount, setCustomDepositAmount] = useState<string>("");
 
   const currentRoute = routes.find((r) => r.id === airportRouteId);
-  const routeDepositType: DepositType = (defaultRouteDeposit?.depositType || currentRoute?.depositType || "PERCENT") as DepositType;
-  const routeDepositRate: number = defaultRouteDeposit?.depositRate ?? currentRoute?.depositRate ?? 20;
+  const routeDepositType: DepositType | undefined = (defaultRouteDeposit?.depositType || currentRoute?.depositType) as DepositType | undefined;
+  const routeDepositRate: number | undefined = defaultRouteDeposit?.depositRate ?? currentRoute?.depositRate;
   const routeDepositAmount: number | undefined = defaultRouteDeposit?.depositAmount ?? currentRoute?.depositAmount;
 
   const effectiveDepositType = isCustomDeposit ? customDepositType : routeDepositType;
@@ -99,7 +99,7 @@ export function AirportTransferCreateUpdateModal({
         const hasCustom = Boolean(transfer.depositType);
         setIsCustomDeposit(hasCustom);
         setCustomDepositType((transfer.depositType as DepositType) || "PERCENT");
-        setCustomDepositRate(transfer.depositRate != null ? Number(transfer.depositRate) : 20);
+        setCustomDepositRate(transfer.depositRate != null ? Number(transfer.depositRate) : 0);
         setCustomDepositAmount(transfer.depositAmount != null ? String(transfer.depositAmount) : "");
       } else {
         setAirportRouteId(routes[0]?.id || 0);
@@ -114,7 +114,7 @@ export function AirportTransferCreateUpdateModal({
         setActive(true);
         setIsCustomDeposit(false);
         setCustomDepositType("PERCENT");
-        setCustomDepositRate(20);
+        setCustomDepositRate(0);
         setCustomDepositAmount("");
       }
     }
@@ -435,10 +435,16 @@ export function AirportTransferCreateUpdateModal({
 
                   {!isCustomDeposit ? (
                     <div className="text-xs text-foreground/70 bg-white/70 dark:bg-[var(--bg-surface)] p-2.5 rounded-xl border border-border">
-                      <span>Đang kế thừa từ tuyến đường: </span>
-                      <strong className="text-foreground">
-                        {routeDepositType === "PERCENT" ? `Cọc ${routeDepositRate}%` : `Cọc ${routeDepositAmount ? routeDepositAmount.toLocaleString("vi-VN") : 0} VND`}
-                      </strong>
+                      {routeDepositType ? (
+                        <>
+                          <span>Đang kế thừa từ tuyến đường: </span>
+                          <strong className="text-foreground">
+                            {routeDepositType === "PERCENT" ? `Cọc ${routeDepositRate}%` : `Cọc ${routeDepositAmount ? routeDepositAmount.toLocaleString("vi-VN") : 0} VND`}
+                          </strong>
+                        </>
+                      ) : (
+                        <span>Không cấu hình cọc trên tuyến đường</span>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3 pt-1">
@@ -474,7 +480,7 @@ export function AirportTransferCreateUpdateModal({
                         {customDepositType === "PERCENT" ? (
                           <NumberField
                             value={customDepositRate}
-                            onChange={(val) => setCustomDepositRate(val ?? 20)}
+                            onChange={(val) => setCustomDepositRate(val ?? 0)}
                             minValue={1}
                             maxValue={100}
                             className="w-full"

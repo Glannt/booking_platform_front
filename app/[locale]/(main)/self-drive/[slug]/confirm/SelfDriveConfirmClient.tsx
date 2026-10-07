@@ -206,7 +206,7 @@ export default function SelfDriveConfirmClient({
           desc,
           pricePerDay: dailyRate,
           deposit: relatedRental?.deposit || 0,
-          depositType: relatedRental?.depositType || (relatedRental?.depositRate ? "PERCENT" : "FIXED"),
+          depositType: relatedRental?.depositType,
           depositRate: relatedRental?.depositRate,
           minimumDays: relatedRental?.minimumDays || 1,
           capacity,
@@ -359,36 +359,16 @@ export default function SelfDriveConfirmClient({
   const rawTotalPrice = price;
   const finalTotalPrice = Math.max(0, rawTotalPrice - (appliedDiscount?.amount || 0));
 
+  // Deposit comes from the rental behind this category, and there is no default: an unconfigured
+  // rental quotes 0đ and the box stays hidden, matching what the server charges. A rate with no
+  // type is an untouched rental, exactly as `DepositPolicies.configured` treats it on the server.
   const depositCalc = useMemo(() => {
-    if (!categoryData) {
-      return calculateDeposit({
-        totalAmount: finalTotalPrice,
-        depositType: DepositType.RATE,
-        defaultRate: 30,
-      });
-    }
-
-    const isPercent = categoryData.depositType === "PERCENT" || Boolean(categoryData.depositRate);
-    if (isPercent) {
-      const rate = Number(categoryData.depositRate) || 30;
-      const totalDep = Math.round((finalTotalPrice * rate) / 100);
-      return {
-        depositType: DepositType.RATE,
-        depositRate: rate,
-        depositAmount: Math.min(finalTotalPrice, totalDep),
-        remainingAmount: Math.max(0, finalTotalPrice - totalDep),
-      };
-    } else {
-      const fixedAmount = Number(categoryData.deposit) || 0;
-      const totalDep = Math.min(finalTotalPrice, fixedAmount);
-      const rate = finalTotalPrice > 0 ? Math.round((totalDep / finalTotalPrice) * 100) : 0;
-      return {
-        depositType: DepositType.FIXED,
-        depositRate: rate,
-        depositAmount: totalDep,
-        remainingAmount: Math.max(0, finalTotalPrice - totalDep),
-      };
-    }
+    return calculateDeposit({
+      totalAmount: finalTotalPrice,
+      depositType: categoryData?.depositType,
+      depositRate: categoryData?.depositRate ?? null,
+      depositAmount: categoryData?.deposit ?? null,
+    });
   }, [finalTotalPrice, categoryData]);
 
   // Fuel Options configuration
@@ -1089,33 +1069,35 @@ export default function SelfDriveConfirmClient({
                     )}
                   </div>
 
-                  {/* Dynamic Deposit Info Box */}
-                  <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                        <ShieldCheck size={16} className="text-amber-600 shrink-0" />
-                        {categoryData.depositType === "PERCENT" || categoryData.depositRate
-                          ? `${t.selfDrive.depositLabel} (${depositCalc.depositRate}%)`
-                          : `${t.selfDrive.depositLabel} (Cố định/xe)`}
-                      </span>
-                      <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
-                        {depositCalc.depositAmount.toLocaleString("vi-VN")}đ
-                      </span>
-                    </div>
+                  {/* Dynamic Deposit Info Box — hidden when the rental has no deposit */}
+                  {depositCalc.depositAmount > 0 && (
+                    <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                          <ShieldCheck size={16} className="text-amber-600 shrink-0" />
+                          {depositCalc.depositType === DepositType.PERCENT
+                            ? `${t.selfDrive.depositLabel} (${depositCalc.depositRate}%)`
+                            : `${t.selfDrive.depositLabel} (Cố định/xe)`}
+                        </span>
+                        <span className="text-sm sm:text-base font-black text-amber-700 dark:text-amber-400">
+                          {depositCalc.depositAmount.toLocaleString("vi-VN")}đ
+                        </span>
+                      </div>
 
-                    <p className="text-sm text-amber-700/80 dark:text-amber-400/80 leading-normal">
-                      {categoryData.depositType === "PERCENT" || categoryData.depositRate
-                        ? `Đặt cọc ${depositCalc.depositRate}% tính trên tổng giá trị thuê xe sau khuyến mãi.`
-                        : "Tiền thế chân xe cố định quy định theo phân khúc xe."}
-                    </p>
+                      <p className="text-sm text-amber-700/80 dark:text-amber-400/80 leading-normal">
+                        {depositCalc.depositType === DepositType.PERCENT
+                          ? `Đặt cọc ${depositCalc.depositRate}% tính trên tổng giá trị thuê xe sau khuyến mãi.`
+                          : "Tiền thế chân xe cố định quy định theo phân khúc xe."}
+                      </p>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold">
-                      <span>{t.discounts.remainingPayment}:</span>
-                      <span className="font-bold">
-                        {depositCalc.remainingAmount.toLocaleString("vi-VN")}đ
-                      </span>
+                      <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 dark:border-amber-900/30 text-sm font-semibold">
+                        <span>{t.discounts.remainingPayment}:</span>
+                        <span className="font-bold">
+                          {depositCalc.remainingAmount.toLocaleString("vi-VN")}đ
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
                     <div className="flex justify-between items-center">

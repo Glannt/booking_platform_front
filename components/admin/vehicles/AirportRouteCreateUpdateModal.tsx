@@ -81,7 +81,7 @@ export function AirportRouteCreateUpdateModal({
 
   // Route default deposit policy
   const [depositType, setDepositType] = useState<DepositType>("PERCENT");
-  const [depositRate, setDepositRate] = useState<number>(20);
+  const [depositRate, setDepositRate] = useState<number>(0);
   const [depositAmount, setDepositAmount] = useState<string>("");
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export function AirportRouteCreateUpdateModal({
         setOriginSearchQuery(route.originName || "");
         setDestinationSearchQuery(route.destinationName || "");
         setDepositType(route.depositType || "PERCENT");
-        setDepositRate(route.depositRate != null ? Number(route.depositRate) : 20);
+        setDepositRate(route.depositRate != null ? Number(route.depositRate) : 0);
         setDepositAmount(route.depositAmount != null ? String(route.depositAmount) : "");
         setDistanceManuallySet(false);
       } else {
@@ -119,7 +119,7 @@ export function AirportRouteCreateUpdateModal({
         setOriginSearchQuery("");
         setDestinationSearchQuery("");
         setDepositType("PERCENT");
-        setDepositRate(20);
+        setDepositRate(0);
         setDepositAmount("");
         setDistanceManuallySet(false);
       }
