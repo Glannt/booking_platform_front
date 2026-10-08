@@ -5,8 +5,12 @@ export const backendUrl = typeof window !== "undefined"
   ? ""
   : (process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080");
 
-// Backend URL for server-side (SSR) requests
-const serverBackendUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
+// Backend URL for server-side (SSR) requests.
+// Prefer the internal Docker URL (no Cloudflare hairpin); fall back to the public API.
+const serverBackendUrl =
+  process.env.BACKEND_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_API ||
+  "http://localhost:8080";
 
 export interface ApiResponse<T> {
   status?: string;

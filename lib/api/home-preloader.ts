@@ -33,7 +33,11 @@ export interface HomeInitialData {
 }
 
 export async function fetchHomeInitialData(locale: string = "vi"): Promise<HomeInitialData> {
-  const serverUrl = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
+  // Prefer the internal Docker URL (no Cloudflare hairpin); fall back to the public API.
+  const serverUrl =
+    process.env.BACKEND_INTERNAL_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_API ||
+    "http://localhost:8080";
 
   // Helper with timeout to guarantee zero hang
   const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
