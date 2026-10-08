@@ -35,7 +35,7 @@ import {
   deleteSection,
   SectionDto,
 } from "@/lib/api/sections";
-import { PageSizeSelect, TableLoadingState, TableEmptyState } from "@/components/common";
+import { PageSizeSelect, TableLoadingState, TableEmptyState, AlertModal } from "@/components/common";
 
 const PAGE_PATHS = [
   { value: "/", label: "Trang chủ" },
@@ -67,6 +67,8 @@ export default function SectionsManagementPage() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<SectionDto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SectionDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const showToast = (message: string, type: "success" | "error") => {
     if (type === "success") {
@@ -101,14 +103,18 @@ export default function SectionsManagementPage() {
     fetchSections();
   }, [filterPagePath]);
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa section này không?")) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
     try {
-      await deleteSection(id);
+      await deleteSection(deleteTarget.id);
       showToast("Đã xóa section thành công!", "success");
-      setSections((prev) => prev.filter((s) => s.id !== id));
+      setSections((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch {
       showToast("Xóa section thất bại.", "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -379,9 +385,7 @@ export default function SectionsManagementPage() {
                                       size="sm"
                                       variant="danger"
                                       aria-label="Xóa section"
-                                      onPress={() => {
-                                        if (s.id) handleDelete(s.id);
-                                      }}
+                                      onPress={() => setDeleteTarget(s)}
                                     >
                                       <Trash2 size={16} />
                                     </Button>
@@ -460,6 +464,24 @@ export default function SectionsManagementPage() {
           setCreateModalOpen(true);
         }}
         onRefresh={fetchSections}
+      />
+      <AlertModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        title={t.common.deleteConfirmTitle}
+        description={
+          <div className="space-y-2">
+            <p className="font-extrabold text-slate-900 dark:text-white">
+              {deleteTarget?.sectionName}
+            </p>
+            <p>{t.common.deleteConfirmMessage}</p>
+          </div>
+        }
+        confirmText={t.common.deleteAction}
+        cancelText={t.common.cancel}
+        isLoading={deleting}
       />
     </div>
   );

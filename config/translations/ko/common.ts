@@ -55,4 +55,7 @@ export const common = {
   previous: "이전",
   next: "다음",
   results: "결과",
+  deleteConfirmTitle: "삭제 확인",
+  deleteConfirmMessage: "이 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+  deleteAction: "삭제",
 };

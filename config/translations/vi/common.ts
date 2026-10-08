@@ -55,4 +55,7 @@ export const common = {
   previous: "Trước",
   next: "Sau",
   results: "kết quả",
+  deleteConfirmTitle: "Xác nhận xóa",
+  deleteConfirmMessage: "Bạn có chắc chắn muốn xóa mục này không? Hành động này không thể hoàn tác.",
+  deleteAction: "Xóa",
 };

@@ -55,4 +55,7 @@ export const common = {
   previous: "Назад",
   next: "Вперед",
   results: "результатов",
+  deleteConfirmTitle: "Подтверждение удаления",
+  deleteConfirmMessage: "Вы уверены, что хотите удалить этот элемент? Это действие нельзя отменить.",
+  deleteAction: "Удалить",
 };

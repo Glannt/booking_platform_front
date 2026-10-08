@@ -55,4 +55,7 @@ export const common = {
   previous: "Previous",
   next: "Next",
   results: "results",
+  deleteConfirmTitle: "Confirm deletion",
+  deleteConfirmMessage: "Are you sure you want to delete this item? This action cannot be undone.",
+  deleteAction: "Delete",
 };

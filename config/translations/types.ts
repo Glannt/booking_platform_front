@@ -352,6 +352,9 @@ export interface TranslationDictionary {
     previous: string;
     next: string;
     results: string;
+    deleteConfirmTitle: string;
+    deleteConfirmMessage: string;
+    deleteAction: string;
   };
   footer: {
     description: string;
