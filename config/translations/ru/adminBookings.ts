@@ -61,4 +61,13 @@ export const adminBookings = {
   matchCriteria: "Выбранные критерии",
   noMatchedVehicles: "Нет доступных автомобилей, точно соответствующих критериям",
   assignThisVehicle: "Назначить этот автомобиль",
+  acceptCancel: "Принять отмену",
+  rejectCancel: "Отклонить отмену",
+  confirmAcceptCancelTitle: "Подтвердите принятие отмены",
+  confirmAcceptCancelMessage: "Вы уверены, что хотите принять запрос на отмену брони {code}? Бронь будет отменена.",
+  confirmRejectCancelTitle: "Подтвердите отклонение отмены",
+  confirmRejectCancelMessage: "Вы уверены, что хотите отклонить запрос на отмену брони {code}? Бронь вернётся к предыдущему статусу.",
+  acceptCancelSuccess: "Отмена принята",
+  rejectCancelSuccess: "Запрос на отмену отклонён",
+  cancelActionFailed: "Не удалось выполнить действие, попробуйте снова",
 };

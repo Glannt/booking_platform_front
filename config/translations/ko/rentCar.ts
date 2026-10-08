@@ -1,4 +1,4 @@
-﻿export const rentCar = {
+export const rentCar = {
   title: "기사 포함 시외 차량 대여",
   subtitle: "나트랑에서 인근 시도까지 전문적인 승객 교통 서비스를 제공합니다.",
   oneWay: "편도",
@@ -73,6 +73,7 @@
   routeMapOrigin: "출발지:",
   routeMapDestination: "도착지:",
   durationMinutes: "분",
+  distance: "거리",
   allIntercityRoutes: "전체 시외 노선",
   allIntercityRoutesDesc: "나트랑 출발 전체 시외 노선: 달랏, 무이네, 판랑, 부온마투옷. 가격, 출발 시간 및 차종을 확인하세요.",
   routeDetailTitle: "노선 상세",

@@ -3,7 +3,12 @@ import { DepositType } from "../pricing/deposit";
 
 export { DepositType };
 
-export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+export type BookingStatus =
+  | "pending"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "cancellation_requested";
 
 export interface BookingItemDto {
   id?: number;
@@ -217,4 +222,25 @@ export async function getFlightTrackingHistory(): Promise<FlightTracking[]> {
 export async function getMyBookings(): Promise<BookingDto[]> {
   const res = await apiFetch<ApiResponse<BookingDto[]>>("/api/v1/bookings/my-bookings");
   return res.data ?? [];
+}
+
+export async function requestBookingCancellation(id: number): Promise<BookingDto> {
+  const res = await apiFetch<ApiResponse<BookingDto>>(`/api/v1/bookings/${id}/cancel-request`, {
+    method: "POST",
+  });
+  return res.data as BookingDto;
+}
+
+export async function acceptBookingCancellation(id: number): Promise<BookingDto> {
+  const res = await apiFetch<ApiResponse<BookingDto>>(`/api/v1/admin/bookings/${id}/accept-cancel`, {
+    method: "POST",
+  });
+  return res.data as BookingDto;
+}
+
+export async function rejectBookingCancellation(id: number): Promise<BookingDto> {
+  const res = await apiFetch<ApiResponse<BookingDto>>(`/api/v1/admin/bookings/${id}/reject-cancel`, {
+    method: "POST",
+  });
+  return res.data as BookingDto;
 }

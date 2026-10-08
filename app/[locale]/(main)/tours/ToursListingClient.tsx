@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Clock,
-  Star,
   Search,
   MapPin,
   X,
@@ -96,7 +95,10 @@ export default function ToursListingClient({
   const [totalPages, setTotalPages] = useState<number>(Math.ceil((initialTotalElements || initialTours.length) / 24) || 1);
 
   // Sort & favorites
-  const [sortOrder, setSortOrder] = useState<"default" | "price_asc" | "price_desc">("default");
+  const initialSortParam = searchParams.get("sort");
+  const [sortOrder, setSortOrder] = useState<"" | "price_asc" | "price_desc">(
+    initialSortParam === "price_asc" || initialSortParam === "price_desc" ? initialSortParam : ""
+  );
   const [loading, setLoading] = useState(initialTours.length === 0);
   const [tourImages, setTourImages] = useState<Record<number, { id: number; url: string }[]>>({});
 
@@ -324,12 +326,22 @@ export default function ToursListingClient({
     });
 
     return [...list].sort((a, b) => {
-      if (sortOrder === "default") return 0;
+      if (!sortOrder) return 0;
       const priceA = getMinPrice(a);
       const priceB = getMinPrice(b);
       return sortOrder === "price_asc" ? priceA - priceB : priceB - priceA;
     });
   }, [tours, selectedCatIds, onlyRecommended, selectedDurations, selectedPriceRanges, sortOrder]);
+
+  // Persist the chosen price sort in the URL query (?sort=price_asc|price_desc) and restore it on load.
+  const handleSortChange = (key: React.Key | null) => {
+    const val = key === "price_asc" || key === "price_desc" ? key : "";
+    setSortOrder(val);
+    const url = new URL(window.location.href);
+    if (val) url.searchParams.set("sort", val);
+    else url.searchParams.delete("sort");
+    router.replace(`${url.pathname}${url.search}`, { scroll: false });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
@@ -637,8 +649,9 @@ export default function ToursListingClient({
             </span>
             <Select
               aria-label={t.tours.sortBy || "Sắp xếp theo"}
-              selectedKey={sortOrder}
-              onSelectionChange={(key) => setSortOrder(key as any)}
+              placeholder={t.tours.sortPrice || "Giá"}
+              selectedKey={sortOrder || null}
+              onSelectionChange={handleSortChange}
               className="w-40 sm:w-44"
             >
               <Select.Trigger className="h-9 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] px-3 flex items-center justify-between outline-none cursor-pointer">
@@ -649,9 +662,6 @@ export default function ToursListingClient({
               </Select.Trigger>
               <Select.Popover className="w-[var(--trigger-width)] bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-xl z-50">
                 <ListBox className="outline-none">
-                  <ListBox.Item id="default" textValue={t.tours.recommendedSort || "Klook giới thiệu"} className="px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer">
-                    {t.tours.recommendedSort || "Klook giới thiệu"}
-                  </ListBox.Item>
                   <ListBox.Item id="price_asc" textValue={t.tours.sortPriceLow} className="px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] cursor-pointer">
                     {t.tours.sortPriceLow}
                   </ListBox.Item>
@@ -800,11 +810,6 @@ export default function ToursListingClient({
               const cat = categories.find((c) => c.id === tour.tourCategoryId) || tour.tourCategory;
               const catName = getLocalizedCatName(cat);
 
-              // Pseudo-rating & booking count for Klook aesthetics
-              const ratingVal = "4.8";
-              const reviewNum = 25 + ((tour.id * 17) % 250);
-              const bookedNum = 100 + ((tour.id * 37) % 900);
-
               return (
                 <div
                   key={tour.id}
@@ -848,10 +853,12 @@ export default function ToursListingClient({
                         {name}
                       </h3>
 
-                      {/* Origin / Departure */}
-                      <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                        <span>{t.tours.departFrom} {catName || "Nha Trang"}</span>
-                      </div>
+                      {/* Origin / Departure — only when a real category name exists */}
+                      {catName && (
+                        <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          <span>{t.tours.departFrom} {catName}</span>
+                        </div>
+                      )}
 
                       {/* Feature Tags (Klook style) */}
                       <div className="flex flex-wrap gap-1 pt-0.5">
@@ -867,17 +874,14 @@ export default function ToursListingClient({
                       </div>
                     </div>
 
-                    {/* Bottom: Rating & Price */}
+                    {/* Bottom: Real data & Price */}
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-1">
-                      {/* Rating & Booked Count */}
-                      <div className="flex items-center gap-1 text-xs">
-                        <Star size={12} className="fill-amber-400 text-amber-400 shrink-0" />
-                        <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">
-                          {ratingVal}
-                        </span>
-                        <span className="text-slate-400 text-[11px]">({reviewNum})</span>
-                        <span className="text-slate-400 text-[11px]">• {bookedNum}+ {t.tours.bookedCount}</span>
-                      </div>
+                      {/* Booked count — only when the backend provides it */}
+                      {tour.successfulBookingsCount != null && tour.successfulBookingsCount > 0 && (
+                        <div className="text-[11px] font-medium text-foreground/50">
+                          {tour.successfulBookingsCount}+ {t.tours.bookedCount}
+                        </div>
+                      )}
 
                       {/* Price */}
                       <div className="flex items-baseline gap-1 pt-0.5">

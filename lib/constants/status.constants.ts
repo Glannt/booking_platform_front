@@ -21,6 +21,7 @@ export type StatusKey =
   | "CONFIRMED"
   | "COMPLETED"
   | "CANCELLED"
+  | "CANCELLATION_REQUESTED"
   | "PUBLISHED"
   | "PAUSED"
   | "HIDDEN"
@@ -96,6 +97,9 @@ export function normalizeStatus(
   }
   if (s === "CANCELLED" || s === "CANCELED" || s === "DA_HUY" || s === "HUY") {
     return "CANCELLED";
+  }
+  if (s === "CANCELLATION_REQUESTED") {
+    return "CANCELLATION_REQUESTED";
   }
 
   return "UNKNOWN";
@@ -204,6 +208,16 @@ export const STATUS_CONFIG_MAP: Record<StatusKey, StatusConfigItem> = {
     textClass: "text-rose-700 dark:text-rose-400",
     borderClass: "border-rose-300/50 dark:border-rose-800/50",
     dotColorClass: "bg-rose-500",
+  },
+  CANCELLATION_REQUESTED: {
+    key: "CANCELLATION_REQUESTED",
+    getLabel: (t) => t?.status?.cancellationRequested || "Chờ hủy",
+    color: "accent",
+    variant: "soft",
+    bgClass: "bg-violet-500/10",
+    textClass: "text-violet-700 dark:text-violet-400",
+    borderClass: "border-violet-300/50 dark:border-violet-800/50",
+    dotColorClass: "bg-violet-500",
   },
   BLOCKED: {
     key: "BLOCKED",

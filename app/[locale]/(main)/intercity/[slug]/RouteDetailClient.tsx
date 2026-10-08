@@ -958,8 +958,8 @@ export default function RouteDetailClient({
               </div>
               {route.distanceKm && (
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[var(--bg-card)] border border-separator">
-                  <span className="text-sm text-slate-400 font-bold block uppercase tracking-wider">
-                    {t.rentCar.durationMinutes}
+                  <span className="text-sm text-foreground/50 font-bold block uppercase tracking-wider">
+                    {t.rentCar.distance}
                   </span>
                   <span className="text-base font-black text-accent">{route.distanceKm} km</span>
                 </div>

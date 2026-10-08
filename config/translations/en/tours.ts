@@ -85,6 +85,7 @@
   tourDetailDescription: "View tour details, itinerary, pricing and choose your vehicle.",
   allTours: "All Tours",
   sortDefault: "Default",
+  sortPrice: "Price",
   sortPriceLow: "Price: Low → High",
   sortPriceHigh: "Price: High → Low",
   tourType: "Tour Type",
@@ -153,6 +154,5 @@
   freeCancellation: "Free cancellation",
   bookedCount: "Booked",
   sortBy: "Sort by",
-  recommendedSort: "Recommended",
 };
 

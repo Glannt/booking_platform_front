@@ -1,4 +1,4 @@
-﻿export const rentCar = {
+export const rentCar = {
   title: "Thuê Xe Có Tài Xế Đi Tỉnh",
   subtitle: "Dịch vụ đưa đón hành khách chuyên nghiệp từ Nha Trang đến các tỉnh lân cận.",
   oneWay: "1 Chiều",
@@ -73,6 +73,7 @@
   routeMapOrigin: "Điểm đi:",
   routeMapDestination: "Điểm đến:",
   durationMinutes: "phút",
+  distance: "Quãng đường",
   allIntercityRoutes: "Tất cả tuyến xe đi tỉnh",
   allIntercityRoutesDesc: "Danh sách tất cả tuyến xe đi tỉnh từ Nha Trang: Đà Lạt, Mũi Né, Phan Rang, Buôn Ma Thuột. Xem giá, giờ khởi hành và loại xe.",
   routeDetailTitle: "Chi tiết tuyến xe",

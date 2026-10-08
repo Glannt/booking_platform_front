@@ -61,4 +61,13 @@ export const adminBookings = {
   matchCriteria: "Selected Criteria",
   noMatchedVehicles: "No available vehicles strictly match this criteria",
   assignThisVehicle: "Assign This Vehicle",
+  acceptCancel: "Accept Cancellation",
+  rejectCancel: "Reject Cancellation",
+  confirmAcceptCancelTitle: "Confirm Cancellation Acceptance",
+  confirmAcceptCancelMessage: "Are you sure you want to accept the cancellation request for booking {code}? The booking will be marked as Cancelled.",
+  confirmRejectCancelTitle: "Confirm Cancellation Rejection",
+  confirmRejectCancelMessage: "Are you sure you want to reject the cancellation request for booking {code}? The booking will be restored to its previous status.",
+  acceptCancelSuccess: "Cancellation accepted",
+  rejectCancelSuccess: "Cancellation request rejected",
+  cancelActionFailed: "Action failed, please try again",
 };

@@ -1,4 +1,4 @@
-﻿export const rentCar = {
+export const rentCar = {
   title: "Межгородние поездки с водителем",
   subtitle: "Профессиональные пассажирские перевозки из Нячанга в другие провинции.",
   oneWay: "В один конец",
@@ -73,6 +73,7 @@
   routeMapOrigin: "Отправление:",
   routeMapDestination: "Назначение:",
   durationMinutes: "мин",
+  distance: "Расстояние",
   allIntercityRoutes: "Все межгородние маршруты",
   allIntercityRoutesDesc: "Все межгородние маршруты из Нячанга: Далат, Муйне, Фанранг, Буон마থуот. Смотрите цены, время отправления и типы авто.",
   routeDetailTitle: "Детали маршрута",

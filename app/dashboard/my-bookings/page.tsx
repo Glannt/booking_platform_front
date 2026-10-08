@@ -7,6 +7,7 @@ import {
   Search,
   ChevronDown,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button, Dropdown, Input, Label, Table, Skeleton } from "@heroui/react";
 import clsx from "clsx";
@@ -24,6 +25,7 @@ const myBookingsTranslations = {
     cancelledStatus: "Đã hủy",
     reqCancelledStatus: "Chờ hủy",
     createdTime: "Thời gian đặt",
+    noBookings: "Bạn chưa có đơn đặt nào.",
   },
   en: {
     searchPlaceholder: "Search reference, route...",
@@ -37,6 +39,7 @@ const myBookingsTranslations = {
     cancelledStatus: "Cancelled",
     reqCancelledStatus: "Cancellation Requested",
     createdTime: "Booking Date",
+    noBookings: "You have no bookings yet.",
   },
   ko: {
     searchPlaceholder: "예약 번호, 경로 검색...",
@@ -50,6 +53,7 @@ const myBookingsTranslations = {
     cancelledStatus: "취소됨",
     reqCancelledStatus: "취소 요청 중",
     createdTime: "예약 일시",
+    noBookings: "아직 예약이 없습니다.",
   },
   ru: {
     searchPlaceholder: "Поиск по коду, маршруту...",
@@ -63,6 +67,7 @@ const myBookingsTranslations = {
     cancelledStatus: "Отменено",
     reqCancelledStatus: "Запрошена отмена",
     createdTime: "Дата бронирования",
+    noBookings: "У вас пока нет бронирований.",
   }
 };
 
@@ -70,16 +75,17 @@ export default function MyBookingsPage() {
   const { language, t } = useI18n();
   const {
     bookings,
-    setSelectedBooking,
-    setIsModalOpen,
+    openBookingDetail,
     handleCancelBooking,
     handleRequestCancelBooking,
+    refreshBookings,
     loading,
   } = useDashboard();
 
   // Search, Filters & Pagination States
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -87,7 +93,7 @@ export default function MyBookingsPage() {
   // Reset page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, typeFilter]);
 
   const canCancelDirectly = (booking: Booking) => {
     if (booking.status === "pending") return true;
@@ -108,7 +114,11 @@ export default function MyBookingsPage() {
     if (statusFilter !== "all" && b.status !== statusFilter) {
       return false;
     }
-    // 2. Filter by Search Query
+    // 2. Filter by Booking Type
+    if (typeFilter !== "all" && b.type !== typeFilter) {
+      return false;
+    }
+    // 3. Filter by Search Query
     const query = searchQuery.toLowerCase();
     return (
       b.ref.toLowerCase().includes(query) ||
@@ -133,22 +143,22 @@ export default function MyBookingsPage() {
   );
 
   const getLocalizedBookingType = (type: string) => {
-    if (type === "Airport Transfer") {
-      return myBookingsTranslations[language as Language]?.airportTransfer || "Airport Transfer";
+    switch (type) {
+      case "Airport Transfer": return t.myBookings.airportTransfer;
+      case "Intercity": return t.myBookings.interProvincial;
+      case "Self-drive": return t.myBookings.selfDrive;
+      case "Tour": return t.myBookings.tour;
+      default: return type;
     }
-    return myBookingsTranslations[language as Language]?.interProvincial || "Inter-provincial Rent";
   };
+
+  const getLocalizedTypeFilter = (type: string) =>
+    type === "all" ? t.myBookings.allTypes : getLocalizedBookingType(type);
 
   const getLocalizedStatus = (status: string) => {
     switch (status) {
       case "all":
-        return language === "vi"
-          ? "Tất cả"
-          : language === "ko"
-            ? "전체 상태"
-            : language === "ru"
-              ? "Все статусы"
-              : "All Statuses";
+        return t.dashboard.all;
       case "confirmed": return t.dashboard.confirmed;
       case "completed": return t.dashboard.completed;
       case "pending": return t.dashboard.pending;
@@ -196,12 +206,45 @@ export default function MyBookingsPage() {
 
         {/* Filters and Sort */}
         <div className="flex flex-wrap items-center gap-3">
+          {/* Booking Type Filter Dropdown */}
+          <Dropdown>
+            <Dropdown.Trigger
+              className="flex items-center gap-1.5 border border-divider hover:border-slate-300 dark:hover:border-slate-700 px-3.5 h-10 rounded-xl font-bold text-foreground shadow-sm text-xs cursor-pointer bg-background"
+            >
+              <span className="text-foreground/50 font-medium">{t.myBookings.bookingType}:</span>
+              <span>{getLocalizedTypeFilter(typeFilter)}</span>
+              <ChevronDown size={12} className="opacity-60 flex-shrink-0" />
+            </Dropdown.Trigger>
+            <Dropdown.Popover className="min-w-[180px]">
+              <Dropdown.Menu
+                aria-label="Filter booking type options"
+                onAction={(key) => setTypeFilter(key as string)}
+              >
+                <Dropdown.Item id="all" textValue="All types">
+                  <Label className="text-sm">{t.myBookings.allTypes}</Label>
+                </Dropdown.Item>
+                <Dropdown.Item id="Tour" textValue="Tour">
+                  <Label className="text-sm">{t.myBookings.tour}</Label>
+                </Dropdown.Item>
+                <Dropdown.Item id="Intercity" textValue="Intercity">
+                  <Label className="text-sm">{t.myBookings.interProvincial}</Label>
+                </Dropdown.Item>
+                <Dropdown.Item id="Self-drive" textValue="Self-drive">
+                  <Label className="text-sm">{t.myBookings.selfDrive}</Label>
+                </Dropdown.Item>
+                <Dropdown.Item id="Airport Transfer" textValue="Airport Transfer">
+                  <Label className="text-sm">{t.myBookings.airportTransfer}</Label>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
+
           {/* Status Filter Dropdown */}
           <Dropdown>
             <Dropdown.Trigger
               className="flex items-center gap-1.5 border border-divider hover:border-slate-300 dark:hover:border-slate-700 px-3.5 h-10 rounded-xl font-bold text-foreground shadow-sm text-xs cursor-pointer bg-background"
             >
-              <span className="text-slate-400 dark:text-slate-500 font-medium">Status:</span>
+              <span className="text-foreground/50 font-medium">{t.myBookings.statusFilter}:</span>
               <span>{getLocalizedStatus(statusFilter)}</span>
               <ChevronDown size={12} className="opacity-60 flex-shrink-0" />
             </Dropdown.Trigger>
@@ -211,7 +254,7 @@ export default function MyBookingsPage() {
                 onAction={(key) => setStatusFilter(key as string)}
               >
                 <Dropdown.Item id="all" textValue="All">
-                  <Label className="text-sm">{language === "vi" ? "Tất cả" : "All"}</Label>
+                  <Label className="text-sm">{t.dashboard.all}</Label>
                 </Dropdown.Item>
                 <Dropdown.Item id="confirmed" textValue="Confirmed">
                   <Label className="text-sm">{t.dashboard.confirmed}</Label>
@@ -263,6 +306,16 @@ export default function MyBookingsPage() {
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>
+
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            onClick={() => refreshBookings()}
+            className="flex items-center gap-1.5 border border-divider hover:border-slate-300 dark:hover:border-slate-700 px-3.5 h-10 rounded-xl font-bold text-foreground shadow-sm text-xs cursor-pointer bg-background"
+          >
+            <RefreshCw size={13} className="opacity-70" />
+            {t.myBookings.refresh}
+          </Button>
         </div>
       </div>
 
@@ -295,9 +348,11 @@ export default function MyBookingsPage() {
             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-sm font-medium text-slate-400 dark:text-slate-500">
               <AlertCircle size={24} className="opacity-60" />
               <span>
-                {language === "vi"
-                  ? "Không tìm thấy đơn đặt nào phù hợp."
-                  : "No bookings found matching search."}
+                {bookings.length === 0
+                  ? (myBookingsTranslations[language as Language]?.noBookings || "Bạn chưa có đơn đặt nào.")
+                  : (language === "vi"
+                      ? "Không tìm thấy đơn đặt nào phù hợp."
+                      : "No bookings found matching search.")}
               </span>
             </div>
           ) : (
@@ -337,12 +392,14 @@ export default function MyBookingsPage() {
                     </span>
                     <span>{getLocalizedBookingType(booking.type)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-foreground-700">
-                      {myBookingsTranslations[language as Language]?.pickupTime || "Pickup"}:
-                    </span>
-                    <span>{booking.pickupTime}</span>
-                  </div>
+                  {booking.pickupTime && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground-700">
+                        {myBookingsTranslations[language as Language]?.pickupTime || "Pickup"}:
+                      </span>
+                      <span>{booking.pickupTime}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -351,8 +408,7 @@ export default function MyBookingsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setSelectedBooking(booking);
-                      setIsModalOpen(true);
+                      openBookingDetail(booking);
                     }}
                     className="text-xs font-extrabold text-accent hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-divider"
                   >
@@ -394,9 +450,11 @@ export default function MyBookingsPage() {
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center border border-divider rounded-2xl bg-card">
               <AlertCircle size={24} className="opacity-60 text-slate-400" />
               <span className="text-sm font-medium text-slate-400 dark:text-slate-500">
-                {language === "vi"
-                  ? "Không tìm thấy đơn đặt nào phù hợp."
-                  : "No bookings found matching search."}
+                {bookings.length === 0
+                  ? (myBookingsTranslations[language as Language]?.noBookings || "Bạn chưa có đơn đặt nào.")
+                  : (language === "vi"
+                      ? "Không tìm thấy đơn đặt nào phù hợp."
+                      : "No bookings found matching search.")}
               </span>
             </div>
           ) : (
@@ -445,8 +503,7 @@ export default function MyBookingsPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                setSelectedBooking(booking);
-                                setIsModalOpen(true);
+                                openBookingDetail(booking);
                               }}
                               className="text-xs font-extrabold text-accent hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-divider"
                             >

@@ -3,6 +3,7 @@ export const status = {
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
+  cancellationRequested: "Cancellation Requested",
   active: "Active",
   inactive: "Inactive",
   published: "Published",

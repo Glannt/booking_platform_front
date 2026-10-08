@@ -61,4 +61,13 @@ export const adminBookings = {
   matchCriteria: "Tiêu chí khách chọn",
   noMatchedVehicles: "Không có xe nào đang sẵn sàng khớp chính xác tiêu chí",
   assignThisVehicle: "Gán xe này",
+  acceptCancel: "Chấp nhận hủy",
+  rejectCancel: "Từ chối hủy",
+  confirmAcceptCancelTitle: "Xác nhận chấp nhận hủy",
+  confirmAcceptCancelMessage: "Bạn có chắc muốn chấp nhận yêu cầu hủy cho đơn {code}? Đơn sẽ chuyển sang trạng thái Đã hủy.",
+  confirmRejectCancelTitle: "Xác nhận từ chối hủy",
+  confirmRejectCancelMessage: "Bạn có chắc muốn từ chối yêu cầu hủy cho đơn {code}? Đơn sẽ khôi phục trạng thái trước đó.",
+  acceptCancelSuccess: "Đã chấp nhận hủy đơn",
+  rejectCancelSuccess: "Đã từ chối yêu cầu hủy",
+  cancelActionFailed: "Thao tác thất bại, vui lòng thử lại",
 };

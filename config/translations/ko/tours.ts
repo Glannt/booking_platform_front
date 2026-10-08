@@ -85,6 +85,7 @@
   tourDetailDescription: "투어 상세, 일정, 가격 및 차량을 확인하세요.",
   allTours: "전체",
   sortDefault: "기본",
+  sortPrice: "가격",
   sortPriceLow: "가격: 낮은 순",
   sortPriceHigh: "가격: 높은 순",
   tourType: "투어 유형",
@@ -153,6 +154,5 @@
   freeCancellation: "무료 취소",
   bookedCount: "예약 완료",
   sortBy: "정렬 기준",
-  recommendedSort: "추천순",
 };
 

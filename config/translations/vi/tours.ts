@@ -85,6 +85,7 @@
   tourDetailDescription: "Xem chi tiết tour, lịch trình, giá tour và chọn xe đồng hành.",
   allTours: "Tất cả",
   sortDefault: "Mặc định",
+  sortPrice: "Giá",
   sortPriceLow: "Giá thấp → cao",
   sortPriceHigh: "Giá cao → thấp",
   tourType: "Loại tour",
@@ -153,6 +154,5 @@
   freeCancellation: "Miễn phí huỷ",
   bookedCount: "Đã đặt",
   sortBy: "Sắp xếp theo",
-  recommendedSort: "Klook giới thiệu",
 };
 

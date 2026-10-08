@@ -15,12 +15,7 @@ import {
   Globe,
   ChevronDown,
   Menu,
-  X,
-  Users,
-  Car,
-  Luggage,
   Clock,
-  Plane,
   Calendar,
   CheckCircle2,
   Layers,
@@ -32,13 +27,12 @@ import {
   Drawer,
   Dropdown,
   Label,
-  Separator,
   useOverlayState,
 } from "@heroui/react";
 import { useAuthStore } from "@/lib/store/authStore";
 import { apiFetch } from "@/lib/api/client";
 import AuthGuard from "@/components/auth-guard";
-import clsx from "clsx";
+import BookingDetailModal from "@/components/dashboard/BookingDetailModal";
 
 
 
@@ -51,9 +45,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const {
     bookings,
-    selectedBooking,
+    selectedBookingDto,
     isModalOpen,
-    isModalClosing,
     closeModal,
     toastMessage,
     activeRole,
@@ -176,41 +169,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       case "ru": return "🇷🇺 RU";
       default: return String(lang).toUpperCase();
     }
-  };
-
-  const getLocalizedBookingType = (type: string) => {
-    if (type === "Airport Transfer") {
-      return t.myBookings?.airportTransfer || "Airport Transfer";
-    }
-    return t.myBookings?.interProvincial || "Inter-provincial Rent";
-  };
-
-  const getLocalizedStatus = (status: string) => {
-    switch (status) {
-      case "confirmed": return t.dashboard.confirmed;
-      case "completed": return t.dashboard.completed;
-      case "pending": return t.dashboard.pending;
-      case "cancelled": return t.myBookings?.cancelledStatus || "Cancelled";
-      case "cancellation_requested": return t.myBookings?.reqCancelledStatus || "Cancellation Requested";
-      default: return status;
-    }
-  };
-
-  const getLocalizedCarClass = (carClass: string) => {
-    if (carClass === "Premium SUV") {
-      if (language === "vi") return "SUV Cao cấp";
-      if (language === "ko") return "프리미엄 SUV";
-      if (language === "ru") return "Премиум SUV";
-      return "Premium SUV";
-    }
-    return carClass;
-  };
-
-  const getLocalizedCarDesc = () => {
-    if (language === "vi") return "Tự động • Đời 2024";
-    if (language === "ko") return "자동 • 2024년식";
-    if (language === "ru") return "Автомат • Модель 2024";
-    return "Automatic • Model 2024";
   };
 
   return (
@@ -368,203 +326,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Booking Details Overlay Modal (Premium Custom Component) */}
-          {isModalOpen && selectedBooking && (
-            <div
-              className={clsx(
-                "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/85 backdrop-blur-sm transition-opacity duration-200",
-                isModalClosing ? "opacity-0" : "opacity-100"
-              )}
-            >
-              <div
-                className={clsx(
-                  "bg-background text-foreground rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 transform flex flex-col max-h-[90vh] transition-all duration-180",
-                  isModalClosing ? "opacity-0 scale-95 translate-y-4" : "opacity-100 scale-100 translate-y-0 animate-in fade-in zoom-in-95 duration-200"
-                )}
-              >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-divider bg-default-50/50 dark:bg-default-100/10">
-                  <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-accent bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 rounded-full">
-                      {getLocalizedBookingType(selectedBooking.type)}
-                    </span>
-                    <h3 className="text-lg font-extrabold text-foreground mt-1.5 flex items-center gap-2">
-                      <span>{selectedBooking.ref}</span>
-                      <span className={clsx(
-                        "text-xs px-2.5 py-0.5 rounded-full font-bold",
-                        selectedBooking.status === "confirmed" && "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400",
-                        selectedBooking.status === "completed" && "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400",
-                        selectedBooking.status === "pending" && "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400",
-                        selectedBooking.status === "cancelled" && "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400",
-                        selectedBooking.status === "cancellation_requested" && "bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400"
-                      )}>
-                        {getLocalizedStatus(selectedBooking.status)}
-                      </span>
-                    </h3>
-                  </div>
-                  {/* X close button */}
-                  <button
-                    onClick={closeModal}
-                    aria-label="Close"
-                    className="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[var(--bg-card)] p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="overflow-y-auto flex-grow">
-                  {/* ── Section 1: Trip Information ── */}
-                  <div className="px-6 pt-5 pb-4">
-                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
-                      {language === "vi" ? "Thông tin chuyến đi" : language === "ko" ? "여행 정보" : language === "ru" ? "Информация о поездке" : "Trip Information"}
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {/* Customer */}
-                      <div className="col-span-2 sm:col-span-2 bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {t.myBookings?.customerName || "Customer"}
-                        </span>
-                        <p className="text-sm font-bold text-foreground">{selectedBooking.customerName}</p>
-                      </div>
-                      {/* Pickup Time */}
-                      <div className="col-span-2 sm:col-span-2 bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {t.myBookings?.pickupTime || "Pickup Time"}
-                        </span>
-                        <p className="text-sm font-bold text-foreground">{selectedBooking.pickupTime}</p>
-                      </div>
-                      {/* Passengers */}
-                      <div className="bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {t.myBookings?.guestsCount || "Passengers"}
-                        </span>
-                        <p className="text-sm font-bold text-foreground">{selectedBooking.guests} <span className="text-xs font-medium text-slate-400">{t.dashboard.guests}</span></p>
-                      </div>
-                      {/* Baggage */}
-                      <div className="bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 space-y-0.5 shadow-sm">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                          {t.myBookings?.baggage || "Baggage"}
-                        </span>
-                        <p className="text-sm font-bold text-foreground">{selectedBooking.baggageWeight} <span className="text-xs font-medium text-slate-400">kg</span></p>
-                      </div>
-                    </div>
-
-                    {/* Route Timeline */}
-                    <div className="mt-3 bg-default-50 dark:bg-default-100/10 border border-divider rounded-xl p-3 shadow-sm">
-                      <div className="flex items-start gap-3">
-                        <div className="flex flex-col items-center pt-1">
-                          <span className="w-2.5 h-2.5 rounded-full bg-accent flex-shrink-0" />
-                          <span className="w-px flex-grow bg-slate-200 dark:bg-[var(--bg-elevated)] my-1" style={{ minHeight: "20px" }} />
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                        </div>
-                        <div className="flex-grow space-y-2">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                              {t.myBookings?.pickup || "Pickup"}
-                            </span>
-                            <p className="text-sm font-semibold text-foreground">{selectedBooking.pickupLocation}</p>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                              {t.myBookings?.dropoff || "Dropoff"}
-                            </span>
-                            <p className="text-sm font-semibold text-foreground">{selectedBooking.dropoffLocation}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mx-6 border-t border-divider" />
-
-                  {/* ── Section 2: Flight Details (conditional) ── */}
-                  {selectedBooking.flightNumber && (
-                    <>
-                      <div className="px-6 pt-4 pb-4">
-                        <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
-                          <span className="inline-flex items-center gap-1"><Plane size={11} />{t.myBookings?.flightDetails || "Flight Details"}</span>
-                        </p>
-                        <div className="bg-accent/5 dark:bg-accent/10 border border-blue-100 dark:border-blue-900/40 rounded-xl grid grid-cols-3 divide-x divide-blue-100 dark:divide-blue-900/40">
-                          <div className="p-3 space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
-                              {t.myBookings?.flightNumber || "Flight No."}
-                            </span>
-                            <p className="text-sm font-extrabold text-accent">{selectedBooking.flightNumber}</p>
-                          </div>
-                          <div className="p-3 space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
-                              {t.myBookings?.estDeparture || "Departure"}
-                            </span>
-                            <p className="text-sm font-bold text-foreground">{selectedBooking.estDepartureTime}</p>
-                          </div>
-                          <div className="p-3 space-y-0.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-accent/60">
-                              {t.myBookings?.estLanding || "Landing"}
-                            </span>
-                            <p className="text-sm font-bold text-foreground">{selectedBooking.landingTime}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mx-6 border-t border-divider" />
-                    </>
-                  )}
-
-                  {/* ── Section 3: Vehicle ── */}
-                  <div className="px-6 pt-4 pb-5">
-                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">
-                      {language === "vi" ? "Phương tiện" : language === "ko" ? "차량" : language === "ru" ? "Транспорт" : "Vehicle"}
-                    </p>
-                    <div className="overflow-hidden border border-divider rounded-2xl">
-                      {/* Car image + name header */}
-                      <div className="relative h-48 bg-slate-100 dark:bg-black/50 overflow-hidden">
-                        <img
-                          src={selectedBooking.carImage}
-                          alt={selectedBooking.carName}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-                          <div>
-                            <span className="text-[10px] font-extrabold tracking-widest text-blue-300 bg-accent/30 backdrop-blur-sm px-2 py-0.5 rounded-full uppercase">
-                              {getLocalizedCarClass(selectedBooking.carClass)}
-                            </span>
-                            <h4 className="text-base font-extrabold text-white mt-1">{selectedBooking.carName}</h4>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Car specs row */}
-                      <div className="relative grid grid-cols-3 mx-auto">
-                        <div className="p-3 text-center space-y-0.5">
-                          <Users size={14} className="mx-auto text-slate-400" />
-                          <p className="text-sm font-extrabold text-foreground">{selectedBooking.carSeats}</p>
-                          <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                            {t.myBookings?.carSeats || "Seats"}
-                          </span>
-                        </div>
-                        <Separator className="absolute left-1/3 bottom-1/4 h-1/2 w-[1px] bg-divider" orientation="vertical" />
-                        <div className="p-3 text-center space-y-0.5">
-                          <Car size={14} className="mx-auto text-slate-400" />
-                          <p className="text-xs font-extrabold text-foreground leading-tight">{getLocalizedCarDesc()}</p>
-                          <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                            {language === "vi" ? "Hộp số" : language === "ko" ? "변속기" : language === "ru" ? "КПП" : "Transmission"}
-                          </span>
-                        </div>
-                        <Separator className="absolute left-2/3 bottom-1/4 h-1/2 w-[1px] bg-divider" orientation="vertical" />
-                        <div className="p-3 text-center space-y-0.5">
-                          <Luggage size={14} className="mx-auto text-slate-400" />
-                          <p className="text-sm font-extrabold text-foreground">{selectedBooking.baggageWeight}<span className="text-xs font-medium"> kg</span></p>
-                          <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                            {t.myBookings?.baggage || "Baggage"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Booking Detail Modal — per-service-type design, data from BookingDto */}
+          <BookingDetailModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            booking={selectedBookingDto}
+          />
         </div>
       </main>
     </div>

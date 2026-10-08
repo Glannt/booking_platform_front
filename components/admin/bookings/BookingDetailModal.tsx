@@ -41,6 +41,7 @@ import {
 import { BookingDto, BookingTimelineDto, getBookingTimeline, DepositType } from "@/lib/api/bookings";
 import { useI18n } from "@/context/LanguageContext";
 import clsx from "clsx";
+import CancelRequestActions from "./CancelRequestActions";
 
 interface BookingDetailModalProps {
   isOpen: boolean;
@@ -48,13 +49,15 @@ interface BookingDetailModalProps {
   booking: BookingDto | null;
   language?: string;
   onEdit?: () => void;
+  onStatusChanged?: () => void;
 }
 
 export default function BookingDetailModal({
   isOpen,
   onClose,
   booking,
-  onEdit
+  onEdit,
+  onStatusChanged
 }: BookingDetailModalProps) {
   const { t } = useI18n();
   const tb = t.adminBookings;
@@ -112,9 +115,27 @@ export default function BookingDetailModal({
         return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20";
       case "cancelled":
         return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20";
+      case "cancellation_requested":
+        return "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20";
       case "pending":
       default:
         return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return t.status?.confirmed || "Đã xác nhận";
+      case "completed":
+        return t.status?.completed || "Đã hoàn thành";
+      case "cancelled":
+        return t.status?.cancelled || "Đã hủy";
+      case "cancellation_requested":
+        return t.status?.cancellationRequested || "Chờ hủy";
+      case "pending":
+      default:
+        return t.status?.pending || "Chờ xử lý";
     }
   };
 
@@ -528,7 +549,7 @@ export default function BookingDetailModal({
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-slate-500 font-medium">{tb.bookingStatus}:</span>
                           <span className={clsx("px-2.5 py-0.5 rounded-full text-xs font-bold capitalize", getStatusBadge(booking.bookingStatus))}>
-                            {booking.bookingStatus}
+                            {getStatusLabel(booking.bookingStatus)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
@@ -696,6 +717,7 @@ export default function BookingDetailModal({
             </ModalBody>
 
             <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+              <CancelRequestActions booking={booking} onDone={onStatusChanged} />
               <Button
                 type="button"
                 variant="outline"

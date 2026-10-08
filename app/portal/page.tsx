@@ -96,6 +96,8 @@ export default function AdminOverviewPage() {
         return "bg-warning/10 text-warning border border-warning/20";
       case "cancelled":
         return "bg-danger/10 text-danger border border-danger/20";
+      case "cancellation_requested":
+        return "bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20";
       default:
         return "bg-default-300/10 text-default-600 dark:text-default-400 border border-default-300/20";
     }
@@ -107,6 +109,7 @@ export default function AdminOverviewPage() {
       case "confirmed": return "Đã xác nhận";
       case "pending": return "Chờ xử lý";
       case "cancelled": return "Đã hủy";
+      case "cancellation_requested": return "Chờ hủy";
       default: return status || "Không rõ";
     }
   };

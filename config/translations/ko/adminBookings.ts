@@ -61,4 +61,13 @@ export const adminBookings = {
   matchCriteria: "선택된 기준",
   noMatchedVehicles: "해당 조건과 일치하는 이용 가능한 차량이 없습니다",
   assignThisVehicle: "이 차량 배차",
+  acceptCancel: "취소 승인",
+  rejectCancel: "취소 거절",
+  confirmAcceptCancelTitle: "취소 승인 확인",
+  confirmAcceptCancelMessage: "{code} 예약의 취소 요청을 승인하시겠습니까? 예약이 취소됨 상태로 변경됩니다.",
+  confirmRejectCancelTitle: "취소 거절 확인",
+  confirmRejectCancelMessage: "{code} 예약의 취소 요청을 거절하시겠습니까? 이전 상태로 복원됩니다.",
+  acceptCancelSuccess: "취소를 승인했습니다",
+  rejectCancelSuccess: "취소 요청을 거절했습니다",
+  cancelActionFailed: "작업에 실패했습니다. 다시 시도해 주세요",
 };

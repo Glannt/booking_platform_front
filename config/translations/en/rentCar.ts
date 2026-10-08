@@ -1,4 +1,4 @@
-﻿export const rentCar = {
+export const rentCar = {
   title: "Chauffeur-Driven Provincial Transfers",
   subtitle: "Professional passenger transfer service from Nha Trang to neighboring provinces.",
   oneWay: "One Way",
@@ -73,6 +73,7 @@
   routeMapOrigin: "Origin:",
   routeMapDestination: "Destination:",
   durationMinutes: "min",
+  distance: "Distance",
   allIntercityRoutes: "All Intercity Routes",
   allIntercityRoutesDesc: "All intercity routes from Nha Trang: Da Lat, Mui Ne, Phan Rang, Buon Ma Thuot. View prices, departure times and vehicle types.",
   routeDetailTitle: "Route Detail",

@@ -35,7 +35,7 @@ import {
 } from "@/components/common";
 
 import { StatusChip } from "@/components/StatusChip";
-import { BookingEditModal } from "@/components/admin/bookings";
+import { BookingEditModal, CancelRequestActions } from "@/components/admin/bookings";
 import {
   BookingDto,
   BookingItemDto,
@@ -241,6 +241,10 @@ export default function AirportTransferBookingsPage() {
                   </ListBox.Item>
                   <ListBox.Item id="cancelled" textValue="Đã hủy">
                     Đã hủy
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                  <ListBox.Item id="cancellation_requested" textValue="Chờ hủy">
+                    Chờ hủy
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 </ListBox>
@@ -512,6 +516,17 @@ export default function AirportTransferBookingsPage() {
                 )}
               </ModalBody>
               <ModalFooter className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[var(--bg-surface)] flex items-center justify-end gap-2.5 shrink-0">
+                {selectedBooking && (
+                  <CancelRequestActions
+                    booking={selectedBooking}
+                    onDone={async () => {
+                      setDetailModalOpen(false);
+                      setSelectedItem(null);
+                      setSelectedBooking(null);
+                      await fetchBookings();
+                    }}
+                  />
+                )}
                 <Button
                   variant="outline"
                   onClick={() => { setDetailModalOpen(false); setSelectedItem(null); setSelectedBooking(null); }}

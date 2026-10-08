@@ -3,6 +3,7 @@ export const status = {
   confirmed: "Đã xác nhận",
   completed: "Hoàn thành",
   cancelled: "Đã hủy",
+  cancellationRequested: "Chờ hủy",
   active: "Đang hoạt động",
   inactive: "Không hoạt động",
   published: "Đã xuất bản",

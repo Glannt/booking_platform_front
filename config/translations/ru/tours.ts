@@ -85,6 +85,7 @@
   tourDetailDescription: "Просмотрите детали тура, маршрут, цены и выберите транспорт.",
   allTours: "Все туры",
   sortDefault: "По умолчанию",
+  sortPrice: "Цена",
   sortPriceLow: "Цена: от низкой",
   sortPriceHigh: "Цена: от высокой",
   tourType: "Тип тура",
@@ -153,6 +154,5 @@
   freeCancellation: "Бесплатная отмена",
   bookedCount: "Забронировано",
   sortBy: "Сортировка",
-  recommendedSort: "Рекомендуемые",
 };
 

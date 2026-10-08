@@ -3,6 +3,7 @@ export const status = {
   confirmed: "확인됨",
   completed: "완료",
   cancelled: "취소됨",
+  cancellationRequested: "취소 요청 중",
   active: "활성",
   inactive: "비활성",
   published: "게시됨",

@@ -244,6 +244,7 @@ export default function BookingsManagementPage() {
     { key: "confirmed", label: t.status.confirmed },
     { key: "completed", label: t.status.completed },
     { key: "cancelled", label: t.status.cancelled },
+    { key: "cancellation_requested", label: t.status.cancellationRequested },
   ];
 
   const paymentStatusOptions = [
@@ -699,6 +700,11 @@ export default function BookingsManagementPage() {
         onEdit={() => {
           setDetailsModalOpen(false);
           setEditModalOpen(true);
+        }}
+        onStatusChanged={async () => {
+          setDetailsModalOpen(false);
+          setSelectedBooking(null);
+          await fetchBookings();
         }}
       />
 

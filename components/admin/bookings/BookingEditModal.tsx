@@ -409,6 +409,10 @@ export default function BookingEditModal({
                             {t.status?.cancelled || "Đã hủy"}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
+                          <ListBox.Item id="cancellation_requested" textValue={t.status?.cancellationRequested || "Chờ hủy"} className="px-3 py-2 rounded-lg text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-[var(--bg-elevated)] text-slate-900 dark:text-white flex items-center justify-between">
+                            {t.status?.cancellationRequested || "Chờ hủy"}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
                         </ListBox>
                       </Select.Popover>
                     </Select>

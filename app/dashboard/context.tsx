@@ -1,7 +1,7 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useI18n } from "@/context/LanguageContext";
-import { getMyBookings, type BookingDto } from "@/lib/api/bookings";
+import { getMyBookings, requestBookingCancellation, type BookingDto } from "@/lib/api/bookings";
 
 export interface Booking {
   ref: string;
@@ -30,12 +30,16 @@ interface DashboardContextProps {
   setBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
   selectedBooking: Booking | null;
   setSelectedBooking: (booking: Booking | null) => void;
+  bookingsDto: BookingDto[];
+  selectedBookingDto: BookingDto | null;
+  openBookingDetail: (booking: Booking) => void;
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
   isModalClosing: boolean;
   closeModal: () => void;
   handleCancelBooking: (ref: string) => void;
   handleRequestCancelBooking: (ref: string) => void;
+  refreshBookings: () => Promise<void>;
   toastMessage: string | null;
   setToastMessage: (msg: string | null) => void;
   activeRole: "customer" | "admin";
@@ -63,7 +67,7 @@ function mapBookingDtoToBooking(dto: BookingDto): Booking {
 
   const pickupLocation = firstItem?.pickupLocation || dynamicDetails.outboundPickupAddress || "";
   const dropoffLocation = firstItem?.dropoffLocation || dynamicDetails.outboundDropoffAddress || "";
-  const route = pickupLocation && dropoffLocation ? `${pickupLocation} ➔ ${dropoffLocation}` : serviceName || "Booking";
+  const route = pickupLocation && dropoffLocation ? `${pickupLocation} ➔ ${dropoffLocation}` : serviceName;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -90,12 +94,13 @@ function mapBookingDtoToBooking(dto: BookingDto): Booking {
     status,
     type: bookingType,
     customerName: dto.customerName,
-    guests: firstItem?.quantity || 1,
-    carName: dynamicDetails.vehicleCategoryName || "Standard Vehicle",
-    carImage: "/premium_suv_ford_everest.png",
-    carClass: dynamicDetails.vehicleCategoryName || "Standard",
-    carSeats: dynamicDetails.maxSeat || 7,
-    baggageWeight: dynamicDetails.baggageWeight || 40,
+    guests: firstItem?.quantity || 0,
+    // No fallback values here: empty/0 means "no data" and the UI hides the field.
+    carName: dynamicDetails.vehicleCategoryName || "",
+    carImage: "",
+    carClass: dynamicDetails.vehicleCategoryName || "",
+    carSeats: Number(dynamicDetails.maxSeat) || 0,
+    baggageWeight: Number(dynamicDetails.baggageWeight) || 0,
     pickupLocation,
     dropoffLocation,
     pickupTime: firstItem?.startDate ? formatDateTime(firstItem.startDate) : "",
@@ -117,29 +122,29 @@ function parseDynamicDetails(json: string): Record<string, any> {
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { language } = useI18n();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsDto, setBookingsDto] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBookingDto, setSelectedBookingDto] = useState<BookingDto | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalClosing, setIsModalClosing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchBookings() {
-      try {
-        const dtos = await getMyBookings();
-        if (!cancelled) {
-          setBookings(dtos.map(mapBookingDtoToBooking));
-        }
-      } catch {
-        // API not available — keep empty
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const refreshBookings = useCallback(async () => {
+    try {
+      const dtos = await getMyBookings();
+      setBookingsDto(dtos);
+      setBookings(dtos.map(mapBookingDtoToBooking));
+    } catch {
+      // API not available — keep current list
+    } finally {
+      setLoading(false);
     }
-    fetchBookings();
-    return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    refreshBookings();
+  }, [refreshBookings]);
 
   const closeModal = () => {
     setIsModalClosing(true);
@@ -147,6 +152,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setIsModalOpen(false);
       setIsModalClosing(false);
     }, 180);
+  };
+
+  const openBookingDetail = (booking: Booking) => {
+    const dto = bookingsDto.find((b) => b.bookingCode === booking.ref.replace(/^#/, "")) ?? null;
+    setSelectedBooking(booking);
+    setSelectedBookingDto(dto);
+    setIsModalOpen(true);
   };
 
   const handleCancelBooking = (ref: string) => {
@@ -159,14 +171,29 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleRequestCancelBooking = (ref: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.ref === ref ? { ...b, status: "cancellation_requested" as const } : b))
-    );
-    setSelectedBooking((prev) => prev && prev.ref === ref ? { ...prev, status: "cancellation_requested" as const } : prev);
-    const msg = language === "vi" ? "Đã gửi yêu cầu hủy đơn đặt!" : "Cancellation request submitted!";
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const handleRequestCancelBooking = async (ref: string) => {
+    const code = ref.replace(/^#/, "");
+    const dto = bookingsDto.find((b) => b.bookingCode === code);
+    if (!dto?.id) {
+      const notFound = language === "vi" ? "Không tìm thấy đơn đặt để yêu cầu hủy!" : "Booking not found for cancellation request!";
+      setToastMessage(notFound);
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
+    try {
+      await requestBookingCancellation(dto.id);
+      const dtos = await getMyBookings();
+      setBookingsDto(dtos);
+      setBookings(dtos.map(mapBookingDtoToBooking));
+      setSelectedBooking((prev) => prev && prev.ref === ref ? { ...prev, status: "cancellation_requested" as const } : prev);
+      const msg = language === "vi" ? "Đã gửi yêu cầu hủy đơn đặt!" : "Cancellation request submitted!";
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch {
+      const msg = language === "vi" ? "Gửi yêu cầu hủy thất bại. Vui lòng thử lại!" : "Failed to submit cancellation request. Please try again!";
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
   const [activeRole, setActiveRole] = useState<"customer" | "admin">("customer");
@@ -178,12 +205,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setBookings,
         selectedBooking,
         setSelectedBooking,
+        bookingsDto,
+        selectedBookingDto,
+        openBookingDetail,
         isModalOpen,
         setIsModalOpen,
         isModalClosing,
         closeModal,
         handleCancelBooking,
         handleRequestCancelBooking,
+        refreshBookings,
         toastMessage,
         setToastMessage,
         activeRole,
