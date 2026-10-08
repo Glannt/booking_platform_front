@@ -4,6 +4,7 @@ import React from "react";
 import { useI18n } from "@/context/LanguageContext";
 import { MapPin, Clock, Phone, Navigation, Plane } from "lucide-react";
 import { Button } from "@heroui/react";
+import { Reveal } from "@/components/Reveal";
 import type { SectionDto } from "@/lib/api/sections";
 
 interface CompanyLocationSectionProps {
@@ -55,16 +56,20 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 dark:bg-accent/20 text-accent text-xs font-extrabold tracking-wider uppercase">
+          <Reveal
+            as="span"
+            variant="fade"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 dark:bg-accent/20 text-accent text-xs font-extrabold tracking-wider uppercase"
+          >
             <MapPin size={13} />
             <span>{title}</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight">
+          </Reveal>
+          <Reveal as="h2" delay={100} className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground tracking-tight">
             {title}
-          </h2>
-          <p className="text-xs sm:text-sm text-foreground/70 font-medium">
+          </Reveal>
+          <Reveal as="p" delay={200} className="text-xs sm:text-sm text-foreground/70 font-medium">
             {subtitle}
-          </p>
+          </Reveal>
         </div>
 
         {/* Content Grid: Info & Map */}
@@ -73,7 +78,7 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
           <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               {/* Address Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
+              <Reveal variant="left" className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
                 <div className="p-2.5 rounded-xl bg-accent/10 text-accent shrink-0 mt-0.5">
                   <MapPin size={20} />
                 </div>
@@ -85,10 +90,10 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
                     {address}
                   </p>
                 </div>
-              </div>
+              </Reveal>
 
               {/* Working Hours Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
+              <Reveal variant="left" delay={100} className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
                 <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 shrink-0 mt-0.5">
                   <Clock size={20} />
                 </div>
@@ -100,10 +105,10 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
                     {workingHours}
                   </p>
                 </div>
-              </div>
+              </Reveal>
 
               {/* Hotline Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
+              <Reveal variant="left" delay={200} className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0 mt-0.5">
                   <Phone size={20} />
                 </div>
@@ -118,10 +123,10 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
                     {hotline}
                   </a>
                 </div>
-              </div>
+              </Reveal>
 
               {/* Airport & Hubs Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
+              <Reveal variant="left" delay={300} className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-start gap-3.5">
                 <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 shrink-0 mt-0.5">
                   <Plane size={20} />
                 </div>
@@ -133,27 +138,34 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
                     {hub}
                   </p>
                 </div>
-              </div>
+              </Reveal>
             </div>
 
             {/* Directions Action */}
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="no-underline block"
-            >
-              <Button
-                className="w-full h-12 rounded-xl font-bold text-xs sm:text-sm bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm flex items-center justify-center gap-2 border-none transition-colors cursor-pointer"
+            <Reveal variant="left" delay={400}>
+              <a
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="no-underline block"
               >
-                <Navigation size={16} />
-                <span>{btnText}</span>
-              </Button>
-            </a>
+                <Button
+                  className="w-full h-12 rounded-xl font-bold text-xs sm:text-sm bg-accent hover:bg-accent-hover text-accent-foreground shadow-sm flex items-center justify-center gap-2 border-none transition-colors cursor-pointer"
+                >
+                  <Navigation size={16} />
+                  <span>{btnText}</span>
+                </Button>
+              </a>
+            </Reveal>
           </div>
 
           {/* Right Column: Google Maps Embed */}
-          <div className="lg:col-span-7 min-h-[340px] sm:min-h-[400px] rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] shadow-xs relative">
+          <Reveal
+            variant="right"
+            delay={200}
+            duration={900}
+            className="lg:col-span-7 min-h-[340px] sm:min-h-[400px] rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[var(--bg-card)] shadow-xs relative"
+          >
             <iframe
               title="Minh Khoa Travel Location Map"
               src={embedMapUrl}
@@ -164,7 +176,7 @@ export function CompanyLocationSection({ section, locale }: CompanyLocationSecti
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
             />
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

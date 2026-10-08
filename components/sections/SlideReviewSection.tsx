@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useState } from "react";
 import { SectionDto } from "@/lib/api/sections";
 import { Star } from "lucide-react";
 import { Separator } from "@heroui/react";
+import { Reveal } from "@/components/Reveal";
+import { useInView } from "@/hooks/useInView";
 
 interface ReviewItem {
   title?: Record<string, string>;
@@ -73,18 +75,18 @@ export function SlideReviewSection({ section, locale }: { section: SectionDto; l
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           {trans?.title && (
-            <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-slate-100">{trans.title}</h2>
+            <Reveal as="h2" className="text-2xl md:text-3xl font-black text-slate-800 dark:text-slate-100">{trans.title}</Reveal>
           )}
           {trans?.subtitle && (
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{trans.subtitle}</p>
+            <Reveal as="p" delay={100} className="text-sm text-slate-500 dark:text-slate-400 font-medium">{trans.subtitle}</Reveal>
           )}
           {data.ratingSummary && (
-            <div className="flex items-center justify-center gap-1 text-amber-500 pt-1">
+            <Reveal variant="scale" delay={200} className="flex items-center justify-center gap-1 text-amber-500 pt-1">
               {[1, 2, 3, 4, 5].map((i) => (
                 <Star key={i} size={16} fill="currentColor" />
               ))}
               <span className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-2">{data.ratingSummary}</span>
-            </div>
+            </Reveal>
           )}
         </div>
 
@@ -95,19 +97,35 @@ export function SlideReviewSection({ section, locale }: { section: SectionDto; l
               data-review-slide
               className="review-pair-slide min-w-full w-full snap-start flex flex-col md:flex-row items-stretch justify-between gap-8 md:gap-12 px-4 md:px-16 py-4"
             >
-              <ReviewCard review={pair.first} locale={locale} />
-              <div className="hidden md:flex items-center">
-                <Separator orientation="vertical" className="h-28 w-[1px] bg-slate-200 dark:bg-[var(--bg-card)]" />
-              </div>
+              <Reveal variant="left" delay={150} className="flex flex-1">
+                <ReviewCard review={pair.first} locale={locale} />
+              </Reveal>
+              <ReviewDivider />
               <div className="flex md:hidden w-full">
                 <Separator orientation="horizontal" className="w-full h-[1px] bg-slate-200 dark:bg-[var(--bg-card)]" />
               </div>
-              <ReviewCard review={pair.second} locale={locale} />
+              <Reveal variant="right" delay={150} className="flex flex-1">
+                <ReviewCard review={pair.second} locale={locale} />
+              </Reveal>
             </div>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+/** Đường kẻ dọc giữa 2 review — mọc dần từ trên xuống khi scroll tới. */
+function ReviewDivider() {
+  const [ref, inView] = useInView<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      style={{ animationDelay: "300ms", animationDuration: "900ms" }}
+      className={`hidden md:flex items-center origin-top reveal-divider ${inView ? "is-visible" : ""}`}
+    >
+      <Separator orientation="vertical" className="h-28 w-[1px] bg-slate-200 dark:bg-[var(--bg-card)]" />
+    </div>
   );
 }
 

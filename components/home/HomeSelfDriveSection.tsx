@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useMemo } from "react";
 import { useI18n } from "@/context/LanguageContext";
+import { Reveal } from "@/components/Reveal";
 import { HomeSectionHeader } from "./HomeSectionHeader";
 import { HomeActivityCard } from "./HomeActivityCard";
 import type { SelfDriveVehicleItem } from "@/components/self-drive/SelfDriveVehicleCard";
@@ -66,7 +67,7 @@ export function HomeSelfDriveSection({
 
   return (
     <section className={`w-full py-8 ${className}`}>
-      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+      <Reveal className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <HomeSectionHeader
           title={title}
           subtitle={subtitle}
@@ -84,7 +85,7 @@ export function HomeSelfDriveSection({
           onScroll={checkScroll}
           className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth"
         >
-          {displayItems.map((veh) => {
+          {displayItems.map((veh, idx) => {
             const name = language === "vi" ? veh.nameVi : veh.nameEn;
             const features = language === "vi" ? veh.featuresVi : veh.featuresEn || veh.featuresVi;
             const category = veh.capacity
@@ -100,13 +101,14 @@ export function HomeSelfDriveSection({
             );
 
             return (
-              <div
+              <Reveal
                 key={veh.id}
+                delay={Math.min(idx, 8) * 60}
                 className="w-[260px] sm:w-[280px] md:w-[300px] shrink-0 snap-start flex flex-col"
               >
                 <HomeActivityCard
                   id={veh.id}
-                  imageUrl={veh.imgUrl || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80"}
+                  imageUrl={veh.imgUrl}
                   category={category}
                   location="Nha Trang"
                   title={name}
@@ -117,11 +119,11 @@ export function HomeSelfDriveSection({
                   href={`/${language}/self-drive/${slug}?id=${veh.vehicleCategoryId}`}
                   priceUnit={t.homePage.perDay}
                 />
-              </div>
+              </Reveal>
             );
           })}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

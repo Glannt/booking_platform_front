@@ -168,6 +168,168 @@ body {
 	animation: fade-in-up 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ===== Scroll reveal (components/Reveal.tsx + hooks/useInView.ts) =====
+   Chỉ animate opacity/transform; stagger dùng inline animation-delay.
+   Guideline: 600–800ms mỗi phần tử, stagger 80–120ms, translate 32–48px. */
+@keyframes reveal-up {
+	from {
+		opacity: 0;
+		transform: translateY(32px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes reveal-left {
+	from {
+		opacity: 0;
+		transform: translateX(-48px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes reveal-right {
+	from {
+		opacity: 0;
+		transform: translateX(48px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes reveal-scale {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes reveal-fade {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+/* Đường kẻ dọc (reviews) mọc dần từ trên xuống */
+@keyframes reveal-divider {
+	from {
+		transform: scaleY(0);
+	}
+
+	to {
+		transform: scaleY(1);
+	}
+}
+
+/* Ảnh trong card "Chuyến đi phổ biến" zoom-out chậm sau khi card hiện */
+@keyframes zoom-settle {
+	from {
+		transform: scale(1.1);
+	}
+
+	to {
+		transform: scale(1);
+	}
+}
+
+.reveal-up,
+.reveal-left,
+.reveal-right,
+.reveal-scale,
+.reveal-fade {
+	opacity: 0;
+}
+
+.reveal-divider {
+	transform: scaleY(0);
+}
+
+.reveal-up.is-visible {
+	animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reveal-left.is-visible {
+	animation: reveal-left 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.reveal-right.is-visible {
+	animation: reveal-right 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reveal-scale.is-visible {
+	animation: reveal-scale 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reveal-fade.is-visible {
+	animation: reveal-fade 0.7s ease-out both;
+}
+
+.reveal-divider.is-visible {
+	animation: reveal-divider 0.9s ease-out both;
+}
+
+.is-visible .settle-zoom {
+	animation: zoom-settle 1.8s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.reveal-up,
+	.reveal-left,
+	.reveal-right,
+	.reveal-scale,
+	.reveal-fade,
+	.reveal-up.is-visible,
+	.reveal-left.is-visible,
+	.reveal-right.is-visible,
+	.reveal-scale.is-visible,
+	.reveal-fade.is-visible {
+		opacity: 1;
+		animation: none;
+	}
+
+	.reveal-divider,
+	.reveal-divider.is-visible,
+	.settle-zoom,
+	.is-visible .settle-zoom {
+		transform: none;
+		animation: none;
+	}
+}
+
+/* Không có JS thì hiển thị bình thường, không được để trống */
+@media (scripting: none) {
+	.reveal-up,
+	.reveal-left,
+	.reveal-right,
+	.reveal-scale,
+	.reveal-fade {
+		opacity: 1;
+	}
+
+	.reveal-divider {
+		transform: none;
+	}
+}
+
 .scrollbar-hide::-webkit-scrollbar {
 	display: none;
 }

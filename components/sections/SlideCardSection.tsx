@@ -5,6 +5,7 @@ import { SectionDto } from "@/lib/api/sections";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/context/LanguageContext";
+import { Reveal } from "@/components/Reveal";
 
 interface CardItem {
   title?: Record<string, string>;
@@ -59,38 +60,52 @@ export function SlideCardSection({ section, locale }: { section: SectionDto; loc
         <div className="flex flex-row items-end justify-between mb-10">
           <div className="space-y-2">
             {badgeTitle && (
-              <div className="inline-flex items-center gap-1 text-xs font-extrabold text-accent uppercase tracking-widest bg-accent/10 dark:bg-accent/20 px-3 py-1 rounded-full">
+              <Reveal
+                as="span"
+                variant="fade"
+                className="inline-flex items-center gap-1 text-xs font-extrabold text-accent uppercase tracking-widest bg-accent/10 dark:bg-accent/20 px-3 py-1 rounded-full"
+              >
                 <Sparkles size={12} className="animate-pulse" />
                 {badgeTitle}
-              </div>
+              </Reveal>
             )}
             {trans?.title && (
-              <h2 className="text-2xl md:text-3xl font-black text-foreground">{trans.title}</h2>
+              <Reveal as="h2" delay={100} className="text-2xl md:text-3xl font-black text-foreground">
+                {trans.title}
+              </Reveal>
             )}
             {trans?.subtitle && (
-              <p className="text-sm text-foreground/70 font-medium">{trans.subtitle}</p>
+              <Reveal as="p" delay={200} className="text-sm text-foreground/70 font-medium">
+                {trans.subtitle}
+              </Reveal>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <Reveal variant="right" delay={300} className="flex items-center gap-2">
             <button onClick={() => scroll("left")} className="p-3 rounded-full border border-separator hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] text-foreground/80 cursor-pointer transition-all" aria-label="Previous">
               <ChevronLeft size={20} />
             </button>
             <button onClick={() => scroll("right")} className="p-3 rounded-full border border-separator hover:bg-slate-50 dark:hover:bg-[var(--bg-surface)] text-foreground/80 cursor-pointer transition-all" aria-label="Next">
               <ChevronRight size={20} />
             </button>
-          </div>
+          </Reveal>
         </div>
 
         <div ref={scrollRef} className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory gap-6 pb-4">
           {cards.map((card, idx) => (
-            <div
+            <Reveal
               key={idx}
               data-card
+              delay={idx * 120}
               className="min-w-[85vw] sm:min-w-[45vw] lg:min-w-[calc(33.333%-16px)] snap-start bg-white dark:bg-[var(--bg-card)] rounded-3xl border border-separator/60 shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-300"
             >
               <div className="relative h-56 overflow-hidden">
                 {card.imageUrl && (
-                  <img src={card.imageUrl} alt={getLocalized(card.title, locale)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <img
+                    src={card.imageUrl}
+                    alt={getLocalized(card.title, locale)}
+                    style={{ animationDelay: `${idx * 120 + 200}ms` }}
+                    className="settle-zoom w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
                 )}
                 {card.badge && (
                   <span className="absolute top-4 left-4 bg-white/90 dark:bg-[var(--bg-card)] backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-accent shadow-sm border border-separator/40">
@@ -126,7 +141,7 @@ export function SlideCardSection({ section, locale }: { section: SectionDto; loc
                   )}
                 </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

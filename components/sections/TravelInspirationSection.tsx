@@ -4,6 +4,7 @@ import React from "react";
 import { SectionDto } from "@/lib/api/sections";
 import { Camera } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
+import { Reveal } from "@/components/Reveal";
 
 interface InspirationItem {
   imageUrl?: string;
@@ -44,16 +45,16 @@ export function TravelInspirationSection({ section, locale }: { section: Section
       <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           {trans?.title && (
-            <h2 className="text-2xl md:text-3xl font-black text-foreground">{trans.title}</h2>
+            <Reveal as="h2" className="text-2xl md:text-3xl font-black text-foreground">{trans.title}</Reveal>
           )}
           {trans?.subtitle && (
-            <p className="text-sm text-foreground/70 font-medium">{trans.subtitle}</p>
+            <Reveal as="p" delay={100} className="text-sm text-foreground/70 font-medium">{trans.subtitle}</Reveal>
           )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {items.map((item, idx) => (
-            <div key={idx} className="h-64 rounded-3xl overflow-hidden relative group shadow-sm border border-separator/60">
+            <Reveal key={idx} delay={idx * 100} className="h-64 rounded-3xl overflow-hidden relative group shadow-sm border border-separator/60">
               {item.imageUrl && (
                 <img src={item.imageUrl} alt={getLocalized(item.label, locale)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               )}
@@ -62,11 +63,15 @@ export function TravelInspirationSection({ section, locale }: { section: Section
                   {getLocalized(item.label, locale)}
                 </span>
               </div>
-            </div>
+            </Reveal>
           ))}
 
           {data.showInstagram && (
-            <div className="h-64 rounded-3xl bg-slate-100 dark:bg-[var(--bg-card)] border border-separator/60 flex flex-col items-center justify-center text-center p-6 gap-4 group hover:bg-accent/5 dark:hover:bg-accent/10 transition-all duration-300">
+            <Reveal
+              variant="scale"
+              delay={items.length * 100 + 150}
+              className="h-64 rounded-3xl bg-slate-100 dark:bg-[var(--bg-card)] border border-separator/60 flex flex-col items-center justify-center text-center p-6 gap-4 group hover:bg-accent/5 dark:hover:bg-accent/10 transition-all duration-300"
+            >
               <div className="p-4 bg-accent/10 dark:bg-accent/20 text-accent rounded-full group-hover:scale-110 transition-transform">
                 <Camera size={28} />
               </div>
@@ -76,7 +81,7 @@ export function TravelInspirationSection({ section, locale }: { section: Section
                 </span>
                 <span className="block text-sm font-black text-accent">{data.instagramHandle || "@minhkhoatravel_vn"}</span>
               </div>
-            </div>
+            </Reveal>
           )}
         </div>
       </div>

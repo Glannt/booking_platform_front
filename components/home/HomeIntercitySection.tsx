@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useMemo } from "react";
 import { useI18n } from "@/context/LanguageContext";
+import { Reveal } from "@/components/Reveal";
 import { HomeSectionHeader } from "./HomeSectionHeader";
 import { HomeActivityCard } from "./HomeActivityCard";
 import type { IntercityRouteDto } from "@/lib/api/intercity";
@@ -74,7 +75,7 @@ export function HomeIntercitySection({
 
   return (
     <section className={`w-full py-8 ${className}`}>
-      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+      <Reveal className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <HomeSectionHeader
           title={title}
           subtitle={subtitle}
@@ -92,7 +93,7 @@ export function HomeIntercitySection({
           onScroll={checkScroll}
           className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth"
         >
-          {displayItems.map((route) => {
+          {displayItems.map((route, idx) => {
             const trans = route.translations?.find((t) => t.locale === language) || route.translations?.[0];
             const routeName = trans?.name || `${route.originCity} ⇌ ${route.destinationCity}`;
             const rawImg = route.thumbnailUrl || "";
@@ -100,7 +101,7 @@ export function HomeIntercitySection({
               ? rawImg.startsWith("http")
                 ? rawImg
                 : `${backendUrl}${rawImg}`
-              : "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80";
+              : "";
 
             // Lowest price comes from price_lists — the same source the detail page prices from.
             const listedPrice = lowestPriceForRoute(prices, route.id!);
@@ -130,8 +131,9 @@ export function HomeIntercitySection({
               : t.homePage.intercityDoorstep;
 
             return (
-              <div
+              <Reveal
                 key={route.id}
+                delay={Math.min(idx, 8) * 60}
                 className="w-[260px] sm:w-[280px] md:w-[300px] shrink-0 snap-start flex flex-col"
               >
                 <HomeActivityCard
@@ -149,11 +151,11 @@ export function HomeIntercitySection({
                   href={`/${language}/intercity?routeId=${route.id}`}
                   priceUnit={matchedShared ? t.homePage.perSeat : t.homePage.perTrip}
                 />
-              </div>
+              </Reveal>
             );
           })}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

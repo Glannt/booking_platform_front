@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useMemo } from "react";
 import { useI18n } from "@/context/LanguageContext";
+import { Reveal } from "@/components/Reveal";
 import { HomeSectionHeader } from "./HomeSectionHeader";
 import { HomeActivityCard } from "./HomeActivityCard";
 import type { TourDto } from "@/lib/api/tours";
@@ -120,7 +121,7 @@ export function HomeToursSection({
 
   return (
     <section className={`w-full py-8 ${className}`}>
-      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+      <Reveal className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <HomeSectionHeader
           title={title}
           subtitle={subtitle}
@@ -138,7 +139,7 @@ export function HomeToursSection({
           onScroll={checkScroll}
           className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory scroll-smooth"
         >
-          {displayItems.map((tour) => {
+          {displayItems.map((tour, idx) => {
             const trans = tour.translations?.find((t) => t.locale === language) || tour.translations?.[0];
             const tourName = trans?.name || "Tour Nha Trang";
             const catTrans = tour.tourCategory?.translations?.find((t) => t.locale === language);
@@ -148,7 +149,7 @@ export function HomeToursSection({
               ? rawImg.startsWith("http")
                 ? rawImg
                 : `${backendUrl}${rawImg}`
-              : "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=600&q=80";
+              : "";
 
             const price = getTourLowestPrice(tour);
             const discountInfo = resolveTourDiscounts(
@@ -170,8 +171,9 @@ export function HomeToursSection({
               .filter(Boolean);
 
             return (
-              <div
+              <Reveal
                 key={tour.id}
+                delay={Math.min(idx, 8) * 60}
                 className="w-[260px] sm:w-[280px] md:w-[300px] shrink-0 snap-start flex flex-col"
               >
                 <HomeActivityCard
@@ -189,11 +191,11 @@ export function HomeToursSection({
                   href={`/${language}/tours/${slug}`}
                   priceUnit={`/${t.tours.perPerson}`}
                 />
-              </div>
+              </Reveal>
             );
           })}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }

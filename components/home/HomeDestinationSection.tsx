@@ -3,10 +3,62 @@
 import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/context/LanguageContext";
+import { useInView } from "@/hooks/useInView";
 import { HomeSectionHeader } from "./HomeSectionHeader";
 import type { DestinationItem } from "@/lib/api/section-templates";
 
 export type { DestinationItem };
+
+interface DestinationCardProps {
+  dest: DestinationItem;
+  index: number;
+  href: string;
+}
+
+/**
+ * Card điểm đến: trượt vào từ trái khi scroll tới (reveal một lần),
+ * stagger `index * 140ms` — keyframes `reveal-left` trong globals.css.
+ */
+function DestinationCard({ dest, index, href }: DestinationCardProps) {
+  const [ref, inView] = useInView<HTMLAnchorElement>();
+
+  return (
+    <Link
+      ref={ref}
+      href={href}
+      style={{ animationDelay: `${index * 140}ms` }}
+      className={`group relative flex-shrink-0 w-44 sm:w-52 md:w-56 h-64 sm:h-72 rounded-2xl md:rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 snap-start reveal-left ${
+        inView ? "is-visible" : ""
+      }`}
+    >
+      {/* Background Image */}
+      <img
+        src={dest.imageUrl}
+        alt={dest.name}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+        loading="lazy"
+        onError={(e) => {
+          (e.target as HTMLElement).style.display = "none";
+        }}
+      />
+
+      {/* Dark Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent group-hover:from-black/90 transition-colors" />
+
+      {/* Text content inside bottom */}
+      <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 space-y-1 text-white">
+        <h3 className="text-base sm:text-lg font-black tracking-tight leading-snug drop-shadow-sm group-hover:text-accent transition-colors">
+          {dest.name}
+        </h3>
+        {dest.activityCountText && (
+          <p className="text-[11px] sm:text-xs font-semibold text-white/75 drop-shadow-xs">
+            {dest.activityCountText}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
 
 interface HomeDestinationSectionProps {
   title?: string;
@@ -82,38 +134,13 @@ export function HomeDestinationSection({
           onScroll={checkScroll}
           className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x snap-mandatory scroll-smooth"
         >
-          {activeDestinations.map((dest) => (
-            <Link
+          {activeDestinations.map((dest, index) => (
+            <DestinationCard
               key={dest.id}
+              dest={dest}
+              index={index}
               href={prefixUrl(dest.href)}
-              className="group relative flex-shrink-0 w-44 sm:w-52 md:w-56 h-64 sm:h-72 rounded-2xl md:rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 snap-start"
-            >
-              {/* Background Image */}
-              <img
-                src={dest.imageUrl}
-                alt={dest.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                }}
-              />
-
-              {/* Dark Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent group-hover:from-black/90 transition-colors" />
-
-              {/* Text content inside bottom */}
-              <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 space-y-1 text-white">
-                <h3 className="text-base sm:text-lg font-black tracking-tight leading-snug drop-shadow-sm group-hover:text-accent transition-colors">
-                  {dest.name}
-                </h3>
-                {dest.activityCountText && (
-                  <p className="text-[11px] sm:text-xs font-semibold text-white/75 drop-shadow-xs">
-                    {dest.activityCountText}
-                  </p>
-                )}
-              </div>
-            </Link>
+            />
           ))}
         </div>
       </div>
