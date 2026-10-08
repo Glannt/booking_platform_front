@@ -48,6 +48,36 @@ export function sortSectionsForDisplay(sections: SectionDto[]): SectionDto[] {
   });
 }
 
+/**
+ * Section types that must appear at most once per page (full-page sections).
+ * Seeds + admin template init historically insert duplicate rows (empty
+ * `contentData: "{}"` copies appended after the originals), which would render
+ * the section twice. Keeps only the copy with the richest contentData.
+ */
+export const SINGLETON_SECTION_TYPES = [
+  "FEATURES",
+  "COMPANY_LOCATION",
+  "PARTNER_COOPERATION",
+  "INSPIRATION",
+] as const;
+
+const SINGLETON_TYPE_SET: ReadonlySet<string> = new Set(SINGLETON_SECTION_TYPES);
+
+export function dedupeSingletonSections(sections: SectionDto[]): SectionDto[] {
+  const rest = sections.filter((s) => !SINGLETON_TYPE_SET.has(s.sectionType));
+  const kept = SINGLETON_SECTION_TYPES.map((type) =>
+    sections.reduce<SectionDto | undefined>(
+      (richest, s) =>
+        s.sectionType === type &&
+        (!richest || (s.contentData?.length ?? 0) > (richest.contentData?.length ?? 0))
+          ? s
+          : richest,
+      undefined
+    )
+  ).filter((s): s is SectionDto => s !== undefined);
+  return [...rest, ...kept];
+}
+
 export interface CreateSectionRequest {
   sectionName: string;
   sectionType: string;

@@ -20,7 +20,7 @@ import { getActiveIntercityRoutes, type IntercityRouteDto } from "@/lib/api/inte
 import { getSharedRoutes, type SharedRouteDto } from "@/lib/api/sharedRoute";
 import { getTours, type TourDto } from "@/lib/api/tours";
 import { searchLocations, type LocationSearchResult } from "@/lib/api/locations";
-import { getActiveSections, sortSectionsForDisplay, type SectionDto } from "@/lib/api/sections";
+import { getActiveSections, sortSectionsForDisplay, dedupeSingletonSections, type SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
 import { TimePicker, type TimeValue } from "@/components/time-picker";
 import { FormattedDescription } from "@/components/FormattedDescription";
@@ -40,7 +40,6 @@ import type { SelfDriveVehicleItem } from "@/components/self-drive/SelfDriveVehi
 import {
   buildAirportSystemCards,
   computeMinPricesByCategory,
-  DEFAULT_AIRPORT_IMAGE,
   type AirportPackageCard,
 } from "@/lib/airport-packages";
 import { backendUrl } from "@/lib/api/client";
@@ -122,17 +121,15 @@ export default function IndexPage({
   const systemCatalogSections = sections.filter((s) => s.sectionType === "SYSTEM_CATALOG");
 
   // All non-hero sections render in global orderIndex order (SYSTEM_CATALOG wins
-  // ties). FEATURES is de-duplicated: seeds + template init can add duplicates.
-  const orderedSections = useMemo(() => {
-    const nonHero = sections.filter((s) => s.sectionType !== "HERO_BANNER");
-    const features = nonHero.filter((s) => s.sectionType === "FEATURES");
-    const keptFeatures =
-      features.length > 1
-        ? [features.find((s) => s.contentData && s.contentData.length > 30) || features[0]]
-        : features;
-    const rest = nonHero.filter((s) => s.sectionType !== "FEATURES");
-    return sortSectionsForDisplay([...rest, ...keptFeatures]);
-  }, [sections]);
+  // ties). Singleton types are de-duplicated: seeds + template init can add
+  // duplicate rows, which would render the same section twice.
+  const orderedSections = useMemo(
+    () =>
+      sortSectionsForDisplay(
+        dedupeSingletonSections(sections.filter((s) => s.sectionType !== "HERO_BANNER"))
+      ),
+    [sections]
+  );
 
   // Extract destinations from SYSTEM_CATALOG section if present
   const destinationsData = useMemo(() => {
@@ -178,7 +175,7 @@ export default function IndexPage({
         categories: cats,
         minPrices: computeMinPricesByCategory(routePrices),
         resolveImageUrl: (url?: string) =>
-          url ? (url.startsWith("http") ? url : `${backendUrl}${url}`) : DEFAULT_AIRPORT_IMAGE,
+          url ? (url.startsWith("http") ? url : `${backendUrl}${url}`) : "",
       })
     );
   };
