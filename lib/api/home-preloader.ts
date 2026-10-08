@@ -16,7 +16,6 @@ import type { SelfDriveVehicleItem } from "@/components/self-drive/SelfDriveVehi
 import {
   buildAirportSystemCards,
   computeMinPricesByCategory,
-  DEFAULT_AIRPORT_IMAGE,
   type AirportPackageCard,
 } from "@/lib/airport-packages";
 import { backendUrl } from "./client";
@@ -139,7 +138,7 @@ export async function fetchHomeInitialData(locale: string = "vi"): Promise<HomeI
         ? rawImg.startsWith("http")
           ? rawImg
           : `${backendUrl}${rawImg}`
-        : "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
+        : "";
 
       return {
         id: `rental-${r.id}`,
@@ -187,7 +186,7 @@ export async function fetchHomeInitialData(locale: string = "vi"): Promise<HomeI
           ? url.startsWith("http")
             ? url
             : `${serverUrl}${url}`
-          : DEFAULT_AIRPORT_IMAGE,
+          : "",
     });
   }
 

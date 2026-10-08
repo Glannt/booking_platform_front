@@ -167,6 +167,6 @@ describe("applyAirportPackageConfig", () => {
     const cards = applyAirportPackageConfig(systemCards(), cfg);
     expect(cards[0].id).toBe("pkg-no-cat");
     expect(cards[0].minPrice).toBeUndefined();
-    expect(cards[0].imageUrl).toBeTruthy();
+    expect(cards[0].imageUrl).toBe(""); // không còn ảnh fallback
   });
 });

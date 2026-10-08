@@ -20,9 +20,6 @@ export type PackageLocale = (typeof PACKAGE_LOCALES)[number];
 export type LocalizedText = Record<PackageLocale, string>;
 export type LocalizedFeatures = Record<PackageLocale, string[]>;
 
-export const DEFAULT_AIRPORT_IMAGE =
-  "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
-
 const SEAT_UNITS: Record<PackageLocale, string> = {
   vi: "chỗ",
   en: "seats",
@@ -204,7 +201,7 @@ export function applyAirportPackageConfig(
       vehicleCategoryId: cfg.vehicleCategoryId,
       categoryCode: base?.categoryCode,
       minPrice: base?.minPrice,
-      imageUrl: cfg.imageUrl?.trim() || base?.imageUrl || DEFAULT_AIRPORT_IMAGE,
+      imageUrl: cfg.imageUrl?.trim() || base?.imageUrl || "",
       name,
       category: pickText(cfg.categoryText, base?.category),
       tag: pickText(cfg.tag),

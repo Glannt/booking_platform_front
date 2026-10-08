@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Sparkles, CheckCircle2 } from "lucide-react";
+import { Sparkles, CheckCircle2, Images } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 
 export interface HomeActivityCardProps {
@@ -46,26 +46,33 @@ export function HomeActivityCard({
   const metaLabel = [category, location].filter(Boolean).join(" • ");
   const visibleDiscounts = discountTags.slice(0, MAX_DISCOUNT_TAGS);
   const hasMoreDiscounts = discountTags.length > MAX_DISCOUNT_TAGS;
+  // Ảnh lỗi => hiện placeholder "Không có ảnh" (không fallback sang ảnh khác).
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = Boolean(imageUrl) && failedUrl !== imageUrl;
 
   return (
     <Link
       href={href}
       className={`group flex flex-col bg-surface rounded-2xl border border-separator/70 hover:border-accent/40 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden w-full h-full ${className}`}
     >
-      {/* Thumbnail */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted shrink-0">
-        <img
-          src={imageUrl || "/placeholder-travel.jpg"}
-          alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-          loading="lazy"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80";
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
+      {/* Thumbnail — không có ảnh từ backend => placeholder như ImageGalleryGrid */}
+      {showImage ? (
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted shrink-0">
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            loading="lazy"
+            onError={() => setFailedUrl(imageUrl)}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      ) : (
+        <div className="relative aspect-[16/10] w-full bg-muted shrink-0 flex flex-col items-center justify-center gap-1.5 text-foreground/50">
+          <Images size={26} className="opacity-50" />
+          <span className="text-[11px] font-semibold">{t.tours.noPhotos}</span>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-4 flex flex-col flex-grow justify-between gap-3">

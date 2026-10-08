@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Plane,
@@ -8,10 +8,12 @@ import {
   Briefcase,
   CheckCircle2,
   Sparkles,
+  Images,
   ArrowRight,
 } from "lucide-react";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync } from "@/lib/format";
+import { Reveal } from "@/components/Reveal";
 import { HomeSectionHeader } from "./HomeSectionHeader";
 import type { AirportPackageCard } from "@/lib/airport-packages";
 
@@ -50,6 +52,8 @@ export function HomeAirportTransferSection({
   className = "",
 }: HomeAirportTransferSectionProps) {
   const { t, language } = useI18n();
+  // Ảnh load lỗi => hiện placeholder "Không có ảnh" (không fallback ảnh khác)
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   const resolvedTitle = title ?? t.airportTransfer.title;
   const resolvedSubtitle = subtitle ?? t.airportTransfer.subtitle;
@@ -60,7 +64,7 @@ export function HomeAirportTransferSection({
 
   return (
     <section className={`w-full py-8 ${className}`}>
-      <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+      <Reveal className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <HomeSectionHeader
           title={resolvedTitle}
           subtitle={resolvedSubtitle}
@@ -72,7 +76,7 @@ export function HomeAirportTransferSection({
         {/* Packages Grid */}
         {packages.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {packages.map((pkg) => {
+            {packages.map((pkg, i) => {
               const name = pickLocal(pkg.name, language) || pkg.categoryCode || "";
               const category = pickLocal(pkg.category, language);
               const tag = pickLocal(pkg.tag, language);
@@ -82,19 +86,32 @@ export function HomeAirportTransferSection({
               const bookingHref = `/${language}/airport-transfer?pickup=${t.airportTransfer.camRanhAirport}&destination=${t.airportTransfer.nhaTrangCenter}&direction=to-nhatrang`;
 
               return (
-                <div
+                <Reveal
                   key={pkg.id}
+                  delay={Math.min(i, 8) * 60}
                   className="group flex flex-col bg-surface rounded-2xl border border-separator/70 hover:border-accent/40 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden"
                 >
-                  {/* Image */}
+                  {/* Image — thiếu ảnh / ảnh lỗi => placeholder, giữ nguyên tag & badge */}
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted shrink-0">
-                    <img
-                      src={pkg.imageUrl}
-                      alt={name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                      loading="lazy"
-                    />
+                    {pkg.imageUrl && !brokenImages[pkg.id] && (
+                      <img
+                        src={pkg.imageUrl}
+                        alt={name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                        loading="lazy"
+                        onError={() =>
+                          setBrokenImages((m) => ({ ...m, [pkg.id]: true }))
+                        }
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                    {!pkg.imageUrl || brokenImages[pkg.id] ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-foreground/50">
+                        <Images size={26} className="opacity-50" />
+                        <span className="text-[11px] font-semibold">{t.tours.noPhotos}</span>
+                      </div>
+                    ) : null}
 
                     {/* Tag */}
                     {tag && (
@@ -180,12 +197,12 @@ export function HomeAirportTransferSection({
                       </Link>
                     </div>
                   </div>
-                </div>
+                </Reveal>
               );
             })}
           </div>
         )}
-      </div>
+      </Reveal>
     </section>
   );
 }
