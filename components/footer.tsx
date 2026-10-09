@@ -129,6 +129,30 @@ export const Footer = () => {
           </div>
         </div>
 
+        {/* Credit / portfolio ad */}
+        <div className="border-t border-slate-200 dark:border-slate-900 py-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[11px] text-foreground/50 transition-colors">
+          <span>{t.footer.creditPrefix}</span>
+          <span className="hidden sm:inline">·</span>
+          <span>
+            {t.footer.creditPhoneLabel}:{" "}
+            <a
+              href="tel:0368761064"
+              className="underline underline-offset-2 hover:text-foreground transition-colors"
+            >
+              0368761064
+            </a>
+          </span>
+          <span className="hidden sm:inline">·</span>
+          <a
+            href="mailto:tongnguyenthanhdo@gmail.com"
+            className="underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            tongnguyenthanhdo@gmail.com
+          </a>
+          <span className="hidden sm:inline">·</span>
+          <span>{t.footer.creditCta}</span>
+        </div>
+
         {/* Bottom bar */}
         <div className="border-t border-slate-200 dark:border-slate-900 py-6 flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-3 transition-colors">
           <span>&copy; {new Date().getFullYear()} {t.footer.copyright}</span>

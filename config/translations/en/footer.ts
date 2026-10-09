@@ -25,4 +25,7 @@ export const footer = {
   taxId: "Tax ID: 4202158934",
   copyright: "© 2025 Minh Khoa Travel. All rights reserved.",
   companyFooter: "Minh Khoa Travel — Your trusted transport partner in Nha Trang.",
+  creditPrefix: "This website is designed & developed by Thanh Do",
+  creditPhoneLabel: "Phone",
+  creditCta: "Contact us for web design consulting",
 };

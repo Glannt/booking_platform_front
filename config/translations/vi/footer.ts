@@ -25,4 +25,7 @@ export const footer = {
   taxId: "MST: 4202158934",
   copyright: "© 2025 Minh Khoa Travel. Bảo lưu mọi quyền.",
   companyFooter: "Minh Khoa Travel — Đối tác vận chuyển đáng tin cậy tại Nha Trang.",
+  creditPrefix: "Website này được thiết kế & phát triển bởi Thành Đô",
+  creditPhoneLabel: "SĐT",
+  creditCta: "Liên hệ để được tư vấn thiết kế web",
 };

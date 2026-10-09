@@ -25,4 +25,7 @@ export const footer = {
   taxId: "ИНН: 4202158934",
   copyright: "© 2025 Minh Khoa Travel. Все права защищены.",
   companyFooter: "Minh Khoa Travel — Надёжный транспортный партнёр в Нячанге.",
+  creditPrefix: "Этот сайт разработан Thanh Do",
+  creditPhoneLabel: "Тел",
+  creditCta: "Свяжитесь с нами для консультации по веб-дизайну",
 };

@@ -383,6 +383,9 @@ export interface TranslationDictionary {
     taxId: string;
     copyright: string;
     companyFooter: string;
+    creditPrefix: string;
+    creditPhoneLabel: string;
+    creditCta: string;
   };
   homePage: {
     heroTitle: string;

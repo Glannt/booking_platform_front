@@ -25,4 +25,7 @@ export const footer = {
   taxId: "사업자번호: 4202158934",
   copyright: "© 2025 민코아 트래블. All rights reserved.",
   companyFooter: "민코아 트래블 — 나트랑에서 신뢰할 수 있는 교통 파트너.",
+  creditPrefix: "이 웹사이트는 Thanh Do가 디자인 및 개발했습니다",
+  creditPhoneLabel: "전화",
+  creditCta: "웹 디자인 상담을 원하시면 문의하세요",
 };
