@@ -65,6 +65,7 @@ import ErrorOverlay from "@/components/ErrorOverlay";
 import type { SectionDto } from "@/lib/api/sections";
 import { SectionRenderer } from "@/components/sections/SectionRenderer";
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
+import { Reveal } from "@/components/Reveal";
 
 interface SelfDriveConfirmClientProps {
   categoryIdentifier: string;
@@ -470,7 +471,7 @@ export default function SelfDriveConfirmClient({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] font-sans pb-16">
       {/* 1. Header Section */}
-      <section className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-5 pb-4 space-y-3">
+      <Reveal as="section" variant="fade" className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-5 pb-4 space-y-3">
         {/* Breadcrumb Navigation */}
         <nav
           aria-label="Breadcrumb"
@@ -524,13 +525,13 @@ export default function SelfDriveConfirmClient({
             {t.selfDrive.back}
           </button>
         </div>
-      </section>
+      </Reveal>
 
       {/* 2. Main Content: Form (Left) & Sticky Summary (Right) */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: Form */}
-          <div className="lg:col-span-8 space-y-6">
+          <Reveal variant="up" className="lg:col-span-8 space-y-6">
             {bookingSuccess ? (
               <SuccessOverlay
                 bookingCode={bookingSuccess}
@@ -966,10 +967,10 @@ export default function SelfDriveConfirmClient({
                 </Button>
               </form>
             )}
-          </div>
+          </Reveal>
 
           {/* Right: Sticky Booking Summary */}
-          <div className="lg:col-span-4 lg:sticky lg:top-20 space-y-4">
+          <Reveal variant="fade" className="lg:col-span-4 lg:sticky lg:top-20 space-y-4">
             {/* Customer Discount Section */}
             <CustomerDiscountSection
               scopeType="SELF_DRIVE"
@@ -1123,7 +1124,7 @@ export default function SelfDriveConfirmClient({
                 <span>{t.selfDrive.guarantee}</span>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
 
         {/* Dynamic CMS Sections if provided */}

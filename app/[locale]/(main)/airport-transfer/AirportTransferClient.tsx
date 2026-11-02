@@ -30,6 +30,7 @@ import {
   AirportTransferPrice,
 } from "@/lib/api/fleet";
 import { getPublicModuleSurchargeRules, SurchargeRuleDto } from "@/lib/api/surcharge";
+import { Reveal } from "@/components/Reveal";
 import type { DateValue } from "@internationalized/date";
 import { getLocalTimeZone, today, parseDate } from "@internationalized/date";
 import {
@@ -1062,7 +1063,7 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
 
       {/* Hero Banner Area */}
-      <section className="relative w-full min-h-[320px] md:min-h-[360px] flex flex-col justify-center items-center pt-12 md:pt-16 pb-8 md:pb-12 px-4 sm:px-6 lg:px-8 xl:px-10">
+      <Reveal as="section" variant="fade" className="relative w-full min-h-[320px] md:min-h-[360px] flex flex-col justify-center items-center pt-12 md:pt-16 pb-8 md:pb-12 px-4 sm:px-6 lg:px-8 xl:px-10">
         <div
           className="absolute inset-0 overflow-hidden bg-cover bg-center bg-no-repeat"
           style={{
@@ -1100,13 +1101,13 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Main Content Area */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-8 sm:pt-12 pb-12 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         {/* Left Column: Form & Car Choices */}
-        <div className="lg:col-span-8 space-y-6">
+        <Reveal variant="up" className="lg:col-span-8 space-y-6">
 
           {/* Fixed Route Badges */}
           {routes.length > 0 && (
@@ -1911,10 +1912,10 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
               </div>
             )}
           </div>
-        </div>
+          </Reveal>
 
         {/* Right Column: Summary & Info */}
-        <div className="lg:col-span-4 space-y-6">
+        <Reveal variant="up" delay={120} className="lg:col-span-4 space-y-6">
           <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
             <h3 className="text-sm font-extrabold uppercase tracking-wider">{t.airportTransfer.summary}</h3>
             <div className="space-y-3 text-xs">
@@ -1999,7 +2000,7 @@ export default function AirportTransferClient({ sections, initialAirports = [] }
               onRouteCalculated={handleRouteCalculated}
             />
           )}
-        </div>
+        </Reveal>
       </main>
     </div>
   );

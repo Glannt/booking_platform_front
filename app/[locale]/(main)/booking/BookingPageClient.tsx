@@ -10,6 +10,7 @@ import { getMediaDetails } from "@/lib/api/media";
 import { backendUrl } from "@/lib/api/client";
 import { useI18n } from "@/context/LanguageContext";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { Reveal } from "@/components/Reveal";
 
 const CATEGORY_NAMES: Record<number, { vi: string; en: string; ko: string; ru: string }> = {
   1: { vi: "Đón Tiễn Sân Bay", en: "Airport Transfer", ko: "공항 픽업/샌딩", ru: "Трансфер в Аэропорт" },
@@ -215,7 +216,7 @@ export default function BookingPageClient() {
   return (
     <div className="space-y-8 pb-20 md:pb-28 mx-4 sm:mx-10 md:mx-20">
       {/* Search Header Banner */}
-      <div className="relative mt-5 rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-8 md:p-12 shadow-xl border border-indigo-950">
+      <Reveal variant="fade" className="relative mt-5 rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-8 md:p-12 shadow-xl border border-indigo-950">
         <div className="relative z-10 max-w-2xl space-y-4">
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
             {t.booking.portalTitle}
@@ -249,7 +250,7 @@ export default function BookingPageClient() {
           </div>
         </div>
         <div className="absolute top-0 right-0 w-1/3 h-full opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-500 to-transparent" />
-      </div>
+      </Reveal>
 
       {/* Category Tabs */}
       <div className="flex flex-wrap gap-2 pb-2 border-b border-default-100">
@@ -456,7 +457,7 @@ export default function BookingPageClient() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+        <Reveal variant="up" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
           {filteredServices.map((srv) => {
             const startPrice = getStartingPrice(srv);
             const image = resolvedImages[srv.id] || "";
@@ -533,7 +534,7 @@ export default function BookingPageClient() {
               </div>
             );
           })}
-        </div>
+        </Reveal>
       )}
     </div>
   );

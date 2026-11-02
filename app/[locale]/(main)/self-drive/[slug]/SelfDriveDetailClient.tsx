@@ -38,6 +38,7 @@ import {
   type VehicleDto
 } from "@/lib/api/fleet";
 import { getActiveRentals, getRentalPricesByRental, type RentalDto, type RentalPriceDto } from "@/lib/api/selfDrive";
+import { Reveal } from "@/components/Reveal";
 import type { SectionDto } from "@/lib/api/sections";
 import { ImageGalleryGrid } from "@/components/ImageGalleryGrid";
 import { DetailCMSSections } from "@/components/sections/detail/DetailSectionRenderer";
@@ -349,7 +350,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
       {/* Main Content */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 md:py-8 space-y-8 flex-1">
         {/* Category Header Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Reveal variant="fade" className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <HighlightBadge
@@ -382,7 +383,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
               <ChevronRight size={18} />
             </Button>
           </div>
-        </div>
+        </Reveal>
 
         {/* Klook-style Image Gallery Grid */}
         <ImageGalleryGrid
@@ -394,7 +395,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
         />
 
         {/* 2-Column Grid: Left (Inline Vehicles, Specs, Amenities, Policies) & Right (Sticky Booking Action Box) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <Reveal variant="up" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6">
 
@@ -785,7 +786,7 @@ export default function SelfDriveDetailClient({ sections, categoryIdentifier }: 
               </Button>
             </div>
           </div>
-        </div>
+        </Reveal>
 
         {/* 3. Section Các dòng xe khác (Other Vehicle Categories) - Excluding current category */}
         {otherCategories.length > 0 && (

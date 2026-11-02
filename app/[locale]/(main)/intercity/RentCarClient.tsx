@@ -21,6 +21,7 @@ import { RentalHorizontalSearch } from "@/components/search-bar/RentalHorizontal
 import { BookingProcessSection } from "@/components/sections/BookingProcessSection";
 import { FaqSection } from "@/components/sections/FaqSection";
 import type { SectionDto } from "@/lib/api/sections";
+import { Reveal } from "@/components/Reveal";
 
 interface RentCarClientProps {
   sections: SectionDto[];
@@ -101,7 +102,7 @@ export default function RentCarClient({
 
       {/* Routes Listing */}
       {routes.length > 0 && (
-        <section className="w-full pt-24 sm:pt-28 md:pt-32 pb-16 bg-white dark:bg-[var(--bg-page)] border-t border-border">
+        <Reveal as="section" variant="up" className="w-full pt-24 sm:pt-28 md:pt-32 pb-16 bg-white dark:bg-[var(--bg-page)] border-t border-border">
           <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
             <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
               <h2 className="text-2xl md:text-3xl font-black text-foreground">
@@ -132,12 +133,12 @@ export default function RentCarClient({
               </Button>
             </div>
           </div>
-        </section>
+        </Reveal>
       )}
 
       {/* Shared Routes Section */}
       {sharedRideRoutes.length > 0 && (
-        <section className="w-full py-16 bg-muted/40 dark:bg-[var(--bg-surface)] border-t border-border">
+        <Reveal as="section" variant="up" className="w-full py-16 bg-muted/40 dark:bg-[var(--bg-surface)] border-t border-border">
           <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
             <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-wider border border-amber-500/20">
@@ -174,11 +175,11 @@ export default function RentCarClient({
               </Button>
             </div>
           </div>
-        </section>
+        </Reveal>
       )}
 
       {/* Benefits Section */}
-      <section className="w-full py-20 bg-muted/20 dark:bg-black/10 border-t border-border">
+      <Reveal as="section" variant="up" className="w-full py-20 bg-muted/20 dark:bg-black/10 border-t border-border">
         <div className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
             <h2 className="text-2xl md:text-3xl font-black text-foreground">
@@ -243,13 +244,13 @@ export default function RentCarClient({
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Booking Process Section */}
       {processSection && (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+        <Reveal as="section" variant="up" className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
           <BookingProcessSection section={processSection} locale={language} />
-        </section>
+        </Reveal>
       )}
 
       {/* FAQ Section (CMS-driven; hidden when no FAQ section configured) */}

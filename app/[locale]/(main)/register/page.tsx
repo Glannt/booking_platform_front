@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/context/LanguageContext";
 import { apiFetch } from "@/lib/api/client";
+import { Reveal } from "@/components/Reveal";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -77,7 +78,7 @@ export default function RegisterPage() {
         <div className="h-[400px] w-[400px] rounded-full bg-secondary filter blur-[70px] -translate-x-20 translate-y-20" />
       </div>
 
-      <div className="relative z-10 w-full max-w-lg border border-default-200/50 bg-background/60 backdrop-blur-md shadow-2xl rounded-2xl p-6">
+      <Reveal variant="scale" className="relative z-10 w-full max-w-lg border border-default-200/50 bg-background/60 backdrop-blur-md shadow-2xl rounded-2xl p-6">
         <div className="flex flex-col gap-1 items-center pb-4 pt-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-2">
             <UserPlus size={24} />
@@ -248,7 +249,7 @@ export default function RegisterPage() {
             </Link>
           </div>
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

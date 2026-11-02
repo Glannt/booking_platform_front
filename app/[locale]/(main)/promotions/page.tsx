@@ -19,6 +19,7 @@ import { useActiveDiscounts, useMyVouchers } from "@/lib/queries/useDiscounts";
 import { useAuthStore } from "@/lib/store/authStore";
 import { VoucherCard } from "@/components/customer/VoucherCard";
 import { PromotionDto } from "@/lib/api/discount";
+import { Reveal } from "@/components/Reveal";
 
 export default function PublicPromotionsPage() {
   const { t, language } = useI18n();
@@ -78,7 +79,7 @@ export default function PublicPromotionsPage() {
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-[var(--bg-page)] pb-24">
       {/* Hero Banner Section */}
-      <div className="relative bg-gradient-to-b from-amber-500/15 via-accent/5 to-transparent border-b border-slate-200/80 dark:border-slate-800/80 pt-16 pb-14 px-6">
+      <Reveal variant="fade" className="relative bg-gradient-to-b from-amber-500/15 via-accent/5 to-transparent border-b border-slate-200/80 dark:border-slate-800/80 pt-16 pb-14 px-6">
         <div className="max-w-6xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-accent/15 text-accent-foreground dark:text-accent border border-accent/30 shadow-xs">
             <Sparkles size={14} className="text-accent" />
@@ -125,12 +126,12 @@ export default function PublicPromotionsPage() {
             </div>
           )}
         </div>
-      </div>
+      </Reveal>
 
       {/* Main Container */}
       <div className="max-w-6xl mx-auto px-6 pt-8 space-y-8">
         {/* Controls: Scope Filter Tabs + Search Field */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 shadow-xs">
+        <Reveal variant="up" className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 shadow-xs">
           {/* Scope Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {scopeTabs.map((sc) => (
@@ -167,7 +168,7 @@ export default function PublicPromotionsPage() {
               </SearchField.Group>
             </SearchField>
           </div>
-        </div>
+        </Reveal>
 
         {/* Promotions Grid */}
         {loadingOffers ? (
@@ -203,7 +204,7 @@ export default function PublicPromotionsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Reveal variant="up" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredOffers.map((promo) => (
               <VoucherCard
                 key={promo.id}
@@ -211,11 +212,11 @@ export default function PublicPromotionsPage() {
                 variant="public"
               />
             ))}
-          </div>
+          </Reveal>
         )}
 
         {/* How to use Promo Codes Section */}
-        <div className="mt-16 p-8 rounded-3xl bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
+        <Reveal variant="up" className="mt-16 p-8 rounded-3xl bg-white dark:bg-[var(--bg-card)] border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-accent/15 text-accent flex items-center justify-center font-bold">
               <HelpCircle size={18} />
@@ -267,7 +268,7 @@ export default function PublicPromotionsPage() {
               </p>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </div>
   );

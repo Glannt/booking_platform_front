@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/context/LanguageContext";
 import { verifyResetCode } from "@/lib/api/auth";
+import { Reveal } from "@/components/Reveal";
 
 export default function VerifyResetCodePage() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function VerifyResetCodePage() {
         <div className="h-[300px] w-[300px] rounded-full bg-secondary filter blur-[60px] translate-x-20 -translate-y-20" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md border border-default-200/50 bg-background/60 backdrop-blur-md shadow-2xl rounded-2xl p-6">
+      <Reveal variant="scale" className="relative z-10 w-full max-w-md border border-default-200/50 bg-background/60 backdrop-blur-md shadow-2xl rounded-2xl p-6">
         <div className="flex flex-col gap-1 items-center pb-4 pt-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-2">
             <ShieldCheck size={24} />
@@ -133,7 +134,7 @@ export default function VerifyResetCodePage() {
             </Link>
           </div>
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

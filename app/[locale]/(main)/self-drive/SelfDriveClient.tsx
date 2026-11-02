@@ -28,6 +28,7 @@ import { HeroBanner } from "@/components/sections/HeroBanner";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { RentalHorizontalSearch } from "@/components/search-bar/RentalHorizontalSearch";
 import { SelfDriveVehicleCard, type SelfDriveVehicleItem } from "@/components/self-drive/SelfDriveVehicleCard";
+import { Reveal } from "@/components/Reveal";
 
 interface SelfDriveClientProps {
   sections?: SectionDto[];
@@ -250,17 +251,19 @@ export default function SelfDriveClient({
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-24 sm:pt-28 md:pt-32 pb-16 flex-1 space-y-12">
         {/* Intro Section */}
         {introSection && (
-          <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-border leading-relaxed font-semibold text-xs md:text-sm text-foreground/80">
-            <p>
-              {introSection.translations?.find((t) => t.locale === language)?.description ||
-                introSection.translations?.[0]?.description ||
-                t.selfDrive.introDescription}
-            </p>
-          </div>
+          <Reveal variant="fade">
+            <div className="bg-white dark:bg-[var(--bg-card)] rounded-3xl p-6 shadow-sm border border-border leading-relaxed font-semibold text-xs md:text-sm text-foreground/80">
+              <p>
+                {introSection.translations?.find((t) => t.locale === language)?.description ||
+                  introSection.translations?.[0]?.description ||
+                  t.selfDrive.introDescription}
+              </p>
+            </div>
+          </Reveal>
         )}
 
         {/* Catalog & Car list */}
-        <div className="space-y-5">
+        <Reveal variant="up" className="space-y-5">
           {/* Header Row: Title & Subtitle on Left, 'View All Vehicles' Button on Right (same row) */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1 border-b border-border/60">
             <div>
@@ -308,10 +311,10 @@ export default function SelfDriveClient({
               <SelfDriveVehicleCard key={vehicle.id} vehicle={vehicle} />
             ))}
           </div>
-        </div>
+        </Reveal>
 
         {/* Pricing Table Section */}
-        <div className="space-y-4 pt-4">
+        <Reveal variant="up" className="space-y-4 pt-4">
           <Typography type="h2" className="text-base font-extrabold text-foreground flex items-center gap-2">
             <span className="bg-accent w-2.5 h-5 rounded-full inline-block" />
             {t.selfDrive.priceOneWay}
@@ -363,10 +366,10 @@ export default function SelfDriveClient({
               {t.selfDrive.airportTransferNoticeAfter}
             </p>
           </div>
-        </div>
+        </Reveal>
 
         {/* Procedure steps */}
-        <div className="space-y-4 pt-4">
+        <Reveal variant="up" className="space-y-4 pt-4">
           <Typography type="h2" className="text-base font-extrabold text-foreground flex items-center gap-2">
             <span className="bg-accent w-2.5 h-5 rounded-full inline-block" />
             {t.selfDrive.procedureTitle}
@@ -420,10 +423,10 @@ export default function SelfDriveClient({
               </div>
             ))}
           </div>
-        </div>
+        </Reveal>
 
         {/* Call to action panel */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 md:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
+        <Reveal variant="scale" className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 md:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
           <div className="space-y-2 text-center md:text-left">
             <Typography type="h3" className="text-base md:text-lg font-black text-white">
               {t.selfDrive.bookNow}
@@ -449,7 +452,7 @@ export default function SelfDriveClient({
               <span>{t.selfDrive.zaloConsult}</span>
             </button>
           </div>
-        </div>
+        </Reveal>
 
         {/* FAQ (CMS-driven; hidden when no FAQ section configured) */}
         {faqSection && <FaqSection section={faqSection} locale={language} />}

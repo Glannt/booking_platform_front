@@ -39,6 +39,7 @@ import { formatPriceSync as _formatPrice } from "@/lib/format";
 import { useIntercityRoutePrices, lowestPriceForRoute } from "@/lib/queries/useIntercityPrices";
 import { resolveTranslation } from "@/lib/i18n-helpers";
 import type { SectionDto } from "@/lib/api/sections";
+import { Reveal } from "@/components/Reveal";
 
 type SortOption = "default" | "price_asc" | "price_desc" | "distance_asc";
 
@@ -298,7 +299,7 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* Banner Section (Tours Image 1 style) */}
-      <section className="relative w-full min-h-[300px] md:min-h-[340px] flex flex-col justify-center items-center py-10 sm:py-14 px-4 sm:px-6 lg:px-8 bg-black/90 overflow-hidden">
+      <Reveal as="section" variant="fade" className="relative w-full min-h-[300px] md:min-h-[340px] flex flex-col justify-center items-center py-10 sm:py-14 px-4 sm:px-6 lg:px-8 bg-black/90 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -355,7 +356,7 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Main Listing Area */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 flex-1 flex flex-col gap-5">
@@ -686,7 +687,7 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+          <Reveal variant="up" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {paginatedRoutes.map((route) => (
               <IntercityRouteCard
                 key={route.id}
@@ -694,7 +695,7 @@ export default function RoutesListingClient({ sections }: RoutesListingClientPro
                 sharedRoutes={sharedRoutes}
               />
             ))}
-          </div>
+          </Reveal>
         )}
 
         {/* Pagination */}

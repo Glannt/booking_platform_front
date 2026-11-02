@@ -66,6 +66,7 @@ import { calculateRentalDays, formatToIsoDate, formatToDisplayDate } from "@/lib
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
 import { DurationMode, IntercityPriceTypeCode, IntercityServiceType, IntercityTripType, PickupType } from "@/types/intercity";
 import { calculateDeposit, formatDepositPolicy } from "@/lib/pricing/deposit";
+import { Reveal } from "@/components/Reveal";
 
 /** The deposit triple as stored on one price_lists row. */
 type PriceRowDeposit = Pick<IntercityRoutePriceDto, "depositType" | "depositRate" | "depositAmount">;
@@ -834,7 +835,7 @@ export default function RentCarConfirmPage() {
   return (
     <div className="min-h-screen bg-background text-foreground pb-16">
       {/* 1. Header Banner */}
-      <section className="relative w-full h-[180px] sm:h-[220px] bg-slate-900 overflow-hidden flex items-end">
+      <Reveal as="section" variant="fade" className="relative w-full h-[180px] sm:h-[220px] bg-slate-900 overflow-hidden flex items-end">
         {route?.thumbnailUrl ? (
           <img
             src={route.thumbnailUrl.startsWith("http") ? route.thumbnailUrl : `${backendUrl}${route.thumbnailUrl}`}
@@ -890,13 +891,13 @@ export default function RentCarConfirmPage() {
             </p>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* 2. Main 2-Column Content */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 mt-8">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Form Controls (col-span-8) */}
-          <div className="lg:col-span-8 space-y-6">
+          <Reveal variant="up" className="lg:col-span-8 space-y-6">
 
             {/* Card 1: Contact Information */}
             <div className="bg-white dark:bg-[var(--bg-surface)] rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
@@ -1875,10 +1876,10 @@ export default function RentCarConfirmPage() {
               />
             </div>
 
-          </div>
+          </Reveal>
 
           {/* Right Column: Sticky Booking Summary (col-span-4) */}
-          <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+          <Reveal variant="fade" className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
             {/* Customer Discount Section */}
             <CustomerDiscountSection
               scopeType={serviceType === IntercityServiceType.SHARED ? "SHARED_ROUTE" : "INTERCITY_ROUTE"}
@@ -2096,7 +2097,7 @@ export default function RentCarConfirmPage() {
                 <span>{t.selfDrive.guarantee}</span>
               </div>
             </div>
-          </div>
+          </Reveal>
         </form>
       </main>
 

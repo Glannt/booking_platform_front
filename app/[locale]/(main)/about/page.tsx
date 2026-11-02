@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Image from "next/image";
 import { translations } from "@/config/translations";
 import { Building2, User, FileText, MapPin, Phone, Mail, Globe, ShieldCheck, Handshake, Clock, Car, Plane } from "lucide-react";
+import { Reveal } from "@/components/Reveal";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
@@ -27,18 +28,20 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
   return (
     <div className="space-y-12">
       {/* Banner / Hero Section */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-8 md:p-12 shadow-xl">
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <span className="text-blue-300 font-bold uppercase tracking-wider text-sm">Minh Khoa Travel</span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{ap.introTitle}</h1>
-          <p className="text-lg text-blue-100/90 leading-relaxed font-light">{ap.introDesc}</p>
+      <Reveal variant="fade">
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-8 md:p-12 shadow-xl">
+          <div className="relative z-10 max-w-3xl space-y-4">
+            <span className="text-blue-300 font-bold uppercase tracking-wider text-sm">Minh Khoa Travel</span>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{ap.introTitle}</h1>
+            <p className="text-lg text-blue-100/90 leading-relaxed font-light">{ap.introDesc}</p>
+          </div>
+          <div className="absolute top-0 right-0 w-1/3 h-full opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent" />
         </div>
-        <div className="absolute top-0 right-0 w-1/3 h-full opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white to-transparent" />
-      </div>
+      </Reveal>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Website Owner Info Card */}
-        <div className="lg:col-span-1 space-y-6">
+        <Reveal variant="left" className="lg:col-span-1 space-y-6">
           <div className="bg-content1 border border-default-200/50 rounded-2xl p-6 shadow-sm space-y-6">
             <h2 className="text-xl font-bold border-b pb-3 border-default-100 flex items-center gap-2">
               <Building2 className="text-primary" size={20} />
@@ -96,10 +99,10 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
 
         {/* Right Column: Mission, Featured Services */}
-        <div className="lg:col-span-2 space-y-8">
+        <Reveal variant="right" className="lg:col-span-2 space-y-8">
           {/* Mission & Values */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -149,10 +152,11 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
 
       {/* Full Width Section: International Partner */}
+      <Reveal variant="up">
       <div className="bg-content1 border border-default-200/50 rounded-2xl p-6 md:p-8 shadow-sm space-y-8">
         <div className="max-w-3xl space-y-4">
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -191,8 +195,10 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
           </div>
         </div>
       </div>
+      </Reveal>
 
       {/* Commitment & Quick Contacts */}
+      <Reveal variant="up">
       <div className="bg-gradient-to-r from-default-100 to-default-50/50 border border-default-200/50 rounded-2xl p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
         <div className="md:col-span-2 space-y-2">
           <h2 className="text-xl font-bold">{ap.commitmentTitle}</h2>
@@ -207,6 +213,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
           </div>
         </div>
       </div>
+      </Reveal>
     </div>
   );
 }

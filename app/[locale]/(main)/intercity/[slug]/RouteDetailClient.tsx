@@ -90,6 +90,7 @@ import {
 
 const RouteMap = dynamic(() => import("@/components/route-map"), { ssr: false });
 import type { SectionDto } from "@/lib/api/sections";
+import { Reveal } from "@/components/Reveal";
 
 interface CategoryWithVehicles {
   category: VehicleCategoryDto;
@@ -849,7 +850,7 @@ export default function RouteDetailClient({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 flex flex-col font-sans">
       {/* Hero Banner */}
-      <section className="relative w-full h-[320px] md:h-[400px] bg-slate-900 overflow-hidden flex items-end">
+      <Reveal as="section" variant="fade" className="relative w-full h-[320px] md:h-[400px] bg-slate-900 overflow-hidden flex items-end">
         {displayHeroImages.length > 0 ? (
           displayHeroImages.map((imgUrl, idx) => (
             <div
@@ -924,12 +925,12 @@ export default function RouteDetailClient({
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Main Content */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Route Details, Fleet & Comparison */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+        <Reveal variant="up" className="lg:col-span-7 xl:col-span-8 space-y-6">
           {/* Overview */}
           <div className="bg-white dark:bg-[var(--bg-surface)] p-6 rounded-3xl border border-separator shadow-sm space-y-4">
             <h2 className="text-base font-black text-slate-950 dark:text-white uppercase tracking-wider border-b border-separator pb-2">
@@ -1251,10 +1252,10 @@ export default function RouteDetailClient({
               </div>
             </div>
           )}
-        </div>
+        </Reveal>
 
         {/* Right Column: Booking Form Sidebar */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-28">
+        <Reveal variant="fade" className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-28">
           <div className="bg-white dark:bg-[var(--bg-surface)] p-6 rounded-3xl border border-separator shadow-sm space-y-5">
             {/* Service Type Select */}
             <div className="space-y-1.5">
@@ -1693,7 +1694,7 @@ export default function RouteDetailClient({
               </Button>
             </div>
           </div>
-        </div>
+        </Reveal>
       </main>
 
       {/* Vehicle Modal */}

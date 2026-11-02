@@ -21,6 +21,7 @@ import { useI18n } from "@/context/LanguageContext";
 import { createBooking } from "@/lib/api/bookings";
 import { ServiceDto, ServiceOptionDto } from "@/lib/api/services";
 import BookingConfirmationModal from "@/components/BookingConfirmationModal";
+import { Reveal } from "@/components/Reveal";
 
 interface BookingDetailClientProps {
   id: number;
@@ -202,7 +203,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
     <div className="space-y-8 pb-10">
 
       {/* Navigation & Header */}
-      <div>
+      <Reveal variant="fade">
         <Button
           variant="primary"
           size="sm"
@@ -219,11 +220,11 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
         <p className="text-sm text-default-500 max-w-3xl mt-2 leading-relaxed">
           {getLocalizedDesc(service)}
         </p>
-      </div>
+      </Reveal>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Form Container */}
-        <form onSubmit={handleFormSubmit} className="lg:col-span-2 space-y-6">
+        <Reveal as="form" variant="up" onSubmit={handleFormSubmit} className="lg:col-span-2 space-y-6">
           {/* Step 1: Select Service Option */}
           <div className="bg-content1 border border-default-200/50 p-6 md:p-8 rounded-3xl shadow-sm space-y-5">
             <h3 className="font-extrabold text-lg border-b border-default-100 pb-3">
@@ -522,10 +523,10 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
               </div>
             </div>
           </div>
-        </form>
+        </Reveal>
 
         {/* Sticky Pricing Sidebar */}
-        <div className="space-y-6 lg:sticky lg:top-24">
+        <Reveal variant="fade" className="space-y-6 lg:sticky lg:top-24">
           <div className="bg-content1 border border-default-200/50 p-6 rounded-3xl shadow-sm space-y-6">
             <h3 className="font-extrabold text-base border-b border-default-100 pb-3">
               {isVi ? "Tóm tắt đơn hàng" : "Booking Summary"}
@@ -590,7 +591,7 @@ export default function BookingDetailClient({ id, initialService }: BookingDetai
               {t.booking.bookNow}
             </Button>
           </div>
-        </div>
+        </Reveal>
       </div>
 
       {/* Submission Status Modal */}

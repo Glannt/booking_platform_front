@@ -22,6 +22,7 @@ import SuccessOverlay from "@/components/SuccessOverlay";
 import ErrorOverlay from "@/components/ErrorOverlay";
 import type { SectionDto } from "@/lib/api/sections";
 import { CustomerDiscountSection, type AppliedDiscountInfo } from "@/components/common/CustomerDiscountSection";
+import { Reveal } from "@/components/Reveal";
 
 interface TourConfirmClientProps {
     tourIdentifier: string | number;
@@ -294,7 +295,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 font-sans">
             {/* Header */}
-            <div className="bg-slate-50 dark:bg-[var(--bg-surface)] border-b border-slate-100 dark:border-slate-800">
+            <Reveal variant="fade" className="bg-slate-50 dark:bg-[var(--bg-surface)] border-b border-slate-100 dark:border-slate-800">
                 <div className="max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
@@ -311,9 +312,9 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                         </p>
                     </div>
                 </div>
-            </div>
+            </Reveal>
 
-            <div className="max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+            <Reveal variant="up" className="max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
                 {/* Tour & Package Summary */}
                 <div className="bg-white dark:bg-[var(--bg-surface)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4">
                     <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
@@ -592,7 +593,7 @@ export default function TourConfirmClient({ tourIdentifier, sections }: TourConf
                         {t.common.continueBtn}
                     </Button>
                 </div>
-            </div>
+            </Reveal>
 
             <BookingConfirmModal
                 isOpen={showConfirmModal}

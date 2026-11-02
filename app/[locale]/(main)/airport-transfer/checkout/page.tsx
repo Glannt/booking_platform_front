@@ -15,6 +15,7 @@ import { createAirportTransferBooking } from "@/lib/api/airport-transfer/booking
 import { loadBookingDraft, saveBookingDraft, clearBookingDraft, type BookingDraft } from "@/lib/airport-transfer-draft";
 import { calculateDeposit, DepositType } from "@/lib/pricing/deposit";
 import { formatPriceSync as _formatPrice } from "@/lib/format";
+import { Reveal } from "@/components/Reveal";
 
 export default function AirportTransferCheckoutPage() {
   const router = useRouter();
@@ -213,7 +214,7 @@ export default function AirportTransferCheckoutPage() {
         )}
 
         {/* Booking Summary */}
-        <section className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
+        <Reveal as="section" variant="up" className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-3">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {t.airportTransfer.summary}
           </h2>
@@ -262,10 +263,10 @@ export default function AirportTransferCheckoutPage() {
               </div>
             </div>
           )}
-        </section>
+        </Reveal>
 
         {/* Customer Info */}
-        <section className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-4">
+        <Reveal as="section" variant="up" delay={100} className="bg-white dark:bg-[var(--bg-card)] rounded-2xl border border-slate-100 dark:border-slate-800 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {t.rentCar.contactInfo}
@@ -387,7 +388,7 @@ export default function AirportTransferCheckoutPage() {
               />
             </div>
           </div>
-        </section>
+        </Reveal>
 
         <Button
           onClick={handleSubmit}

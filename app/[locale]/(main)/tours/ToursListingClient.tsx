@@ -35,6 +35,7 @@ import { resolveLocalizedName, resolveLocalizedDescription, resolveTranslation }
 import { getCanonicalSlug } from "@/lib/slug-helpers";
 import type { SectionDto } from "@/lib/api/sections";
 import { FaqSection } from "@/components/sections/FaqSection";
+import { Reveal } from "@/components/Reveal";
 
 interface ToursListingClientProps {
   sections: SectionDto[];
@@ -346,7 +347,7 @@ export default function ToursListingClient({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-100 flex flex-col font-sans">
       {/* Banner Section (Image 1 style) */}
-      <section className="relative w-full min-h-[300px] md:min-h-[340px] flex flex-col justify-center items-center py-10 sm:py-14 px-4 sm:px-6 lg:px-8 bg-slate-900 overflow-hidden">
+      <Reveal as="section" variant="fade" className="relative w-full min-h-[300px] md:min-h-[340px] flex flex-col justify-center items-center py-10 sm:py-14 px-4 sm:px-6 lg:px-8 bg-slate-900 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -394,7 +395,7 @@ export default function ToursListingClient({
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Main Listing Area */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 flex-1 flex flex-col gap-5">
@@ -792,7 +793,7 @@ export default function ToursListingClient({
             {t.common.noResults}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+          <Reveal variant="up" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {filteredAndSortedTours.map((tour: TourDto) => {
               const minPrice = getMinPrice(tour);
               const name = getLocalizedName(tour);
@@ -895,7 +896,7 @@ export default function ToursListingClient({
                 </div>
               );
             })}
-          </div>
+          </Reveal>
         )}
 
         {/* Pagination (24 items/page) */}

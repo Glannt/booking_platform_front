@@ -38,6 +38,7 @@ import { ImageGalleryGrid } from "@/components/ImageGalleryGrid";
 import { ContentPreviewModal } from "@/components/ContentPreviewModal";
 import { FormattedDescription } from "@/components/FormattedDescription";
 import type { SectionDto } from "@/lib/api/sections";
+import { Reveal } from "@/components/Reveal";
 import {
   DetailCMSSections,
   DetailComponentsList,
@@ -308,7 +309,7 @@ export default function TourDetailClient({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[var(--bg-page)] text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300">
       {/* 1. Breadcrumbs + Title + Badges Header Section */}
-      <section className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-5 pb-3 space-y-3">
+      <Reveal variant="fade" as="section" className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 pt-5 pb-3 space-y-3">
         {/* Breadcrumbs */}
         <nav
           aria-label="Breadcrumb"
@@ -368,10 +369,10 @@ export default function TourDetailClient({
             />
           )}
         </div>
-      </section>
+      </Reveal>
 
       {/* 2. Klook-style Image Gallery Grid */}
-      <section className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
+      <Reveal variant="fade" as="section" className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10">
         <ImageGalleryGrid
           images={tourImageList}
           thumbnailId={tour.thumbnailId}
@@ -380,12 +381,12 @@ export default function TourDetailClient({
           modalTitleLabel={t.tours.officialPhotos}
           className="shadow-md"
         />
-      </section>
+      </Reveal>
 
       {/* 3. Main Detail Content Layout */}
       <main className="max-w-[1536px] mx-auto w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Overview/Description, Options, Inclusions/Exclusions, Itinerary */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+        <Reveal variant="up" className="lg:col-span-7 xl:col-span-8 space-y-6">
           {/* About this Tour / Overview Box */}
           <div className="bg-white dark:bg-[var(--bg-surface)] p-6 md:p-7 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -681,10 +682,10 @@ export default function TourDetailClient({
               </div>
             )}
           </div>
-        </div>
+        </Reveal>
 
         {/* Right Column: Sticky Booking Widget & Tour Packages */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-24">
+        <Reveal variant="fade" className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-24">
           <div className="bg-white dark:bg-[var(--bg-surface)] p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-md space-y-5">
             {/* Price Header (Featured like Klook) */}
             <div className="border-b border-slate-100 dark:border-slate-800 pb-4 flex items-baseline justify-between gap-2">
@@ -945,7 +946,7 @@ export default function TourDetailClient({
               </div>
             )}
           </div>
-        </div>
+        </Reveal>
       </main>
 
       {/* CMS Sections (Booking Process, FAQs, Customer Reviews) */}
